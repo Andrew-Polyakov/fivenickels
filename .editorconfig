@@ -1,0 +1,22 @@
+# Project root — Java-influenced C# for tools/StockCrawler and related first-party code.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.cs]
+indent_style = space
+indent_size = 4
+max_line_length = 120
+csharp_new_line_before_open_brace = none
+csharp_new_line_before_else = false
+csharp_new_line_before_catch = false
+csharp_new_line_before_finally = false
+# Prefer Java-style camelCase for private members; suppress IDE1006 for this folder when needed.
+dotnet_diagnostic.IDE1006.severity = suggestion
+
+[*.md]
+max_line_length = off
