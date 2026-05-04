@@ -1,0 +1,47 @@
+{% load wagtailcore_tags %}
+
+<section class="big-tile-row-section" aria-label="Featured tiles">
+
+    <div class="big-tile-row__panels">
+
+        <div class="big-tile-row__panel-slot">
+
+            <div class="big-tile-panel big-tile-panel--single">
+
+                {% if left_tile_page %}
+
+                    {% include "home/includes/page_tile_card.html" with page=left_tile_page only %}
+
+                {% else %}
+
+                    <div class="big-tile-panel__empty" role="status">No article to display.</div>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+        <div class="big-tile-row__panel-slot">
+
+            <div class="big-tile-panel big-tile-panel--single">
+
+                {% if right_tile_page %}
+
+                    {% include "home/includes/page_tile_card.html" with page=right_tile_page only %}
+
+                {% else %}
+
+                    <div class="big-tile-panel__empty" role="status">No article to display.</div>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <hr class="big-tile-row__separator" />
+
+</section>

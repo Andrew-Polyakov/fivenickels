@@ -39,7 +39,8 @@ class ForexFetchTests(SimpleTestCase):
         sess.get.return_value.json.return_value = {
             "rates": {
                 "EURUSD": [
-                    {"bp": "1.08", "mp": "1.081", "ap": "1.082", "t": "2024-01-01T12:00:00Z"}
+                    {"bp": "1.08", "mp": "1.080", "ap": "1.081", "t": "2024-01-01T12:00:00Z"},
+                    {"bp": "1.08", "mp": "1.081", "ap": "1.082", "t": "2024-01-01T12:01:00Z"},
                 ]
             },
             "next_page_token": None,
@@ -47,5 +48,8 @@ class ForexFetchTests(SimpleTestCase):
         quotes = fetch_forex_quotes(["EURUSD"])
         self.assertEqual(len(quotes), 1)
         self.assertEqual(quotes[0].mid, Decimal("1.081"))
+        self.assertIsNotNone(quotes[0].pct_change)
         row = quote_row_dict(quotes[0])
         self.assertEqual(row["mid_display"], "1.08100")
+        self.assertEqual(row["pct_class"], "is-up")
+        self.assertIn("%", row["pct_formatted"])

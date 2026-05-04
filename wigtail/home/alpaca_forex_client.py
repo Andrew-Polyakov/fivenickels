@@ -16,6 +16,7 @@ import requests
 
 from home.alpaca_market_client import get_alpaca_data_base_url
 from home.alpaca_news_client import load_alpaca_credentials
+from home.market_format import format_percent_change, percent_change_css_class
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,7 @@ class ForexQuote:
     bid: Decimal | None
     ask: Decimal | None
     as_of: str | None
+    pct_change: Decimal | None
 
 
 def _dec(x: Any) -> Decimal | None:
@@ -59,6 +61,7 @@ def _format_mid(symbol: str, mid: Decimal | None) -> str:
 
 
 def quote_row_dict(q: ForexQuote) -> dict[str, Any]:
+    pct = q.pct_change
     return {
         "symbol": q.symbol,
         "label": q.label,
@@ -67,27 +70,38 @@ def quote_row_dict(q: ForexQuote) -> dict[str, Any]:
         "bid": q.bid,
         "ask": q.ask,
         "as_of": q.as_of,
+        "pct_change": pct,
+        "pct_formatted": format_percent_change(pct),
+        "pct_class": percent_change_css_class(pct),
     }
 
 
-def _latest_rate_for_pair(
-    rates_blob: dict[str, Any], pair: str
-) -> dict[str, Any] | None:
+def _rates_series_for_pair(rates_blob: dict[str, Any], pair: str) -> list[dict[str, Any]]:
     key = pair.strip().upper()
     arr = rates_blob.get(key)
     if not isinstance(arr, list) or not arr:
-        # Alpaca keys may match request casing
         for k, v in rates_blob.items():
             if str(k).upper() == key and isinstance(v, list) and v:
                 arr = v
                 break
         else:
-            return None
-    # Prefer last entry (typically most recent when sort=asc); first when sort=desc
-    point = arr[-1] if arr else None
-    if not isinstance(point, dict):
+            return []
+    out: list[dict[str, Any]] = []
+    for pt in arr:
+        if isinstance(pt, dict):
+            out.append(pt)
+    return out
+
+
+def _pct_change_from_series(series: list[dict[str, Any]]) -> Decimal | None:
+    """Minute-over-minute change from last two Alpaca samples (same as carousel semantics)."""
+    if len(series) < 2:
         return None
-    return point
+    curr = _dec(series[-1].get("mp"))
+    prev = _dec(series[-2].get("mp"))
+    if curr is None or prev is None or prev == 0:
+        return None
+    return (curr - prev) / prev * Decimal(100)
 
 
 def fetch_forex_quotes(
@@ -107,7 +121,15 @@ def fetch_forex_quotes(
     kid, sec = load_alpaca_credentials()
     if not kid or not sec:
         return [
-            ForexQuote(symbol=s, label=pair_label(s), mid=None, bid=None, ask=None, as_of=None)
+            ForexQuote(
+                symbol=s,
+                label=pair_label(s),
+                mid=None,
+                bid=None,
+                ask=None,
+                as_of=None,
+                pct_change=None,
+            )
             for s in syms
         ]
 
@@ -118,14 +140,14 @@ def fetch_forex_quotes(
         "APCA-API-SECRET-KEY": sec,
     }
     end = datetime.now(timezone.utc)
-    start = end - timedelta(hours=4)
+    start = end - timedelta(hours=24)
     params = {
         "currency_pairs": ",".join(syms),
         "timeframe": "1Min",
         "start": start.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "end": end.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "sort": "asc",
-        "limit": 1000,
+        "limit": 10000,
     }
     url = f"{base}/v1beta1/forex/rates"
     try:
@@ -135,13 +157,29 @@ def fetch_forex_quotes(
     except (requests.RequestException, ValueError) as e:
         logger.warning("Alpaca forex rates request failed: %s", e)
         return [
-            ForexQuote(symbol=s, label=pair_label(s), mid=None, bid=None, ask=None, as_of=None)
+            ForexQuote(
+                symbol=s,
+                label=pair_label(s),
+                mid=None,
+                bid=None,
+                ask=None,
+                as_of=None,
+                pct_change=None,
+            )
             for s in syms
         ]
 
     if not isinstance(payload, dict):
         return [
-            ForexQuote(symbol=s, label=pair_label(s), mid=None, bid=None, ask=None, as_of=None)
+            ForexQuote(
+                symbol=s,
+                label=pair_label(s),
+                mid=None,
+                bid=None,
+                ask=None,
+                as_of=None,
+                pct_change=None,
+            )
             for s in syms
         ]
 
@@ -150,8 +188,8 @@ def fetch_forex_quotes(
 
     out: list[ForexQuote] = []
     for sym in syms:
-        pt = _latest_rate_for_pair(rates_blob, sym)
-        if pt is None:
+        series = _rates_series_for_pair(rates_blob, sym)
+        if not series:
             out.append(
                 ForexQuote(
                     symbol=sym,
@@ -160,14 +198,17 @@ def fetch_forex_quotes(
                     bid=None,
                     ask=None,
                     as_of=None,
+                    pct_change=None,
                 )
             )
             continue
+        pt = series[-1]
         mid = _dec(pt.get("mp"))
         bid = _dec(pt.get("bp"))
         ask = _dec(pt.get("ap"))
         ts = pt.get("t")
         as_of = str(ts) if ts is not None else None
+        pct_ch = _pct_change_from_series(series)
         out.append(
             ForexQuote(
                 symbol=sym,
@@ -176,6 +217,7 @@ def fetch_forex_quotes(
                 bid=bid,
                 ask=ask,
                 as_of=as_of,
+                pct_change=pct_ch,
             )
         )
     return out
@@ -191,6 +233,7 @@ def placeholder_forex_rows(pairs: list[str]) -> list[dict[str, Any]]:
                 bid=None,
                 ask=None,
                 as_of=None,
+                pct_change=None,
             )
         )
         for s in pairs
@@ -206,7 +249,7 @@ def get_cached_forex_quote_rows() -> list[dict[str, Any]]:
     if not pairs:
         return []
     ttl = int(getattr(settings, "FOREX_CACHE_TTL_SECONDS", 45))
-    key = "forex_quote_rows:" + ",".join(pairs)
+    key = "forex_quote_rows:v2:" + ",".join(pairs)
     try:
         hit = cache.get(key)
         if hit is not None:

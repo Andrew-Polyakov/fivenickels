@@ -6,21 +6,53 @@
 
         <div class="full-width-split-row__cell">
 
-            {% for block in value.left %}
+            {% if left_col.kind == "rich" and left_col.rich %}
 
-                {% include_block block %}
+                {% include "home/blocks/rich_split_tile.html" with value=left_col.rich only %}
 
-            {% endfor %}
+            {% else %}
+
+                <div class="full-width-split-row__preview">
+
+                    {% if left_col.tile_page %}
+
+                        {% include "home/includes/page_tile_card.html" with page=left_col.tile_page only %}
+
+                    {% else %}
+
+                        <div class="big-tile-panel__empty" role="status">No article to display.</div>
+
+                    {% endif %}
+
+                </div>
+
+            {% endif %}
 
         </div>
 
         <div class="full-width-split-row__cell">
 
-            {% for block in value.right %}
+            {% if right_col.kind == "rich" and right_col.rich %}
 
-                {% include_block block %}
+                {% include "home/blocks/rich_split_tile.html" with value=right_col.rich only %}
 
-            {% endfor %}
+            {% else %}
+
+                <div class="full-width-split-row__preview">
+
+                    {% if right_col.tile_page %}
+
+                        {% include "home/includes/page_tile_card.html" with page=right_col.tile_page only %}
+
+                    {% else %}
+
+                        <div class="big-tile-panel__empty" role="status">No article to display.</div>
+
+                    {% endif %}
+
+                </div>
+
+            {% endif %}
 
         </div>
 

@@ -1,0 +1,27 @@
+{% load wagtailcore_tags %}
+
+<div class="big-tile-panel big-tile-panel--quattro-row">
+
+    <div class="big-tile-quattro-row__grid">
+
+        {% for p in quad_pages %}
+
+            <div class="big-tile-quattro-row__cell">
+
+                {% if p %}
+
+                    {% include "home/includes/page_tile_card.html" with page=p only %}
+
+                {% else %}
+
+                    <div class="big-tile-panel__empty" role="status">No article.</div>
+
+                {% endif %}
+
+            </div>
+
+        {% endfor %}
+
+    </div>
+
+</div>

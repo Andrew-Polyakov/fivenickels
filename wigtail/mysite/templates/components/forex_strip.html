@@ -1,3 +1,4 @@
+{# Major FX: same neon box as ticker chips (ticker_chip.html). Expects context forex_quotes (row dicts with label, mid_display, pct_formatted, pct_class). #}
 {% if forex_quotes %}
 <section
     class="forex-strip{% if forex_strip_modifier %} forex-strip--{{ forex_strip_modifier }}{% endif %}"
@@ -6,8 +7,15 @@
     <ul class="forex-strip__grid">
         {% for row in forex_quotes %}
             <li class="forex-strip__cell">
-                <span class="forex-strip__pair">{{ row.label }}</span>
-                <span class="forex-strip__mid">{{ row.mid_display }}</span>
+                <div
+                    class="ticker-chip__box forex-strip__box ticker-chip__box--{{ row.pct_class }}"
+                >
+                    <span class="ticker-chip__label forex-strip__label">{{ row.label }}</span>
+                    <div class="forex-strip__quote-line">
+                        <span class="forex-strip__mid">{{ row.mid_display }}</span>
+                        <span class="ticker-chip__pct">{{ row.pct_formatted }}</span>
+                    </div>
+                </div>
             </li>
         {% endfor %}
     </ul>

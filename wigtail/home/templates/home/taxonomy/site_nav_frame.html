@@ -24,7 +24,7 @@
             {% endfor %}
         </nav>
     {% endfor %}
-    {% if active_node and active_node.widgets %}
+    {% if active_node and active_node.widgets and active_node.slug != "market-news" %}
         <section class="site-nav__widgets" aria-label="Section content">
             {% for block in active_node.widgets %}
                 {% include_block block %}

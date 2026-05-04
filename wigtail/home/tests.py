@@ -492,6 +492,7 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, "taxonomy-drilldown")
         self.assertContains(r, "forex-strip")
+        self.assertContains(r, "ticker-chip__box")
 
     def test_normalize_sector_query_param(self):
         self.assertEqual(normalize_sector_query_param("energy"), "energy")
@@ -626,3 +627,128 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         self.assertContains(r, "Energy one")
         self.assertNotContains(r, magic)
         self.assertNotContains(r, "Importance (editor only)")
+
+    def test_big_tile_row_twin_renders_two_manual_articles(self):
+        self.homepage.body = [
+            (
+                "big_tile_row_twin",
+                {
+                    "left": {
+                        "importance": 10,
+                        "section_term": None,
+                        "mode": "manual",
+                        "manual_page": self.page_e1,
+                    },
+                    "right": {
+                        "importance": 10,
+                        "section_term": None,
+                        "mode": "manual",
+                        "manual_page": self.page_e2,
+                    },
+                },
+            ),
+        ]
+        self.homepage.save_revision().publish()
+        r = self.client.get(self.homepage.url)
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "Energy one")
+        self.assertContains(r, "Energy two")
+
+    def test_big_tile_row_single_renders_one_tile(self):
+        self.homepage.body = [
+            (
+                "big_tile_row_single",
+                {
+                    "tile": {
+                        "importance": 10,
+                        "section_term": None,
+                        "mode": "manual",
+                        "manual_page": self.page_e1,
+                    },
+                },
+            ),
+        ]
+        self.homepage.save_revision().publish()
+        r = self.client.get(self.homepage.url)
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "Energy one")
+
+    def test_big_tile_quattro_row_uses_row_grid_class(self):
+        cells = [
+            {"mode": "manual", "manual_page": self.page_e1},
+            {"mode": "manual", "manual_page": self.page_e2},
+            {"mode": "manual", "manual_page": self.page_e1},
+            {"mode": "manual", "manual_page": self.page_e2},
+        ]
+        self.homepage.body = [
+            (
+                "big_tile_quattro_row",
+                {
+                    "importance": 10,
+                    "section_term": None,
+                    "cells": cells,
+                },
+            ),
+        ]
+        self.homepage.save_revision().publish()
+        r = self.client.get(self.homepage.url)
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "big-tile-quattro-row__grid")
+
+    def test_big_tile_quad_2x2_uses_quad_grid_class(self):
+        cells = [
+            {"mode": "manual", "manual_page": self.page_e1},
+            {"mode": "manual", "manual_page": self.page_e2},
+            {"mode": "manual", "manual_page": self.page_e1},
+            {"mode": "manual", "manual_page": self.page_e2},
+        ]
+        self.homepage.body = [
+            (
+                "big_tile_quad_2x2",
+                {
+                    "importance": 10,
+                    "section_term": None,
+                    "cells": cells,
+                },
+            ),
+        ]
+        self.homepage.save_revision().publish()
+        r = self.client.get(self.homepage.url)
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "big-tile-quad__grid")
+
+    def test_full_width_split_hardwired_columns_hide_editor_importance(self):
+        magic = "918273646"
+        self.homepage.body = [
+            (
+                "full_width_split_row",
+                {
+                    "left": {
+                        "content_kind": "article",
+                        "article": {
+                            "importance": int(magic),
+                            "section_term": None,
+                            "mode": "manual",
+                            "manual_page": self.page_e1,
+                        },
+                        "rich": {},
+                    },
+                    "right": {
+                        "content_kind": "article",
+                        "article": {
+                            "importance": int(magic),
+                            "section_term": None,
+                            "mode": "manual",
+                            "manual_page": self.page_e2,
+                        },
+                        "rich": {},
+                    },
+                },
+            ),
+        ]
+        self.homepage.save_revision().publish()
+        r = self.client.get(self.homepage.url)
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "Energy one")
+        self.assertContains(r, "Energy two")
+        self.assertNotContains(r, magic)
