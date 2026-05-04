@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% load wagtailcore_tags %}
+
+{% block body_class %}template-tag-archive{% endblock %}
+
+{% block content %}
+
+<div class="tag-archive">
+
+    <header class="tag-archive__header">
+
+        <h1 class="tag-archive__title">Tag: {{ archive_tag.name }}</h1>
+
+        {% if archive_section_filter %}
+
+            <p class="tag-archive__filter">Filtered to subsection: {{ archive_section_filter }}</p>
+
+        {% endif %}
+
+    </header>
+
+    <section class="markdown-tiles-section" aria-label="Pages with this tag">
+
+        <div class="markdown-tiles-grid markdown-tiles-grid--landing">
+
+            {% for p in archive_pages %}
+
+                {% include "home/includes/page_tile_card.html" with page=p %}
+
+            {% empty %}
+
+                <p class="tag-archive__empty">No published pages with this tag{% if archive_section_filter %} in this subsection{% endif %}.</p>
+
+            {% endfor %}
+
+        </div>
+
+    </section>
+
+</div>
+
+{% endblock content %}

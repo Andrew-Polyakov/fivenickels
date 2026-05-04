@@ -1,0 +1,27 @@
+{% load wagtailimages_tags stringfilters %}
+
+<section class="markdown-tiles-section">
+
+    <div class="markdown-tiles-grid">
+
+        {% for tile in value.tiles %}
+
+            {% if tile.slug %}
+
+                {% include "home/includes/tile_card.html" with title=tile.title taxonomy=tile.taxonomy image=tile.image preview_md=tile.body anchor_id=tile.slug %}
+
+            {% elif tile.title %}
+
+                {% include "home/includes/tile_card.html" with title=tile.title taxonomy=tile.taxonomy image=tile.image preview_md=tile.body anchor_id=tile.title|slugify %}
+
+            {% else %}
+
+                {% include "home/includes/tile_card.html" with title=tile.title taxonomy=tile.taxonomy image=tile.image preview_md=tile.body %}
+
+            {% endif %}
+
+        {% endfor %}
+
+    </div>
+
+</section>

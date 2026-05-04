@@ -1,0 +1,51 @@
+{% load wagtailimages_tags wagtailmarkdown %}
+
+{# Shared card shell: stream tiles (no link) or linked page tiles (link_url set). #}
+
+{% if link_url %}
+
+<a href="{{ link_url }}" class="markdown-tile markdown-tile--link"{% if anchor_id %} id="{{ anchor_id }}"{% endif %}{% if taxonomy %} data-taxonomy="{{ taxonomy.slug }}"{% endif %}>
+
+{% else %}
+
+<article class="markdown-tile"{% if anchor_id %} id="{{ anchor_id }}"{% endif %}{% if taxonomy %} data-taxonomy="{{ taxonomy.slug }}"{% endif %}>
+
+{% endif %}
+
+    {% if taxonomy %}
+
+        <span class="markdown-tile__taxonomy" data-taxonomy-slug="{{ taxonomy.slug }}">{{ taxonomy.name }}</span>
+
+    {% endif %}
+
+    {% if title %}
+
+        <h3 class="markdown-tile__title">{{ title }}</h3>
+
+    {% endif %}
+
+    {% if image %}
+
+        <div class="markdown-tile__media">
+
+            {% image image width-480 class="markdown-tile__image" %}
+
+        </div>
+
+    {% endif %}
+
+    {% if preview_md %}
+
+        <div class="markdown-tile__body">{{ preview_md|markdown }}</div>
+
+    {% endif %}
+
+{% if link_url %}
+
+</a>
+
+{% else %}
+
+</article>
+
+{% endif %}

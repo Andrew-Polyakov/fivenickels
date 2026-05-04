@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% load wagtailcore_tags %}
+
+{% block body_class %}template-subsection-index{% endblock %}
+
+{% block content %}
+
+<div class="home-stream">
+
+    {% for block in page.intro %}
+
+        {% include_block block %}
+
+    {% endfor %}
+
+</div>
+
+<section class="markdown-tiles-section subsection-recent" aria-label="Recent in this subsection">
+
+    <h2 class="subsection-recent__heading">Recent</h2>
+
+    <div class="markdown-tiles-grid markdown-tiles-grid--landing">
+
+        {% for p in recent_pages %}
+
+            {% include "home/includes/page_tile_card.html" with page=p %}
+
+        {% empty %}
+
+            <p class="subsection-recent__empty">No published pages in this subsection yet.</p>
+
+        {% endfor %}
+
+    </div>
+
+</section>
+
+{% endblock content %}

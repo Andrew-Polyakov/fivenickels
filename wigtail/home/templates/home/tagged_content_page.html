@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% load wagtailcore_tags wagtailimages_tags wagtailroutablepage_tags %}
+
+{% block body_class %}template-tagged-content{% endblock %}
+
+{% block content %}
+
+<article class="tagged-content">
+
+    <header class="tagged-content__header">
+
+        <h1 class="tagged-content__title">{{ page.title }}</h1>
+
+        {% if page.section_term %}
+
+            <p class="tagged-content__taxonomy">
+
+                <span class="markdown-tile__taxonomy">{{ page.section_term.name }}</span>
+
+            </p>
+
+        {% endif %}
+
+    </header>
+
+    {% if page.hero_image %}
+
+        <div class="tagged-content__hero">
+
+            {% image page.hero_image width-960 class="tagged-content__hero-img" %}
+
+        </div>
+
+    {% endif %}
+
+    <div class="home-stream tagged-content__body">
+
+        {% for block in page.body %}
+
+            {% include_block block %}
+
+        {% endfor %}
+
+    </div>
+
+    {% if page.tags.count %}
+
+        <footer class="tagged-content__footer">
+
+            <nav class="tag-cloud" aria-label="Tags">
+
+                {% for tag in page.tags.all %}
+
+                    {% if routable_home %}
+
+                        <a
+
+                            class="tag-cloud__link"
+
+                            href="{% routablepageurl routable_home "tag_archive" tag_slug=tag.slug %}?section={{ page.section_term.slug }}"
+
+                        >{{ tag.name }}</a>
+
+                    {% else %}
+
+                        <span class="tag-cloud__link tag-cloud__link--inactive">{{ tag.name }}</span>
+
+                    {% endif %}
+
+                {% endfor %}
+
+            </nav>
+
+            {% if similar_pages %}
+
+                <div class="tile-carousel" data-carousel>
+
+                    <button type="button" class="tile-carousel__btn tile-carousel__btn--prev" data-carousel-prev aria-label="Scroll similar pages left">‹</button>
+
+                    <div class="tile-carousel__viewport" data-carousel-viewport>
+
+                        <div class="tile-carousel__track" data-carousel-track>
+
+                            {% for sp in similar_pages %}
+
+                                <div class="tile-carousel__cell">
+
+                                    {% include "home/includes/page_tile_card.html" with page=sp %}
+
+                                </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                    </div>
+
+                    <button type="button" class="tile-carousel__btn tile-carousel__btn--next" data-carousel-next aria-label="Scroll similar pages right">›</button>
+
+                </div>
+
+            {% endif %}
+
+        </footer>
+
+    {% endif %}
+
+</article>
+
+{% endblock content %}
