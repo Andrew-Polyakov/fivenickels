@@ -114,9 +114,6 @@
                                 </div>
                             </div>
                         </div>
-                        {% if header_home and site_nav_rows %}
-                            {% include "home/taxonomy/site_nav_frame.html" with home_page=site_nav_home_page nav_rows=site_nav_rows trail_slugs=site_nav_trail_slugs active_node=site_nav_active_node %}
-                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -128,7 +125,12 @@
         {% endif %}
         {% wagtailuserbar %}
         <div class="site-shell">
+        <div class="site-content">
+        {% if header_home and site_nav_rows %}
+            {% include "home/taxonomy/site_nav_frame.html" with home_page=site_nav_home_page nav_rows=site_nav_rows trail_slugs=site_nav_trail_slugs active_node=site_nav_active_node %}
+        {% endif %}
         {% block content %}{% endblock %}
+        </div>
         </div>
         {% if not request.in_preview_panel %}
         </turbo-frame>

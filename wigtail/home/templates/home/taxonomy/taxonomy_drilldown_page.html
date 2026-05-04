@@ -42,11 +42,9 @@
     {% include "home/includes/featured_category_quad.html" %}
 
     {% if taxonomy_active_node.widgets %}
-        <div class="taxonomy-drilldown__widgets">
-            {% for block in taxonomy_active_node.widgets %}
-                {% include_block block %}
-            {% endfor %}
-        </div>
+        {% for block in taxonomy_active_node.widgets %}
+            {% include_block block %}
+        {% endfor %}
     {% endif %}
 
 </div>

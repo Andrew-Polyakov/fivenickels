@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any
 
@@ -19,6 +19,11 @@ from home.alpaca_news_client import load_alpaca_credentials
 from home.market_format import format_percent_change, percent_change_css_class
 
 logger = logging.getLogger(__name__)
+
+# Free ECB-backed FX when Alpaca forex is unavailable (403 / no entitlement).
+# Frankfurter v2: https://www.frankfurter.app/docs/
+FRANKFURTER_V2_RATES = "https://api.frankfurter.dev/v2/rates"
+FRANKFURTER_QUOTES = "EUR,GBP,JPY,CHF,AUD,CAD,NZD"
 
 
 @dataclass(frozen=True)
@@ -93,6 +98,171 @@ def _rates_series_for_pair(rates_blob: dict[str, Any], pair: str) -> list[dict[s
     return out
 
 
+def _rates_dict_from_frankfurter_v2_rows(payload: Any) -> tuple[dict[str, Decimal], str | None]:
+    """
+    v2 returns a JSON array of {date, base, quote, rate} (rate = quote per 1 base).
+    """
+    if not isinstance(payload, list):
+        return {}, None
+    out: dict[str, Decimal] = {}
+    date_str: str | None = None
+    for row in payload:
+        if not isinstance(row, dict):
+            continue
+        q = row.get("quote")
+        rt = row.get("rate")
+        if q is not None and rt is not None:
+            d = _dec(rt)
+            if d is not None:
+                out[str(q).upper()] = d
+        ds = row.get("date")
+        if ds is not None:
+            date_str = str(ds)
+    return out, date_str
+
+
+def _mid_from_usd_crosses(sym: str, r: dict[str, Decimal]) -> Decimal | None:
+    """
+    Frankfurter: rates[C] = units of C per 1 USD.
+    Convert configured pair symbols to conventional quote mids.
+    """
+    s = sym.strip().upper()
+    try:
+        if s == "EURUSD":
+            eur = r.get("EUR")
+            return (Decimal(1) / eur) if eur and eur != 0 else None
+        if s == "GBPUSD":
+            gbp = r.get("GBP")
+            return (Decimal(1) / gbp) if gbp and gbp != 0 else None
+        if s == "USDJPY":
+            return r.get("JPY")
+        if s == "USDCHF":
+            return r.get("CHF")
+        if s == "AUDUSD":
+            aud = r.get("AUD")
+            return (Decimal(1) / aud) if aud and aud != 0 else None
+        if s == "USDCAD":
+            return r.get("CAD")
+        if s == "NZDUSD":
+            nzd = r.get("NZD")
+            return (Decimal(1) / nzd) if nzd and nzd != 0 else None
+        if s == "EURGBP":
+            eur = r.get("EUR")
+            gbp = r.get("GBP")
+            if eur and gbp and eur != 0:
+                return gbp / eur
+            return None
+    except (ArithmeticError, ZeroDivisionError):
+        return None
+    return None
+
+
+def _pct_day_over_day(curr: Decimal | None, prev: Decimal | None) -> Decimal | None:
+    if curr is None or prev is None or prev == 0:
+        return None
+    return (curr - prev) / prev * Decimal(100)
+
+
+def fetch_frankfurter_forex_quotes(
+    pairs: list[str],
+    *,
+    session: requests.Session | None = None,
+    timeout: int = 20,
+) -> list[ForexQuote]:
+    """Latest ECB/Frankfurter crosses; day-over-day % vs most recent prior trading day returned."""
+    syms = [s.strip().upper() for s in pairs if s and s.strip()]
+    if not syms:
+        return []
+    sess = session or requests.Session()
+    try:
+        r = sess.get(
+            FRANKFURTER_V2_RATES,
+            params={"base": "USD", "quotes": FRANKFURTER_QUOTES},
+            timeout=timeout,
+        )
+        r.raise_for_status()
+        js = r.json()
+    except (requests.RequestException, ValueError) as e:
+        logger.warning("Frankfurter forex latest failed: %s", e)
+        return [
+            ForexQuote(
+                symbol=s,
+                label=pair_label(s),
+                mid=None,
+                bid=None,
+                ask=None,
+                as_of=None,
+                pct_change=None,
+            )
+            for s in syms
+        ]
+
+    rates_now, date_hint = _rates_dict_from_frankfurter_v2_rows(js)
+    if not rates_now:
+        return [
+            ForexQuote(
+                symbol=s,
+                label=pair_label(s),
+                mid=None,
+                bid=None,
+                ask=None,
+                as_of=None,
+                pct_change=None,
+            )
+            for s in syms
+        ]
+
+    as_of = date_hint
+    base_date: date | None = None
+    if isinstance(date_hint, str) and len(date_hint) >= 10:
+        try:
+            base_date = date.fromisoformat(date_hint[:10])
+        except ValueError:
+            base_date = None
+
+    rates_prev: dict[str, Decimal] | None = None
+    if base_date is not None:
+        for back in range(1, 10):
+            d = base_date - timedelta(days=back)
+            try:
+                rp = sess.get(
+                    FRANKFURTER_V2_RATES,
+                    params={
+                        "base": "USD",
+                        "quotes": FRANKFURTER_QUOTES,
+                        "date": d.isoformat(),
+                    },
+                    timeout=timeout,
+                )
+                if rp.status_code != 200:
+                    continue
+                pjson = rp.json()
+                prev_dict, _ = _rates_dict_from_frankfurter_v2_rows(pjson)
+                if prev_dict:
+                    rates_prev = prev_dict
+                    break
+            except (requests.RequestException, ValueError):
+                continue
+
+    out: list[ForexQuote] = []
+    for sym in syms:
+        mid = _mid_from_usd_crosses(sym, rates_now)
+        mid_prev = _mid_from_usd_crosses(sym, rates_prev) if rates_prev else None
+        pct = _pct_day_over_day(mid, mid_prev)
+        out.append(
+            ForexQuote(
+                symbol=sym,
+                label=pair_label(sym),
+                mid=mid,
+                bid=None,
+                ask=None,
+                as_of=as_of,
+                pct_change=pct,
+            )
+        )
+    return out
+
+
 def _pct_change_from_series(series: list[dict[str, Any]]) -> Decimal | None:
     """Minute-over-minute change from last two Alpaca samples (same as carousel semantics)."""
     if len(series) < 2:
@@ -104,20 +274,14 @@ def _pct_change_from_series(series: list[dict[str, Any]]) -> Decimal | None:
     return (curr - prev) / prev * Decimal(100)
 
 
-def fetch_forex_quotes(
-    pairs: list[str],
+def _fetch_alpaca_forex_quotes(
+    syms: list[str],
     *,
-    base_url: str | None = None,
-    session: requests.Session | None = None,
-    timeout: int = 30,
+    base_url: str | None,
+    session: requests.Session,
+    timeout: int,
 ) -> list[ForexQuote]:
-    """
-    Fetch recent mid/bid/ask for each pair. Missing/failed pairs still appear with None prices.
-    """
-    syms = [s.strip().upper() for s in pairs if s and s.strip()]
-    if not syms:
-        return []
-
+    """Alpaca /v1beta1/forex/rates only; returns empty mids when unavailable."""
     kid, sec = load_alpaca_credentials()
     if not kid or not sec:
         return [
@@ -134,7 +298,6 @@ def fetch_forex_quotes(
         ]
 
     base = (base_url or get_alpaca_data_base_url()).rstrip("/")
-    sess = session or requests.Session()
     headers = {
         "APCA-API-KEY-ID": kid,
         "APCA-API-SECRET-KEY": sec,
@@ -151,7 +314,7 @@ def fetch_forex_quotes(
     }
     url = f"{base}/v1beta1/forex/rates"
     try:
-        r = sess.get(url, headers=headers, params=params, timeout=timeout)
+        r = session.get(url, headers=headers, params=params, timeout=timeout)
         r.raise_for_status()
         payload = r.json()
     except (requests.RequestException, ValueError) as e:
@@ -223,6 +386,38 @@ def fetch_forex_quotes(
     return out
 
 
+def fetch_forex_quotes(
+    pairs: list[str],
+    *,
+    base_url: str | None = None,
+    session: requests.Session | None = None,
+    timeout: int = 30,
+) -> list[ForexQuote]:
+    """
+    Prefer Alpaca forex; fill gaps or full fallback with Frankfurter (ECB) when Alpaca
+    returns no mids (e.g. 403 / missing entitlement).
+    """
+    syms = [s.strip().upper() for s in pairs if s and s.strip()]
+    if not syms:
+        return []
+
+    sess = session or requests.Session()
+    alpaca = _fetch_alpaca_forex_quotes(syms, base_url=base_url, session=sess, timeout=timeout)
+
+    if all(q.mid is None for q in alpaca):
+        logger.info("Alpaca forex empty; using Frankfurter fallback for %s", ",".join(syms))
+        return fetch_frankfurter_forex_quotes(syms, session=sess, timeout=timeout)
+
+    if any(q.mid is None for q in alpaca):
+        frank = fetch_frankfurter_forex_quotes(syms, session=sess, timeout=timeout)
+        merged: list[ForexQuote] = []
+        for a, f in zip(alpaca, frank):
+            merged.append(a if a.mid is not None else f)
+        return merged
+
+    return alpaca
+
+
 def placeholder_forex_rows(pairs: list[str]) -> list[dict[str, Any]]:
     return [
         quote_row_dict(
@@ -249,7 +444,7 @@ def get_cached_forex_quote_rows() -> list[dict[str, Any]]:
     if not pairs:
         return []
     ttl = int(getattr(settings, "FOREX_CACHE_TTL_SECONDS", 45))
-    key = "forex_quote_rows:v2:" + ",".join(pairs)
+    key = "forex_quote_rows:v3:" + ",".join(pairs)
     try:
         hit = cache.get(key)
         if hit is not None:

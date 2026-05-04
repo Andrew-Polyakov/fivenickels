@@ -17,18 +17,10 @@
                         href="{{ nav_url }}"
                         class="site-nav__link{% if term.slug in trail_slugs %} site-nav__link--active{% elif page and page.section_term and page.section_term_id == term.id %} site-nav__link--active{% endif %}"
                         data-site-nav-link="1"
-                        data-turbo-frame="site-nav"
                     >{{ term.name }}</a>
                 {% endif %}
                 {% if not forloop.last %}<span class="site-nav__sep" aria-hidden="true"></span>{% endif %}
             {% endfor %}
         </nav>
     {% endfor %}
-    {% if active_node and active_node.widgets and active_node.slug != "market-news" %}
-        <section class="site-nav__widgets" aria-label="Section content">
-            {% for block in active_node.widgets %}
-                {% include_block block %}
-            {% endfor %}
-        </section>
-    {% endif %}
 </turbo-frame>

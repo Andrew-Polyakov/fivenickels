@@ -80,6 +80,48 @@ body.template-homepage {
 
 }
 
+/* Single column: section pills + page body share width (inside turbo-frame#main). */
+
+.site-content {
+
+    max-width: min(100vw, 72rem);
+
+    margin: 0 auto;
+
+    padding: 0.65rem max(1rem, 2%) 2.5rem;
+
+    box-sizing: border-box;
+
+}
+
+.site-content turbo-frame#site-nav.site-nav {
+
+    width: 100%;
+
+    min-width: 0;
+
+    margin-bottom: 0.35rem;
+
+}
+
+/* One column: avoid a second narrow measure inside .site-content. */
+
+.site-content .home-stream,
+
+.site-content .tagged-content {
+
+    max-width: none;
+
+    margin-left: 0;
+
+    margin-right: 0;
+
+    padding-left: 0;
+
+    padding-right: 0;
+
+}
+
 /* --- FT-inspired header (neon / Material gloss) --- */
 
 .site-header {
@@ -386,8 +428,6 @@ body.template-homepage {
 
     background: var(--header-gloss), linear-gradient(180deg, #0a101c 0%, #070b12 100%);
 
-    border-bottom: 1px solid var(--neon-line);
-
 }
 
 .site-header__main-bar {
@@ -418,7 +458,7 @@ body.template-homepage {
 
 }
 
-/* Logo column spans search + taxonomy rows; taxonomy only under search (col 2), parallel to logo */
+/* Logo column beside search/tools row only (taxonomy nav lives in .site-content below). */
 
 .site-header__main-bar--has-logo {
 
@@ -426,7 +466,7 @@ body.template-homepage {
 
     grid-template-columns: auto minmax(0, 1fr);
 
-    grid-template-rows: auto auto;
+    grid-template-rows: auto;
 
     align-items: start;
 
@@ -440,7 +480,7 @@ body.template-homepage {
 
     grid-column: 1;
 
-    grid-row: 1 / span 2;
+    grid-row: 1;
 
     align-self: start;
 
@@ -454,11 +494,9 @@ body.template-homepage {
 
 .site-header__main-bar--has-logo .site-header__tools {
 
-    display: contents;
+    display: flex;
 
-}
-
-.site-header__main-bar--has-logo .site-header__upper {
+    flex-direction: column;
 
     grid-column: 2;
 
@@ -470,23 +508,11 @@ body.template-homepage {
 
 }
 
-.site-header__main-bar--has-logo turbo-frame#site-nav.site-nav {
-
-    grid-column: 2;
-
-    grid-row: 2;
-
-    width: 100%;
+.site-header__main-bar--has-logo .site-header__upper {
 
     min-width: 0;
 
-    max-width: none;
-
-    /* Reserve ~two pill rows so layout height does not thrash (reduces neighbor reflow) */
-
-    min-height: 3.75rem;
-
-    box-sizing: border-box;
+    width: 100%;
 
 }
 
@@ -852,12 +878,6 @@ body.template-homepage {
 
     }
 
-    .site-header__main-bar--has-logo turbo-frame#site-nav.site-nav {
-
-        width: 100%;
-
-    }
-
     .site-header__main-bar--has-logo .site-header__logo-rail {
 
         justify-content: flex-start;
@@ -871,18 +891,6 @@ body.template-homepage {
         flex: none;
 
         width: 100%;
-
-    }
-
-    .site-header__main-bar .site-nav {
-
-        align-items: center;
-
-    }
-
-    .site-header__main-bar .site-nav__row {
-
-        justify-content: center;
 
     }
 
@@ -1094,53 +1102,7 @@ body.template-homepage {
 
     box-sizing: border-box;
 
-    max-width: min(100vw, 72rem);
-
-    margin-left: auto;
-
-    margin-right: auto;
-
-}
-
-/* In header: taxonomy sits under the search/buttons column (right stack), not beside the logo */
-
-.site-header__main-bar .site-nav {
-
-    flex: none;
-
-    width: 100%;
-
-    max-width: none;
-
-    margin-left: 0;
-
-    margin-right: 0;
-
-    align-items: center;
-
-    min-width: 0;
-
-}
-
-.site-header__main-bar .site-nav__row {
-
-    justify-content: center;
-
-    width: 100%;
-
-    box-sizing: border-box;
-
-}
-
-.site-header__main-bar .site-nav__widgets {
-
-    align-self: stretch;
-
-    width: 100%;
-
     max-width: 100%;
-
-    box-sizing: border-box;
 
 }
 
@@ -1162,11 +1124,9 @@ body.template-homepage {
 
     box-sizing: border-box;
 
-    padding: 0.2rem max(1rem, 2%) 0.2rem;
+    padding: 0.2rem 0 0.2rem;
 
     margin: 0;
-
-    border-top: 1px solid rgba(92, 255, 138, 0.12);
 
 }
 
@@ -1176,7 +1136,9 @@ body.template-homepage {
 
     padding-bottom: 0.2rem;
 
-    border-top-color: rgba(56, 189, 248, 0.18);
+    margin-top: 0.15rem;
+
+    border-top: 1px solid rgba(56, 189, 248, 0.2);
 
 }
 
@@ -1292,9 +1254,7 @@ body.template-homepage {
 
     box-sizing: border-box;
 
-    padding: 0.25rem max(1rem, 2%) 0.4rem;
-
-    max-width: min(100vw, 72rem);
+    padding: 0.35rem 0 0.5rem;
 
 }
 
@@ -1308,11 +1268,11 @@ body.template-taxonomy-root {
 
 .taxonomy-drilldown {
 
-    max-width: 52rem;
+    max-width: none;
 
-    margin: 0 auto;
+    margin: 0;
 
-    padding: 1.5rem 1rem 3rem;
+    padding: 0.5rem 0 3rem;
 
     box-sizing: border-box;
 
@@ -1404,11 +1364,6 @@ body.template-taxonomy-root {
 
 }
 
-.taxonomy-drilldown__widgets {
-
-    margin-top: 1rem;
-
-}
 
 .btn {
 
@@ -3408,13 +3363,11 @@ body.template-welcome {
 
 /* --- Search results (FTS) --- */
 
-body.template-searchresults .site-shell {
+body.template-searchresults .site-content {
 
     padding: 1.25rem clamp(1rem, 4vw, 2.5rem) 2.5rem;
 
     max-width: 52rem;
-
-    margin: 0 auto;
 
 }
 
