@@ -11,11 +11,24 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
+import os
 from pathlib import Path
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 BASE_DIR = PROJECT_DIR.parent
 
+# Repository root (trades/) — load .env before other settings read os.environ (Alpaca APCA_* keys, etc.)
+_TRADES_ROOT = BASE_DIR.parent
+try:
+    from dotenv import load_dotenv
+
+    # trades/.env first (shared with StockCrawler); then wigtail/.env if present
+    if (_TRADES_ROOT / ".env").is_file():
+        load_dotenv(_TRADES_ROOT / ".env", override=True)
+    if (BASE_DIR / ".env").is_file():
+        load_dotenv(BASE_DIR / ".env", override=True)
+except ImportError:
+    pass
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
@@ -76,6 +89,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "home.context_processors.market_header",
             ],
         },
     },
@@ -91,6 +105,13 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
+    }
+}
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "mysite-default-cache",
     }
 }
 
@@ -164,14 +185,29 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 10_000
 
 WAGTAIL_SITE_NAME = "mysite"
 
-# Search (database backend: SQLite FTS5 or PostgreSQL FTS). Elasticsearch/OpenSearch backends are
-# optional; see https://docs.wagtail.org/en/stable/topics/search/backends.html
-# PostgreSQL deployments must load django.contrib.postgres — appended in dev.py/production.py when ENGINE is postgresql.
-WAGTAILSEARCH_BACKENDS = {
-    "default": {
-        "BACKEND": "wagtail.search.backends.database",
+# Search: database (SQLite FTS5 / PostgreSQL FTS) by default, or OpenSearch 2 when
+# WAGTAIL_USE_OPENSEARCH=1. See https://docs.wagtail.org/en/stable/topics/search/backends.html
+# Host: WAGTAIL_OPENSEARCH_URL=http://127.0.0.1:9200. Dockerized Wagtail on same compose network:
+# WAGTAIL_OPENSEARCH_URL=http://opensearch:9200. After starting OpenSearch: manage.py update_index
+# PostgreSQL + database backend: append django.contrib.postgres in dev.py/production.py when ENGINE is postgresql.
+def _env_truthy(name: str) -> bool:
+    return os.environ.get(name, "").strip().lower() in ("1", "true", "yes", "on")
+
+
+if _env_truthy("WAGTAIL_USE_OPENSEARCH"):
+    WAGTAILSEARCH_BACKENDS = {
+        "default": {
+            "BACKEND": "wagtail.search.backends.opensearch2",
+            "URLS": [os.environ.get("WAGTAIL_OPENSEARCH_URL", "http://127.0.0.1:9200")],
+            "INDEX_PREFIX": "trades_",
+        }
     }
-}
+else:
+    WAGTAILSEARCH_BACKENDS = {
+        "default": {
+            "BACKEND": "wagtail.search.backends.database",
+        }
+    }
 
 # Base URL to use when referring to full URLs within the Wagtail admin backend -
 # e.g. in notification emails. Don't include '/admin' or a trailing slash

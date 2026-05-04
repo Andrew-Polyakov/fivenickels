@@ -55,6 +55,23 @@ def get_recent_pages_for_section(
     return list(qs[:limit])
 
 
+def get_related_pages_for_ticker(tag_slug: str, *, limit: int = 24):
+    """Live articles whose ContentTag slug matches the ticker (e.g. nvda for NVDA)."""
+    from home.models import TaggedContentPage
+
+    slug = (tag_slug or "").strip().lower()
+    if not slug:
+        return []
+
+    return list(
+        TaggedContentPage.objects.live()
+        .public()
+        .filter(tags__slug=slug)
+        .order_by("-first_published_at")
+        .distinct()[:limit]
+    )
+
+
 def get_similar_pages(page: TaggedContentPage, *, limit: int = 24) -> list:
     """Other live pages sharing at least one tag, ordered by overlap then recency."""
     from home.models import TaggedContentPage

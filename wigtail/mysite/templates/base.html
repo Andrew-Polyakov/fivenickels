@@ -6,22 +6,30 @@
         <meta charset="utf-8" />
         <title>
             {% block title %}
+            {% if page %}
             {% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.title }}{% endif %}
+            {% else %}Site{% endif %}
             {% endblock %}
             {% block title_suffix %}
             {% wagtail_site as current_site %}
             {% if current_site and current_site.site_name %}- {{ current_site.site_name }}{% endif %}
             {% endblock %}
         </title>
-        {% if page.search_description %}
+        {% if page and page.search_description %}
         <meta name="description" content="{{ page.search_description }}" />
         {% endif %}
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="{% static 'images/favicon.ico' %}" sizes="any" />
 
         {# Force all links in the live preview panel to be opened in a new tab #}
         {% if request.in_preview_panel %}
         <base target="_blank">
         {% endif %}
+
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
 
         {# Global stylesheets #}
         <link rel="stylesheet" type="text/css" href="{% static 'css/mysite.css' %}">
@@ -33,24 +41,121 @@
 
     <body class="{% block body_class %}{% endblock %}">
         {% wagtail_site as current_site %}
-        {% if current_site %}
-            <a
-                class="site-logo"
-                href="{% if current_site.root_page %}{% pageurl current_site.root_page %}{% else %}/{% endif %}"
-            >
-                <img
-                    class="site-logo__img"
-                    src="{% static 'images/logo.png' %}"
-                    alt="{% firstof current_site.site_name 'Home' %}"
-                    width="120"
-                    height="120"
-                    decoding="async"
-                />
-            </a>
-        {% endif %}
+        {% block site_header %}
+        <header class="site-header" data-site-header>
+            <nav class="site-header__ticker" aria-label="Market snapshot">
+                {% if header_tickers %}
+                <div class="site-header__ticker-viewport">
+                    <div class="site-header__ticker-marquee">
+                        <div class="site-header__ticker-group">
+                            {% for t in header_tickers %}
+                            <a class="site-header__ticker-item" href="{% url 'ticker_page' t.row.symbol|lower %}">
+                                <span class="site-header__ticker-label">{{ t.label }}</span>
+                                <span class="site-header__ticker-pill site-header__ticker-pill--{{ t.pct_class }}">{{ t.pct_formatted }}</span>
+                            </a>
+                            {% endfor %}
+                        </div>
+                        <div class="site-header__ticker-group" aria-hidden="true">
+                            {% for t in header_tickers %}
+                            <a class="site-header__ticker-item" tabindex="-1" href="{% url 'ticker_page' t.row.symbol|lower %}">
+                                <span class="site-header__ticker-label">{{ t.label }}</span>
+                                <span class="site-header__ticker-pill site-header__ticker-pill--{{ t.pct_class }}">{{ t.pct_formatted }}</span>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="site-header__ticker-fallback">
+                    <span class="site-header__ticker-empty">Configure snippets → Market ticker rows, then run <code class="site-header__code">python manage.py sync_market_tickers</code></span>
+                </div>
+                {% endif %}
+            </nav>
+
+            <div class="site-header__main">
+                <div class="site-header__main-bar">
+                    <div class="site-header__row site-header__row--top">
+                        <div class="site-header__cluster site-header__cluster--left">
+                            {% if current_site %}
+                            <a
+                                class="site-header__logo"
+                                href="{% if current_site.root_page %}{% pageurl current_site.root_page %}{% else %}/{% endif %}"
+                            >
+                                <img
+                                    class="site-header__logo-img"
+                                    src="{% static 'images/logo.png' %}"
+                                    alt="{% firstof current_site.site_name 'Home' %}"
+                                    width="120"
+                                    height="120"
+                                    decoding="async"
+                                />
+                            </a>
+                            {% endif %}
+                            <button type="button" class="btn btn--icon site-header__icon-btn" aria-label="Menu" disabled title="Coming soon">
+                                <span class="material-symbols-outlined" aria-hidden="true">menu</span>
+                            </button>
+                            <form
+                                class="site-search site-header__search"
+                                action="{% url 'search' %}"
+                                method="get"
+                                role="search"
+                            >
+                                <label class="visually-hidden" for="site-search-query">Search</label>
+                                <input
+                                    id="site-search-query"
+                                    class="site-search__input"
+                                    type="search"
+                                    name="query"
+                                    placeholder="Search…"
+                                    aria-label="Search"
+                                    autocomplete="off"
+                                    value="{{ request.GET.query|default_if_none:'' }}"
+                                />
+                                <button type="submit" class="site-search__submit btn btn--raised">Search</button>
+                            </form>
+                        </div>
+
+                        <div class="site-header__cluster site-header__cluster--right">
+                            <a href="#subscribe" class="btn btn--raised site-header__cta">Subscribe</a>
+                            <a href="{% url 'wagtailadmin_login' %}" class="btn btn--raised site-header__signin">
+                                <span class="material-symbols-outlined site-header__signin-icon" aria-hidden="true">person</span>
+                                Sign in
+                            </a>
+                        </div>
+                    </div>
+                    <nav class="site-header__primary" aria-label="Primary">
+                        {% if current_site.root_page %}
+                        <a href="{% pageurl current_site.root_page %}" class="site-header__nav-link{% if page and current_site.root_page and page.pk == current_site.root_page.pk %} site-header__nav-link--active{% endif %}">Home</a>
+                        {% endif %}
+                        {% if header_home and header_home.markets_data_link %}
+                        <a href="{% pageurl header_home.markets_data_link %}" class="site-header__nav-link">Markets data</a>
+                        {% else %}
+                        <a href="#" class="site-header__nav-link site-header__nav-link--muted">Markets data</a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="site-header__sectors" aria-label="Sections">
+                {% if sector_nav %}
+                    {% for item in sector_nav %}
+                        {% if not forloop.first %}<span class="site-header__sep" aria-hidden="true"></span>{% endif %}
+                        <a
+                            href="{% if item.subsection_url %}{{ item.subsection_url }}{% elif header_home %}{% pageurl header_home %}?sector={{ item.term.slug }}{% else %}#{% endif %}"
+                            class="site-header__sector-link{% if sector_nav_active == item.term.slug %} site-header__sector-link--active{% endif %}"
+                            {% if sector_nav_active == item.term.slug %}aria-current="page"{% endif %}
+                        >{{ item.term.name }}</a>
+                    {% endfor %}
+                {% endif %}
+            </nav>
+        </header>
+        {% endblock site_header %}
+
         {% wagtailuserbar %}
 
+        <div class="site-shell">
         {% block content %}{% endblock %}
+        </div>
 
         {# Global javascript #}
         <script type="text/javascript" src="{% static 'js/mysite.js' %}"></script>

@@ -13,7 +13,7 @@ description: >-
 ## Output (required)
 
 - **Only** write a **`.md`** file for the user, e.g. `reports/stock-catalyst-YYYY-MM-DD.md` (use the **run date**; prefer the environment “today” when the user says “today”).
-- Include: title, run date, main **table** (see schema), optional **Aggregated news** subsection with bullets per ticker.
+- Include: title, run date, main **table** (see schema), optional **Aggregated news** subsection with bullets per ticker, and optionally **`## Semiconductors`** when the scan targets semi names (see below).
 - The C# tool prints **JSON to stdout** — intermediate only; the **.md** is the deliverable.
 - If `reports/stock-catalyst-YYYY-MM-DD.md` for this run **already exists**, you must **read it first** and **merge** (see below). **Do not** replace the file wholesale or drop tickers that are not in the current `dotnet run` list.
 
@@ -25,6 +25,7 @@ Let **C** = tickers from the **current** `dotnet run ...` / user request (normal
 - **Aggregated news:** Split the existing `## Aggregated news` body into one block per symbol using lines that start with `**TICKER —` (TICKER upper). For every ticker in **F** ∪ **C** (optional order: follow the summary table’s ticker order): if the ticker is in **C**, **replace** that block with the new aggregate; if the ticker is only in **F**, **retain** the old block; if the ticker is only in **C** and new to the file, **append** new `**TICKER —` blocks. If a prior report had no Aggregated section, add one with only the current and/or merged content as needed.
 - **Title and run line:** Keep `#` title. Keep **Run date** as the scan date. Optionally add a single `*Last updated: YYYY-MM-DD (UTC or local) — [brief note, e.g. added X, refreshed Y].*` on its own line after the run line when any merge or refresh happened; do not duplicate long disclaimers there.
 - **Session footnote / `---` / final italic line:** Use **one** short italic paragraph at the end for same-day “why High/Medium” and risk notes. On merge, **refresh** that paragraph so it still reflects the **full** merged set of tickers (e.g. remove obsolete rationale if a symbol was only refreshed for numbers). The horizontal rule before it is optional; do not stack multiple redundant footers.
+- **Semiconductors section (optional):** If the run includes semi watchlist names (e.g. TSM, SNDK, ASML, NVDA), add `## Semiconductors` (typically **after** `## Summary table`). For each symbol, `### TICKER` with a **Tags** line using `#` + values from JSON `alpacNews[].tags` (the tool adds `semiconductor` for that set, reuses Alpaca `symbols`, and a `source` slug) and one or more stories with **headline, date, link**, and **body** in `<details>` or blockquote (plain text from `content`). On merge, **replace** only the `###` blocks for tickers in the current run; keep other subsections unchanged.
 
 ## Table (columns)
 
@@ -38,13 +39,13 @@ Let **C** = tickers from the **current** `dotnet run ...` / user request (normal
 ## Pipeline
 
 1. **Set credentials** (never commit keys). The C# tool reads **`APCA_API_KEY_ID`** and **`APCA_API_SECRET_KEY`** from a file **first** (walks up from cwd and from the app for **`.apca`**, then **`alpacacredentials`**, then **`.env`**, in that order in each directory). It parses `KEY=value` lines and allows a single leading `#` on a line so commented-out assignments still work. Add **`ALPACA_ENV=paper`** or **`ALPACA_ENV=live`** in that file to match the key in the [Alpaca](https://alpaca.markets/) dashboard (wrong choice can cause 401). If the file has no complete pair, it falls back to `DotNetEnv` + process environment. The same key names support an **`ALPACA_*`** prefix. Rotate any leaked key in the dashboard first.
-2. **Run the C# data tool** (snapshots + Alpaca news):
+2. **Run the C# data tool** (snapshots + Alpaca news with **content** — `SendFullContentForItems` is enabled in `tools/StockCrawler`):
 
    ```text
    dotnet run --project tools/StockCrawler -- TICKER1 TICKER2
    ```
 
-   Parse JSON: `asOfUtc`, per-ticker `lastPrice`, `previousClose`, `dayVolume`, `percentChange`, `alpacNews[]`. Field `webHints` starts empty; you fill it.
+   Parse JSON: `asOfUtc`, per-ticker `lastPrice`, `previousClose`, `dayVolume`, `percentChange`, `alpacNews[]`. Each news line includes `headline`, `createdAtUtc`, `summary`, `content` (plain text, truncated for stdout), `source`, `url`, `symbols`, `tags`. Field `webHints` starts empty; you fill it.
 3. **Web search (mandatory for every ticker):** at least one query per symbol, e.g. `"{TICKER}" stock news` plus the run date. Add 1–2 `webHints` (title/snippet + source) into your working notes; stagger requests if there are many tickers.
 4. **Aggregate** Alpaca + web into one **Catalyst** cell; dedupe near-duplicates; keep the table one line, optional bullets under “Aggregated news.”
 5. **Setup potential:** from price/volume + catalyst + (optional) sector/peer or index context from the same research; output one label as in the table. If nothing stands out, `—` or **unclear**.

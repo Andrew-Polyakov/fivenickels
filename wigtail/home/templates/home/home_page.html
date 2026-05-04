@@ -16,28 +16,6 @@
 
 {% block content %}
 
-{% if sector_nav %}
-
-<nav class="sector-nav" aria-label="S&P sectors">
-
-    {% for item in sector_nav %}
-
-        <a
-
-            href="{% if item.subsection_url %}{{ item.subsection_url }}{% else %}{% pageurl page %}?sector={{ item.term.slug }}{% endif %}"
-
-            class="sector-nav__btn{% if sector_nav_active == item.term.slug %} sector-nav__btn--active{% endif %}"
-
-            {% if sector_nav_active == item.term.slug %}aria-current="true"{% endif %}
-
-        >{{ item.term.name }}</a>
-
-    {% endfor %}
-
-</nav>
-
-{% endif %}
-
 <div class="home-stream">
 
     {% for block in page.body %}

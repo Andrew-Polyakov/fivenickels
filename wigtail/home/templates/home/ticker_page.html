@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% load wagtailcore_tags %}
+
+{% block title %}{{ ticker_row.display_label }} ({{ ticker_row.symbol }}){% endblock %}
+
+{% block body_class %}template-ticker{% endblock %}
+
+{% block content %}
+<main class="ticker-page">
+    <section class="ticker-summary" aria-labelledby="ticker-summary-heading">
+        <header class="ticker-summary__header">
+            <h1 id="ticker-summary-heading" class="ticker-summary__title">
+                <span class="ticker-summary__company">{{ ticker_info.company_display }}</span>
+                {% if ticker_info.company_display != ticker_info.symbol %}
+                <span class="ticker-summary__symbol" aria-label="Ticker">{{ ticker_info.symbol }}</span>
+                {% endif %}
+            </h1>
+            <p class="ticker-summary__subtitle">{{ ticker_info.subtitle }}</p>
+        </header>
+        <dl class="ticker-summary__metrics">
+            <div class="ticker-summary__metric">
+                <dt class="ticker-summary__dt">Price</dt>
+                <dd class="ticker-summary__dd">{{ ticker_info.price_display }}</dd>
+            </div>
+            <div class="ticker-summary__metric">
+                <dt class="ticker-summary__dt">Today&rsquo;s change</dt>
+                <dd class="ticker-summary__dd">
+                    <span class="ticker-summary__change ticker-summary__change--{{ ticker_info.pct_class }}">
+                        {{ ticker_info.dollar_change_display }}
+                        <span class="ticker-summary__sep" aria-hidden="true">/</span>
+                        {{ ticker_info.pct_formatted }}
+                    </span>
+                </dd>
+            </div>
+            <div class="ticker-summary__metric">
+                <dt class="ticker-summary__dt">Volume</dt>
+                <dd class="ticker-summary__dd">{{ ticker_info.volume_display }}</dd>
+            </div>
+        </dl>
+        <p class="ticker-summary__foot">
+            {% if ticker_info.snapshot_synced and ticker_info.as_of_display %}
+            As of {{ ticker_info.as_of_display }}
+            {% else %}
+            <span class="ticker-summary__unsynced">Prices not synced — run
+            <code class="ticker-summary__code">python manage.py sync_market_tickers {{ ticker_info.symbol }}</code></span>
+            {% endif %}
+        </p>
+    </section>
+
+    <section class="ticker-page__chart-section" aria-label="Chart">
+        <div class="ticker-chart" id="tradingview_chart_wrap_{{ ticker_slug }}">
+            <div class="ticker-chart__inner" id="tradingview_chart_{{ ticker_slug }}"></div>
+        </div>
+    </section>
+
+    {% if related_pages %}
+    <section class="ticker-related" aria-labelledby="ticker-related-heading">
+        <h2 id="ticker-related-heading" class="ticker-related__heading">Related news</h2>
+        <div class="ticker-related__grid">
+            {% for page in related_pages %}
+            <article class="ticker-related__tile">
+                <a href="{% pageurl page %}" class="ticker-related__link">
+                    <h3 class="ticker-related__title">{{ page.title }}</h3>
+                    {% if page.first_published_at %}
+                    <p class="ticker-related__date">{{ page.first_published_at|date:"M d Y"|upper }}</p>
+                    {% endif %}
+                </a>
+            </article>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+</main>
+{% endblock content %}
+
+{% block extra_js %}
+{{ block.super }}
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+<script type="text/javascript">
+(function () {
+  var container = "tradingview_chart_{{ ticker_slug|escapejs }}";
+  if (typeof TradingView === "undefined") { return; }
+  new TradingView.widget({
+    "autosize": true,
+    "symbol": "{{ chart_symbol|escapejs }}",
+    "interval": "D",
+    "timezone": "Etc/UTC",
+    "theme": "dark",
+    "style": "1",
+    "locale": "en",
+    "enable_publishing": false,
+    "allow_symbol_change": true,
+    "hide_top_toolbar": false,
+    "save_image": false,
+    "container_id": container
+  });
+})();
+</script>
+{% endblock extra_js %}

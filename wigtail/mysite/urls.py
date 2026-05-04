@@ -1,4 +1,6 @@
 from django.conf import settings
+from django.contrib.staticfiles.storage import staticfiles_storage
+from django.http import HttpResponseRedirect
 from django.urls import include, path
 from django.contrib import admin
 
@@ -8,11 +10,24 @@ from wagtail.documents import urls as wagtaildocs_urls
 
 from search import views as search_views
 
+from home.ticker_serve import render_ticker_page
+
+
+def favicon_view(request):
+    return HttpResponseRedirect(staticfiles_storage.url("images/favicon.ico"))
+
+
 urlpatterns = [
+    path("favicon.ico", favicon_view, name="favicon"),
     path("django-admin/", admin.site.urls),
     path("admin/", include(wagtailadmin_urls)),
     path("documents/", include(wagtaildocs_urls)),
     path("search/", search_views.search, name="search"),
+    path(
+        "ticker/<str:ticker_slug>/",
+        render_ticker_page,
+        name="ticker_page",
+    ),
 ]
 
 
