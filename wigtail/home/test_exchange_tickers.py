@@ -39,8 +39,8 @@ class ReplaceExchangeTickerTokensTests(WagtailPageTestCase):
         MarketTickerRow.objects.create(symbol="DELL", enabled=True, sort_order=0)
         out = replace_exchange_ticker_tokens("Coverage of NYSE: DELL earnings.")
         self.assertIn('href="/ticker/dell/"', out)
-        self.assertIn("site-header__ticker-item--inline", out)
-        self.assertIn("site-header__ticker-pill", out)
+        self.assertIn("ticker-chip--inline", out)
+        self.assertIn("ticker-chip__box", out)
 
     def test_no_chip_when_row_missing(self):
         out = replace_exchange_ticker_tokens("Mention NYSE: ZZZX unknown.")
@@ -114,5 +114,5 @@ class StreamfieldExchangeChipTests(WagtailPageTestCase):
         body = streamfield_body_for_article(art, home_page=self.homepage)
         para_sources = [b[1].source for b in body if b[0] == "paragraph"]
         joined = "\n".join(para_sources)
-        self.assertIn("site-header__ticker-item--inline", joined)
+        self.assertIn("ticker-chip--inline", joined)
         self.assertIn("/ticker/cost/", joined)

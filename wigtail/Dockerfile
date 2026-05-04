@@ -34,9 +34,11 @@ RUN pip install -r /requirements.txt
 # Use /app folder as a directory where the source code is stored.
 WORKDIR /app
 
-# Set this directory to be owned by the "wagtail" user. This Wagtail project
-# uses SQLite, the folder needs to be owned by the user that
-# will be writing to the database file.
+# Set this directory to be owned by the "wagtail" user. The app talks to
+# Postgres in production (see docker-compose.yml `postgres` service and
+# POSTGRES_HOST env consumed by mysite/settings/base.py); local dev
+# containers may still fall back to /app/db.sqlite3 when POSTGRES_HOST is
+# unset, so the dir needs to be writable by the wagtail user.
 RUN chown wagtail:wagtail /app
 
 # Copy the source code of the project into the container.

@@ -44,96 +44,77 @@
         {% block site_header %}
         <header class="site-header" data-site-header>
             <nav class="site-header__ticker" aria-label="Market snapshot">
-                {% if header_tickers %}
-                <div class="site-header__ticker-viewport">
-                    <div class="site-header__ticker-marquee">
-                        <div class="site-header__ticker-group">
-                            {% for t in header_tickers %}
-                            <a class="site-header__ticker-item" href="{% url 'ticker_page' t.row.symbol|lower %}">
-                                <span class="site-header__ticker-label">{{ t.label }}</span>
-                                <span class="site-header__ticker-pill site-header__ticker-pill--{{ t.pct_class }}">{{ t.pct_formatted }}</span>
-                            </a>
-                            {% endfor %}
-                        </div>
-                        <div class="site-header__ticker-group" aria-hidden="true">
-                            {% for t in header_tickers %}
-                            <a class="site-header__ticker-item" tabindex="-1" href="{% url 'ticker_page' t.row.symbol|lower %}">
-                                <span class="site-header__ticker-label">{{ t.label }}</span>
-                                <span class="site-header__ticker-pill site-header__ticker-pill--{{ t.pct_class }}">{{ t.pct_formatted }}</span>
-                            </a>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-                {% else %}
-                <div class="site-header__ticker-fallback">
-                    <span class="site-header__ticker-empty">Configure snippets → Market ticker rows, then run <code class="site-header__code">python manage.py sync_market_tickers</code></span>
-                </div>
-                {% endif %}
+                {% include "components/ticker_carousel.html" with tickers=header_tickers only %}
             </nav>
 
             <div class="site-header__main">
-                <div class="site-header__main-bar">
-                    <div class="site-header__row site-header__row--top">
-                        <div class="site-header__cluster site-header__cluster--left">
-                            {% if current_site %}
-                            <a
-                                class="site-header__logo"
-                                href="{% if current_site.root_page %}{% pageurl current_site.root_page %}{% else %}/{% endif %}"
-                            >
-                                <img
-                                    class="site-header__logo-img"
-                                    src="{% static 'images/logo.png' %}"
-                                    alt="{% firstof current_site.site_name 'Home' %}"
-                                    width="120"
-                                    height="120"
-                                    decoding="async"
-                                />
-                            </a>
-                            {% endif %}
-                            <button type="button" class="btn btn--icon site-header__icon-btn" aria-label="Menu" disabled title="Coming soon">
-                                <span class="material-symbols-outlined" aria-hidden="true">menu</span>
-                            </button>
-                            <form
-                                class="site-search site-header__search"
-                                action="{% url 'search' %}"
-                                method="get"
-                                role="search"
-                            >
-                                <label class="visually-hidden" for="site-search-query">Search</label>
-                                <input
-                                    id="site-search-query"
-                                    class="site-search__input"
-                                    type="search"
-                                    name="query"
-                                    placeholder="Search…"
-                                    aria-label="Search"
-                                    autocomplete="off"
-                                    value="{{ request.GET.query|default_if_none:'' }}"
-                                />
-                                <button type="submit" class="site-search__submit btn btn--raised">Search</button>
-                            </form>
-                        </div>
+                <div class="site-header__main-bar{% if current_site %} site-header__main-bar--has-logo{% endif %}">
+                    {% if current_site %}
+                    <div class="site-header__logo-rail">
+                        <span class="site-header__logo-sep" aria-hidden="true"></span>
+                        <a
+                            class="site-header__logo"
+                            href="{% if current_site.root_page %}{% pageurl current_site.root_page %}{% else %}/{% endif %}"
+                        >
+                            <img
+                                class="site-header__logo-img"
+                                src="{% static 'images/logo.png' %}"
+                                alt="{% firstof current_site.site_name 'Home' %}"
+                                width="120"
+                                height="120"
+                                decoding="async"
+                            />
+                        </a>
+                        <span class="site-header__logo-sep" aria-hidden="true"></span>
+                    </div>
+                    {% endif %}
+                    <div class="site-header__upper">
+                        <div class="site-header__row site-header__row--top">
+                            <div class="site-header__cluster site-header__cluster--left">
+                                <button type="button" class="btn btn--icon site-header__icon-btn" aria-label="Menu" disabled title="Coming soon">
+                                    <span class="material-symbols-outlined" aria-hidden="true">menu</span>
+                                </button>
+                                <form
+                                    class="site-search site-header__search"
+                                    action="{% url 'search' %}"
+                                    method="get"
+                                    role="search"
+                                >
+                                    <label class="visually-hidden" for="site-search-query">Search</label>
+                                    <input
+                                        id="site-search-query"
+                                        class="site-search__input"
+                                        type="search"
+                                        name="query"
+                                        placeholder="Search…"
+                                        aria-label="Search"
+                                        autocomplete="off"
+                                        value="{{ request.GET.query|default_if_none:'' }}"
+                                    />
+                                    <button type="submit" class="site-search__submit btn btn--raised">Search</button>
+                                </form>
+                            </div>
 
-                        <div class="site-header__cluster site-header__cluster--right">
-                            <a href="#subscribe" class="btn btn--raised site-header__cta">Subscribe</a>
-                            <a href="{% url 'wagtailadmin_login' %}" class="btn btn--raised site-header__signin">
-                                <span class="material-symbols-outlined site-header__signin-icon" aria-hidden="true">person</span>
-                                Sign in
-                            </a>
+                            <div class="site-header__cluster site-header__cluster--right">
+                                <a href="#subscribe" class="btn btn--raised site-header__cta">Subscribe</a>
+                                <a href="{% url 'wagtailadmin_login' %}" class="btn btn--raised site-header__signin">
+                                    <span class="material-symbols-outlined site-header__signin-icon" aria-hidden="true">person</span>
+                                    Sign in
+                                </a>
+                            </div>
                         </div>
                     </div>
-                    <nav class="site-header__primary" aria-label="Primary">
-                        {% if current_site.root_page %}
-                        <a href="{% pageurl current_site.root_page %}" class="site-header__nav-link{% if page and current_site.root_page and page.pk == current_site.root_page.pk %} site-header__nav-link--active{% endif %}">Home</a>
-                        {% endif %}
-                        {% if header_home and header_home.markets_data_link %}
-                        <a href="{% pageurl header_home.markets_data_link %}" class="site-header__nav-link">Markets data</a>
-                        {% else %}
-                        <a href="#" class="site-header__nav-link site-header__nav-link--muted">Markets data</a>
-                        {% endif %}
-                    </nav>
                 </div>
+                <nav class="site-header__primary" aria-label="Primary">
+                    {% if current_site.root_page %}
+                    <a href="{% pageurl current_site.root_page %}" class="site-header__nav-link{% if page and current_site.root_page and page.pk == current_site.root_page.pk %} site-header__nav-link--active{% endif %}">Home</a>
+                    {% endif %}
+                    {% if header_home and header_home.markets_data_link %}
+                    <a href="{% pageurl header_home.markets_data_link %}" class="site-header__nav-link">Markets data</a>
+                    {% else %}
+                    <a href="#" class="site-header__nav-link site-header__nav-link--muted">Markets data</a>
+                    {% endif %}
+                </nav>
             </div>
 
             <nav class="site-header__sectors" aria-label="Sections">

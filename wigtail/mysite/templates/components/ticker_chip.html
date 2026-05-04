@@ -1,0 +1,11 @@
+{# Single market ticker: symbol/label + change % inside one bordered chip (reusable in carousel or elsewhere). Expects `chip` dict (row, label, pct_formatted, pct_class). Optional `dup`: duplicate track sets tabindex=-1. #}
+<a
+    class="ticker-chip"
+    href="{% url 'ticker_page' chip.row.symbol|lower %}"
+    {% if dup %}tabindex="-1"{% endif %}
+>
+    <span class="ticker-chip__box ticker-chip__box--{{ chip.pct_class }}">
+        <span class="ticker-chip__label">{{ chip.label }}</span>
+        <span class="ticker-chip__pct">{{ chip.pct_formatted }}</span>
+    </span>
+</a>

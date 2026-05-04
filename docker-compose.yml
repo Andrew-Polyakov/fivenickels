@@ -10,11 +10,14 @@ services:
     environment:
       POSTGRES_USER: trades
       POSTGRES_PASSWORD: trades
-      POSTGRES_DB: trades
+      # Admin DB only; app DBs (wagtail, crawler) are provisioned by
+      # db/init/01-create-databases.sql on first container start.
+      POSTGRES_DB: postgres
     volumes:
       - trades_pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U trades -d trades"]
+      test: ["CMD-SHELL", "pg_isready -U trades -d postgres"]
       interval: 5s
       timeout: 5s
       retries: 5

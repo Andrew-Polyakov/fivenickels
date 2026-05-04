@@ -43,7 +43,7 @@ internal static class NewsCommand
 
             var bySymbolHeadlines = groupNewsBySymbol(tickers, newsPage);
             var crawlUtc = DateTime.UtcNow;
-            using var stockDb = new LocalDatabase(LocalDatabase.getDefaultDbPath());
+            using var stockDb = new LocalDatabase(LocalDatabase.getDefaultConnectionString());
             stockDb.initialize();
             new NewsWriter().upsert(stockDb, newsPage, tickers, crawlUtc);
 

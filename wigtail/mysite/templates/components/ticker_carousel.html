@@ -1,0 +1,25 @@
+{# Infinite horizontal marquee of ticker chips. Pass `tickers` (same list as header_tickers). Optional `empty_message` — plain text shown when list is empty. #}
+{% if tickers %}
+<div class="ticker-carousel__viewport">
+    <div class="ticker-carousel__marquee" data-ticker-marquee>
+        <div class="ticker-carousel__group">
+            {% for chip in tickers %}
+                {% include "components/ticker_chip.html" with chip=chip dup=False %}
+            {% endfor %}
+        </div>
+        <div class="ticker-carousel__group" aria-hidden="true">
+            {% for chip in tickers %}
+                {% include "components/ticker_chip.html" with chip=chip dup=True %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="ticker-carousel__fallback">
+    {% if empty_message %}
+        <span class="ticker-carousel__empty">{{ empty_message }}</span>
+    {% else %}
+        <span class="ticker-carousel__empty">Configure snippets → Market ticker rows, then run <code class="site-header__code">python manage.py sync_market_tickers</code></span>
+    {% endif %}
+</div>
+{% endif %}

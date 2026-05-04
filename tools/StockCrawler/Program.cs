@@ -1,14 +1,23 @@
 ﻿using StockCrawler.News;
+using StockCrawler.Storage;
 
 namespace StockCrawler;
 
-/// <summary>StockCrawler: <c>news</c> (default) = snapshots + news JSON; <c>patterns</c> = multi-TF indicators JSON.</summary>
+/// <summary>StockCrawler: <c>news</c> (default) = snapshots + news JSON; <c>patterns</c> = multi-TF indicators JSON; <c>init-db</c> = create tables in the Postgres crawler DB and exit.</summary>
 internal static class Program
 {
     public static async Task<int> Main(string[] args) {
         if (args.Length == 0) {
             printUsage();
             return Exits.BadArgs;
+        }
+        // `init-db` creates the Postgres schema without any Alpaca API call —
+        // used by scripts/migrate-crawler-to-postgres.py and first-time setup.
+        if (args.Length >= 1 && string.Equals(args[0], "init-db", StringComparison.OrdinalIgnoreCase)) {
+            using var db = new LocalDatabase(LocalDatabase.getDefaultConnectionString());
+            db.initialize();
+            Console.Error.WriteLine("StockCrawler schema initialized.");
+            return 0;
         }
         if (!tryParseLine(args, out var verb, out var tickers, out var withBars) || tickers.Count == 0) {
             printUsage();
@@ -34,6 +43,7 @@ internal static class Program
         Console.Error.WriteLine(
             "Usage: StockCrawler [news] TICKER [TICKER ...]\n" +
             "   or: StockCrawler patterns [--with-bars] TICKER [TICKER ...]\n" +
+            "   or: StockCrawler init-db   (create Postgres schema and exit)\n" +
             "Credentials: file first — walk up for .apca, alpacacredentials, or .env; " +
             "APCA_API_KEY_ID / APCA_API_SECRET_KEY (or ALPACA_*) in environment. See .env.example.");
     }

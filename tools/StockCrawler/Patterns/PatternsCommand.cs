@@ -17,7 +17,7 @@ internal static class PatternsCommand
         IEnvironment alpca = useLive ? Environments.Live : Environments.Paper;
         var data = alpca.GetAlpacaDataClient(secret);
         var bars = (IHistoricalBarsClient<HistoricalBarsRequest>)(object)data;
-        using var db = new LocalDatabase(LocalDatabase.getDefaultDbPath());
+        using var db = new LocalDatabase(LocalDatabase.getDefaultConnectionString());
         db.initialize();
         var cache = new BarsRepo(db);
         var stockWriter = new StockWriter(db);

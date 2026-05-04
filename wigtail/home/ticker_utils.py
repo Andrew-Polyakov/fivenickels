@@ -107,17 +107,17 @@ _EXCHANGE_TICKER_RE = re.compile(
 
 
 def build_ticker_chip_html(row: MarketTickerRow) -> str:
-    """Carousel-style link + pill for inline rich text (matches header tile markup)."""
+    """Same chip markup as components/ticker_chip.html (label + % in one box)."""
     href = href_for_ticker_subpage(None, ticker_slug=row.symbol.lower())
     label = escape(default_tradingview_symbol_for_row(row))
     pct_fmt = escape(format_percent_change(row.percent_change))
     pct_cls = percent_change_css_class(row.percent_change)
     return (
-        f'<a href="{escape(href)}" '
-        f'class="site-header__ticker-item site-header__ticker-item--inline">'
-        f'<span class="site-header__ticker-label">{label}</span>'
-        f'<span class="site-header__ticker-pill site-header__ticker-pill--{pct_cls}">'
-        f"{pct_fmt}</span></a>"
+        f'<a href="{escape(href)}" class="ticker-chip ticker-chip--inline">'
+        f'<span class="ticker-chip__box ticker-chip__box--{pct_cls}">'
+        f'<span class="ticker-chip__label">{label}</span>'
+        f'<span class="ticker-chip__pct">{pct_fmt}</span>'
+        f"</span></a>"
     )
 
 
