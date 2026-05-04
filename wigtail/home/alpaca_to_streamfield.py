@@ -9,11 +9,12 @@ import re
 from urllib.parse import urlparse
 
 import bleach
+import html2text
 from bs4 import BeautifulSoup
 from django.utils.html import escape
 from wagtail.rich_text import RichText
 
-from home.alpaca_news_client import AlpacaNewsArticle
+from home.alpaca_news_client import AlpacaNewsArticle, best_image_url
 from home.ticker_utils import replace_exchange_ticker_tokens
 
 _ALLOWED_TAGS = frozenset(
@@ -147,6 +148,134 @@ def _safe_http_url(url: str | None) -> str | None:
     if p.scheme in ("http", "https") and p.netloc:
         return u
     return None
+
+
+def _html_to_markdown(html: str) -> str:
+    """Convert sanitized HTML to Markdown (paragraphs, lists, https images as ![](url))."""
+    if not html or not html.strip():
+        return ""
+    h2t = html2text.HTML2Text()
+    h2t.body_width = 0
+    h2t.ignore_links = False
+    h2t.ignore_images = False
+    h2t.single_line_break = False
+    return h2t.handle(html).strip()
+
+
+def _dedupe_consecutive_duplicate_paragraphs(html: str) -> str:
+    """
+    Drop consecutive sibling ``<p>`` nodes with identical stripped text. Syndicated feeds
+    sometimes emit the same paragraph multiple times in a row.
+    """
+    if not html or not html.strip():
+        return html
+    soup = BeautifulSoup(html, "html.parser")
+    for p in list(soup.find_all("p")):
+        prev = p.find_previous_sibling("p")
+        if prev is None:
+            continue
+        if p.get_text(separator=" ", strip=True) == prev.get_text(
+            separator=" ", strip=True
+        ):
+            if p.get_text(separator=" ", strip=True):
+                p.decompose()
+    return str(soup)
+
+
+def _strip_non_http_images_from_html(html: str) -> str:
+    """Remove <img> tags whose src is not http(s); keeps body structure for html2text."""
+    if not html or not html.strip():
+        return ""
+    soup = BeautifulSoup(html, "html.parser")
+    for img in soup.find_all("img"):
+        if not _safe_http_url(img.get("src")):
+            img.decompose()
+    return str(soup)
+
+
+def _md_escape_link_label(text: str) -> str:
+    return text.replace("]", "\\]")
+
+
+def _markdown_symbol_line(article: AlpacaNewsArticle, home_page) -> str:
+    """`Symbols: [SYM](/ticker/sym/)` lines for carousel allowlist symbols."""
+    if home_page is None:
+        return ""
+    from home.models import MarketTickerRow
+    from home.ticker_utils import href_for_ticker_subpage
+
+    allowed = set(
+        MarketTickerRow.objects.filter(enabled=True).values_list("symbol", flat=True)
+    )
+    parts: list[str] = []
+    seen: set[str] = set()
+    for sym in article.symbols:
+        su = sym.strip().upper()
+        if not su or su not in allowed or su in seen:
+            continue
+        seen.add(su)
+        href = href_for_ticker_subpage(home_page, ticker_slug=su.lower())
+        parts.append(f"[{_md_escape_link_label(su)}]({href})")
+    if not parts:
+        return ""
+    return "Symbols: " + " · ".join(parts)
+
+
+def _markdown_attribution(article: AlpacaNewsArticle) -> str:
+    src_name = (article.source or "News").strip() or "News"
+    link = _safe_http_url(article.url)
+    tail = "Syndicated via Alpaca Markets news feed. Not investment advice."
+    if link:
+        return (
+            f"Source: [{_md_escape_link_label(src_name)}]({link}). {tail}"
+        )
+    return f"Source: {src_name}. {tail}"
+
+
+def markdown_stream_for_article(
+    article: AlpacaNewsArticle,
+    *,
+    home_page=None,
+    include_body_images: bool = True,
+) -> list:
+    """
+    Single ``markdown`` stream block: optional Symbols line, HTML→Markdown body,
+    optional Alpaca image URL line(s), exchange:ticker → markdown links, attribution.
+    Omits a duplicate heading; the page title is the headline.
+    """
+    sections: list[str] = []
+    sym = _markdown_symbol_line(article, home_page)
+    if sym:
+        sections.append(sym)
+
+    body_html = (article.content or "").strip()
+    if body_html:
+        body_html = _strip_non_http_images_from_html(body_html)
+        body_html = _dedupe_consecutive_duplicate_paragraphs(body_html)
+        main = _html_to_markdown(body_html)
+    else:
+        main = ""
+    summary_plain = (article.summary or "").strip()
+    if not main and summary_plain:
+        main = summary_plain
+    if not main and article.headline:
+        main = (article.headline or "").strip()
+
+    if main:
+        sections.append(main)
+
+    combined = "\n\n".join(s for s in sections if s)
+
+    if include_body_images:
+        u = best_image_url(article)
+        u = _safe_http_url(u) if u else None
+        if u and u not in combined:
+            combined = f"{combined}\n\n![]({u})" if combined else f"![]({u})"
+
+    att = _markdown_attribution(article)
+    combined = f"{combined}\n\n{att}" if combined else att
+
+    return [("markdown", combined)]
 
 
 def streamfield_body_for_article(article: AlpacaNewsArticle, *, home_page=None) -> list:

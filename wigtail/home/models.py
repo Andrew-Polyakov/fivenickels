@@ -1,6 +1,10 @@
+from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from modelcluster.fields import ParentalManyToManyField
+from treebeard.mp_tree import MP_Node
 from wagtail.admin.panels import FieldPanel, MultiFieldPanel, PageChooserPanel
 from wagtail.contrib.routable_page.models import RoutablePageMixin, route
 from wagtail.fields import StreamField
@@ -10,25 +14,80 @@ from wagtail.snippets.models import register_snippet
 from wagtailmarkdown.fields import MarkdownField
 
 from home.blocks import MAIN_SITE_STREAMBLOCK
-from home.gics_sectors import GICS_SECTOR_ORDER, GICS_SECTOR_SLUGS
+from home.navigation import normalize_sector_query_param
+from home.query import build_home_page_display_items
 
 
 @register_snippet
-class TaxonomyTerm(models.Model):
-    """Reusable label for grouping or tagging markdown tiles (slug for future URLs or filters)."""
+class TaxonomyTerm(MP_Node):
+    """Hierarchical taxonomy: header/footer nav, section labels, and markdown tile grouping."""
 
     name = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, unique=True)
+    link_page = models.ForeignKey(
+        "wagtailcore.Page",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        help_text="If set, this nav item navigates to this page instead of drilling down.",
+    )
+    widgets = StreamField(
+        MAIN_SITE_STREAMBLOCK,
+        blank=True,
+        use_json_field=True,
+    )
+    is_visible = models.BooleanField(
+        default=True,
+        help_text="If unchecked, this term is hidden from site navigation.",
+    )
+    sort_order = models.PositiveSmallIntegerField(default=0)
+    parent_for_create = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        help_text="When creating a new term, optionally choose a parent. Ignored after save.",
+    )
+
+    node_order_by = ("sort_order", "name")
 
     panels = [
         FieldPanel("name"),
         FieldPanel("slug"),
+        FieldPanel(
+            "parent_for_create",
+            heading="Parent (new terms only)",
+        ),
+        PageChooserPanel("link_page"),
+        FieldPanel("is_visible"),
+        FieldPanel("sort_order"),
+        FieldPanel("widgets"),
     ]
 
     class Meta:
-        ordering = ["name"]
         verbose_name = "taxonomy term"
         verbose_name_plural = "taxonomy terms"
+
+    def get_visible_children(self):
+        return (
+            self.get_children()
+            .filter(is_visible=True)
+            .order_by("sort_order", "name")
+        )
+
+    def save(self, *args, **kwargs):
+        if self._state.adding and len(self.path or "") < self.steplen:
+            parent = self.parent_for_create
+            self.parent_for_create_id = None
+            if parent is not None:
+                parent.add_child(instance=self)
+                return
+            TaxonomyTerm.add_root(instance=self)
+            return
+        self.parent_for_create_id = None
+        return super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return self.name
@@ -146,13 +205,30 @@ class SubsectionIndexPage(Page):
     ]
 
     def get_context(self, request, *args, **kwargs):
-        from home.query import get_recent_pages_for_section
+        from home.query import (
+            featured_quad_pages_for_sector,
+            get_recent_pages_for_section,
+            list_category_terms_for_sector,
+        )
 
         context = super().get_context(request, *args, **kwargs)
         context["recent_pages"] = get_recent_pages_for_section(
             self.section_term,
             limit=self.recent_tile_limit,
         )
+        category_slug = request.GET.get("category")
+        routable_home = HomePage.objects.live().public().first()
+        quad_pages, selected = featured_quad_pages_for_sector(
+            self.section_term,
+            category_slug,
+            home_page=routable_home,
+        )
+        context["featured_quad_pages"] = quad_pages
+        context["featured_category_terms"] = list_category_terms_for_sector(
+            self.section_term,
+            home_page=routable_home,
+        )
+        context["featured_category_selected"] = selected
         context["sector_nav_active"] = self.section_term.slug
         return context
 
@@ -172,6 +248,23 @@ class TaggedContentPage(Page):
         related_name="+",
     )
     tile_preview = MarkdownField(blank=True)
+    tile_priority = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(10)],
+        help_text="1–10 for automated tiles; higher surfaces first. Leave blank for maximum weight (same as 10).",
+    )
+    taxonomy_category = models.ForeignKey(
+        TaxonomyTerm,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        help_text=(
+            "Optional subsection category: must be a direct child of Section (taxonomy). "
+            "Used for Featured chips on the sector hub."
+        ),
+    )
     body = StreamField(
         MAIN_SITE_STREAMBLOCK,
         blank=True,
@@ -182,14 +275,55 @@ class TaggedContentPage(Page):
         MultiFieldPanel(
             [
                 FieldPanel("section_term"),
+                FieldPanel("taxonomy_category"),
                 FieldPanel("tags"),
                 FieldPanel("hero_image"),
                 FieldPanel("tile_preview"),
+                FieldPanel("tile_priority"),
             ],
             heading="Listing & taxonomy",
         ),
         FieldPanel("body"),
     ]
+
+    _LISTING_PREVIEW_FALLBACK_MAX = 420
+
+    def clean(self):
+        super().clean()
+        if self.taxonomy_category_id and self.section_term_id:
+            parent = self.taxonomy_category.get_parent()
+            if parent is None or parent.pk != self.section_term_id:
+                raise ValidationError(
+                    {
+                        "taxonomy_category": (
+                            "Must be a direct child category of the selected section taxonomy term."
+                        ),
+                    }
+                )
+
+    def listing_preview_markdown(self) -> str:
+        """Excerpt for tile cards: ``tile_preview`` or the first paragraph / markdown in ``body``."""
+        primary = (self.tile_preview or "").strip()
+        if primary:
+            return primary
+        from django.utils.html import strip_tags
+
+        cap = self._LISTING_PREVIEW_FALLBACK_MAX
+        for block in self.body:
+            if block.block_type == "paragraph" and block.value:
+                plain = strip_tags(str(block.value)).strip()
+                if plain:
+                    if len(plain) > cap:
+                        return plain[: cap - 1].rstrip() + "…"
+                    return plain
+            if block.block_type == "markdown" and block.value:
+                md = str(block.value).strip()
+                if md:
+                    one = " ".join(md.split())
+                    if len(one) > cap:
+                        return one[: cap - 1].rstrip() + "…"
+                    return one
+        return ""
 
     def get_context(self, request, *args, **kwargs):
         from home.query import get_similar_pages
@@ -198,6 +332,26 @@ class TaggedContentPage(Page):
         context["similar_pages"] = get_similar_pages(self, limit=24)
         context["routable_home"] = HomePage.objects.live().public().first()
         return context
+
+
+class CareersPage(Page):
+    """Company careers; body copy lives in the template."""
+
+    parent_page_types = ["home.HomePage"]
+    subpage_types = []
+
+    class Meta:
+        verbose_name = "careers page"
+
+
+class CookiesPolicyPage(Page):
+    """Cookies and similar technologies policy (static template body)."""
+
+    parent_page_types = ["home.HomePage"]
+    subpage_types = []
+
+    class Meta:
+        verbose_name = "cookies policy page"
 
 
 class HomePage(RoutablePageMixin, Page):
@@ -212,13 +366,81 @@ class HomePage(RoutablePageMixin, Page):
         blank=True,
         on_delete=models.SET_NULL,
         related_name="+",
-        help_text="Optional target for the MARKETS DATA link in the site header.",
+        help_text="Legacy: optional Markets data target; prefer TaxonomyTerm (slug markets-data) link_page.",
     )
 
+    subpage_types = [
+        "home.SubsectionIndexPage",
+        "home.TaggedContentPage",
+        "home.CareersPage",
+        "home.CookiesPolicyPage",
+    ]
+
     content_panels = Page.content_panels + [
-        PageChooserPanel("markets_data_link"),
         FieldPanel("body"),
     ]
+
+    @route(r"^_taxonomy/$", name="taxonomy_nav_root")
+    def taxonomy_nav_root(self, request):
+        from home.taxonomy import render_site_nav_frame
+
+        if request.headers.get("Turbo-Frame") == "site-nav":
+            return render_site_nav_frame(request, self, [])
+        return self.render(
+            request,
+            template="home/taxonomy/taxonomy_nav_root_page.html",
+        )
+
+    @route(r"^_taxonomy/(?P<path>[-\w/]+)/$", name="taxonomy_nav_path")
+    def taxonomy_nav_path(self, request, path):
+        from home.query import (
+            featured_quad_pages_for_sector,
+            list_category_terms_for_sector,
+        )
+        from home.taxonomy import (
+            build_site_nav_context,
+            render_site_nav_frame,
+            taxonomy_breadcrumb_items,
+        )
+
+        part = (path or "").strip("/")
+        slugs = [s for s in part.split("/") if s]
+
+        # Turbo loads only the nav frame; full browser visits need a real page (CSS + layout).
+        if request.headers.get("Turbo-Frame") == "site-nav":
+            return render_site_nav_frame(request, self, slugs)
+
+        try:
+            ctx = build_site_nav_context(self, slugs)
+        except Http404:
+            raise Http404("Taxonomy path not found")
+
+        trail = ctx["trail"]
+        active_node = ctx["active_node"]
+        category_slug = request.GET.get("category")
+        quad_pages, featured_selected = featured_quad_pages_for_sector(
+            active_node,
+            category_slug,
+            home_page=self,
+        )
+        featured_terms = (
+            list_category_terms_for_sector(active_node, home_page=self)
+            if active_node is not None
+            else []
+        )
+        return self.render(
+            request,
+            template="home/taxonomy/taxonomy_drilldown_page.html",
+            context_overrides={
+                "taxonomy_trail": trail,
+                "taxonomy_active_node": active_node,
+                "taxonomy_prefix": ctx["taxonomy_prefix"],
+                "taxonomy_breadcrumbs": taxonomy_breadcrumb_items(self, trail),
+                "featured_quad_pages": quad_pages,
+                "featured_category_terms": featured_terms,
+                "featured_category_selected": featured_selected,
+            },
+        )
 
     @route(r"^ticker/(?P<ticker_slug>[-\w]+)/$", name="ticker_detail")
     def ticker_detail(self, request, ticker_slug):
@@ -250,4 +472,12 @@ class HomePage(RoutablePageMixin, Page):
 
     def get_context(self, request, *args, **kwargs):
         context = super().get_context(request, *args, **kwargs)
+        sector = normalize_sector_query_param(request.GET.get("sector"))
+        context["sector_tile_filter"] = sector
+        context["sector_taxonomy_term"] = (
+            TaxonomyTerm.objects.filter(slug=sector, is_visible=True).first()
+            if sector
+            else None
+        )
+        context["home_display_items"] = build_home_page_display_items(self.body, sector)
         return context

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Sections · {% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.title }}{% endif %}{% endblock %}
+
+{% block body_class %}template-taxonomy-root{% endblock %}
+
+{% block content %}
+
+<div class="taxonomy-drilldown">
+    <h1 class="taxonomy-drilldown__title">Sections</h1>
+    <p class="taxonomy-drilldown__lede">
+        Use the navigation above to browse Market News, Opinions, and Personal Finance.
+    </p>
+</div>
+
+{% endblock content %}

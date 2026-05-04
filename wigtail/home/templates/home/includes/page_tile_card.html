@@ -20,10 +20,14 @@
 
     {% endif %}
 
-    {% if page.tile_preview %}
+    {% with preview_md=page.listing_preview_markdown %}
 
-        <div class="markdown-tile__body">{{ page.tile_preview|markdown }}</div>
+        {% if preview_md %}
 
-    {% endif %}
+            <div class="markdown-tile__body">{{ preview_md|markdown }}</div>
+
+        {% endif %}
+
+    {% endwith %}
 
 </a>

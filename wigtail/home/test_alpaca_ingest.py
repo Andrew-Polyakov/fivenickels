@@ -13,6 +13,7 @@ from home.alpaca_news_client import AlpacaNewsArticle, best_image_url
 from home.alpaca_to_streamfield import (
     build_tile_preview,
     content_tags_for_article,
+    markdown_stream_for_article,
     streamfield_body_for_article,
 )
 from home.models import HomePage, MarketTickerRow, TaggedContentPage, TaxonomyTerm
@@ -91,6 +92,66 @@ class AlpacaStreamfieldTests(WagtailPageTestCase):
         self.assertIn("paragraph", kinds)
         prev = build_tile_preview(art)
         self.assertIn("Short summary", prev)
+
+    def test_markdown_stream_includes_ticker_and_attribution(self):
+        root = Page.get_first_root_node()
+        home = HomePage(title="Home")
+        root.add_child(instance=home)
+        home.save_revision().publish()
+        MarketTickerRow.objects.create(symbol="NVDA", enabled=True, sort_order=0)
+        art = AlpacaNewsArticle(
+            id=999010,
+            headline="Md test",
+            summary="S",
+            content="<p>Hello world.</p>",
+            url="https://example.com/src",
+            source="benzinga",
+            symbols=["NVDA"],
+            created_at="2026-01-01T00:00:00Z",
+            updated_at="2026-01-01T00:00:00Z",
+        )
+        body = markdown_stream_for_article(art, home_page=home)
+        self.assertEqual(len(body), 1)
+        self.assertEqual(body[0][0], "markdown")
+        md = body[0][1]
+        self.assertIn("Symbols:", md)
+        self.assertIn("/ticker/nvda/", md)
+        self.assertIn("Hello world", md)
+        self.assertIn("[benzinga](https://example.com/src)", md)
+
+    def test_markdown_stream_html_img_becomes_markdown_image(self):
+        art = AlpacaNewsArticle(
+            id=999011,
+            headline="Img",
+            summary="",
+            content='<p>See</p><img src="https://cdn.example.com/x.png" alt="x" />',
+            url=None,
+            source="src",
+            symbols=[],
+            created_at="2026-01-01T00:00:00Z",
+            updated_at="2026-01-01T00:00:00Z",
+        )
+        body = markdown_stream_for_article(art, include_body_images=False)
+        md = body[0][1]
+        # html2text includes alt text when present: ``![x](https://...)``
+        self.assertIn("https://cdn.example.com/x.png", md)
+        self.assertRegex(md, r"!\[.*\]\(https://cdn\.example\.com/x\.png\)")
+
+    def test_markdown_stream_appends_best_image_url(self):
+        art = AlpacaNewsArticle(
+            id=999012,
+            headline="H",
+            summary="S",
+            content="<p>Text.</p>",
+            url=None,
+            source="src",
+            symbols=[],
+            created_at="2026-01-01T00:00:00Z",
+            updated_at="2026-01-01T00:00:00Z",
+            image_entries=(("large", "https://img.example.com/l.jpg"),),
+        )
+        body = markdown_stream_for_article(art, include_body_images=True)
+        self.assertIn("![](https://img.example.com/l.jpg)", body[0][1])
 
     def test_streamfield_includes_ticker_link_when_carousel_row_exists(self):
         root = Page.get_first_root_node()
@@ -203,8 +264,34 @@ class AlpacaIngestCommandTests(WagtailPageTestCase):
         with patch("home.management.commands.ingest_alpaca_news.fetch_news", return_value=[art]):
             call_command("ingest_alpaca_news", "ABC", "--no-sync-tickers", limit=5)
         page = TaggedContentPage.objects.get(slug="alpaca-424243")
-        sources = [block.value.source for block in page.body if block.block_type == "paragraph"]
-        self.assertTrue(any("/ticker/abc/" in s for s in sources))
+        md_block = next(b for b in page.body if b.block_type == "markdown")
+        self.assertIn("/ticker/abc/", md_block.value)
+
+    def test_ingest_no_body_images_skips_embedded_alpaca_image_line(self):
+        art = AlpacaNewsArticle(
+            id=424244,
+            headline="No embed img",
+            summary="S",
+            content="<p>Body.</p>",
+            url=None,
+            source="src",
+            symbols=["XYZ"],
+            created_at="2026-01-01T00:00:00Z",
+            updated_at="2026-01-01T00:00:00Z",
+            image_entries=(("large", "https://cdn.example.com/p.jpg"),),
+        )
+        with patch("home.management.commands.ingest_alpaca_news.fetch_news", return_value=[art]):
+            call_command(
+                "ingest_alpaca_news",
+                "XYZ",
+                "--no-sync-tickers",
+                "--no-images",
+                "--no-body-images",
+                limit=5,
+            )
+        page = TaggedContentPage.objects.get(slug="alpaca-424244")
+        md = next(b.value for b in page.body if b.block_type == "markdown")
+        self.assertNotIn("![](https://cdn.example.com/p.jpg)", md)
 
     def test_ingest_skips_duplicate_without_refresh(self):
         art = AlpacaNewsArticle(

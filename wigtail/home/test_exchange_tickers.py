@@ -15,6 +15,7 @@ from home.alpaca_to_streamfield import streamfield_body_for_article
 from home.models import HomePage, MarketTickerRow
 from home.ticker_utils import (
     default_tradingview_symbol_for_row,
+    markdown_replace_exchange_ticker_links,
     replace_exchange_ticker_tokens,
 )
 
@@ -51,6 +52,47 @@ class ReplaceExchangeTickerTokensTests(WagtailPageTestCase):
         MarketTickerRow.objects.create(symbol="MU", enabled=True, sort_order=0)
         out = replace_exchange_ticker_tokens("NASDAQ:  MU up.")
         self.assertIn("/ticker/mu/", out)
+
+    def test_parenthesized_exchange_chip(self):
+        MarketTickerRow.objects.create(symbol="AAPL", enabled=True, sort_order=0)
+        out = replace_exchange_ticker_tokens("Note (NASDAQ: AAPL ) here.")
+        self.assertIn("ticker-chip", out)
+        self.assertIn("/ticker/aapl/", out)
+
+
+class MarkdownReplaceExchangeTickerLinksTests(WagtailPageTestCase):
+    def setUp(self):
+        super().setUp()
+        root = Page.get_first_root_node()
+        self.homepage = HomePage(title="Home")
+        root.add_child(instance=self.homepage)
+        self.homepage.save_revision().publish()
+        Site.objects.update_or_create(
+            hostname="testsite",
+            defaults={
+                "port": 80,
+                "root_page": self.homepage,
+                "is_default_site": True,
+            },
+        )
+
+    def test_markdown_link_when_enabled_row_exists(self):
+        MarketTickerRow.objects.create(symbol="DELL", enabled=True, sort_order=0)
+        out = markdown_replace_exchange_ticker_links("Coverage of NYSE: DELL earnings.")
+        self.assertIn("](", out)
+        self.assertIn("/ticker/dell/", out)
+        self.assertNotIn("ticker-chip", out)
+
+    def test_markdown_link_parenthesized_exchange(self):
+        MarketTickerRow.objects.create(symbol="AAPL", enabled=True, sort_order=0)
+        out = markdown_replace_exchange_ticker_links("Mention (NASDAQ: AAPL) today.")
+        self.assertIn("/ticker/aapl/", out)
+        self.assertIn("](", out)
+
+    def test_no_link_when_row_missing(self):
+        out = markdown_replace_exchange_ticker_links("Mention NYSE: ZZZX unknown.")
+        self.assertIn("NYSE: ZZZX", out)
+        self.assertNotIn("](", out)
 
 
 class DefaultTradingViewSymbolTests(TestCase):

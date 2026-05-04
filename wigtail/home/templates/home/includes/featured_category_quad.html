@@ -1,0 +1,47 @@
+<section class="markdown-tiles-section subsection-featured featured-category-quad" aria-label="Featured in this section">
+
+    <h2 class="subsection-recent__heading">Featured</h2>
+
+    {% if featured_category_terms %}
+
+        <nav class="featured-category-chips" aria-label="Categories">
+
+            <a href="{{ request.path }}" class="featured-category-chip{% if not featured_category_selected %} featured-category-chip--active{% endif %}">All</a>
+
+            {% for term in featured_category_terms %}
+
+                <a href="{{ request.path }}?category={{ term.slug }}" class="featured-category-chip{% if featured_category_selected == term.slug %} featured-category-chip--active{% endif %}">{{ term.name }}</a>
+
+            {% endfor %}
+
+        </nav>
+
+    {% endif %}
+
+    <div class="big-tile-panel big-tile-panel--quad">
+
+        <div class="big-tile-quad__grid">
+
+            {% for p in featured_quad_pages %}
+
+                <div class="big-tile-quad__cell">
+
+                    {% if p %}
+
+                        {% include "home/includes/page_tile_card.html" with page=p only %}
+
+                    {% else %}
+
+                        <div class="big-tile-panel__empty" role="status">No article.</div>
+
+                    {% endif %}
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+</section>

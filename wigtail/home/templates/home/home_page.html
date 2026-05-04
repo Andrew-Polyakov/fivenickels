@@ -18,9 +18,17 @@
 
 <div class="home-stream">
 
-    {% for block in page.body %}
+    {% for item in home_display_items %}
 
-        {% include_block block %}
+        {% if item.mode == "block" %}
+
+            {% include_block item.child %}
+
+        {% else %}
+
+            {% include "home/blocks/markdown_tiles.html" with value=item.value only %}
+
+        {% endif %}
 
     {% endfor %}
 

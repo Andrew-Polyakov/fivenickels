@@ -132,6 +132,17 @@ CACHES = {
     }
 }
 
+# Header / Forex section: Alpaca /v1beta1/forex/rates (comma-separated env override).
+_DEFAULT_FOREX_PAIRS = (
+    "EURUSD,GBPUSD,USDJPY,USDCHF,AUDUSD,USDCAD,NZDUSD,EURGBP"
+)
+FOREX_PAIRS = [
+    p.strip().upper()
+    for p in (os.environ.get("FOREX_PAIRS") or _DEFAULT_FOREX_PAIRS).split(",")
+    if p.strip()
+]
+FOREX_CACHE_TTL_SECONDS = int(os.environ.get("FOREX_CACHE_TTL_SECONDS", "45"))
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators

@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block body_class %}template-cookies-policy{% endblock %}
+
+{% block content %}
+
+<article class="legal-doc">
+    <header class="legal-doc__header">
+        <h1 class="legal-doc__title">{{ page.title }}</h1>
+        <p class="legal-doc__lede">
+            This policy describes how this site uses cookies and similar technologies, and the choices available to you.
+            It is separate from our general privacy practices; contact details for privacy requests appear in your site’s privacy notice if one is published.
+        </p>
+    </header>
+
+    <section class="legal-doc__section" aria-labelledby="cookies-what">
+        <h2 id="cookies-what" class="legal-doc__h2">What is a cookie?</h2>
+        <p>
+            A cookie is a small text file stored on your device when you visit a website.
+            Similar technologies include local storage, session storage, and pixels used for measurement or security.
+            Cookies can be <strong>session</strong> (removed when you close the browser) or <strong>persistent</strong> (they remain until they expire or you delete them).
+        </p>
+    </section>
+
+    <section class="legal-doc__section" aria-labelledby="cookies-how">
+        <h2 id="cookies-how" class="legal-doc__h2">How we use cookies</h2>
+        <p>We group cookies and similar technologies into the following categories:</p>
+        <ol class="legal-doc__list legal-doc__list--numbered">
+            <li>
+                <strong>Necessary.</strong> Required for core site operation, security, load balancing, fraud prevention, and (where applicable) authenticated areas such as the Wagtail admin.
+                These cannot be switched off through our site alone.
+            </li>
+            <li>
+                <strong>Performance and analytics.</strong> Used in aggregate to understand how pages are used and to improve stability and performance.
+                We aim to keep this category minimal.
+            </li>
+            <li>
+                <strong>Functional.</strong> Remember choices such as language or layout preferences when we explicitly offer those features.
+            </li>
+            <li>
+                <strong>Third-party content and embeds.</strong> Some pages load scripts or widgets from other providers; those providers may set their own cookies or identifiers under their policies.
+            </li>
+        </ol>
+    </section>
+
+    <section class="legal-doc__section" aria-labelledby="cookies-this-site">
+        <h2 id="cookies-this-site" class="legal-doc__h2">What this site uses today</h2>
+        <p>The table below is a practical summary of technologies you may encounter on this property. Exact names can change when we upgrade software or vendors.</p>
+        <div class="legal-doc__table-wrap" role="region" aria-label="Summary of technologies">
+            <table class="legal-doc__table">
+                <thead>
+                    <tr>
+                        <th scope="col">Area</th>
+                        <th scope="col">Typical purpose</th>
+                        <th scope="col">Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Django / Wagtail</td>
+                        <td>Security, sessions for signed-in editors</td>
+                        <td>May include session and CSRF-related cookies when you use the admin or authenticated features.</td>
+                    </tr>
+                    <tr>
+                        <td>Fonts (Google Fonts)</td>
+                        <td>Typography</td>
+                        <td>Requests are made to Google’s font endpoints; refer to Google’s policies for how they process connection data.</td>
+                    </tr>
+                    <tr>
+                        <td>Hotwired Turbo (jsDelivr)</td>
+                        <td>Faster in-site navigation</td>
+                        <td>Loaded from a public CDN; the CDN may log standard web access data.</td>
+                    </tr>
+                    <tr>
+                        <td>TradingView embed</td>
+                        <td>Optional charts on some ticker pages</td>
+                        <td>
+                            Where a page loads TradingView’s script (for example from <code>s3.tradingview.com</code>),
+                            TradingView and its partners may use cookies or similar technologies under their own policies.
+                            See
+                            <a href="https://www.tradingview.com/cookies-policy/" rel="noopener noreferrer" target="_blank">TradingView’s cookies policy</a>
+                            for detail.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="legal-doc__section" aria-labelledby="cookies-control">
+        <h2 id="cookies-control" class="legal-doc__h2">Managing cookies</h2>
+        <p>
+            You can block or delete cookies through your browser settings.
+            Blocking strictly necessary cookies may prevent parts of the site (including sign-in) from working.
+            For third-party cookies, you can also use vendor-specific opt-out tools where available, in addition to browser controls.
+        </p>
+    </section>
+
+    <section class="legal-doc__section" aria-labelledby="cookies-changes">
+        <h2 id="cookies-changes" class="legal-doc__h2">Changes</h2>
+        <p>
+            We may update this policy when we add features, change vendors, or when laws require clearer disclosure.
+            The updated version will be posted on this page; review it periodically if cookie use matters to your compliance or preferences.
+        </p>
+    </section>
+</article>
+
+{% endblock content %}

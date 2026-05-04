@@ -1,43 +1,68 @@
-"""Template context for global site header (tickers + sector nav)."""
-
-from __future__ import annotations
-
-from home.market_format import (
-    format_day_volume,
-    format_percent_change,
-    percent_change_css_class,
-)
-from home.navigation import (
-    build_sector_nav,
-    sector_nav_active_from_home_query,
-)
-
-
-def market_header(request):
-    from home.models import HomePage, MarketTickerRow
-
-    home = HomePage.objects.live().public().first()
-    sector_nav = build_sector_nav(home)
-    sector_nav_active = sector_nav_active_from_home_query(request, home)
-
-    rows = list(
-        MarketTickerRow.objects.filter(enabled=True).order_by("sort_order", "symbol")
-    )
-    header_tickers = []
-    for row in rows:
-        header_tickers.append(
-            {
-                "row": row,
-                "label": row.display_label(),
-                "pct_formatted": format_percent_change(row.percent_change),
-                "pct_class": percent_change_css_class(row.percent_change),
-                "volume_display": format_day_volume(row.day_volume),
-            }
-        )
-
-    return {
-        "sector_nav": sector_nav,
-        "sector_nav_active": sector_nav_active,
-        "header_tickers": header_tickers,
-        "header_home": home,
-    }
+"""Template context for global site header (tickers + taxonomy nav)."""
+
+from __future__ import annotations
+
+from home.alpaca_forex_client import get_cached_forex_quote_rows
+from home.ticker_utils import chip_context_for_row
+from home.taxonomy import get_site_nav_template_context, taxonomy_roots_for_nav
+
+
+def market_header(request):
+    from wagtail.models import Site
+
+    from home.models import CareersPage, CookiesPolicyPage, HomePage, MarketTickerRow
+
+    home = None
+    site = getattr(request, "site", None)
+    if site is None:
+        raw_host = (request.get_host() or "").split(":")[0]
+        raw_port = request.META.get("SERVER_PORT")
+        try:
+            port = int(raw_port) if raw_port else 80
+        except ValueError:
+            port = 80
+        if raw_host:
+            site = Site.objects.filter(hostname=raw_host, port=port).select_related(
+                "root_page"
+            ).first()
+            if site is None:
+                site = Site.objects.filter(hostname=raw_host).select_related(
+                    "root_page"
+                ).first()
+    if site is None:
+        site = Site.objects.filter(is_default_site=True).select_related("root_page").first()
+    if site and site.root_page:
+        root = site.root_page.specific
+        if isinstance(root, HomePage):
+            home = root
+    if home is None:
+        home = HomePage.objects.live().public().first()
+    nav_ctx = get_site_nav_template_context(request, home) if home else None
+    site_footer_roots = list(taxonomy_roots_for_nav(home)) if home else []
+
+    rows = list(
+        MarketTickerRow.objects.filter(enabled=True).order_by("sort_order", "symbol")
+    )
+    header_tickers = [chip_context_for_row(row) for row in rows]
+
+    forex_quotes = get_cached_forex_quote_rows()
+
+    out = {
+        "header_tickers": header_tickers,
+        "forex_quotes": forex_quotes,
+        "header_home": home,
+        "site_footer_roots": site_footer_roots,
+        "footer_careers_page": CareersPage.objects.live().public().first(),
+        "footer_cookies_page": CookiesPolicyPage.objects.live().public().first(),
+    }
+    if nav_ctx:
+        out.update(
+            {
+                "site_nav_home_page": nav_ctx["home_page"],
+                "site_nav_rows": nav_ctx["nav_rows"],
+                "site_nav_active_node": nav_ctx.get("active_node"),
+                "site_nav_trail": nav_ctx.get("trail") or [],
+                "site_nav_trail_slugs": nav_ctx.get("trail_slugs") or [],
+            }
+        )
+    return out

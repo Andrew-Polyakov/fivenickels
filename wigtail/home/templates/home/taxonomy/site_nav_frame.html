@@ -1,0 +1,34 @@
+{% load wagtailcore_tags taxonomy_tags %}
+
+<turbo-frame id="site-nav" class="site-nav" data-turbo-action="advance">
+    {% for row in nav_rows %}
+        <nav class="site-nav__row site-nav__row--depth-{{ row.depth }}" aria-label="{% if row.depth == 1 %}Site sections{% else %}Subsections{% endif %}">
+            {% for term in row.nodes %}
+                {% if term.link_page %}
+                    <a
+                        href="{% pageurl term.link_page %}"
+                        class="site-nav__link{% if page and term.link_page_id == page.pk %} site-nav__link--active{% elif page and page.section_term and page.section_term_id == term.id %} site-nav__link--active{% endif %}"
+                        data-site-nav-link="1"
+                        data-turbo="false"
+                    >{{ term.name }}</a>
+                {% else %}
+                    {% taxonomy_term_nav_url home_page trail_slugs row.depth term as nav_url %}
+                    <a
+                        href="{{ nav_url }}"
+                        class="site-nav__link{% if term.slug in trail_slugs %} site-nav__link--active{% elif page and page.section_term and page.section_term_id == term.id %} site-nav__link--active{% endif %}"
+                        data-site-nav-link="1"
+                        data-turbo-frame="site-nav"
+                    >{{ term.name }}</a>
+                {% endif %}
+                {% if not forloop.last %}<span class="site-nav__sep" aria-hidden="true"></span>{% endif %}
+            {% endfor %}
+        </nav>
+    {% endfor %}
+    {% if active_node and active_node.widgets %}
+        <section class="site-nav__widgets" aria-label="Section content">
+            {% for block in active_node.widgets %}
+                {% include_block block %}
+            {% endfor %}
+        </section>
+    {% endif %}
+</turbo-frame>

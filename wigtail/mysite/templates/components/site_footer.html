@@ -1,0 +1,37 @@
+{% load wagtailcore_tags taxonomy_tags %}
+
+<footer class="site-footer" role="contentinfo">
+    {% if site_footer_roots %}
+    <nav class="site-footer__roots" aria-label="Site map">
+        {% for term in site_footer_roots %}
+            {% if term.link_page %}
+                <a class="site-footer__link" href="{% pageurl term.link_page %}" data-turbo="false">{{ term.name }}</a>
+            {% elif header_home %}
+                {% taxonomy_root_nav_url header_home term as footer_nav_url %}
+                <a class="site-footer__link" href="{{ footer_nav_url }}" data-turbo-frame="site-nav">{{ term.name }}</a>
+            {% endif %}
+            {% if not forloop.last %}<span class="site-footer__sep" aria-hidden="true"></span>{% endif %}
+        {% endfor %}
+    </nav>
+    {% endif %}
+
+    {% if footer_careers_page or footer_cookies_page %}
+    <nav class="site-footer__legal" aria-label="Legal and careers">
+        {% if footer_careers_page %}
+        <a class="site-footer__link" href="{% pageurl footer_careers_page %}">Careers</a>
+        {% endif %}
+        {% if footer_careers_page and footer_cookies_page %}
+        <span class="site-footer__sep" aria-hidden="true"></span>
+        {% endif %}
+        {% if footer_cookies_page %}
+        <a class="site-footer__link" href="{% pageurl footer_cookies_page %}">Cookies policy</a>
+        {% endif %}
+    </nav>
+    {% endif %}
+
+    {% wagtail_site as current_site %}
+    <p class="site-footer__meta">
+        {% if current_site and current_site.site_name %}{{ current_site.site_name }}{% else %}This site{% endif %}
+        · {% now "Y" %}
+    </p>
+</footer>

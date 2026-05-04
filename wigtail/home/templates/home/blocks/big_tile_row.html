@@ -1,0 +1,25 @@
+{% load wagtailcore_tags %}
+
+<section class="big-tile-row-section" aria-label="Featured tiles">
+
+    <div class="big-tile-row__panels">
+
+        {% for panel in value.panels %}
+
+            <div class="big-tile-row__panel-slot">
+
+                {% for block in panel %}
+
+                    {% include_block block %}
+
+                {% endfor %}
+
+            </div>
+
+        {% endfor %}
+
+    </div>
+
+    <hr class="big-tile-row__separator" />
+
+</section>

@@ -6,5 +6,6 @@ opensearch-py>=2,<3
 requests>=2.31,<3
 bleach>=6,<7
 beautifulsoup4>=4.12,<5
+html2text>=2024.2.26,<2026
 python-dotenv>=1.0,<2
 psycopg[binary]>=3.2,<4

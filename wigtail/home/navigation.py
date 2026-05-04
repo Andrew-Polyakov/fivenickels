@@ -6,6 +6,14 @@ from typing import TYPE_CHECKING
 
 from home.gics_sectors import GICS_SECTOR_ORDER, GICS_SECTOR_SLUGS
 
+
+def normalize_sector_query_param(raw: str | None) -> str | None:
+    """Return a GICS sector slug if `raw` is valid, else None."""
+    s = (raw or "").strip()
+    if s in GICS_SECTOR_SLUGS:
+        return s
+    return None
+
 if TYPE_CHECKING:
     from home.models import HomePage
 
@@ -50,7 +58,4 @@ def sector_nav_active_from_home_query(request, home_page: HomePage | None) -> st
         return None
     if _norm_path(request.path) != _norm_path(home_page.url):
         return None
-    raw = (request.GET.get("sector") or "").strip()
-    if raw in GICS_SECTOR_SLUGS:
-        return raw
-    return None
+    return normalize_sector_query_param(request.GET.get("sector"))

@@ -7,6 +7,7 @@ Usage (from wigtail/):
   python manage.py ingest_alpaca_news NVDA --limit 20 --section-slug information-technology
   python manage.py ingest_alpaca_news NVDA --dry-run
   python manage.py ingest_alpaca_news NVDA --no-images
+  python manage.py ingest_alpaca_news NVDA --no-body-images
   python manage.py ingest_alpaca_news NVDA --sandbox
   python manage.py ingest_alpaca_news NVDA --refresh
   python manage.py ingest_alpaca_news NVDA --no-sync-tickers
@@ -33,7 +34,7 @@ from home.alpaca_news_client import (
 from home.alpaca_to_streamfield import (
     build_tile_preview,
     content_tags_for_article,
-    streamfield_body_for_article,
+    markdown_stream_for_article,
     truncate_title,
 )
 from home.market_ticker_snapshot_sync import (
@@ -116,6 +117,11 @@ class Command(BaseCommand):
             help="Do not download Alpaca image URLs for hero_image.",
         )
         parser.add_argument(
+            "--no-body-images",
+            action="store_true",
+            help="Do not embed Alpaca image URLs in the article markdown body (![](...)).",
+        )
+        parser.add_argument(
             "--exclude-contentless",
             action="store_true",
             help="Maps to Alpaca exclude_contentless=true.",
@@ -160,6 +166,7 @@ class Command(BaseCommand):
         dry_run = options["dry_run"]
         refresh = options["refresh"]
         no_images = options["no_images"]
+        no_body_images = options["no_body_images"]
         exclude_contentless = options["exclude_contentless"]
         no_sync_tickers = options["no_sync_tickers"]
 
@@ -225,7 +232,11 @@ class Command(BaseCommand):
 
         for art in articles:
             slug = f"alpaca-{art.id}"
-            body = streamfield_body_for_article(art, home_page=home)
+            body = markdown_stream_for_article(
+                art,
+                home_page=home,
+                include_body_images=not no_body_images,
+            )
             preview = build_tile_preview(art)
             title = truncate_title(art.headline)
 

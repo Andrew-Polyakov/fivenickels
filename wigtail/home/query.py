@@ -1,9 +1,42 @@
 from __future__ import annotations
 
+import random
+from types import SimpleNamespace
 from typing import TYPE_CHECKING
+
+from django.db.models import Q, Value
+from django.db.models.functions import Coalesce
 
 if TYPE_CHECKING:
     from home.models import HomePage, TaggedContentPage, TaxonomyTerm
+
+
+def build_home_page_display_items(body_stream, sector_slug: str | None) -> list[dict]:
+    """
+    Build items for the home template: full stream children, or filtered markdown_tiles
+    when ``sector_slug`` is set (only tiles whose taxonomy matches; empty sections omitted).
+    """
+    items: list[dict] = []
+    for child in body_stream:
+        if sector_slug and child.block_type == "markdown_tiles":
+            raw_tiles = child.value["tiles"]
+            filtered = [
+                t
+                for t in raw_tiles
+                if t.get("taxonomy") is not None
+                and t["taxonomy"].slug == sector_slug
+            ]
+            if not filtered:
+                continue
+            items.append(
+                {
+                    "mode": "markdown_tiles",
+                    "value": SimpleNamespace(tiles=filtered),
+                }
+            )
+        else:
+            items.append({"mode": "block", "child": child})
+    return items
 
 
 def taxonomy_term_has_public_pages(term: TaxonomyTerm) -> bool:
@@ -55,6 +88,46 @@ def get_recent_pages_for_section(
     return list(qs[:limit])
 
 
+def get_random_pages_for_section(
+    section_term: TaxonomyTerm,
+    *,
+    limit: int = 12,
+):
+    """Random live public articles for a taxonomy subsection (landing grids)."""
+    from home.models import TaggedContentPage
+
+    return list(
+        TaggedContentPage.objects.live()
+        .public()
+        .filter(section_term=section_term)
+        .order_by("?")[:limit]
+    )
+
+
+def get_random_pages_for_section_prioritized(
+    section_term: TaxonomyTerm,
+    *,
+    limit: int = 1,
+    exclude_ids: list[int] | None = None,
+):
+    """
+    Live public articles for a section: higher ``tile_priority`` first (blank = 10),
+    then random tie-break. Optionally exclude page ids (e.g. other quad cells).
+    """
+    from home.models import TaggedContentPage
+
+    qs = (
+        TaggedContentPage.objects.live()
+        .public()
+        .filter(section_term=section_term)
+        .annotate(_effective_priority=Coalesce("tile_priority", Value(10)))
+        .order_by("-_effective_priority", "?")
+    )
+    if exclude_ids:
+        qs = qs.exclude(pk__in=exclude_ids)
+    return list(qs[:limit])
+
+
 def get_related_pages_for_ticker(tag_slug: str, *, limit: int = 24):
     """Live articles whose ContentTag slug matches the ticker (e.g. nvda for NVDA)."""
     from home.models import TaggedContentPage
@@ -70,6 +143,108 @@ def get_related_pages_for_ticker(tag_slug: str, *, limit: int = 24):
         .order_by("-first_published_at")
         .distinct()[:limit]
     )
+
+
+def _section_term_ids_for_taxonomy_scope(sector) -> list[int]:
+    """
+    ``TaggedContentPage.section_term`` points at sector nodes (e.g. GICS ``energy``),
+    never at the Market News container. For that root, include all GICS sector ids.
+    For other nodes, include the term and its descendants in the MP tree.
+    """
+    from home.gics_sectors import GICS_SECTOR_SLUGS
+    from home.models import TaxonomyTerm
+    from home.taxonomy import MARKET_NEWS_SLUG
+
+    if sector.slug == MARKET_NEWS_SLUG:
+        ids: list[int] = []
+        for slug in GICS_SECTOR_SLUGS:
+            t = TaxonomyTerm.objects.filter(slug=slug, is_visible=True).first()
+            if t is not None:
+                ids.append(t.pk)
+        return ids
+    ids = [sector.pk]
+    ids.extend(sector.get_descendants().values_list("pk", flat=True))
+    return ids
+
+
+def list_category_terms_for_sector(sector, *, home_page=None) -> list:
+    """
+    Featured chip labels: children of ``sector``. Market News uses the same virtual
+    GICS list as nav (not MP-tree children, which may be empty).
+    """
+    from home.taxonomy import MARKET_NEWS_SLUG, virtual_children_for
+
+    if sector.slug == MARKET_NEWS_SLUG:
+        return virtual_children_for(sector, home_page=home_page)
+    return list(sector.get_visible_children())
+
+
+def pick_four_pages_prioritized_with_fallback(base_qs):
+    """
+    Take up to four live articles: highest ``tile_priority`` (blank = 10) first,
+    random within the same band; then lower bands until four picks or exhaustion.
+    """
+    qs = base_qs.select_related("taxonomy_category", "section_term").annotate(
+        _effective_priority=Coalesce("tile_priority", Value(10))
+    )
+    pages = list(qs)
+    buckets: dict[int, list] = {i: [] for i in range(1, 11)}
+    for p in pages:
+        pr = int(getattr(p, "_effective_priority", 10))
+        pr = max(1, min(10, pr))
+        buckets[pr].append(p)
+    for k in buckets:
+        random.shuffle(buckets[k])
+    picked: list = []
+    for band in range(10, 0, -1):
+        for p in buckets[band]:
+            if len(picked) >= 4:
+                return picked
+            picked.append(p)
+    return picked
+
+
+def pad_featured_quad_slots(pages: list) -> list:
+    """Exactly four entries for the 2×2 grid; ``None`` pads empty cells."""
+    out = list(pages[:4])
+    while len(out) < 4:
+        out.append(None)
+    return out
+
+
+def featured_quad_pages_for_sector(
+    sector,
+    category_slug: str | None,
+    *,
+    home_page=None,
+) -> tuple[list, str | None]:
+    """
+    Featured quad for a sector hub or taxonomy drilldown: optional ``category``
+    matches a chip (direct child of ``sector``, or virtual GICS child under Market News).
+
+    Articles match a chip when ``section_term`` *or* ``taxonomy_category`` equals that
+    term (sector chips vs. fine-grained categories under a sector).
+    """
+    from home.models import TaggedContentPage
+
+    if sector is None:
+        return pad_featured_quad_slots([]), None
+
+    term_ids = _section_term_ids_for_taxonomy_scope(sector)
+    base = TaggedContentPage.objects.live().public().filter(
+        section_term_id__in=term_ids,
+    )
+    cats = list_category_terms_for_sector(sector, home_page=home_page)
+    child_slugs = {t.slug for t in cats}
+    selected: str | None = None
+    raw = (category_slug or "").strip().lower()
+    if raw and raw != "all" and raw in child_slugs:
+        chip = next((t for t in cats if t.slug == raw), None)
+        if chip is not None:
+            selected = raw
+            base = base.filter(Q(section_term=chip) | Q(taxonomy_category=chip))
+    picked = pick_four_pages_prioritized_with_fallback(base)
+    return pad_featured_quad_slots(picked), selected
 
 
 def get_similar_pages(page: TaggedContentPage, *, limit: int = 24) -> list:

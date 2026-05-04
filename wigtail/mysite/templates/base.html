@@ -1,4 +1,4 @@
-{% load static wagtailcore_tags wagtailuserbar %}
+{% load static wagtailcore_tags wagtailuserbar taxonomy_tags %}
 
 <!DOCTYPE html>
 <html lang="en">
@@ -39,10 +39,14 @@
         {% endblock %}
     </head>
 
-    <body class="{% block body_class %}{% endblock %}">
+    <body class="{% block body_class %}{% endblock %}"{% if request.in_preview_panel %} data-turbo-preview="1"{% endif %}>
         {% wagtail_site as current_site %}
         {% block site_header %}
-        <header class="site-header" data-site-header>
+        <header
+            class="site-header"
+            data-site-header
+            {% if current_site and current_site.root_page %}data-root-url="{% pageurl current_site.root_page %}"{% else %}data-root-url="/"{% endif %}
+        >
             <nav class="site-header__ticker" aria-label="Market snapshot">
                 {% include "components/ticker_carousel.html" with tickers=header_tickers only %}
             </nav>
@@ -51,95 +55,92 @@
                 <div class="site-header__main-bar{% if current_site %} site-header__main-bar--has-logo{% endif %}">
                     {% if current_site %}
                     <div class="site-header__logo-rail">
-                        <span class="site-header__logo-sep" aria-hidden="true"></span>
-                        <a
-                            class="site-header__logo"
-                            href="{% if current_site.root_page %}{% pageurl current_site.root_page %}{% else %}/{% endif %}"
-                        >
-                            <img
-                                class="site-header__logo-img"
-                                src="{% static 'images/logo.png' %}"
-                                alt="{% firstof current_site.site_name 'Home' %}"
-                                width="120"
-                                height="120"
-                                decoding="async"
-                            />
-                        </a>
-                        <span class="site-header__logo-sep" aria-hidden="true"></span>
+                        <div class="site-header__logo-row">
+                            <span class="site-header__logo-sep" aria-hidden="true"></span>
+                            <a
+                                class="site-header__logo"
+                                href="{% if current_site.root_page %}{% pageurl current_site.root_page %}{% else %}/{% endif %}"
+                            >
+                                <img
+                                    class="site-header__logo-img"
+                                    src="{% static 'images/logo.png' %}"
+                                    alt="{% firstof current_site.site_name 'Home' %}"
+                                    width="120"
+                                    height="120"
+                                    decoding="async"
+                                    fetchpriority="high"
+                                />
+                            </a>
+                            <span class="site-header__logo-sep" aria-hidden="true"></span>
+                        </div>
+                        {% include "components/forex_strip.html" with forex_strip_modifier="compact" %}
                     </div>
                     {% endif %}
-                    <div class="site-header__upper">
-                        <div class="site-header__row site-header__row--top">
-                            <div class="site-header__cluster site-header__cluster--left">
-                                <button type="button" class="btn btn--icon site-header__icon-btn" aria-label="Menu" disabled title="Coming soon">
-                                    <span class="material-symbols-outlined" aria-hidden="true">menu</span>
-                                </button>
-                                <form
-                                    class="site-search site-header__search"
-                                    action="{% url 'search' %}"
-                                    method="get"
-                                    role="search"
-                                >
-                                    <label class="visually-hidden" for="site-search-query">Search</label>
-                                    <input
-                                        id="site-search-query"
-                                        class="site-search__input"
-                                        type="search"
-                                        name="query"
-                                        placeholder="Search…"
-                                        aria-label="Search"
-                                        autocomplete="off"
-                                        value="{{ request.GET.query|default_if_none:'' }}"
-                                    />
-                                    <button type="submit" class="site-search__submit btn btn--raised">Search</button>
-                                </form>
-                            </div>
+                    <div class="site-header__tools">
+                        <div class="site-header__upper">
+                            <div class="site-header__row site-header__row--top">
+                                <div class="site-header__cluster site-header__cluster--left">
+                                    <button type="button" class="btn btn--icon site-header__icon-btn" aria-label="Menu" disabled title="Coming soon">
+                                        <span class="material-symbols-outlined" aria-hidden="true">menu</span>
+                                    </button>
+                                    <form
+                                        class="site-search site-header__search"
+                                        action="{% url 'search' %}"
+                                        method="get"
+                                        role="search"
+                                        data-turbo-frame="main"
+                                    >
+                                        <label class="visually-hidden" for="site-search-query">Search</label>
+                                        <input
+                                            id="site-search-query"
+                                            class="site-search__input"
+                                            type="search"
+                                            name="query"
+                                            placeholder="Search…"
+                                            aria-label="Search"
+                                            autocomplete="off"
+                                            value="{{ request.GET.query|default_if_none:'' }}"
+                                        />
+                                        <button type="submit" class="site-search__submit btn btn--raised">Search</button>
+                                    </form>
+                                </div>
 
-                            <div class="site-header__cluster site-header__cluster--right">
-                                <a href="#subscribe" class="btn btn--raised site-header__cta">Subscribe</a>
-                                <a href="{% url 'wagtailadmin_login' %}" class="btn btn--raised site-header__signin">
-                                    <span class="material-symbols-outlined site-header__signin-icon" aria-hidden="true">person</span>
-                                    Sign in
-                                </a>
+                                <div class="site-header__cluster site-header__cluster--right">
+                                    <a href="#subscribe" class="btn btn--raised site-header__cta">Subscribe</a>
+                                    <a href="{% url 'wagtailadmin_login' %}" class="btn btn--raised site-header__signin">
+                                        <span class="material-symbols-outlined site-header__signin-icon" aria-hidden="true">person</span>
+                                        Sign in
+                                    </a>
+                                </div>
                             </div>
                         </div>
+                        {% if header_home and site_nav_rows %}
+                            {% include "home/taxonomy/site_nav_frame.html" with home_page=site_nav_home_page nav_rows=site_nav_rows trail_slugs=site_nav_trail_slugs active_node=site_nav_active_node %}
+                        {% endif %}
                     </div>
                 </div>
-                <nav class="site-header__primary" aria-label="Primary">
-                    {% if current_site.root_page %}
-                    <a href="{% pageurl current_site.root_page %}" class="site-header__nav-link{% if page and current_site.root_page and page.pk == current_site.root_page.pk %} site-header__nav-link--active{% endif %}">Home</a>
-                    {% endif %}
-                    {% if header_home and header_home.markets_data_link %}
-                    <a href="{% pageurl header_home.markets_data_link %}" class="site-header__nav-link">Markets data</a>
-                    {% else %}
-                    <a href="#" class="site-header__nav-link site-header__nav-link--muted">Markets data</a>
-                    {% endif %}
-                </nav>
             </div>
-
-            <nav class="site-header__sectors" aria-label="Sections">
-                {% if sector_nav %}
-                    {% for item in sector_nav %}
-                        {% if not forloop.first %}<span class="site-header__sep" aria-hidden="true"></span>{% endif %}
-                        <a
-                            href="{% if item.subsection_url %}{{ item.subsection_url }}{% elif header_home %}{% pageurl header_home %}?sector={{ item.term.slug }}{% else %}#{% endif %}"
-                            class="site-header__sector-link{% if sector_nav_active == item.term.slug %} site-header__sector-link--active{% endif %}"
-                            {% if sector_nav_active == item.term.slug %}aria-current="page"{% endif %}
-                        >{{ item.term.name }}</a>
-                    {% endfor %}
-                {% endif %}
-            </nav>
         </header>
         {% endblock site_header %}
 
+        {% if not request.in_preview_panel %}
+        <turbo-frame id="main" data-turbo-action="advance">
+        {% endif %}
         {% wagtailuserbar %}
-
         <div class="site-shell">
         {% block content %}{% endblock %}
         </div>
+        {% if not request.in_preview_panel %}
+        </turbo-frame>
+        {% endif %}
+
+        {% block site_footer %}
+        {% include "components/site_footer.html" %}
+        {% endblock site_footer %}
 
         {# Global javascript #}
-        <script type="text/javascript" src="{% static 'js/mysite.js' %}"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8.0.12/dist/turbo.es2017-umd.js" defer></script>
+        <script type="text/javascript" src="{% static 'js/mysite.js' %}" defer></script>
 
         {% block extra_js %}
         {# Override this in templates to add extra javascript #}

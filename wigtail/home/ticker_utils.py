@@ -9,7 +9,11 @@ from django.urls import reverse
 from django.utils.html import escape
 
 from home.alpaca_asset_client import fetch_asset_meta
-from home.market_format import format_percent_change, percent_change_css_class
+from home.market_format import (
+    format_day_volume,
+    format_percent_change,
+    percent_change_css_class,
+)
 from home.models import MarketTickerRow
 
 # Common NYSE listings — used when Alpaca asset meta is unavailable.
@@ -104,6 +108,22 @@ _EXCHANGE_TICKER_RE = re.compile(
     r"\b(NYSE|NASDAQ|AMEX|ARCA|BATS)\s*:\s*([A-Za-z]{1,6})\b",
     re.IGNORECASE,
 )
+# Parenthesized form, e.g. "(NASDAQ: AAPL )" — matched before bare tokens to avoid inner matches.
+_PAREN_EXCHANGE_TICKER_RE = re.compile(
+    r"\(\s*(NYSE|NASDAQ|AMEX|ARCA|BATS)\s*:\s*([A-Za-z]{1,6})\s*\)",
+    re.IGNORECASE,
+)
+
+
+def chip_context_for_row(row: MarketTickerRow) -> dict:
+    """Same ``chip`` dict shape as ``header_tickers`` entries (carousel / article chips)."""
+    return {
+        "row": row,
+        "label": row.display_label(),
+        "pct_formatted": format_percent_change(row.percent_change),
+        "pct_class": percent_change_css_class(row.percent_change),
+        "volume_display": format_day_volume(row.day_volume),
+    }
 
 
 def build_ticker_chip_html(row: MarketTickerRow) -> str:
@@ -121,24 +141,73 @@ def build_ticker_chip_html(row: MarketTickerRow) -> str:
     )
 
 
-def replace_exchange_ticker_tokens(text: str) -> str:
+def _exchange_match_spans(text: str) -> list[tuple[int, int, re.Match]]:
     """
-    Replace EXCHANGE: TICKER tokens with carousel-style chips when an enabled
-    MarketTickerRow exists; otherwise escape the original token text.
+    Non-overlapping exchange matches: parenthesized form wins over bare ``EXCHANGE:SYM``
+    inside the same span.
+    """
+    if not text:
+        return []
+    candidates: list[tuple[int, int, re.Match]] = []
+    for m in _PAREN_EXCHANGE_TICKER_RE.finditer(text):
+        candidates.append((m.start(), m.end(), m))
+    for m in _EXCHANGE_TICKER_RE.finditer(text):
+        candidates.append((m.start(), m.end(), m))
+    candidates.sort(key=lambda x: (-(x[1] - x[0]), x[0]))
+    taken: list[tuple[int, int]] = []
+    accepted: list[tuple[int, int, re.Match]] = []
+    for start, end, m in candidates:
+        if any(not (end <= ts or start >= te) for ts, te in taken):
+            continue
+        taken.append((start, end))
+        accepted.append((start, end, m))
+    accepted.sort(key=lambda x: x[0])
+    return accepted
+
+
+def markdown_replace_exchange_ticker_links(text: str) -> str:
+    """
+    Replace EXCHANGE: TICKER with markdown links ``[TV_LABEL](/ticker/sym/)`` when an
+    enabled MarketTickerRow exists; otherwise leave the original token text.
     """
     if not text:
         return ""
     out: list[str] = []
     pos = 0
-    for m in _EXCHANGE_TICKER_RE.finditer(text):
-        out.append(escape(text[pos : m.start()]))
+    for start, end, m in _exchange_match_spans(text):
+        out.append(text[pos:start])
+        sym = m.group(2).upper()
+        row = MarketTickerRow.objects.filter(symbol=sym, enabled=True).first()
+        if row:
+            label = default_tradingview_symbol_for_row(row)
+            href = href_for_ticker_subpage(None, ticker_slug=sym.lower())
+            safe_label = label.replace("]", "\\]")
+            out.append(f"[{safe_label}]({href})")
+        else:
+            out.append(text[start:end])
+        pos = end
+    out.append(text[pos:])
+    return "".join(out)
+
+
+def replace_exchange_ticker_tokens(text: str) -> str:
+    """
+    Replace EXCHANGE: TICKER tokens (including parenthesized) with carousel-style chips
+    when an enabled MarketTickerRow exists; otherwise escape the original token text.
+    """
+    if not text:
+        return ""
+    out: list[str] = []
+    pos = 0
+    for start, end, m in _exchange_match_spans(text):
+        out.append(escape(text[pos:start]))
         sym = m.group(2).upper()
         row = MarketTickerRow.objects.filter(symbol=sym, enabled=True).first()
         if row:
             out.append(build_ticker_chip_html(row))
         else:
-            out.append(escape(m.group(0)))
-        pos = m.end()
+            out.append(escape(text[start:end]))
+        pos = end
     out.append(escape(text[pos:]))
     return "".join(out)
 

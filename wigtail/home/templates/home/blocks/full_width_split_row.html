@@ -1,0 +1,29 @@
+{% load wagtailcore_tags %}
+
+<section class="full-width-split-row" aria-label="Two column tiles">
+
+    <div class="full-width-split-row__inner">
+
+        <div class="full-width-split-row__cell">
+
+            {% for block in value.left %}
+
+                {% include_block block %}
+
+            {% endfor %}
+
+        </div>
+
+        <div class="full-width-split-row__cell">
+
+            {% for block in value.right %}
+
+                {% include_block block %}
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+</section>

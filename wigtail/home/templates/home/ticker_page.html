@@ -71,10 +71,6 @@
     </section>
     {% endif %}
 </main>
-{% endblock content %}
-
-{% block extra_js %}
-{{ block.super }}
 <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 <script type="text/javascript">
 (function () {
@@ -96,4 +92,4 @@
   });
 })();
 </script>
-{% endblock extra_js %}
+{% endblock content %}

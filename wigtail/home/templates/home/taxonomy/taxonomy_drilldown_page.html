@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% load wagtailcore_tags %}
+
+{% block title %}
+    {{ taxonomy_active_node.name }} · {% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.title }}{% endif %}
+{% endblock %}
+
+{% block body_class %}template-taxonomy-drilldown{% endblock %}
+
+{% block content %}
+
+<div class="taxonomy-drilldown">
+
+    <nav class="taxonomy-drilldown__breadcrumb" aria-label="You are here">
+        {% for item in taxonomy_breadcrumbs %}
+            {% if not forloop.first %}
+                <span class="taxonomy-drilldown__crumb-sep" aria-hidden="true">/</span>
+            {% endif %}
+            {% if forloop.last %}
+                <span class="taxonomy-drilldown__crumb taxonomy-drilldown__crumb--current">{{ item.term.name }}</span>
+            {% else %}
+                <a class="taxonomy-drilldown__crumb" href="{{ item.url }}">{{ item.term.name }}</a>
+            {% endif %}
+        {% endfor %}
+    </nav>
+
+    <h1 class="taxonomy-drilldown__title">{{ taxonomy_active_node.name }}</h1>
+
+    {% if taxonomy_active_node.slug == "forex" %}
+        <div class="taxonomy-drilldown__forex">
+            {% include "components/forex_strip.html" with forex_strip_modifier="section" %}
+        </div>
+    {% endif %}
+
+    {% if taxonomy_active_node.link_page %}
+        <p class="taxonomy-drilldown__hub">
+            <a class="btn btn--raised" href="{% pageurl taxonomy_active_node.link_page %}">Open section hub</a>
+        </p>
+    {% endif %}
+
+    {% include "home/includes/featured_category_quad.html" %}
+
+    {% if taxonomy_active_node.widgets %}
+        <div class="taxonomy-drilldown__widgets">
+            {% for block in taxonomy_active_node.widgets %}
+                {% include_block block %}
+            {% endfor %}
+        </div>
+    {% endif %}
+
+</div>
+
+{% endblock content %}
