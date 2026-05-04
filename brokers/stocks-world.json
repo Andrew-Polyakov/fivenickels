@@ -1,0 +1,1106 @@
+{
+  "meta": {
+    "compiledAt": "2026-05-03T13:20:16Z",
+    "brokerCount": 92,
+    "notes": "Curated retail/online stock brokerages from Wikipedia Template:Online brokerages; optional supplement from Forex-Ratings editorial stock-broker articles. Not exhaustive and not a legal registry.",
+    "licenseNote": "Wikipedia content is licensed under CC BY-SA 4.0; https://creativecommons.org/licenses/by-sa/4.0/",
+    "sources": [
+      {
+        "name": "Wikipedia — Template:Online brokerages",
+        "url": "https://en.wikipedia.org/wiki/Template:Online_brokerages",
+        "retrievalMethod": "MediaWiki Action API (revslots/wikitext)"
+      },
+      {
+        "name": "Forex-Ratings — stock broker editorial articles",
+        "url": "https://www.forex-ratings.com/stock-brokers/",
+        "retrievalMethod": "HTTP GET + HTML h2 headings",
+        "articleUrls": [
+          "https://www.forex-ratings.com/stock-brokers/best-international-stock-brokers/",
+          "https://www.forex-ratings.com/stock-brokers/best-us-stock-brokers/",
+          "https://www.forex-ratings.com/stock-brokers/best-asian-stock-brokers/"
+        ]
+      }
+    ]
+  },
+  "brokers": [
+    {
+      "name": "CIBC Mellon",
+      "regions": [
+        "Canada"
+      ],
+      "wikipediaTitle": "CIBC Mellon",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/CIBC_Mellon",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Qtrade",
+      "regions": [
+        "Canada"
+      ],
+      "wikipediaTitle": "Qtrade",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Qtrade",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Questrade",
+      "regions": [
+        "Canada"
+      ],
+      "wikipediaTitle": "Questrade",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Questrade",
+      "sourceTags": [
+        "wikipedia-template",
+        "forex-ratings-article"
+      ],
+      "forexRatingsArticles": [
+        "https://www.forex-ratings.com/stock-brokers/best-us-stock-brokers/"
+      ]
+    },
+    {
+      "name": "TD Direct Investing",
+      "regions": [
+        "Canada"
+      ],
+      "wikipediaTitle": "TD Waterhouse",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/TD_Waterhouse",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Wealthsimple",
+      "regions": [
+        "Canada"
+      ],
+      "wikipediaTitle": "Wealthsimple",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Wealthsimple",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "AngelOne",
+      "regions": [
+        "India"
+      ],
+      "wikipediaTitle": "Angel One (company)",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Angel_One_(company)",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Dhani",
+      "regions": [
+        "India"
+      ],
+      "wikipediaTitle": "Dhani (company)",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Dhani_(company)",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "FundsIndia",
+      "regions": [
+        "India"
+      ],
+      "wikipediaTitle": "FundsIndia",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/FundsIndia",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Geojit Financial",
+      "regions": [
+        "India"
+      ],
+      "wikipediaTitle": "Geojit Financial Services",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Geojit_Financial_Services",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "HDFC securities",
+      "regions": [
+        "India"
+      ],
+      "wikipediaTitle": "HDFC securities",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/HDFC_securities",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "ICICIdirect",
+      "regions": [
+        "India"
+      ],
+      "wikipediaTitle": "ICICIdirect",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/ICICIdirect",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "India Infoline",
+      "regions": [
+        "India"
+      ],
+      "wikipediaTitle": "India Infoline",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/India_Infoline",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Karvy Corporate",
+      "regions": [
+        "India"
+      ],
+      "wikipediaTitle": "Karvy Corporate",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Karvy_Corporate",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Kotak Securities",
+      "regions": [
+        "India"
+      ],
+      "wikipediaTitle": "Kotak Securities",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Kotak_Securities",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Kuvera.in",
+      "regions": [
+        "India"
+      ],
+      "wikipediaTitle": "Kuvera.in",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Kuvera.in",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Motilal Oswal",
+      "regions": [
+        "India"
+      ],
+      "wikipediaTitle": "Motilal Oswal Financial Services",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Motilal_Oswal_Financial_Services",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Reliance Securities",
+      "regions": [
+        "India"
+      ],
+      "wikipediaTitle": "Reliance Securities",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Reliance_Securities",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Religare",
+      "regions": [
+        "India"
+      ],
+      "wikipediaTitle": "Religare",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Religare",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Sharekhan",
+      "regions": [
+        "India"
+      ],
+      "wikipediaTitle": "Sharekhan",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Sharekhan",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Ally Financial",
+      "regions": [
+        "United States"
+      ],
+      "wikipediaTitle": "Ally Financial",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Ally_Financial",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "AlpacaDB Inc",
+      "regions": [
+        "United States"
+      ],
+      "wikipediaTitle": "AlpacaDB Inc",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/AlpacaDB_Inc",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Charles Schwab",
+      "regions": [
+        "United States"
+      ],
+      "wikipediaTitle": "Charles Schwab Corporation",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Charles_Schwab_Corporation",
+      "sourceTags": [
+        "wikipedia-template",
+        "forex-ratings-article"
+      ],
+      "forexRatingsArticles": [
+        "https://www.forex-ratings.com/stock-brokers/best-us-stock-brokers/"
+      ]
+    },
+    {
+      "name": "Chase Bank",
+      "regions": [
+        "United States"
+      ],
+      "wikipediaTitle": "Chase Bank",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Chase_Bank",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Citibank",
+      "regions": [
+        "United States"
+      ],
+      "wikipediaTitle": "Citibank",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Citibank",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "E-Trade",
+      "regions": [
+        "United States"
+      ],
+      "wikipediaTitle": "E-Trade",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/E-Trade",
+      "sourceTags": [
+        "wikipedia-template",
+        "forex-ratings-article"
+      ],
+      "forexRatingsArticles": [
+        "https://www.forex-ratings.com/stock-brokers/best-us-stock-brokers/"
+      ]
+    },
+    {
+      "name": "Fidelity Investments",
+      "regions": [
+        "United States"
+      ],
+      "wikipediaTitle": "Fidelity Investments",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Fidelity_Investments",
+      "sourceTags": [
+        "wikipedia-template",
+        "forex-ratings-article"
+      ],
+      "forexRatingsArticles": [
+        "https://www.forex-ratings.com/stock-brokers/best-us-stock-brokers/"
+      ]
+    },
+    {
+      "name": "Firstrade Securities",
+      "regions": [
+        "United States"
+      ],
+      "wikipediaTitle": "Firstrade Securities",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Firstrade_Securities",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "FXCM",
+      "regions": [
+        "United States"
+      ],
+      "wikipediaTitle": "FXCM",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/FXCM",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Interactive Brokers",
+      "regions": [
+        "United States"
+      ],
+      "wikipediaTitle": "Interactive Brokers",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Interactive_Brokers",
+      "sourceTags": [
+        "wikipedia-template",
+        "forex-ratings-article"
+      ],
+      "forexRatingsArticles": [
+        "https://www.forex-ratings.com/stock-brokers/best-international-stock-brokers/",
+        "https://www.forex-ratings.com/stock-brokers/best-us-stock-brokers/"
+      ]
+    },
+    {
+      "name": "Lightspeed",
+      "regions": [
+        "United States"
+      ],
+      "wikipediaTitle": "Lightspeed (brokerage)",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Lightspeed_(brokerage)",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "M1 Finance",
+      "regions": [
+        "United States"
+      ],
+      "wikipediaTitle": "M1 Finance",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/M1_Finance",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Merrill Edge",
+      "regions": [
+        "United States"
+      ],
+      "wikipediaTitle": "Merrill Edge",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Merrill_Edge",
+      "sourceTags": [
+        "wikipedia-template",
+        "forex-ratings-article"
+      ],
+      "forexRatingsArticles": [
+        "https://www.forex-ratings.com/stock-brokers/best-us-stock-brokers/"
+      ]
+    },
+    {
+      "name": "Moomoo",
+      "regions": [
+        "United States"
+      ],
+      "wikipediaTitle": "Moomoo (company)",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Moomoo_(company)",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "PNC Financial",
+      "regions": [
+        "United States"
+      ],
+      "wikipediaTitle": "PNC Financial Services",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/PNC_Financial_Services",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Public",
+      "regions": [
+        "United States"
+      ],
+      "wikipediaTitle": "Public Holdings, Inc.",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Public_Holdings%2C_Inc.",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Robinhood",
+      "regions": [
+        "United States"
+      ],
+      "wikipediaTitle": "Robinhood Markets",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Robinhood_Markets",
+      "sourceTags": [
+        "wikipedia-template",
+        "forex-ratings-article"
+      ],
+      "forexRatingsArticles": [
+        "https://www.forex-ratings.com/stock-brokers/best-us-stock-brokers/"
+      ]
+    },
+    {
+      "name": "SoFi",
+      "regions": [
+        "United States"
+      ],
+      "wikipediaTitle": "SoFi",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/SoFi",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "The Vanguard Group",
+      "regions": [
+        "United States"
+      ],
+      "wikipediaTitle": "The Vanguard Group",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/The_Vanguard_Group",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Thinkorswim",
+      "regions": [
+        "United States"
+      ],
+      "wikipediaTitle": "Thinkorswim",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Thinkorswim",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "TradeStation",
+      "regions": [
+        "United States"
+      ],
+      "wikipediaTitle": "TradeStation",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/TradeStation",
+      "sourceTags": [
+        "wikipedia-template",
+        "forex-ratings-article"
+      ],
+      "forexRatingsArticles": [
+        "https://www.forex-ratings.com/stock-brokers/best-international-stock-brokers/"
+      ]
+    },
+    {
+      "name": "U.S. Bancorp",
+      "regions": [
+        "United States"
+      ],
+      "wikipediaTitle": "U.S. Bancorp",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/U.S._Bancorp",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Webull",
+      "regions": [
+        "United States"
+      ],
+      "wikipediaTitle": "Webull",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Webull",
+      "sourceTags": [
+        "wikipedia-template",
+        "forex-ratings-article"
+      ],
+      "forexRatingsArticles": [
+        "https://www.forex-ratings.com/stock-brokers/best-us-stock-brokers/"
+      ]
+    },
+    {
+      "name": "WellsTrade",
+      "regions": [
+        "United States"
+      ],
+      "wikipediaTitle": "Wells Fargo",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Wells_Fargo",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "ActivTrades",
+      "regions": [
+        "Europe"
+      ],
+      "wikipediaTitle": "ActivTrades",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/ActivTrades",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "AJ Bell",
+      "regions": [
+        "Europe"
+      ],
+      "wikipediaTitle": "AJ Bell",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/AJ_Bell",
+      "sourceTags": [
+        "wikipedia-template",
+        "forex-ratings-article"
+      ],
+      "forexRatingsArticles": [
+        "https://www.forex-ratings.com/stock-brokers/best-international-stock-brokers/"
+      ]
+    },
+    {
+      "name": "Avanza",
+      "regions": [
+        "Europe"
+      ],
+      "wikipediaTitle": "Avanza",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Avanza",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Barclays Smart Investor",
+      "regions": [
+        "Europe"
+      ],
+      "wikipediaTitle": "Barclays",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Barclays",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "BUX",
+      "regions": [
+        "Europe"
+      ],
+      "wikipediaTitle": "BUX (brokerage)",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/BUX_(brokerage)",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "CMC Markets",
+      "regions": [
+        "Europe"
+      ],
+      "wikipediaTitle": "CMC Markets",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/CMC_Markets",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Degiro",
+      "regions": [
+        "Europe"
+      ],
+      "wikipediaTitle": "Degiro",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Degiro",
+      "sourceTags": [
+        "wikipedia-template",
+        "forex-ratings-article"
+      ],
+      "forexRatingsArticles": [
+        "https://www.forex-ratings.com/stock-brokers/best-international-stock-brokers/"
+      ]
+    },
+    {
+      "name": "Doorstep",
+      "regions": [
+        "Europe"
+      ],
+      "wikipediaTitle": "Doorstep (company)",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Doorstep_(company)",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Dukascopy Bank",
+      "regions": [
+        "Europe"
+      ],
+      "wikipediaTitle": "Dukascopy Bank",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Dukascopy_Bank",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Fidelity International",
+      "regions": [
+        "Europe"
+      ],
+      "wikipediaTitle": "Fidelity International",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Fidelity_International",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Finam Holdings",
+      "regions": [
+        "Europe"
+      ],
+      "wikipediaTitle": "Finam Holdings",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Finam_Holdings",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "FinecoBank",
+      "regions": [
+        "Europe"
+      ],
+      "wikipediaTitle": "FinecoBank",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/FinecoBank",
+      "sourceTags": [
+        "wikipedia-template",
+        "forex-ratings-article"
+      ],
+      "forexRatingsArticles": [
+        "https://www.forex-ratings.com/stock-brokers/best-international-stock-brokers/"
+      ]
+    },
+    {
+      "name": "Freetrade",
+      "regions": [
+        "Europe"
+      ],
+      "wikipediaTitle": "Freetrade",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Freetrade",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "HSBC InvestDirect",
+      "regions": [
+        "Europe"
+      ],
+      "wikipediaTitle": "HSBC InvestDirect",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/HSBC_InvestDirect",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "IG Group",
+      "regions": [
+        "Europe"
+      ],
+      "wikipediaTitle": "IG Group",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/IG_Group",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Interactive Investor",
+      "regions": [
+        "Europe"
+      ],
+      "wikipediaTitle": "Interactive Investor",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Interactive_Investor",
+      "sourceTags": [
+        "wikipedia-template",
+        "forex-ratings-article"
+      ],
+      "forexRatingsArticles": [
+        "https://www.forex-ratings.com/stock-brokers/best-international-stock-brokers/"
+      ]
+    },
+    {
+      "name": "Nordnet",
+      "regions": [
+        "Europe"
+      ],
+      "wikipediaTitle": "Nordnet",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Nordnet",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "OTP Bank",
+      "regions": [
+        "Europe"
+      ],
+      "wikipediaTitle": "OTP Bank",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/OTP_Bank",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Plus500",
+      "regions": [
+        "Europe"
+      ],
+      "wikipediaTitle": "Plus500",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Plus500",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Saxo Bank",
+      "regions": [
+        "Europe"
+      ],
+      "wikipediaTitle": "Saxo Bank",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Saxo_Bank",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Standard Chartered",
+      "regions": [
+        "Europe"
+      ],
+      "wikipediaTitle": "Standard Chartered",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Standard_Chartered",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Swissquote",
+      "regions": [
+        "Europe"
+      ],
+      "wikipediaTitle": "Swissquote",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Swissquote",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Trade Republic",
+      "regions": [
+        "Europe"
+      ],
+      "wikipediaTitle": "Trade Republic",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Trade_Republic",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Trading 212",
+      "regions": [
+        "Europe"
+      ],
+      "wikipediaTitle": "Trading 212",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Trading_212",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Citibank International Personal Bank Singapore",
+      "regions": [
+        "Asia"
+      ],
+      "wikipediaTitle": "Citibank International Personal Bank Singapore",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Citibank_International_Personal_Bank_Singapore",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Citibank UAE",
+      "regions": [
+        "Asia"
+      ],
+      "wikipediaTitle": "Citibank United Arab Emirates",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Citibank_United_Arab_Emirates",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "eToro",
+      "regions": [
+        "Asia"
+      ],
+      "wikipediaTitle": "eToro",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/eToro",
+      "sourceTags": [
+        "wikipedia-template",
+        "forex-ratings-article"
+      ],
+      "forexRatingsArticles": [
+        "https://www.forex-ratings.com/stock-brokers/best-international-stock-brokers/"
+      ]
+    },
+    {
+      "name": "Futu",
+      "regions": [
+        "Asia"
+      ],
+      "wikipediaTitle": "Futu",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Futu",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "IC Markets",
+      "regions": [
+        "Asia"
+      ],
+      "wikipediaTitle": "IC Markets",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/IC_Markets",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Maybank",
+      "regions": [
+        "Asia"
+      ],
+      "wikipediaTitle": "Maybank",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Maybank",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Monex Group",
+      "regions": [
+        "Asia"
+      ],
+      "wikipediaTitle": "Monex Group",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Monex_Group",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "OCBC Bank",
+      "regions": [
+        "Asia"
+      ],
+      "wikipediaTitle": "OCBC Bank",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/OCBC_Bank",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "UOB-Kay Hian",
+      "regions": [
+        "Asia"
+      ],
+      "wikipediaTitle": "UOB-Kay Hian",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/UOB-Kay_Hian",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Alpari Group",
+      "regions": [
+        "Elsewhere"
+      ],
+      "wikipediaTitle": "Alpari Group",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Alpari_Group",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "CommSec",
+      "regions": [
+        "Elsewhere"
+      ],
+      "wikipediaTitle": "CommSec",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/CommSec",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "FxPro",
+      "regions": [
+        "Elsewhere"
+      ],
+      "wikipediaTitle": "FxPro",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/FxPro",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Pepperstone",
+      "regions": [
+        "Elsewhere"
+      ],
+      "wikipediaTitle": "Pepperstone",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Pepperstone",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Sharesies",
+      "regions": [
+        "Elsewhere"
+      ],
+      "wikipediaTitle": "Sharesies",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Sharesies",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "Stake",
+      "regions": [
+        "Elsewhere"
+      ],
+      "wikipediaTitle": "Stake (platform)",
+      "wikipediaUrl": "https://en.wikipedia.org/wiki/Stake_(platform)",
+      "sourceTags": [
+        "wikipedia-template"
+      ]
+    },
+    {
+      "name": "DBS Vickers Securities",
+      "regions": [],
+      "wikipediaTitle": null,
+      "wikipediaUrl": null,
+      "sourceTags": [
+        "forex-ratings-article"
+      ],
+      "forexRatingsArticles": [
+        "https://www.forex-ratings.com/stock-brokers/best-asian-stock-brokers/"
+      ]
+    },
+    {
+      "name": "Firstrade",
+      "regions": [],
+      "wikipediaTitle": null,
+      "wikipediaUrl": null,
+      "sourceTags": [
+        "forex-ratings-article"
+      ],
+      "forexRatingsArticles": [
+        "https://www.forex-ratings.com/stock-brokers/best-us-stock-brokers/"
+      ]
+    },
+    {
+      "name": "FSMOne",
+      "regions": [],
+      "wikipediaTitle": null,
+      "wikipediaUrl": null,
+      "sourceTags": [
+        "forex-ratings-article"
+      ],
+      "forexRatingsArticles": [
+        "https://www.forex-ratings.com/stock-brokers/best-asian-stock-brokers/"
+      ]
+    },
+    {
+      "name": "Hargreaves Lansdown",
+      "regions": [],
+      "wikipediaTitle": null,
+      "wikipediaUrl": null,
+      "sourceTags": [
+        "forex-ratings-article"
+      ],
+      "forexRatingsArticles": [
+        "https://www.forex-ratings.com/stock-brokers/best-international-stock-brokers/"
+      ]
+    },
+    {
+      "name": "IG",
+      "regions": [],
+      "wikipediaTitle": null,
+      "wikipediaUrl": null,
+      "sourceTags": [
+        "forex-ratings-article"
+      ],
+      "forexRatingsArticles": [
+        "https://www.forex-ratings.com/stock-brokers/best-international-stock-brokers/"
+      ]
+    },
+    {
+      "name": "Monex Boom",
+      "regions": [],
+      "wikipediaTitle": null,
+      "wikipediaUrl": null,
+      "sourceTags": [
+        "forex-ratings-article"
+      ],
+      "forexRatingsArticles": [
+        "https://www.forex-ratings.com/stock-brokers/best-asian-stock-brokers/"
+      ]
+    },
+    {
+      "name": "Phillip Capital POEMS",
+      "regions": [],
+      "wikipediaTitle": null,
+      "wikipediaUrl": null,
+      "sourceTags": [
+        "forex-ratings-article"
+      ],
+      "forexRatingsArticles": [
+        "https://www.forex-ratings.com/stock-brokers/best-asian-stock-brokers/"
+      ]
+    },
+    {
+      "name": "Saxo Markets",
+      "regions": [],
+      "wikipediaTitle": null,
+      "wikipediaUrl": null,
+      "sourceTags": [
+        "forex-ratings-article"
+      ],
+      "forexRatingsArticles": [
+        "https://www.forex-ratings.com/stock-brokers/best-international-stock-brokers/"
+      ]
+    },
+    {
+      "name": "TD Ameritrade",
+      "regions": [],
+      "wikipediaTitle": null,
+      "wikipediaUrl": null,
+      "sourceTags": [
+        "forex-ratings-article"
+      ],
+      "forexRatingsArticles": [
+        "https://www.forex-ratings.com/stock-brokers/best-us-stock-brokers/"
+      ]
+    },
+    {
+      "name": "Tiger Brokers",
+      "regions": [],
+      "wikipediaTitle": null,
+      "wikipediaUrl": null,
+      "sourceTags": [
+        "forex-ratings-article"
+      ],
+      "forexRatingsArticles": [
+        "https://www.forex-ratings.com/stock-brokers/best-asian-stock-brokers/"
+      ]
+    }
+  ]
+}

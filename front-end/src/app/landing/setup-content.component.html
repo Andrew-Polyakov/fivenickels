@@ -1,0 +1,36 @@
+<section class="content">
+  <div class="content-header">
+    <h2>Main Content</h2>
+    <small>{{ setups.length }} setups</small>
+  </div>
+
+  @if (setups.length === 0) {
+    <p class="empty">No setups for selected filters.</p>
+  } @else {
+    <div class="cards">
+      @for (setup of setups; track trackById($index, setup)) {
+        <article class="card">
+          <header>
+            <h3>{{ setup.symbol }} - {{ setup.setupType }}</h3>
+            <span class="score">{{ setup.score || 'Unscored' }}</span>
+          </header>
+          <p>{{ setup.stockName || 'Unknown stock' }}</p>
+          <dl>
+            <div>
+              <dt>Direction</dt>
+              <dd>{{ setup.direction || 'N/A' }}</dd>
+            </div>
+            <div>
+              <dt>Confluence</dt>
+              <dd>{{ setup.confluence || 'N/A' }}</dd>
+            </div>
+            <div>
+              <dt>Sector</dt>
+              <dd>{{ setup.sector || 'N/A' }}</dd>
+            </div>
+          </dl>
+        </article>
+      }
+    </div>
+  }
+</section>

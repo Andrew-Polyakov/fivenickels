@@ -159,3 +159,11 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         r = self.client.get(self.homepage.url)
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, self.energy_index.url)
+
+    def test_home_sector_nav_hides_empty_taxonomy(self):
+        """Sectors with no tagged pages and no home-stream tiles are omitted from nav."""
+        r = self.client.get(self.homepage.url)
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "Energy")
+        self.assertContains(r, "Materials")
+        self.assertNotContains(r, "Utilities")

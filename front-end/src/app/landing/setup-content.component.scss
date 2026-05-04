@@ -1,0 +1,61 @@
+.content {
+  border: 1px solid #334155;
+  border-radius: 0.8rem;
+  padding: 1rem;
+  background: #0b1220;
+  color: #e2e8f0;
+}
+
+.content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.75rem;
+}
+
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0.75rem;
+}
+
+.card {
+  border: 1px solid #334155;
+  border-radius: 0.65rem;
+  padding: 0.7rem;
+  background: #111827;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.score {
+  color: #22d3ee;
+  font-size: 0.85rem;
+}
+
+dl {
+  margin: 0.5rem 0 0;
+}
+
+dt {
+  color: #94a3b8;
+  font-size: 0.8rem;
+}
+
+dd {
+  margin: 0 0 0.35rem;
+}
+
+.empty {
+  color: #94a3b8;
+}

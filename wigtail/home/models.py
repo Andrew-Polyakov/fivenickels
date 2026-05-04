@@ -160,11 +160,15 @@ class HomePage(RoutablePageMixin, Page):
         )
 
     def get_context(self, request, *args, **kwargs):
+        from home.query import taxonomy_term_shown_in_sector_nav
+
         context = super().get_context(request, *args, **kwargs)
         terms = list(TaxonomyTerm.objects.filter(slug__in=GICS_SECTOR_SLUGS))
         terms.sort(key=lambda t: GICS_SECTOR_ORDER[t.slug])
         nav = []
         for t in terms:
+            if not taxonomy_term_shown_in_sector_nav(self, t):
+                continue
             index = (
                 SubsectionIndexPage.objects.live()
                 .public()

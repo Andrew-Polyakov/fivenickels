@@ -18,3 +18,9 @@ try:
     from .local import *
 except ImportError:
     pass
+
+# Wagtail database search uses PostgreSQL FTS when ENGINE is postgresql; django.contrib.postgres is required.
+# https://docs.wagtail.org/en/stable/topics/search/backends.html
+if DATABASES["default"].get("ENGINE") == "django.db.backends.postgresql":
+    if "django.contrib.postgres" not in INSTALLED_APPS:
+        INSTALLED_APPS.append("django.contrib.postgres")

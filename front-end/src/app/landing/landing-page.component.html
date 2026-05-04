@@ -1,0 +1,29 @@
+<main class="layout">
+  @if (loading()) {
+    <p class="status">Loading landing data...</p>
+  } @else if (error(); as err) {
+    <p class="status error">{{ err }}</p>
+  } @else {
+    <section class="north">
+      <app-ticker-carousel
+        [stocks]="stocks()"
+        [selectedSymbol]="selectedSymbol()"
+        (selectedSymbolChange)="onSelectedSymbolChange($event)" />
+    </section>
+
+    <section class="west">
+      <app-subsections-panel
+        [typeOptions]="typeOptions()"
+        [directionOptions]="directionOptions()"
+        [scoreOptions]="scoreOptions()"
+        [filters]="filters()"
+        (filtersChange)="onFiltersChange($event)" />
+    </section>
+
+    <section class="center">
+      <app-setup-content
+        [setups]="filteredSetups()"
+        [stocksBySymbol]="stocksBySymbol()" />
+    </section>
+  }
+</main>

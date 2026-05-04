@@ -48,6 +48,28 @@ internal sealed class NewsLineDto
 
     [JsonPropertyName("createdAtUtc")]
     public DateTime? CreatedAtUtc { get; set; }
+
+    /// <summary>Alpaca summary (may mirror first sentence of content).</summary>
+    [JsonPropertyName("summary")]
+    public string? Summary { get; set; }
+
+    /// <summary>Plain text body, HTML stripped; truncated for stdout JSON.</summary>
+    [JsonPropertyName("content")]
+    public string? Content { get; set; }
+
+    [JsonPropertyName("source")]
+    public string? Source { get; set; }
+
+    [JsonPropertyName("url")]
+    public string? Url { get; set; }
+
+    /// <summary>Related symbols from Alpaca (reuse as tag-like metadata).</summary>
+    [JsonPropertyName("symbols")]
+    public List<string> Symbols { get; set; } = new();
+
+    /// <summary>semiconductor (when symbol in semi set) + Alpaca symbols + source slug, deduped.</summary>
+    [JsonPropertyName("tags")]
+    public List<string> Tags { get; set; } = new();
 }
 
 internal sealed class WebHintDto

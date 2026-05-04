@@ -20,11 +20,14 @@ internal static class PatternsCommand
         using var db = new LocalDatabase(LocalDatabase.getDefaultDbPath());
         db.initialize();
         var cache = new BarsRepo(db);
+        var stockWriter = new StockWriter(db);
+        var trading = alpca.GetAlpacaTradingClient(secret);
         var end = DateTime.UtcNow;
         var root = new PatternRootDto {
             AsOfUtc = end,
             WithBarsDebug = withBars
         };
+        var runStart = DateTime.UtcNow;
         try {
             foreach (var sym in tickers) {
                 var t = new PatternTickerDto { Symbol = sym, Timeframes = new TimeframeBundleDto() };
@@ -63,6 +66,12 @@ internal static class PatternsCommand
                     : m1.Count > 0 ? m1[^1].Close
                     : null;
                 root.Tickers.Add(t);
+                var meta = await AssetMetaLookup.tryFetchAsync(trading, sym);
+                stockWriter.upsert(sym, end, meta);
+            }
+            var runId = PatternScanPersistence.insertScanRun(db, runStart, DateTime.UtcNow, tickers);
+            foreach (var t in root.Tickers) {
+                PatternScanPersistence.insertSetupFromPattern(db.getConnection(), runId, t);
             }
         } catch (Exception ex) {
             Console.Error.WriteLine(ex.ToString());

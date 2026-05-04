@@ -1,0 +1,42 @@
+.ticker-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+h2 {
+  margin: 0;
+  font-size: 1rem;
+  color: #e2e8f0;
+}
+
+.ticker-track {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.ticker-item {
+  min-width: 12rem;
+  border: 1px solid #334155;
+  border-radius: 0.75rem;
+  background: #0f172a;
+  color: #e2e8f0;
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  cursor: pointer;
+}
+
+.ticker-item.selected {
+  border-color: #22d3ee;
+  background: #082f49;
+}
+
+.empty {
+  margin: 0;
+  color: #94a3b8;
+}

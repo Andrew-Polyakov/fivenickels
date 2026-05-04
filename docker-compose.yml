@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: trades-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: trades
+      POSTGRES_PASSWORD: trades
+      POSTGRES_DB: trades
+    volumes:
+      - trades_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trades -d trades"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  trades_pgdata:

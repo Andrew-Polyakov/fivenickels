@@ -164,8 +164,9 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 10_000
 
 WAGTAIL_SITE_NAME = "mysite"
 
-# Search
-# https://docs.wagtail.org/en/stable/topics/search/backends.html
+# Search (database backend: SQLite FTS5 or PostgreSQL FTS). Elasticsearch/OpenSearch backends are
+# optional; see https://docs.wagtail.org/en/stable/topics/search/backends.html
+# PostgreSQL deployments must load django.contrib.postgres — appended in dev.py/production.py when ENGINE is postgresql.
 WAGTAILSEARCH_BACKENDS = {
     "default": {
         "BACKEND": "wagtail.search.backends.database",

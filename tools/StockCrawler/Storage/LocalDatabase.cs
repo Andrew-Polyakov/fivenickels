@@ -90,6 +90,7 @@ internal sealed class LocalDatabase : IDisposable
                 author          TEXT,
                 source          TEXT,
                 url             TEXT,
+                content         TEXT,
                 fetched_utc     TEXT NOT NULL
             );
             """,
@@ -192,7 +193,29 @@ internal sealed class LocalDatabase : IDisposable
             VALUES ('schema_version', '1');
             """,
             tx);
+        ensureNewsArticleContentColumn(tx);
         tx.Commit();
+    }
+
+    private void ensureNewsArticleContentColumn(SqliteTransaction tx) {
+        if (columnExists(tx, "news_articles", "content")) {
+            return;
+        }
+        execute("ALTER TABLE news_articles ADD COLUMN content TEXT;", tx);
+    }
+
+    private bool columnExists(SqliteTransaction tx, string table, string column) {
+        using var cmd = connection.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = $"PRAGMA table_info({table});";
+        using var r = cmd.ExecuteReader();
+        while (r.Read()) {
+            var name = r.GetString(1);
+            if (string.Equals(name, column, StringComparison.OrdinalIgnoreCase)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static string findRepoRoot() {

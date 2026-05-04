@@ -1,0 +1,42 @@
+<aside class="panel">
+  <div class="panel-header">
+    <h3>Subsections</h3>
+    <button type="button" (click)="reset()">Reset</button>
+  </div>
+
+  <section>
+    <h4>Setup Type</h4>
+    @for (item of typeOptions; track item.value) {
+      <button
+        type="button"
+        [class.active]="filters.setupType === item.value"
+        (click)="toggle('setupType', item.value)">
+        {{ item.label }} <span>{{ item.count }}</span>
+      </button>
+    }
+  </section>
+
+  <section>
+    <h4>Direction</h4>
+    @for (item of directionOptions; track item.value) {
+      <button
+        type="button"
+        [class.active]="filters.direction === item.value"
+        (click)="toggle('direction', item.value)">
+        {{ item.label }} <span>{{ item.count }}</span>
+      </button>
+    }
+  </section>
+
+  <section>
+    <h4>Score</h4>
+    @for (item of scoreOptions; track item.value) {
+      <button
+        type="button"
+        [class.active]="filters.score === item.value"
+        (click)="toggle('score', item.value)">
+        {{ item.label }} <span>{{ item.count }}</span>
+      </button>
+    }
+  </section>
+</aside>

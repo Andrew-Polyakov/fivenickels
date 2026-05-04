@@ -3,7 +3,37 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from home.models import TaggedContentPage, TaxonomyTerm
+    from home.models import HomePage, TaggedContentPage, TaxonomyTerm
+
+
+def taxonomy_term_has_public_pages(term: TaxonomyTerm) -> bool:
+    from home.models import TaggedContentPage
+
+    return (
+        TaggedContentPage.objects.live()
+        .public()
+        .filter(section_term=term)
+        .exists()
+    )
+
+
+def home_stream_includes_taxonomy_term(home_page: HomePage, term: TaxonomyTerm) -> bool:
+    """True if a markdown tile on the home stream uses this taxonomy term."""
+    for block in home_page.body:
+        if block.block_type != "markdown_tiles":
+            continue
+        for tile in block.value["tiles"]:
+            tax = tile.get("taxonomy")
+            if tax is not None and tax.pk == term.pk:
+                return True
+    return False
+
+
+def taxonomy_term_shown_in_sector_nav(home_page: HomePage, term: TaxonomyTerm) -> bool:
+    """Non-empty for homepage nav: tagged pages exist and/or home tiles reference the term."""
+    return taxonomy_term_has_public_pages(term) or home_stream_includes_taxonomy_term(
+        home_page, term
+    )
 
 
 def get_recent_pages_for_section(

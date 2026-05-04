@@ -1,0 +1,6767 @@
+{
+  "source": "https://www.forex-ratings.com/forex-brokers/",
+  "scrapedAt": "2026-05-03T12:55:51Z",
+  "stats": {
+    "parsedTableRows": 420,
+    "brokerRecords": 419,
+    "duplicateSlugRowsSkipped": [
+      {
+        "slug": "moneyforex",
+        "skippedRank": 362,
+        "keptRank": 308
+      }
+    ]
+  },
+  "brokers": [
+    {
+      "rank": 1,
+      "name": "FXCC",
+      "slug": "fxcc",
+      "yearFounded": 2010,
+      "status": "Trusted",
+      "reviewCount": 269,
+      "brokerTypes": [
+        "ECN",
+        "STP"
+      ],
+      "regulation": "CySEC, MISA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxcc/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxcc/"
+      }
+    },
+    {
+      "rank": 2,
+      "name": "FxPro",
+      "slug": "fxpro",
+      "yearFounded": 1999,
+      "status": "Trusted",
+      "reviewCount": 879,
+      "brokerTypes": [
+        "Broker",
+        "NDD"
+      ],
+      "regulation": "FCA, SCB",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxpro/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxpro/"
+      }
+    },
+    {
+      "rank": 3,
+      "name": "Riverquode",
+      "slug": "riverquode",
+      "yearFounded": 2020,
+      "status": "Newcomer",
+      "reviewCount": 0,
+      "brokerTypes": [
+        "CFD Broker"
+      ],
+      "regulation": "FSCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/riverquode/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/riverquode/"
+      }
+    },
+    {
+      "rank": 4,
+      "name": "Octa",
+      "slug": "octafx",
+      "yearFounded": 2011,
+      "status": null,
+      "reviewCount": 306,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySec, MISA, FS...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/octafx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/octafx/"
+      }
+    },
+    {
+      "rank": 5,
+      "name": "IronFX",
+      "slug": "ironfx",
+      "yearFounded": 2010,
+      "status": null,
+      "reviewCount": 388,
+      "brokerTypes": [
+        "MM",
+        "ECN",
+        "STP"
+      ],
+      "regulation": "FCA, FSCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/ironfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/ironfx/"
+      }
+    },
+    {
+      "rank": 6,
+      "name": "RoboForex",
+      "slug": "roboforex",
+      "yearFounded": 2009,
+      "status": null,
+      "reviewCount": 296,
+      "brokerTypes": [
+        "Broker",
+        "NDD",
+        "STP"
+      ],
+      "regulation": "FSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/roboforex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/roboforex/"
+      }
+    },
+    {
+      "rank": 7,
+      "name": "Moneta Markets",
+      "slug": "monetamarkets",
+      "yearFounded": 2019,
+      "status": null,
+      "reviewCount": 7,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "Financial Secto...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/monetamarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/monetamarkets/"
+      }
+    },
+    {
+      "rank": 8,
+      "name": "FXCess",
+      "slug": "fxcess",
+      "yearFounded": 2019,
+      "status": "Newcomer",
+      "reviewCount": 68,
+      "brokerTypes": [
+        "MM",
+        "ECN",
+        "STP"
+      ],
+      "regulation": "N/A",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxcess/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxcess/"
+      }
+    },
+    {
+      "rank": 9,
+      "name": "XM",
+      "slug": "xm",
+      "yearFounded": 2009,
+      "status": "Trusted",
+      "reviewCount": 528,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC, FSC, DFS...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/xm/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/xm/"
+      }
+    },
+    {
+      "rank": 10,
+      "name": "Alpari",
+      "slug": "alpari",
+      "yearFounded": 1998,
+      "status": null,
+      "reviewCount": 70,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSC Mauritius",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/alpari/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/alpari/"
+      }
+    },
+    {
+      "rank": 11,
+      "name": "Just2Trade",
+      "slug": "just2trade",
+      "yearFounded": 1994,
+      "status": null,
+      "reviewCount": 124,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC, NFA, FIN...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/just2trade/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/just2trade/"
+      }
+    },
+    {
+      "rank": 12,
+      "name": "Exness",
+      "slug": "exness",
+      "yearFounded": 2008,
+      "status": null,
+      "reviewCount": 393,
+      "brokerTypes": [
+        "MM",
+        "NDD"
+      ],
+      "regulation": "FSA, CySEC , FC...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/exness/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/exness/"
+      }
+    },
+    {
+      "rank": 13,
+      "name": "OnEquity",
+      "slug": "onequity",
+      "yearFounded": 2022,
+      "status": "Newcomer",
+      "reviewCount": 0,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "FSA Seychelles,...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/onequity/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/onequity/"
+      }
+    },
+    {
+      "rank": 14,
+      "name": "Fintana",
+      "slug": "fintana",
+      "yearFounded": 2023,
+      "status": "Newcomer",
+      "reviewCount": 0,
+      "brokerTypes": [
+        "CFD  Broker"
+      ],
+      "regulation": "FSC Mauritius",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fintana/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fintana/"
+      }
+    },
+    {
+      "rank": 15,
+      "name": "Livaxxen",
+      "slug": "livaxxen",
+      "yearFounded": 2024,
+      "status": "Scam",
+      "reviewCount": 32,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/livaxxen/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/livaxxen/"
+      }
+    },
+    {
+      "rank": 16,
+      "name": "Stockoza",
+      "slug": "stockoza",
+      "yearFounded": 2021,
+      "status": "Scam",
+      "reviewCount": 223,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/stockoza/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/stockoza/"
+      }
+    },
+    {
+      "rank": 17,
+      "name": "Efixxen",
+      "slug": "efixxen",
+      "yearFounded": 2023,
+      "status": "Scam",
+      "reviewCount": 61,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/efixxen/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/efixxen/"
+      }
+    },
+    {
+      "rank": 18,
+      "name": "PowerStox",
+      "slug": "powerstox",
+      "yearFounded": 2023,
+      "status": "Scam",
+      "reviewCount": 120,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/powerstox/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/powerstox/"
+      }
+    },
+    {
+      "rank": 19,
+      "name": "FXTM",
+      "slug": "fxtm",
+      "yearFounded": 2011,
+      "status": "Trusted",
+      "reviewCount": 125,
+      "brokerTypes": [
+        "Broker",
+        "ECN"
+      ],
+      "regulation": "CySEC, FCA, IFS...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxtm/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxtm/"
+      }
+    },
+    {
+      "rank": 20,
+      "name": "IXXEN",
+      "slug": "ixxen",
+      "yearFounded": 2023,
+      "status": "Scam",
+      "reviewCount": 169,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/ixxen/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/ixxen/"
+      }
+    },
+    {
+      "rank": 21,
+      "name": "Fundiza",
+      "slug": "fundiza",
+      "yearFounded": 2019,
+      "status": "Scam",
+      "reviewCount": 389,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fundiza/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fundiza/"
+      }
+    },
+    {
+      "rank": 22,
+      "name": "T4Trade",
+      "slug": "t4trade",
+      "yearFounded": 2021,
+      "status": null,
+      "reviewCount": 166,
+      "brokerTypes": [
+        "ECN",
+        "STP",
+        "MM"
+      ],
+      "regulation": "Seychelles FSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/t4trade/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/t4trade/"
+      }
+    },
+    {
+      "rank": 23,
+      "name": "The Uptrend Center",
+      "slug": "uptrendcenter",
+      "yearFounded": 2002,
+      "status": "Scam",
+      "reviewCount": 162,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/uptrendcenter/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/uptrendcenter/"
+      }
+    },
+    {
+      "rank": 24,
+      "name": "LBLV",
+      "slug": "lblv",
+      "yearFounded": 2018,
+      "status": "Scam",
+      "reviewCount": 310,
+      "brokerTypes": [
+        "Broker",
+        "ECN"
+      ],
+      "regulation": "Seychelles FSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/lblv/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/lblv/"
+      }
+    },
+    {
+      "rank": 25,
+      "name": "FiatVisions",
+      "slug": "fiatvisions",
+      "yearFounded": 2021,
+      "status": "Scam",
+      "reviewCount": 386,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "MISA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fiatvisions/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fiatvisions/"
+      }
+    },
+    {
+      "rank": 26,
+      "name": "Cinpax",
+      "slug": "cinpax",
+      "yearFounded": 2021,
+      "status": "Scam",
+      "reviewCount": 289,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/cinpax/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/cinpax/"
+      }
+    },
+    {
+      "rank": 27,
+      "name": "MarketRocks",
+      "slug": "marketrocks",
+      "yearFounded": 2024,
+      "status": "Scam",
+      "reviewCount": 46,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/marketrocks/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/marketrocks/"
+      }
+    },
+    {
+      "rank": 28,
+      "name": "Xeodis",
+      "slug": "xeodis",
+      "yearFounded": 2024,
+      "status": "Scam",
+      "reviewCount": 41,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "N/A",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/xeodis/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/xeodis/"
+      }
+    },
+    {
+      "rank": 29,
+      "name": "BankeFeX",
+      "slug": "bankefex",
+      "yearFounded": 2024,
+      "status": "Scam",
+      "reviewCount": 58,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "MISA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/bankefex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/bankefex/"
+      }
+    },
+    {
+      "rank": 30,
+      "name": "Dukascopy",
+      "slug": "dukascopy",
+      "yearFounded": 2000,
+      "status": null,
+      "reviewCount": 59,
+      "brokerTypes": [
+        "Bank"
+      ],
+      "regulation": "FINMA, JFSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/dukascopy/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/dukascopy/"
+      }
+    },
+    {
+      "rank": 31,
+      "name": "easyMarkets",
+      "slug": "easymarkets",
+      "yearFounded": 2011,
+      "status": null,
+      "reviewCount": 35,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC, MiFID, A...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/easymarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/easymarkets/"
+      }
+    },
+    {
+      "rank": 32,
+      "name": "Forex Club",
+      "slug": "fxclub",
+      "yearFounded": 2005,
+      "status": null,
+      "reviewCount": 61,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "NFA, CFTC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxclub/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxclub/"
+      }
+    },
+    {
+      "rank": 33,
+      "name": "Swissquote",
+      "slug": "swissquote",
+      "yearFounded": 2000,
+      "status": null,
+      "reviewCount": 20,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "FINMA, MFSA, DF...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/swissquote/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/swissquote/"
+      }
+    },
+    {
+      "rank": 34,
+      "name": "Saxo Bank",
+      "slug": "saxobank",
+      "yearFounded": 1992,
+      "status": null,
+      "reviewCount": 20,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "FSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/saxobank/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/saxobank/"
+      }
+    },
+    {
+      "rank": 35,
+      "name": "eToro",
+      "slug": "etoro",
+      "yearFounded": 2007,
+      "status": null,
+      "reviewCount": 67,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC, ASIC, FC...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/etoro/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/etoro/"
+      }
+    },
+    {
+      "rank": 36,
+      "name": "Admirals",
+      "slug": "admiral",
+      "yearFounded": 2001,
+      "status": null,
+      "reviewCount": 96,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "ASIC, CySEC, FC...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/admiral/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/admiral/"
+      }
+    },
+    {
+      "rank": 37,
+      "name": "HYCM",
+      "slug": "hycm",
+      "yearFounded": 1977,
+      "status": null,
+      "reviewCount": 64,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC, FCA, MiF...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/hycm/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/hycm/"
+      }
+    },
+    {
+      "rank": 38,
+      "name": "IG Markets",
+      "slug": "ig",
+      "yearFounded": 1995,
+      "status": null,
+      "reviewCount": 20,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "NFA, CFTC, ASIC...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/ig/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/ig/"
+      }
+    },
+    {
+      "rank": 39,
+      "name": "LiteFinance",
+      "slug": "liteforex",
+      "yearFounded": 2005,
+      "status": null,
+      "reviewCount": 185,
+      "brokerTypes": [
+        "ECN"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/liteforex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/liteforex/"
+      }
+    },
+    {
+      "rank": 40,
+      "name": "Forex4you",
+      "slug": "forex4you",
+      "yearFounded": 2007,
+      "status": null,
+      "reviewCount": 129,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "FSC BVI",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/forex4you/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/forex4you/"
+      }
+    },
+    {
+      "rank": 41,
+      "name": "Interactive Brokers",
+      "slug": "interactivebrokers",
+      "yearFounded": 1977,
+      "status": null,
+      "reviewCount": 6,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSA, IIROC, CFT...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/interactivebrokers/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/interactivebrokers/"
+      }
+    },
+    {
+      "rank": 42,
+      "name": "INGOT Brokers",
+      "slug": "ingot",
+      "yearFounded": 2006,
+      "status": null,
+      "reviewCount": 11,
+      "brokerTypes": [
+        "Broker",
+        "STP"
+      ],
+      "regulation": "FSA, ASIC, JSC,...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/ingot/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/ingot/"
+      }
+    },
+    {
+      "rank": 43,
+      "name": "Orbex",
+      "slug": "orbex",
+      "yearFounded": 2010,
+      "status": null,
+      "reviewCount": 18,
+      "brokerTypes": [
+        "ECN"
+      ],
+      "regulation": "FSC, FSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/orbex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/orbex/"
+      }
+    },
+    {
+      "rank": 44,
+      "name": "Alfa-Forex",
+      "slug": "alfaforex",
+      "yearFounded": 1996,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Bank",
+        "ECN",
+        "STP",
+        "NDD"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/alfaforex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/alfaforex/"
+      }
+    },
+    {
+      "rank": 45,
+      "name": "FOREX.com",
+      "slug": "forex",
+      "yearFounded": 1999,
+      "status": null,
+      "reviewCount": 45,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA, IIROC, ASI...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/forex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/forex/"
+      }
+    },
+    {
+      "rank": 46,
+      "name": "Trading Point",
+      "slug": "tradingpoint",
+      "yearFounded": 2010,
+      "status": null,
+      "reviewCount": 3,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC, FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/tradingpoint/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/tradingpoint/"
+      }
+    },
+    {
+      "rank": 47,
+      "name": "TusarFX",
+      "slug": "tusarfx",
+      "yearFounded": 2014,
+      "status": null,
+      "reviewCount": 7,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CROFR",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/tusarfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/tusarfx/"
+      }
+    },
+    {
+      "rank": 48,
+      "name": "Plus500",
+      "slug": "plus500",
+      "yearFounded": 2008,
+      "status": null,
+      "reviewCount": 7,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "Plus500SEY Ltd,...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/plus500/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/plus500/"
+      }
+    },
+    {
+      "rank": 49,
+      "name": "IFC Markets",
+      "slug": "ifcmarkets",
+      "yearFounded": 2006,
+      "status": null,
+      "reviewCount": 36,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "BVI FSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/ifcmarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/ifcmarkets/"
+      }
+    },
+    {
+      "rank": 50,
+      "name": "GCI",
+      "slug": "gci",
+      "yearFounded": 2002,
+      "status": null,
+      "reviewCount": 5,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/gci/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/gci/"
+      }
+    },
+    {
+      "rank": 51,
+      "name": "Oanda",
+      "slug": "oanda",
+      "yearFounded": 1996,
+      "status": null,
+      "reviewCount": 54,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CFTC, NFA, FSA,...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/oanda/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/oanda/"
+      }
+    },
+    {
+      "rank": 52,
+      "name": "iFOREX",
+      "slug": "iforex",
+      "yearFounded": 1996,
+      "status": null,
+      "reviewCount": 20,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/iforex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/iforex/"
+      }
+    },
+    {
+      "rank": 53,
+      "name": "Varengold",
+      "slug": "varengold",
+      "yearFounded": 1995,
+      "status": null,
+      "reviewCount": 11,
+      "brokerTypes": [
+        "Bank"
+      ],
+      "regulation": "BaFin",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/varengold/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/varengold/"
+      }
+    },
+    {
+      "rank": 54,
+      "name": "Tradeview Markets",
+      "slug": "tradeview",
+      "yearFounded": 2004,
+      "status": null,
+      "reviewCount": 19,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CIMA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/tradeview/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/tradeview/"
+      }
+    },
+    {
+      "rank": 55,
+      "name": "TeleTrade",
+      "slug": "teletrade",
+      "yearFounded": 1997,
+      "status": null,
+      "reviewCount": 15,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/teletrade/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/teletrade/"
+      }
+    },
+    {
+      "rank": 56,
+      "name": "AccentForex",
+      "slug": "accentforex",
+      "yearFounded": 2010,
+      "status": null,
+      "reviewCount": 19,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "VFSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/accentforex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/accentforex/"
+      }
+    },
+    {
+      "rank": 57,
+      "name": "Sucden",
+      "slug": "sucden",
+      "yearFounded": 1973,
+      "status": null,
+      "reviewCount": 5,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA, NFA, SFC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/sucden/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/sucden/"
+      }
+    },
+    {
+      "rank": 58,
+      "name": "QuestradeFX",
+      "slug": "quest",
+      "yearFounded": 2004,
+      "status": null,
+      "reviewCount": 9,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "IIROC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/quest/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/quest/"
+      }
+    },
+    {
+      "rank": 59,
+      "name": "XTB",
+      "slug": "xtb",
+      "yearFounded": 2002,
+      "status": null,
+      "reviewCount": 10,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSC, FCA, KNF, ...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/xtb/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/xtb/"
+      }
+    },
+    {
+      "rank": 60,
+      "name": "NPBFX",
+      "slug": "npbfx",
+      "yearFounded": 1996,
+      "status": null,
+      "reviewCount": 4,
+      "brokerTypes": [
+        "Broker",
+        "STP",
+        "NDD"
+      ],
+      "regulation": "IFSC, Financial...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/npbfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/npbfx/"
+      }
+    },
+    {
+      "rank": 61,
+      "name": "Colmex Pro",
+      "slug": "colmex",
+      "yearFounded": 2009,
+      "status": null,
+      "reviewCount": 11,
+      "brokerTypes": [
+        "Broker",
+        "ECN"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/colmex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/colmex/"
+      }
+    },
+    {
+      "rank": 62,
+      "name": "DIF Broker",
+      "slug": "difbroker",
+      "yearFounded": 1999,
+      "status": null,
+      "reviewCount": 4,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CMVM, FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/difbroker/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/difbroker/"
+      }
+    },
+    {
+      "rank": 63,
+      "name": "FXDD",
+      "slug": "fxdd",
+      "yearFounded": 2002,
+      "status": null,
+      "reviewCount": 8,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "NFA, CFTC, MFSA...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxdd/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxdd/"
+      }
+    },
+    {
+      "rank": 64,
+      "name": "Advanced Markets",
+      "slug": "advancedmarkets",
+      "yearFounded": 2006,
+      "status": null,
+      "reviewCount": 5,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "NFA, CFTC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/advancedmarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/advancedmarkets/"
+      }
+    },
+    {
+      "rank": 65,
+      "name": "Hantec Markets",
+      "slug": "hantec",
+      "yearFounded": 1990,
+      "status": null,
+      "reviewCount": 7,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA, FSC, ASIC,...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/hantec/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/hantec/"
+      }
+    },
+    {
+      "rank": 66,
+      "name": "GKFX",
+      "slug": "gkfx",
+      "yearFounded": 2012,
+      "status": null,
+      "reviewCount": 5,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSC BVI, SECC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/gkfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/gkfx/"
+      }
+    },
+    {
+      "rank": 67,
+      "name": "FxGrow",
+      "slug": "fxgrow",
+      "yearFounded": 2012,
+      "status": null,
+      "reviewCount": 4,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxgrow/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxgrow/"
+      }
+    },
+    {
+      "rank": 68,
+      "name": "ETrade FX",
+      "slug": "etradefx",
+      "yearFounded": 2006,
+      "status": null,
+      "reviewCount": 9,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "NFA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/etradefx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/etradefx/"
+      }
+    },
+    {
+      "rank": 69,
+      "name": "JustMarkets",
+      "slug": "justforex",
+      "yearFounded": 2012,
+      "status": null,
+      "reviewCount": 16,
+      "brokerTypes": [
+        "ECN",
+        "STP"
+      ],
+      "regulation": "IFSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/justforex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/justforex/"
+      }
+    },
+    {
+      "rank": 70,
+      "name": "ATFX",
+      "slug": "atfx",
+      "yearFounded": 2014,
+      "status": null,
+      "reviewCount": 3,
+      "brokerTypes": [
+        "STP",
+        "NDD"
+      ],
+      "regulation": "FCA, CySEC, FSC...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/atfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/atfx/"
+      }
+    },
+    {
+      "rank": 71,
+      "name": "CMC Markets",
+      "slug": "cmcmarkets",
+      "yearFounded": 1989,
+      "status": null,
+      "reviewCount": 8,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/cmcmarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/cmcmarkets/"
+      }
+    },
+    {
+      "rank": 72,
+      "name": "Sun Hung Kai Financial",
+      "slug": "sunhungkaifinancial",
+      "yearFounded": 1969,
+      "status": null,
+      "reviewCount": 7,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/sunhungkaifinancial/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/sunhungkaifinancial/"
+      }
+    },
+    {
+      "rank": 73,
+      "name": "PrimeXBT",
+      "slug": "primexbt",
+      "yearFounded": 2018,
+      "status": null,
+      "reviewCount": 24,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "SFSA, SVGFSA, A...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/primexbt/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/primexbt/"
+      }
+    },
+    {
+      "rank": 74,
+      "name": "Rosenthal Collins Group",
+      "slug": "rosenthal",
+      "yearFounded": 2010,
+      "status": null,
+      "reviewCount": 4,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "SEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/rosenthal/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/rosenthal/"
+      }
+    },
+    {
+      "rank": 75,
+      "name": "InstaForex",
+      "slug": "instaforex",
+      "yearFounded": 2007,
+      "status": null,
+      "reviewCount": 73,
+      "brokerTypes": [
+        "ECN"
+      ],
+      "regulation": "BVI FSC, FSC Sa...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/instaforex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/instaforex/"
+      }
+    },
+    {
+      "rank": 76,
+      "name": "Tickmill",
+      "slug": "tickmill",
+      "yearFounded": 2014,
+      "status": null,
+      "reviewCount": 47,
+      "brokerTypes": [
+        "ECN",
+        "STP"
+      ],
+      "regulation": "FCA UK, CySEC, ...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/tickmill/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/tickmill/"
+      }
+    },
+    {
+      "rank": 77,
+      "name": "IC Markets",
+      "slug": "icmarkets",
+      "yearFounded": 2007,
+      "status": null,
+      "reviewCount": 80,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "Eden Plaza,Offi...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/icmarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/icmarkets/"
+      }
+    },
+    {
+      "rank": 78,
+      "name": "USGFX",
+      "slug": "usgfx",
+      "yearFounded": 2006,
+      "status": null,
+      "reviewCount": 15,
+      "brokerTypes": [
+        "ECN"
+      ],
+      "regulation": "ASIC, FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/usgfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/usgfx/"
+      }
+    },
+    {
+      "rank": 79,
+      "name": "Fidelis",
+      "slug": "fidelis",
+      "yearFounded": 2011,
+      "status": null,
+      "reviewCount": 6,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fidelis/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fidelis/"
+      }
+    },
+    {
+      "rank": 80,
+      "name": "Blackwell Global",
+      "slug": "blackwellglobal",
+      "yearFounded": 2010,
+      "status": null,
+      "reviewCount": 11,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "FCA, SFC, SECC,...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/blackwellglobal/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/blackwellglobal/"
+      }
+    },
+    {
+      "rank": 81,
+      "name": "LCG",
+      "slug": "london-capital-group",
+      "yearFounded": 1996,
+      "status": null,
+      "reviewCount": 8,
+      "brokerTypes": [
+        "ECN"
+      ],
+      "regulation": "FCA and member ...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/london-capital-group/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/london-capital-group/"
+      }
+    },
+    {
+      "rank": 82,
+      "name": "CM Trading",
+      "slug": "cmtrading",
+      "yearFounded": 2012,
+      "status": null,
+      "reviewCount": 54,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/cmtrading/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/cmtrading/"
+      }
+    },
+    {
+      "rank": 83,
+      "name": "Libertex",
+      "slug": "libertex",
+      "yearFounded": 2012,
+      "status": null,
+      "reviewCount": 4,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/libertex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/libertex/"
+      }
+    },
+    {
+      "rank": 84,
+      "name": "Larson & Holz",
+      "slug": "larson-holz",
+      "yearFounded": 2018,
+      "status": null,
+      "reviewCount": 23,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "VFSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/larson-holz/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/larson-holz/"
+      }
+    },
+    {
+      "rank": 85,
+      "name": "FXFlat",
+      "slug": "fxflat",
+      "yearFounded": 1997,
+      "status": null,
+      "reviewCount": 5,
+      "brokerTypes": [
+        "ECN"
+      ],
+      "regulation": "BaFin",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxflat/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxflat/"
+      }
+    },
+    {
+      "rank": 86,
+      "name": "CIM Bank",
+      "slug": "cimbanque",
+      "yearFounded": 1990,
+      "status": null,
+      "reviewCount": 8,
+      "brokerTypes": [
+        "Bank"
+      ],
+      "regulation": "FINMA, SBA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/cimbanque/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/cimbanque/"
+      }
+    },
+    {
+      "rank": 87,
+      "name": "ADS Securities",
+      "slug": "ads-securities",
+      "yearFounded": 2011,
+      "status": null,
+      "reviewCount": 4,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA, SCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/ads-securities/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/ads-securities/"
+      }
+    },
+    {
+      "rank": 88,
+      "name": "Trade360",
+      "slug": "trade360",
+      "yearFounded": 2013,
+      "status": null,
+      "reviewCount": 3,
+      "brokerTypes": [
+        "ECN"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/trade360/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/trade360/"
+      }
+    },
+    {
+      "rank": 89,
+      "name": "Z.com Trade",
+      "slug": "zcomtrade",
+      "yearFounded": 2013,
+      "status": null,
+      "reviewCount": 4,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA, SFC, JFSA,...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/zcomtrade/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/zcomtrade/"
+      }
+    },
+    {
+      "rank": 90,
+      "name": "Arum Capital",
+      "slug": "arumcapital",
+      "yearFounded": 2016,
+      "status": null,
+      "reviewCount": 3,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "Cysec, MIFID",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/arumcapital/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/arumcapital/"
+      }
+    },
+    {
+      "rank": 91,
+      "name": "SquaredFinancial",
+      "slug": "squaredfinancial",
+      "yearFounded": 2016,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC, MiFID II...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/squaredfinancial/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/squaredfinancial/"
+      }
+    },
+    {
+      "rank": 92,
+      "name": "4xCube",
+      "slug": "4xcube",
+      "yearFounded": 2018,
+      "status": null,
+      "reviewCount": 3,
+      "brokerTypes": [
+        "STP",
+        "ECN"
+      ],
+      "regulation": "FSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/4xcube/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/4xcube/"
+      }
+    },
+    {
+      "rank": 93,
+      "name": "EagleFX",
+      "slug": "eaglefx",
+      "yearFounded": 2019,
+      "status": null,
+      "reviewCount": 2,
+      "brokerTypes": [
+        "ECN",
+        "STP"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/eaglefx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/eaglefx/"
+      }
+    },
+    {
+      "rank": 94,
+      "name": "Trading.com",
+      "slug": "tradingcom",
+      "yearFounded": 2018,
+      "status": null,
+      "reviewCount": 3,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/tradingcom/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/tradingcom/"
+      }
+    },
+    {
+      "rank": 95,
+      "name": "BCS Forex",
+      "slug": "bcs",
+      "yearFounded": 2004,
+      "status": null,
+      "reviewCount": 3,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/bcs/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/bcs/"
+      }
+    },
+    {
+      "rank": 96,
+      "name": "LegacyFX",
+      "slug": "legacyfx",
+      "yearFounded": 2012,
+      "status": null,
+      "reviewCount": 15,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "VFSC, CySEC, NB...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/legacyfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/legacyfx/"
+      }
+    },
+    {
+      "rank": 97,
+      "name": "LonghornFX",
+      "slug": "longhornfx",
+      "yearFounded": 2020,
+      "status": null,
+      "reviewCount": 7,
+      "brokerTypes": [
+        "ECN",
+        "STP"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/longhornfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/longhornfx/"
+      }
+    },
+    {
+      "rank": 98,
+      "name": "Investment Center",
+      "slug": "investmentcenter",
+      "yearFounded": 2001,
+      "status": null,
+      "reviewCount": 361,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/investmentcenter/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/investmentcenter/"
+      }
+    },
+    {
+      "rank": 99,
+      "name": "Financial Centre",
+      "slug": "financialcentre",
+      "yearFounded": 2001,
+      "status": null,
+      "reviewCount": 296,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "not regulated",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/financialcentre/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/financialcentre/"
+      }
+    },
+    {
+      "rank": 100,
+      "name": "Axiance",
+      "slug": "axiance",
+      "yearFounded": 2020,
+      "status": null,
+      "reviewCount": 37,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSA, FSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/axiance/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/axiance/"
+      }
+    },
+    {
+      "rank": 101,
+      "name": "XPro Markets",
+      "slug": "xpromarkets",
+      "yearFounded": 2022,
+      "status": null,
+      "reviewCount": 143,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/xpromarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/xpromarkets/"
+      }
+    },
+    {
+      "rank": 102,
+      "name": "CryptoIFX",
+      "slug": "cryptoifx",
+      "yearFounded": 2021,
+      "status": null,
+      "reviewCount": 119,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/cryptoifx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/cryptoifx/"
+      }
+    },
+    {
+      "rank": 103,
+      "name": "FXCentrum",
+      "slug": "fxcentrum",
+      "yearFounded": 2019,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "FSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxcentrum/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxcentrum/"
+      }
+    },
+    {
+      "rank": 104,
+      "name": "Blueberry Markets",
+      "slug": "blueberrymarkets",
+      "yearFounded": 2016,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "ASIC, VFSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/blueberrymarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/blueberrymarkets/"
+      }
+    },
+    {
+      "rank": 105,
+      "name": "Investments Global",
+      "slug": "investmentsglobal",
+      "yearFounded": 2002,
+      "status": null,
+      "reviewCount": 222,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "NFA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/investmentsglobal/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/investmentsglobal/"
+      }
+    },
+    {
+      "rank": 106,
+      "name": "AdroFx",
+      "slug": "adrofx",
+      "yearFounded": 2018,
+      "status": null,
+      "reviewCount": 41,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "VFSC, FSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/adrofx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/adrofx/"
+      }
+    },
+    {
+      "rank": 107,
+      "name": "Geetle",
+      "slug": "geetle",
+      "yearFounded": 2023,
+      "status": null,
+      "reviewCount": 150,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/geetle/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/geetle/"
+      }
+    },
+    {
+      "rank": 108,
+      "name": "Freedom Broker",
+      "slug": "ffin",
+      "yearFounded": 2013,
+      "status": null,
+      "reviewCount": 2,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/ffin/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/ffin/"
+      }
+    },
+    {
+      "rank": 109,
+      "name": "Evolve Markets",
+      "slug": "evolve",
+      "yearFounded": 2016,
+      "status": null,
+      "reviewCount": 3,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/evolve/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/evolve/"
+      }
+    },
+    {
+      "rank": 110,
+      "name": "SimpleFX",
+      "slug": "simplefx",
+      "yearFounded": 2014,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/simplefx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/simplefx/"
+      }
+    },
+    {
+      "rank": 111,
+      "name": "City Index",
+      "slug": "cityindex",
+      "yearFounded": 1983,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/cityindex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/cityindex/"
+      }
+    },
+    {
+      "rank": 112,
+      "name": "YCM-Invest",
+      "slug": "ycm",
+      "yearFounded": 2003,
+      "status": null,
+      "reviewCount": 2,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/ycm/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/ycm/"
+      }
+    },
+    {
+      "rank": 113,
+      "name": "DeltaStock",
+      "slug": "deltastock",
+      "yearFounded": 1998,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSC, MiFID",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/deltastock/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/deltastock/"
+      }
+    },
+    {
+      "rank": 114,
+      "name": "One Financial Markets",
+      "slug": "onefinancialmarkets",
+      "yearFounded": 2010,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/onefinancialmarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/onefinancialmarkets/"
+      }
+    },
+    {
+      "rank": 115,
+      "name": "Velocity Trade",
+      "slug": "velocitytrade",
+      "yearFounded": 2007,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA, FSCA, ASIC...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/velocitytrade/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/velocitytrade/"
+      }
+    },
+    {
+      "rank": 116,
+      "name": "Finq",
+      "slug": "finq",
+      "yearFounded": 2005,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/finq/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/finq/"
+      }
+    },
+    {
+      "rank": 117,
+      "name": "FXCL",
+      "slug": "fxclearing",
+      "yearFounded": 2006,
+      "status": null,
+      "reviewCount": 2,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxclearing/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxclearing/"
+      }
+    },
+    {
+      "rank": 118,
+      "name": "PFD",
+      "slug": "pfd",
+      "yearFounded": 2005,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSPR",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/pfd/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/pfd/"
+      }
+    },
+    {
+      "rank": 119,
+      "name": "OneRoyal",
+      "slug": "oneroyal",
+      "yearFounded": 2006,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "ASIC, CySEC, CM...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/oneroyal/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/oneroyal/"
+      }
+    },
+    {
+      "rank": 120,
+      "name": "Deriv",
+      "slug": "deriv",
+      "yearFounded": 1999,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "MFSA, Labuan FS...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/deriv/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/deriv/"
+      }
+    },
+    {
+      "rank": 121,
+      "name": "ForexMart",
+      "slug": "forexmart",
+      "yearFounded": 2015,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/forexmart/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/forexmart/"
+      }
+    },
+    {
+      "rank": 122,
+      "name": "Synergy Markets",
+      "slug": "synergymarkets",
+      "yearFounded": 2011,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "ASIC, AFSL",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/synergymarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/synergymarkets/"
+      }
+    },
+    {
+      "rank": 123,
+      "name": "TopTrader",
+      "slug": "toptrader",
+      "yearFounded": 2014,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/toptrader/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/toptrader/"
+      }
+    },
+    {
+      "rank": 124,
+      "name": "XGlobalMarkets",
+      "slug": "xglobalmarkets",
+      "yearFounded": 2012,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC, VFSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/xglobalmarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/xglobalmarkets/"
+      }
+    },
+    {
+      "rank": 125,
+      "name": "Axiory",
+      "slug": "axiory",
+      "yearFounded": 2011,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSC, IFSC, FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/axiory/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/axiory/"
+      }
+    },
+    {
+      "rank": 126,
+      "name": "AccuIndex",
+      "slug": "accuindex",
+      "yearFounded": 2016,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC, FSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/accuindex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/accuindex/"
+      }
+    },
+    {
+      "rank": 127,
+      "name": "CPT Markets",
+      "slug": "cptmarkets",
+      "yearFounded": 2008,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA, IFSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/cptmarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/cptmarkets/"
+      }
+    },
+    {
+      "rank": 128,
+      "name": "Profiforex",
+      "slug": "profiforex",
+      "yearFounded": 2010,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/profiforex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/profiforex/"
+      }
+    },
+    {
+      "rank": 129,
+      "name": "Spread Co",
+      "slug": "spreadco",
+      "yearFounded": 2006,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/spreadco/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/spreadco/"
+      }
+    },
+    {
+      "rank": 130,
+      "name": "ICM Capital",
+      "slug": "icmcapital",
+      "yearFounded": 2009,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA, FSC, FSA, ...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/icmcapital/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/icmcapital/"
+      }
+    },
+    {
+      "rank": 131,
+      "name": "AAAFx",
+      "slug": "aaafx",
+      "yearFounded": 2010,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "HCMC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/aaafx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/aaafx/"
+      }
+    },
+    {
+      "rank": 132,
+      "name": "Darwinex",
+      "slug": "darwinex",
+      "yearFounded": 2012,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/darwinex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/darwinex/"
+      }
+    },
+    {
+      "rank": 133,
+      "name": "Renesource Capital",
+      "slug": "renesource",
+      "yearFounded": 2009,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FKTK",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/renesource/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/renesource/"
+      }
+    },
+    {
+      "rank": 134,
+      "name": "ThinkMarkets",
+      "slug": "thinkmarkets",
+      "yearFounded": 2010,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC, FCA, FSC...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/thinkmarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/thinkmarkets/"
+      }
+    },
+    {
+      "rank": 135,
+      "name": "GBE brokers",
+      "slug": "gbebrokers",
+      "yearFounded": 2013,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/gbebrokers/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/gbebrokers/"
+      }
+    },
+    {
+      "rank": 136,
+      "name": "Traders Trust",
+      "slug": "traders-trust",
+      "yearFounded": 2009,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/traders-trust/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/traders-trust/"
+      }
+    },
+    {
+      "rank": 137,
+      "name": "NSFX",
+      "slug": "nsfx",
+      "yearFounded": 2013,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "MFSA, MIFID, FC...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/nsfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/nsfx/"
+      }
+    },
+    {
+      "rank": 138,
+      "name": "CLMarkets",
+      "slug": "clmforex",
+      "yearFounded": 2013,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "ASIC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/clmforex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/clmforex/"
+      }
+    },
+    {
+      "rank": 139,
+      "name": "Hirose Financial",
+      "slug": "hirose",
+      "yearFounded": 2004,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/hirose/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/hirose/"
+      }
+    },
+    {
+      "rank": 140,
+      "name": "Tenko FX",
+      "slug": "tenkofx",
+      "yearFounded": 2012,
+      "status": null,
+      "reviewCount": 2,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/tenkofx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/tenkofx/"
+      }
+    },
+    {
+      "rank": 141,
+      "name": "Invast Global",
+      "slug": "invast",
+      "yearFounded": 2013,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "ASIC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/invast/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/invast/"
+      }
+    },
+    {
+      "rank": 142,
+      "name": "Alvexo",
+      "slug": "alvexo",
+      "yearFounded": 2014,
+      "status": null,
+      "reviewCount": 2,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSA, CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/alvexo/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/alvexo/"
+      }
+    },
+    {
+      "rank": 143,
+      "name": "Trade Nation",
+      "slug": "tradenation",
+      "yearFounded": 2014,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA, ASIC, FSCA...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/tradenation/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/tradenation/"
+      }
+    },
+    {
+      "rank": 144,
+      "name": "TrioMarkets",
+      "slug": "triomarkets",
+      "yearFounded": 2015,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSC Mauritius",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/triomarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/triomarkets/"
+      }
+    },
+    {
+      "rank": 145,
+      "name": "FXGlobe",
+      "slug": "fxglobe",
+      "yearFounded": 2009,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxglobe/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxglobe/"
+      }
+    },
+    {
+      "rank": 146,
+      "name": "ADSS",
+      "slug": "adss",
+      "yearFounded": 2015,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA, SFC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/adss/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/adss/"
+      }
+    },
+    {
+      "rank": 147,
+      "name": "MTrading",
+      "slug": "mtrading",
+      "yearFounded": 2012,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/mtrading/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/mtrading/"
+      }
+    },
+    {
+      "rank": 148,
+      "name": "FXprimus",
+      "slug": "fxprimus",
+      "yearFounded": 2009,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC, VFSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxprimus/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxprimus/"
+      }
+    },
+    {
+      "rank": 149,
+      "name": "Valutrades",
+      "slug": "valutrades",
+      "yearFounded": 2013,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA, FSAS",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/valutrades/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/valutrades/"
+      }
+    },
+    {
+      "rank": 150,
+      "name": "PhillipCapital",
+      "slug": "phillipcapital",
+      "yearFounded": 2010,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FINRA, FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/phillipcapital/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/phillipcapital/"
+      }
+    },
+    {
+      "rank": 151,
+      "name": "Trust Capital",
+      "slug": "trustcapital",
+      "yearFounded": 2011,
+      "status": null,
+      "reviewCount": 2,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/trustcapital/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/trustcapital/"
+      }
+    },
+    {
+      "rank": 152,
+      "name": "Forex.ee",
+      "slug": "forexee",
+      "yearFounded": 2004,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "ECN"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/forexee/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/forexee/"
+      }
+    },
+    {
+      "rank": 153,
+      "name": "WesternFX",
+      "slug": "westernfx",
+      "yearFounded": 2013,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "FSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/westernfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/westernfx/"
+      }
+    },
+    {
+      "rank": 154,
+      "name": "Key To Markets",
+      "slug": "keytomarkets",
+      "yearFounded": 2013,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "ECN"
+      ],
+      "regulation": "FCA, FSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/keytomarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/keytomarkets/"
+      }
+    },
+    {
+      "rank": 155,
+      "name": "FXChoice",
+      "slug": "fxchoice",
+      "yearFounded": 2010,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxchoice/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxchoice/"
+      }
+    },
+    {
+      "rank": 156,
+      "name": "CornerTrader",
+      "slug": "cornertrader",
+      "yearFounded": 2012,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "FINMA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/cornertrader/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/cornertrader/"
+      }
+    },
+    {
+      "rank": 157,
+      "name": "FirewoodFX",
+      "slug": "firewoodfx",
+      "yearFounded": 2014,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/firewoodfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/firewoodfx/"
+      }
+    },
+    {
+      "rank": 158,
+      "name": "Milton Markets",
+      "slug": "miltonmarkets",
+      "yearFounded": 2015,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "VFSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/miltonmarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/miltonmarkets/"
+      }
+    },
+    {
+      "rank": 159,
+      "name": "OffersFX",
+      "slug": "offersfx",
+      "yearFounded": 2016,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySec",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/offersfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/offersfx/"
+      }
+    },
+    {
+      "rank": 160,
+      "name": "AAATrade",
+      "slug": "aaatrade",
+      "yearFounded": 2013,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/aaatrade/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/aaatrade/"
+      }
+    },
+    {
+      "rank": 161,
+      "name": "Gerchik Co",
+      "slug": "gerchikco",
+      "yearFounded": 2016,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/gerchikco/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/gerchikco/"
+      }
+    },
+    {
+      "rank": 162,
+      "name": "SuperForex",
+      "slug": "superforex",
+      "yearFounded": 2013,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "IFSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/superforex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/superforex/"
+      }
+    },
+    {
+      "rank": 163,
+      "name": "Varianse",
+      "slug": "varianse",
+      "yearFounded": 2015,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/varianse/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/varianse/"
+      }
+    },
+    {
+      "rank": 164,
+      "name": "Titan FX",
+      "slug": "titanfx",
+      "yearFounded": 2014,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/titanfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/titanfx/"
+      }
+    },
+    {
+      "rank": 165,
+      "name": "LMFX",
+      "slug": "lmfx",
+      "yearFounded": 2015,
+      "status": null,
+      "reviewCount": 3,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/lmfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/lmfx/"
+      }
+    },
+    {
+      "rank": 166,
+      "name": "Capital Index",
+      "slug": "capitalindex",
+      "yearFounded": 2014,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/capitalindex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/capitalindex/"
+      }
+    },
+    {
+      "rank": 167,
+      "name": "Skilling",
+      "slug": "skilling",
+      "yearFounded": 2016,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC, FSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/skilling/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/skilling/"
+      }
+    },
+    {
+      "rank": 168,
+      "name": "InterTrader",
+      "slug": "intertrader",
+      "yearFounded": 2009,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA, GFSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/intertrader/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/intertrader/"
+      }
+    },
+    {
+      "rank": 169,
+      "name": "CharterPrime",
+      "slug": "charterprime",
+      "yearFounded": 2012,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "FSP",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/charterprime/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/charterprime/"
+      }
+    },
+    {
+      "rank": 170,
+      "name": "GMI",
+      "slug": "gmimarkets",
+      "yearFounded": 2009,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "ECN"
+      ],
+      "regulation": "FCA, VFSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/gmimarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/gmimarkets/"
+      }
+    },
+    {
+      "rank": 171,
+      "name": "LMAX",
+      "slug": "lmax",
+      "yearFounded": 2008,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA, CySEC, FSP...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/lmax/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/lmax/"
+      }
+    },
+    {
+      "rank": 172,
+      "name": "City Credit Capital",
+      "slug": "cccapital",
+      "yearFounded": 2001,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/cccapital/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/cccapital/"
+      }
+    },
+    {
+      "rank": 173,
+      "name": "Rakuten",
+      "slug": "rakuten",
+      "yearFounded": 1999,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "ASIC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/rakuten/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/rakuten/"
+      }
+    },
+    {
+      "rank": 174,
+      "name": "GMG Markets",
+      "slug": "gmgmarkets",
+      "yearFounded": 2007,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/gmgmarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/gmgmarkets/"
+      }
+    },
+    {
+      "rank": 175,
+      "name": "Infinox",
+      "slug": "infinox",
+      "yearFounded": 2009,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA, SCB, FSCA,...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/infinox/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/infinox/"
+      }
+    },
+    {
+      "rank": 176,
+      "name": "Fineco Bank",
+      "slug": "finecobank",
+      "yearFounded": 1999,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Bank",
+        "MM"
+      ],
+      "regulation": "Bank of Italy, ...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/finecobank/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/finecobank/"
+      }
+    },
+    {
+      "rank": 177,
+      "name": "KVB",
+      "slug": "kvb",
+      "yearFounded": 2001,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "ASIC, FSP, MSB",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/kvb/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/kvb/"
+      }
+    },
+    {
+      "rank": 178,
+      "name": "X Open Hub",
+      "slug": "xopenhub",
+      "yearFounded": 2002,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA, CYSEC, KNF...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/xopenhub/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/xopenhub/"
+      }
+    },
+    {
+      "rank": 179,
+      "name": "Fortrade",
+      "slug": "fortrade",
+      "yearFounded": 2013,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA, ASIC, IIRO...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fortrade/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fortrade/"
+      }
+    },
+    {
+      "rank": 180,
+      "name": "Spreadex",
+      "slug": "spreadex",
+      "yearFounded": 1999,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/spreadex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/spreadex/"
+      }
+    },
+    {
+      "rank": 181,
+      "name": "Land FX",
+      "slug": "landfx",
+      "yearFounded": 2006,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA, FSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/landfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/landfx/"
+      }
+    },
+    {
+      "rank": 182,
+      "name": "Global Prime",
+      "slug": "globalprime",
+      "yearFounded": 2010,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "ASIC, VFSC, FSA...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/globalprime/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/globalprime/"
+      }
+    },
+    {
+      "rank": 183,
+      "name": "Robinhood",
+      "slug": "robinhood",
+      "yearFounded": 2013,
+      "status": null,
+      "reviewCount": 7,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "SEC, FINRA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/robinhood/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/robinhood/"
+      }
+    },
+    {
+      "rank": 184,
+      "name": "TeraFX",
+      "slug": "terafx",
+      "yearFounded": 2011,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "NDD"
+      ],
+      "regulation": "FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/terafx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/terafx/"
+      }
+    },
+    {
+      "rank": 185,
+      "name": "Naxex Invest",
+      "slug": "naxexinvest",
+      "yearFounded": 2022,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/naxexinvest/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/naxexinvest/"
+      }
+    },
+    {
+      "rank": 186,
+      "name": "Ayondo",
+      "slug": "ayondo",
+      "yearFounded": 2008,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "BaFin, FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/ayondo/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/ayondo/"
+      }
+    },
+    {
+      "rank": 187,
+      "name": "Aetos",
+      "slug": "aetos",
+      "yearFounded": 2007,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "ASIC, FCA, VFSC...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/aetos/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/aetos/"
+      }
+    },
+    {
+      "rank": 188,
+      "name": "IFGM",
+      "slug": "ifgm",
+      "yearFounded": 2012,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "ASIC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/ifgm/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/ifgm/"
+      }
+    },
+    {
+      "rank": 189,
+      "name": "TriumphFX",
+      "slug": "triumphfx",
+      "yearFounded": 2010,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "STP",
+        "NDD",
+        "ECN"
+      ],
+      "regulation": "CySEC, FSC, FSA...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/triumphfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/triumphfx/"
+      }
+    },
+    {
+      "rank": 190,
+      "name": "Destek",
+      "slug": "destek",
+      "yearFounded": 2021,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "SC of the Baham...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/destek/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/destek/"
+      }
+    },
+    {
+      "rank": 191,
+      "name": "Britannia Global Markets",
+      "slug": "britannia",
+      "yearFounded": 1986,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/britannia/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/britannia/"
+      }
+    },
+    {
+      "rank": 192,
+      "name": "TMGM",
+      "slug": "tmgm",
+      "yearFounded": 2013,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "ASIC, FMA, VFSC...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/tmgm/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/tmgm/"
+      }
+    },
+    {
+      "rank": 193,
+      "name": "BP Prime",
+      "slug": "bpprime",
+      "yearFounded": 2013,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA, FSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/bpprime/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/bpprime/"
+      }
+    },
+    {
+      "rank": 194,
+      "name": "CIX Markets",
+      "slug": "cixmarkets",
+      "yearFounded": 2015,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/cixmarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/cixmarkets/"
+      }
+    },
+    {
+      "rank": 195,
+      "name": "JP Markets",
+      "slug": "jpmarkets",
+      "yearFounded": 2016,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSB",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/jpmarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/jpmarkets/"
+      }
+    },
+    {
+      "rank": 196,
+      "name": "Nadex",
+      "slug": "nadex",
+      "yearFounded": 2004,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CFTC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/nadex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/nadex/"
+      }
+    },
+    {
+      "rank": 197,
+      "name": "Scandinavian Capital Markets",
+      "slug": "scandinavianmarkets",
+      "yearFounded": 2011,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "ECN",
+        "STP"
+      ],
+      "regulation": "Swedish FSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/scandinavianmarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/scandinavianmarkets/"
+      }
+    },
+    {
+      "rank": 198,
+      "name": "MahiMarkets",
+      "slug": "mahimarkets",
+      "yearFounded": 2010,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "ASIC, FMA, FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/mahimarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/mahimarkets/"
+      }
+    },
+    {
+      "rank": 199,
+      "name": "Naga",
+      "slug": "naga",
+      "yearFounded": 2015,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/naga/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/naga/"
+      }
+    },
+    {
+      "rank": 200,
+      "name": "House of Borse",
+      "slug": "houseofborse",
+      "yearFounded": 2001,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "30"
+      ],
+      "regulation": "FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/houseofborse/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/houseofborse/"
+      }
+    },
+    {
+      "rank": 201,
+      "name": "Kerford",
+      "slug": "kerford",
+      "yearFounded": 1999,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/kerford/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/kerford/"
+      }
+    },
+    {
+      "rank": 202,
+      "name": "Baxter FX",
+      "slug": "baxterfx",
+      "yearFounded": 1996,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "ASIC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/baxterfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/baxterfx/"
+      }
+    },
+    {
+      "rank": 203,
+      "name": "Equiti",
+      "slug": "equiti",
+      "yearFounded": 2013,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "JSC, FCA, SCA, ...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/equiti/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/equiti/"
+      }
+    },
+    {
+      "rank": 204,
+      "name": "Trading 212",
+      "slug": "trading212",
+      "yearFounded": 2006,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA, BFSC, CySE...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/trading212/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/trading212/"
+      }
+    },
+    {
+      "rank": 205,
+      "name": "FXtrading",
+      "slug": "fxtrading",
+      "yearFounded": 2014,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "ASIC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxtrading/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxtrading/"
+      }
+    },
+    {
+      "rank": 206,
+      "name": "Fondex",
+      "slug": "fondex",
+      "yearFounded": 2010,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC, FSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fondex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fondex/"
+      }
+    },
+    {
+      "rank": 207,
+      "name": "Lirunex",
+      "slug": "lirunex",
+      "yearFounded": 2017,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/lirunex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/lirunex/"
+      }
+    },
+    {
+      "rank": 208,
+      "name": "Goldwell Capital",
+      "slug": "goldwellcap",
+      "yearFounded": 2018,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "SERC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/goldwellcap/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/goldwellcap/"
+      }
+    },
+    {
+      "rank": 209,
+      "name": "BCR",
+      "slug": "bcr",
+      "yearFounded": 2008,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "ASIC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/bcr/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/bcr/"
+      }
+    },
+    {
+      "rank": 210,
+      "name": "Abshire Smith",
+      "slug": "abshiresmith",
+      "yearFounded": 2011,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/abshiresmith/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/abshiresmith/"
+      }
+    },
+    {
+      "rank": 211,
+      "name": "CommSec",
+      "slug": "commsec",
+      "yearFounded": 1995,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "ASIC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/commsec/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/commsec/"
+      }
+    },
+    {
+      "rank": 212,
+      "name": "VT Markets",
+      "slug": "vtmarkets",
+      "yearFounded": 2016,
+      "status": null,
+      "reviewCount": 3,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "ASIC, CIMA, SVG...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/vtmarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/vtmarkets/"
+      }
+    },
+    {
+      "rank": 213,
+      "name": "ACY Securities",
+      "slug": "acy",
+      "yearFounded": 2013,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "ASIC, VFSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/acy/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/acy/"
+      }
+    },
+    {
+      "rank": 214,
+      "name": "MEX Exchange",
+      "slug": "mexexchange",
+      "yearFounded": 2012,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "ASIC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/mexexchange/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/mexexchange/"
+      }
+    },
+    {
+      "rank": 215,
+      "name": "Trade.com",
+      "slug": "tradecom",
+      "yearFounded": 2013,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA, CySEC, FSC...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/tradecom/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/tradecom/"
+      }
+    },
+    {
+      "rank": 216,
+      "name": "TopFX",
+      "slug": "topfx",
+      "yearFounded": 2010,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC, FSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/topfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/topfx/"
+      }
+    },
+    {
+      "rank": 217,
+      "name": "ForexVox",
+      "slug": "forexvox",
+      "yearFounded": 2020,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/forexvox/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/forexvox/"
+      }
+    },
+    {
+      "rank": 218,
+      "name": "Capital.com",
+      "slug": "capitalcom",
+      "yearFounded": 2016,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC, FCA, ASI...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/capitalcom/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/capitalcom/"
+      }
+    },
+    {
+      "rank": 219,
+      "name": "Fusion Markets",
+      "slug": "fusionmarkets",
+      "yearFounded": 2017,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "ASIC, FSA, VFSC...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fusionmarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fusionmarkets/"
+      }
+    },
+    {
+      "rank": 220,
+      "name": "Globex360",
+      "slug": "globex360",
+      "yearFounded": 2017,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/globex360/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/globex360/"
+      }
+    },
+    {
+      "rank": 221,
+      "name": "Uptos",
+      "slug": "uptos",
+      "yearFounded": 2019,
+      "status": "Scam",
+      "reviewCount": 72,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/uptos/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/uptos/"
+      }
+    },
+    {
+      "rank": 222,
+      "name": "ProfitiX",
+      "slug": "profitix",
+      "yearFounded": 2019,
+      "status": "Scam",
+      "reviewCount": 174,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/profitix/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/profitix/"
+      }
+    },
+    {
+      "rank": 223,
+      "name": "Kiexo",
+      "slug": "kiexo",
+      "yearFounded": 2020,
+      "status": "Scam",
+      "reviewCount": 180,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/kiexo/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/kiexo/"
+      }
+    },
+    {
+      "rank": 224,
+      "name": "Xpoken",
+      "slug": "xpoken",
+      "yearFounded": 2020,
+      "status": "Scam",
+      "reviewCount": 69,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/xpoken/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/xpoken/"
+      }
+    },
+    {
+      "rank": 225,
+      "name": "CryptoGo365",
+      "slug": "cryptogo365",
+      "yearFounded": 2021,
+      "status": "Scam",
+      "reviewCount": 120,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/cryptogo365/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/cryptogo365/"
+      }
+    },
+    {
+      "rank": 226,
+      "name": "MaxiWyse",
+      "slug": "maxiwyse",
+      "yearFounded": 2022,
+      "status": "Scam",
+      "reviewCount": 81,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/maxiwyse/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/maxiwyse/"
+      }
+    },
+    {
+      "rank": 227,
+      "name": "Buxberg",
+      "slug": "buxberg",
+      "yearFounded": 2022,
+      "status": "Scam",
+      "reviewCount": 80,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/buxberg/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/buxberg/"
+      }
+    },
+    {
+      "rank": 228,
+      "name": "FXCM",
+      "slug": "fxcm",
+      "yearFounded": 1999,
+      "status": null,
+      "reviewCount": 72,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA, ASIC, SFC,...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxcm/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxcm/"
+      }
+    },
+    {
+      "rank": 229,
+      "name": "Markets.com",
+      "slug": "marketscom",
+      "yearFounded": 2008,
+      "status": null,
+      "reviewCount": 8,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "CySEC, FCA, ASI...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/marketscom/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/marketscom/"
+      }
+    },
+    {
+      "rank": 230,
+      "name": "Windsor Brokers",
+      "slug": "windsor-brokers",
+      "yearFounded": 1988,
+      "status": null,
+      "reviewCount": 4,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "FSA, FSC, JSC, ...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/windsor-brokers/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/windsor-brokers/"
+      }
+    },
+    {
+      "rank": 231,
+      "name": "ActivTrades",
+      "slug": "activ",
+      "yearFounded": 2010,
+      "status": null,
+      "reviewCount": 48,
+      "brokerTypes": [
+        "NDD"
+      ],
+      "regulation": "FCA, SCB, CSSF,...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/activ/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/activ/"
+      }
+    },
+    {
+      "rank": 232,
+      "name": "FXOpen",
+      "slug": "fxopen",
+      "yearFounded": 2003,
+      "status": null,
+      "reviewCount": 50,
+      "brokerTypes": [
+        "Broker",
+        "ECN",
+        "STP"
+      ],
+      "regulation": "FCA, ASIC, The ...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxopen/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxopen/"
+      }
+    },
+    {
+      "rank": 233,
+      "name": "Pure Market",
+      "slug": "puremarketbroker",
+      "yearFounded": 2016,
+      "status": null,
+      "reviewCount": 3,
+      "brokerTypes": [
+        "ECN",
+        "STP"
+      ],
+      "regulation": "CySec, VSFC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/puremarketbroker/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/puremarketbroker/"
+      }
+    },
+    {
+      "rank": 234,
+      "name": "XTrade",
+      "slug": "xtrade",
+      "yearFounded": 2003,
+      "status": null,
+      "reviewCount": 13,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "IFSC, CySEC, FS...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/xtrade/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/xtrade/"
+      }
+    },
+    {
+      "rank": 235,
+      "name": "InvestMarkets",
+      "slug": "investmarkets",
+      "yearFounded": 2020,
+      "status": null,
+      "reviewCount": 28,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "IFSC Belize",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/investmarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/investmarkets/"
+      }
+    },
+    {
+      "rank": 236,
+      "name": "Traders Way",
+      "slug": "tradersway",
+      "yearFounded": 2011,
+      "status": null,
+      "reviewCount": 75,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/tradersway/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/tradersway/"
+      }
+    },
+    {
+      "rank": 237,
+      "name": "AvaTrade",
+      "slug": "avatrade",
+      "yearFounded": 2006,
+      "status": null,
+      "reviewCount": 36,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "MiFiD, CBI, FSA...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/avatrade/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/avatrade/"
+      }
+    },
+    {
+      "rank": 238,
+      "name": "Fxview",
+      "slug": "fxview",
+      "yearFounded": 2017,
+      "status": null,
+      "reviewCount": 14,
+      "brokerTypes": [
+        "ECN",
+        "STP"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxview/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxview/"
+      }
+    },
+    {
+      "rank": 239,
+      "name": "ROinvesting",
+      "slug": "roinvesting",
+      "yearFounded": 2017,
+      "status": null,
+      "reviewCount": 88,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "CySec",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/roinvesting/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/roinvesting/"
+      }
+    },
+    {
+      "rank": 240,
+      "name": "FxGlory",
+      "slug": "fxglory",
+      "yearFounded": 2011,
+      "status": null,
+      "reviewCount": 93,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "IFSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxglory/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxglory/"
+      }
+    },
+    {
+      "rank": 241,
+      "name": "FIBO Group",
+      "slug": "fibo",
+      "yearFounded": 1998,
+      "status": null,
+      "reviewCount": 40,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSC, CySEC, FCA...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fibo/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fibo/"
+      }
+    },
+    {
+      "rank": 242,
+      "name": "ATC Brokers",
+      "slug": "atcbrokers",
+      "yearFounded": 2005,
+      "status": null,
+      "reviewCount": 6,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/atcbrokers/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/atcbrokers/"
+      }
+    },
+    {
+      "rank": 243,
+      "name": "Pepperstone",
+      "slug": "pepperstone",
+      "yearFounded": 2010,
+      "status": null,
+      "reviewCount": 22,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CYSEC, BAFIN, C...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/pepperstone/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/pepperstone/"
+      }
+    },
+    {
+      "rank": 244,
+      "name": "Grand Capital",
+      "slug": "grandcapital",
+      "yearFounded": 2006,
+      "status": null,
+      "reviewCount": 22,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "Financial Commi...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/grandcapital/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/grandcapital/"
+      }
+    },
+    {
+      "rank": 245,
+      "name": "FreshForex",
+      "slug": "freshforex",
+      "yearFounded": 2004,
+      "status": null,
+      "reviewCount": 149,
+      "brokerTypes": [
+        "ECN"
+      ],
+      "regulation": "SVGFSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/freshforex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/freshforex/"
+      }
+    },
+    {
+      "rank": 246,
+      "name": "Olymp Trade",
+      "slug": "olymptrade",
+      "yearFounded": 2014,
+      "status": null,
+      "reviewCount": 291,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "IFC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/olymptrade/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/olymptrade/"
+      }
+    },
+    {
+      "rank": 247,
+      "name": "Elland Road Capital",
+      "slug": "ellandroadcapital",
+      "yearFounded": 2022,
+      "status": null,
+      "reviewCount": 40,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/ellandroadcapital/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/ellandroadcapital/"
+      }
+    },
+    {
+      "rank": 248,
+      "name": "Alpho",
+      "slug": "alpho",
+      "yearFounded": 2016,
+      "status": null,
+      "reviewCount": 15,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "Room 5, Second ...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/alpho/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/alpho/"
+      }
+    },
+    {
+      "rank": 249,
+      "name": "Eightcap",
+      "slug": "eightcap",
+      "yearFounded": 2009,
+      "status": null,
+      "reviewCount": 2,
+      "brokerTypes": [
+        "ECN",
+        "STP"
+      ],
+      "regulation": "ASIC, VFSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/eightcap/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/eightcap/"
+      }
+    },
+    {
+      "rank": 250,
+      "name": "HFTrading",
+      "slug": "hftrading",
+      "yearFounded": 2019,
+      "status": null,
+      "reviewCount": 106,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "ASIC, NZFMA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/hftrading/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/hftrading/"
+      }
+    },
+    {
+      "rank": 251,
+      "name": "Commerce Wealth",
+      "slug": "commercewealth",
+      "yearFounded": 2020,
+      "status": null,
+      "reviewCount": 80,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/commercewealth/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/commercewealth/"
+      }
+    },
+    {
+      "rank": 252,
+      "name": "ForexTB",
+      "slug": "forextb",
+      "yearFounded": 2015,
+      "status": null,
+      "reviewCount": 31,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/forextb/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/forextb/"
+      }
+    },
+    {
+      "rank": 253,
+      "name": "T1Markets",
+      "slug": "t1markets",
+      "yearFounded": 2019,
+      "status": null,
+      "reviewCount": 12,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/t1markets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/t1markets/"
+      }
+    },
+    {
+      "rank": 254,
+      "name": "TIO Markets",
+      "slug": "tiomarkets",
+      "yearFounded": 2019,
+      "status": null,
+      "reviewCount": 2,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "FCA, FSCS",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/tiomarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/tiomarkets/"
+      }
+    },
+    {
+      "rank": 255,
+      "name": "Greendax",
+      "slug": "greendax",
+      "yearFounded": 2022,
+      "status": null,
+      "reviewCount": 78,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/greendax/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/greendax/"
+      }
+    },
+    {
+      "rank": 256,
+      "name": "Finaguide",
+      "slug": "finaguide",
+      "yearFounded": 2022,
+      "status": null,
+      "reviewCount": 78,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/finaguide/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/finaguide/"
+      }
+    },
+    {
+      "rank": 257,
+      "name": "Justmarkets",
+      "slug": "justmarkets",
+      "yearFounded": 2012,
+      "status": null,
+      "reviewCount": 0,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/justmarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/justmarkets/"
+      }
+    },
+    {
+      "rank": 258,
+      "name": "tixee",
+      "slug": "tixee",
+      "yearFounded": 2021,
+      "status": null,
+      "reviewCount": 19,
+      "brokerTypes": [
+        "STP",
+        "MM"
+      ],
+      "regulation": "FSA, FSCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/tixee/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/tixee/"
+      }
+    },
+    {
+      "rank": 259,
+      "name": "eForex",
+      "slug": "eforex",
+      "yearFounded": 2010,
+      "status": null,
+      "reviewCount": 0,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "BVI",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/eforex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/eforex/"
+      }
+    },
+    {
+      "rank": 260,
+      "name": "Capitalcore",
+      "slug": "capitalcore",
+      "yearFounded": 2019,
+      "status": null,
+      "reviewCount": 3,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/capitalcore/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/capitalcore/"
+      }
+    },
+    {
+      "rank": 261,
+      "name": "Amega",
+      "slug": "amega",
+      "yearFounded": 2023,
+      "status": null,
+      "reviewCount": 10,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "FSC Mauritius",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/amega/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/amega/"
+      }
+    },
+    {
+      "rank": 262,
+      "name": "NordFX",
+      "slug": "nordfx",
+      "yearFounded": 2008,
+      "status": "Trusted",
+      "reviewCount": 63,
+      "brokerTypes": [
+        "NDD",
+        "STP",
+        "ECN"
+      ],
+      "regulation": "VFSC, SEBI",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/nordfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/nordfx/"
+      }
+    },
+    {
+      "rank": 263,
+      "name": "Kowela",
+      "slug": "kowela",
+      "yearFounded": 2021,
+      "status": "Scam",
+      "reviewCount": 112,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/kowela/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/kowela/"
+      }
+    },
+    {
+      "rank": 264,
+      "name": "Cauvo Capital",
+      "slug": "cauvocapital",
+      "yearFounded": 2021,
+      "status": "Scam",
+      "reviewCount": 4,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSC Mauritius",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/cauvocapital/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/cauvocapital/"
+      }
+    },
+    {
+      "rank": 265,
+      "name": "Bithoven",
+      "slug": "bithoven",
+      "yearFounded": 2019,
+      "status": null,
+      "reviewCount": 5,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/bithoven/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/bithoven/"
+      }
+    },
+    {
+      "rank": 266,
+      "name": "VHNX",
+      "slug": "vhnx",
+      "yearFounded": 2021,
+      "status": null,
+      "reviewCount": 69,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/vhnx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/vhnx/"
+      }
+    },
+    {
+      "rank": 267,
+      "name": "MaxiMarkets",
+      "slug": "maximarkets",
+      "yearFounded": 2008,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "Not regulated",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/maximarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/maximarkets/"
+      }
+    },
+    {
+      "rank": 268,
+      "name": "HFM",
+      "slug": "hotforex",
+      "yearFounded": 2010,
+      "status": null,
+      "reviewCount": 234,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "FCA, DFSA, FSCA...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/hotforex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/hotforex/"
+      }
+    },
+    {
+      "rank": 269,
+      "name": "Vantage",
+      "slug": "vantagefx",
+      "yearFounded": 2009,
+      "status": null,
+      "reviewCount": 33,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "VFSC, ASIC, FCA...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/vantagefx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/vantagefx/"
+      }
+    },
+    {
+      "rank": 270,
+      "name": "FBS",
+      "slug": "fbs",
+      "yearFounded": 2009,
+      "status": null,
+      "reviewCount": 464,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "IFSC, ASIC, FSC...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fbs/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fbs/"
+      }
+    },
+    {
+      "rank": 271,
+      "name": "VIG Investment",
+      "slug": "vig-investments",
+      "yearFounded": 2000,
+      "status": null,
+      "reviewCount": 3,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/vig-investments/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/vig-investments/"
+      }
+    },
+    {
+      "rank": 272,
+      "name": "XS",
+      "slug": "xs",
+      "yearFounded": 2023,
+      "status": null,
+      "reviewCount": 13,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "ASIC, CySEC, FS...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/xs/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/xs/"
+      }
+    },
+    {
+      "rank": 273,
+      "name": "AMarkets",
+      "slug": "amarkets",
+      "yearFounded": 2007,
+      "status": null,
+      "reviewCount": 50,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "MISA, FSA, FSC,...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/amarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/amarkets/"
+      }
+    },
+    {
+      "rank": 274,
+      "name": "ETX Capital",
+      "slug": "etxcapital",
+      "yearFounded": 1965,
+      "status": null,
+      "reviewCount": 5,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA, CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/etxcapital/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/etxcapital/"
+      }
+    },
+    {
+      "rank": 275,
+      "name": "FP Markets",
+      "slug": "fpmarkets",
+      "yearFounded": 2005,
+      "status": null,
+      "reviewCount": 33,
+      "brokerTypes": [
+        "ECN",
+        "STP",
+        "DMA"
+      ],
+      "regulation": "ASIC, CySEC, FS...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fpmarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fpmarkets/"
+      }
+    },
+    {
+      "rank": 276,
+      "name": "MultiBank Group",
+      "slug": "multibankfx",
+      "yearFounded": 2005,
+      "status": null,
+      "reviewCount": 19,
+      "brokerTypes": [
+        "ECN"
+      ],
+      "regulation": "SCA, MAS, CySEC...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/multibankfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/multibankfx/"
+      }
+    },
+    {
+      "rank": 277,
+      "name": "Kiplar",
+      "slug": "kiplar",
+      "yearFounded": 2020,
+      "status": null,
+      "reviewCount": 114,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/kiplar/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/kiplar/"
+      }
+    },
+    {
+      "rank": 278,
+      "name": "Errante",
+      "slug": "errante",
+      "yearFounded": 2019,
+      "status": null,
+      "reviewCount": 4,
+      "brokerTypes": [
+        "DMA",
+        "ECN",
+        "MM"
+      ],
+      "regulation": "CySEC, FSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/errante/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/errante/"
+      }
+    },
+    {
+      "rank": 279,
+      "name": "BlackBull",
+      "slug": "blackbullmarkets",
+      "yearFounded": 2014,
+      "status": null,
+      "reviewCount": 14,
+      "brokerTypes": [
+        "ECN",
+        "STP"
+      ],
+      "regulation": "FSA, FMA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/blackbullmarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/blackbullmarkets/"
+      }
+    },
+    {
+      "rank": 280,
+      "name": "ForexChief",
+      "slug": "forexchief",
+      "yearFounded": 2014,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "VFSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/forexchief/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/forexchief/"
+      }
+    },
+    {
+      "rank": 281,
+      "name": "Scope Markets",
+      "slug": "scopemarkets",
+      "yearFounded": 2014,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/scopemarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/scopemarkets/"
+      }
+    },
+    {
+      "rank": 282,
+      "name": "Mitrade",
+      "slug": "mitrade",
+      "yearFounded": 2011,
+      "status": null,
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "ASIC, CIMA, FSC...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/mitrade/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/mitrade/"
+      }
+    },
+    {
+      "rank": 283,
+      "name": "FXNovus",
+      "slug": "fxnovus",
+      "yearFounded": 2023,
+      "status": null,
+      "reviewCount": 17,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxnovus/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxnovus/"
+      }
+    },
+    {
+      "rank": 284,
+      "name": "ModMount",
+      "slug": "modmount",
+      "yearFounded": 2022,
+      "status": null,
+      "reviewCount": 11,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/modmount/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/modmount/"
+      }
+    },
+    {
+      "rank": 285,
+      "name": "ACM",
+      "slug": "acm",
+      "yearFounded": 2002,
+      "status": "Scam",
+      "reviewCount": 154,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FINMA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/acm/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/acm/"
+      }
+    },
+    {
+      "rank": 286,
+      "name": "Luxtious",
+      "slug": "luxtious",
+      "yearFounded": 2024,
+      "status": "Scam",
+      "reviewCount": 40,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/luxtious/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/luxtious/"
+      }
+    },
+    {
+      "rank": 287,
+      "name": "Mega Trader FX",
+      "slug": "megatrader",
+      "yearFounded": 2000,
+      "status": "Scam",
+      "reviewCount": 11,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/megatrader/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/megatrader/"
+      }
+    },
+    {
+      "rank": 288,
+      "name": "eXcentral",
+      "slug": "excentral",
+      "yearFounded": 2019,
+      "status": "Scam",
+      "reviewCount": 169,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/excentral/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/excentral/"
+      }
+    },
+    {
+      "rank": 289,
+      "name": "MAYZUS",
+      "slug": "mayzus",
+      "yearFounded": 2008,
+      "status": "Scam",
+      "reviewCount": 2,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/mayzus/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/mayzus/"
+      }
+    },
+    {
+      "rank": 290,
+      "name": "Citypoint Trading",
+      "slug": "citypointtrading",
+      "yearFounded": 2008,
+      "status": "Scam",
+      "reviewCount": 3,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA, CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/citypointtrading/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/citypointtrading/"
+      }
+    },
+    {
+      "rank": 291,
+      "name": "Finotec",
+      "slug": "finotec",
+      "yearFounded": 1998,
+      "status": "Scam",
+      "reviewCount": 7,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/finotec/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/finotec/"
+      }
+    },
+    {
+      "rank": 292,
+      "name": "ForexTrading",
+      "slug": "forextrading",
+      "yearFounded": 2011,
+      "status": "Scam",
+      "reviewCount": 4,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "Regulated by Cy...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/forextrading/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/forextrading/"
+      }
+    },
+    {
+      "rank": 293,
+      "name": "FX Solutions",
+      "slug": "fxsol",
+      "yearFounded": 2001,
+      "status": "Scam",
+      "reviewCount": 6,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CFTC, NFA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxsol/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxsol/"
+      }
+    },
+    {
+      "rank": 294,
+      "name": "FxNet",
+      "slug": "fxnet",
+      "yearFounded": 2012,
+      "status": "Scam",
+      "reviewCount": 26,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxnet/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxnet/"
+      }
+    },
+    {
+      "rank": 295,
+      "name": "EverFX",
+      "slug": "everfx",
+      "yearFounded": 2016,
+      "status": "Scam",
+      "reviewCount": 33,
+      "brokerTypes": [
+        "Broker",
+        "ECN"
+      ],
+      "regulation": "CySEC, CIMA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/everfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/everfx/"
+      }
+    },
+    {
+      "rank": 296,
+      "name": "JFX",
+      "slug": "jfx",
+      "yearFounded": 2011,
+      "status": "Scam",
+      "reviewCount": 4,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySec, FSA, CNM...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/jfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/jfx/"
+      }
+    },
+    {
+      "rank": 297,
+      "name": "Gain Capital",
+      "slug": "gaincapital",
+      "yearFounded": 1999,
+      "status": "Scam",
+      "reviewCount": 23,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CFTC, FSA, FSA,...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/gaincapital/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/gaincapital/"
+      }
+    },
+    {
+      "rank": 298,
+      "name": "GFT Forex",
+      "slug": "gftforex",
+      "yearFounded": 1997,
+      "status": "Scam",
+      "reviewCount": 16,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSA (Japan), NF...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/gftforex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/gftforex/"
+      }
+    },
+    {
+      "rank": 299,
+      "name": "Hotspot FX",
+      "slug": "hotspot",
+      "yearFounded": 2010,
+      "status": "Scam",
+      "reviewCount": 2,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "The company is ...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/hotspot/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/hotspot/"
+      }
+    },
+    {
+      "rank": 300,
+      "name": "Mada FX",
+      "slug": "madafx",
+      "yearFounded": 2000,
+      "status": "Scam",
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/madafx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/madafx/"
+      }
+    },
+    {
+      "rank": 301,
+      "name": "MIG Bank",
+      "slug": "mig",
+      "yearFounded": 2003,
+      "status": "Scam",
+      "reviewCount": 5,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FINMA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/mig/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/mig/"
+      }
+    },
+    {
+      "rank": 302,
+      "name": "ACFX",
+      "slug": "acfx",
+      "yearFounded": 2007,
+      "status": "Scam",
+      "reviewCount": 24,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "Cysec",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/acfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/acfx/"
+      }
+    },
+    {
+      "rank": 303,
+      "name": "4XP",
+      "slug": "4xp",
+      "yearFounded": 2007,
+      "status": "Scam",
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FMRRC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/4xp/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/4xp/"
+      }
+    },
+    {
+      "rank": 304,
+      "name": "Realtime Forex",
+      "slug": "realtimeforex",
+      "yearFounded": 2009,
+      "status": "Scam",
+      "reviewCount": 3,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "MFSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/realtimeforex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/realtimeforex/"
+      }
+    },
+    {
+      "rank": 305,
+      "name": "DBFX",
+      "slug": "dbfx",
+      "yearFounded": 2006,
+      "status": "Scam",
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/dbfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/dbfx/"
+      }
+    },
+    {
+      "rank": 306,
+      "name": "Markets Cube",
+      "slug": "marketscube",
+      "yearFounded": 2011,
+      "status": "Scam",
+      "reviewCount": 9,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/marketscube/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/marketscube/"
+      }
+    },
+    {
+      "rank": 307,
+      "name": "COESfx",
+      "slug": "coesfx",
+      "yearFounded": 1999,
+      "status": "Scam",
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/coesfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/coesfx/"
+      }
+    },
+    {
+      "rank": 308,
+      "name": "MoneyForex",
+      "slug": "moneyforex",
+      "yearFounded": 2010,
+      "status": "Scam",
+      "reviewCount": 0,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/moneyforex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/moneyforex/"
+      }
+    },
+    {
+      "rank": 309,
+      "name": "FXA Securities",
+      "slug": "fxas",
+      "yearFounded": 2000,
+      "status": "Scam",
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxas/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxas/"
+      }
+    },
+    {
+      "rank": 310,
+      "name": "CBFX Markets",
+      "slug": "cbfxmarkets",
+      "yearFounded": 2006,
+      "status": "Scam",
+      "reviewCount": 2,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/cbfxmarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/cbfxmarkets/"
+      }
+    },
+    {
+      "rank": 311,
+      "name": "InterbankFx",
+      "slug": "interbankfx",
+      "yearFounded": 2006,
+      "status": "Scam",
+      "reviewCount": 5,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/interbankfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/interbankfx/"
+      }
+    },
+    {
+      "rank": 312,
+      "name": "CMS Forex",
+      "slug": "cms",
+      "yearFounded": 1999,
+      "status": "Scam",
+      "reviewCount": 7,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/cms/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/cms/"
+      }
+    },
+    {
+      "rank": 313,
+      "name": "AL Trade",
+      "slug": "altrade",
+      "yearFounded": 2003,
+      "status": "Scam",
+      "reviewCount": 6,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "Not regulated",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/altrade/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/altrade/"
+      }
+    },
+    {
+      "rank": 314,
+      "name": "HMS Markets",
+      "slug": "hms",
+      "yearFounded": 1972,
+      "status": "Scam",
+      "reviewCount": 4,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CCIF",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/hms/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/hms/"
+      }
+    },
+    {
+      "rank": 315,
+      "name": "MRC Markets",
+      "slug": "moneyrain",
+      "yearFounded": 2002,
+      "status": "Scam",
+      "reviewCount": 138,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "SCL, SEBI",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/moneyrain/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/moneyrain/"
+      }
+    },
+    {
+      "rank": 316,
+      "name": "MasterForex",
+      "slug": "masterforex",
+      "yearFounded": 2006,
+      "status": "Scam",
+      "reviewCount": 47,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "Financial Commi...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/masterforex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/masterforex/"
+      }
+    },
+    {
+      "rank": 317,
+      "name": "Zecco",
+      "slug": "zecco",
+      "yearFounded": 2011,
+      "status": "Scam",
+      "reviewCount": 3,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FINRA, NFA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/zecco/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/zecco/"
+      }
+    },
+    {
+      "rank": 318,
+      "name": "Broco",
+      "slug": "broco",
+      "yearFounded": 1998,
+      "status": "Scam",
+      "reviewCount": 12,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "FSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/broco/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/broco/"
+      }
+    },
+    {
+      "rank": 319,
+      "name": "United World Capital Ltd",
+      "slug": "uwcfx",
+      "yearFounded": 2001,
+      "status": "Scam",
+      "reviewCount": 11,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "United World Ca...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/uwcfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/uwcfx/"
+      }
+    },
+    {
+      "rank": 320,
+      "name": "YoutradeFX",
+      "slug": "youtradefx",
+      "yearFounded": 2011,
+      "status": "Scam",
+      "reviewCount": 5,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "The Australian ...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/youtradefx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/youtradefx/"
+      }
+    },
+    {
+      "rank": 321,
+      "name": "Falcofx",
+      "slug": "falcofx",
+      "yearFounded": 2008,
+      "status": "Scam",
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "Not regulated",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/falcofx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/falcofx/"
+      }
+    },
+    {
+      "rank": 322,
+      "name": "Exto Capital",
+      "slug": "exto",
+      "yearFounded": 2007,
+      "status": "Scam",
+      "reviewCount": 3,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "BVI",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/exto/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/exto/"
+      }
+    },
+    {
+      "rank": 323,
+      "name": "CitiFX Pro",
+      "slug": "citi",
+      "yearFounded": 2008,
+      "status": "Scam",
+      "reviewCount": 4,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CFTC, NFA, FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/citi/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/citi/"
+      }
+    },
+    {
+      "rank": 324,
+      "name": "3TG Brokers",
+      "slug": "3tgfx",
+      "yearFounded": 2011,
+      "status": "Scam",
+      "reviewCount": 7,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSPR",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/3tgfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/3tgfx/"
+      }
+    },
+    {
+      "rank": 325,
+      "name": "IBCFX",
+      "slug": "ibcfx",
+      "yearFounded": 2012,
+      "status": "Scam",
+      "reviewCount": 4,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "Regulated in Ne...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/ibcfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/ibcfx/"
+      }
+    },
+    {
+      "rank": 326,
+      "name": "GO Markets",
+      "slug": "gomarkets",
+      "yearFounded": 2000,
+      "status": "Scam",
+      "reviewCount": 3,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "AFSL",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/gomarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/gomarkets/"
+      }
+    },
+    {
+      "rank": 327,
+      "name": "AtlaseForex",
+      "slug": "atlas",
+      "yearFounded": 2010,
+      "status": "Scam",
+      "reviewCount": 3,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/atlas/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/atlas/"
+      }
+    },
+    {
+      "rank": 328,
+      "name": "FXdirekt Bank",
+      "slug": "fxdirekt",
+      "yearFounded": 2011,
+      "status": "Scam",
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FXdirekt Bank i...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxdirekt/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxdirekt/"
+      }
+    },
+    {
+      "rank": 329,
+      "name": "TradeFreedom",
+      "slug": "tradefreedom",
+      "yearFounded": 2010,
+      "status": "Scam",
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "Not regulated",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/tradefreedom/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/tradefreedom/"
+      }
+    },
+    {
+      "rank": 330,
+      "name": "Ntwo Capital Markets",
+      "slug": "ntwo",
+      "yearFounded": 2004,
+      "status": "Scam",
+      "reviewCount": 0,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "Not regulated",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/ntwo/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/ntwo/"
+      }
+    },
+    {
+      "rank": 331,
+      "name": "Spot Trader",
+      "slug": "spottrader",
+      "yearFounded": 2008,
+      "status": "Scam",
+      "reviewCount": 4,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "NFA (ID: 039326...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/spottrader/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/spottrader/"
+      }
+    },
+    {
+      "rank": 332,
+      "name": "CMSTrader",
+      "slug": "cmstrader",
+      "yearFounded": 2012,
+      "status": "Scam",
+      "reviewCount": 5,
+      "brokerTypes": [
+        "ECN"
+      ],
+      "regulation": "VFSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/cmstrader/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/cmstrader/"
+      }
+    },
+    {
+      "rank": 333,
+      "name": "Stratton Markets",
+      "slug": "strattonmarkets",
+      "yearFounded": 2018,
+      "status": "Scam",
+      "reviewCount": 5,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/strattonmarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/strattonmarkets/"
+      }
+    },
+    {
+      "rank": 334,
+      "name": "770capital",
+      "slug": "770capital",
+      "yearFounded": 2010,
+      "status": "Scam",
+      "reviewCount": 3,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "ARB",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/770capital/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/770capital/"
+      }
+    },
+    {
+      "rank": 335,
+      "name": "ITrader",
+      "slug": "itrader",
+      "yearFounded": 2013,
+      "status": "Scam",
+      "reviewCount": 3,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/itrader/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/itrader/"
+      }
+    },
+    {
+      "rank": 336,
+      "name": "ETFinance",
+      "slug": "etfinance",
+      "yearFounded": 2018,
+      "status": "Scam",
+      "reviewCount": 38,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "CySec",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/etfinance/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/etfinance/"
+      }
+    },
+    {
+      "rank": 337,
+      "name": "PIPTrade",
+      "slug": "piptrade",
+      "yearFounded": 2000,
+      "status": "Scam",
+      "reviewCount": 2,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSA License No....",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/piptrade/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/piptrade/"
+      }
+    },
+    {
+      "rank": 338,
+      "name": "Finexo",
+      "slug": "finexo",
+      "yearFounded": 2003,
+      "status": "Scam",
+      "reviewCount": 6,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CIF, CySEC, FSC...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/finexo/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/finexo/"
+      }
+    },
+    {
+      "rank": 339,
+      "name": "Berkeley",
+      "slug": "berkeley",
+      "yearFounded": 1986,
+      "status": "Scam",
+      "reviewCount": 3,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "A member of the...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/berkeley/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/berkeley/"
+      }
+    },
+    {
+      "rank": 340,
+      "name": "XForex",
+      "slug": "xforex",
+      "yearFounded": 2003,
+      "status": "Scam",
+      "reviewCount": 7,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC license #...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/xforex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/xforex/"
+      }
+    },
+    {
+      "rank": 341,
+      "name": "STOCK.com",
+      "slug": "stockcom",
+      "yearFounded": 2004,
+      "status": "Scam",
+      "reviewCount": 7,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC, MiFID,  ...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/stockcom/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/stockcom/"
+      }
+    },
+    {
+      "rank": 342,
+      "name": "TFI Markets",
+      "slug": "tfi",
+      "yearFounded": 1999,
+      "status": "Scam",
+      "reviewCount": 5,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC license 1...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/tfi/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/tfi/"
+      }
+    },
+    {
+      "rank": 343,
+      "name": "Askobid",
+      "slug": "askobid",
+      "yearFounded": 2000,
+      "status": "Scam",
+      "reviewCount": 31,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "Askobid is lice...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/askobid/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/askobid/"
+      }
+    },
+    {
+      "rank": 344,
+      "name": "Bforex",
+      "slug": "bforex",
+      "yearFounded": 2009,
+      "status": "Scam",
+      "reviewCount": 3,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "Not regulated",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/bforex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/bforex/"
+      }
+    },
+    {
+      "rank": 345,
+      "name": "AFX Capital Markets",
+      "slug": "afx",
+      "yearFounded": 2010,
+      "status": "Scam",
+      "reviewCount": 5,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "AFX CAPITAL is ...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/afx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/afx/"
+      }
+    },
+    {
+      "rank": 346,
+      "name": "AFB FX",
+      "slug": "afbfx",
+      "yearFounded": 2000,
+      "status": "Scam",
+      "reviewCount": 7,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "AFB FX LTD is r...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/afbfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/afbfx/"
+      }
+    },
+    {
+      "rank": 347,
+      "name": "FxCompany",
+      "slug": "fxcompany",
+      "yearFounded": 2011,
+      "status": "Scam",
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxcompany/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxcompany/"
+      }
+    },
+    {
+      "rank": 348,
+      "name": "Forex MMCIS",
+      "slug": "mmcis",
+      "yearFounded": 2007,
+      "status": "Scam",
+      "reviewCount": 0,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "KROUFR",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/mmcis/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/mmcis/"
+      }
+    },
+    {
+      "rank": 349,
+      "name": "Investtechfx",
+      "slug": "itfx",
+      "yearFounded": 2006,
+      "status": "Scam",
+      "reviewCount": 5,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "Forex Dealing A...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/itfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/itfx/"
+      }
+    },
+    {
+      "rank": 350,
+      "name": "BNFX",
+      "slug": "bnfx",
+      "yearFounded": 2010,
+      "status": "Scam",
+      "reviewCount": 4,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "FSPR, FMA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/bnfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/bnfx/"
+      }
+    },
+    {
+      "rank": 351,
+      "name": "NorthFinance",
+      "slug": "northfinance",
+      "yearFounded": 2006,
+      "status": "Scam",
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/northfinance/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/northfinance/"
+      }
+    },
+    {
+      "rank": 352,
+      "name": "WestCapFX",
+      "slug": "westcapfx",
+      "yearFounded": 2006,
+      "status": "Scam",
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/westcapfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/westcapfx/"
+      }
+    },
+    {
+      "rank": 353,
+      "name": "Finex",
+      "slug": "finex",
+      "yearFounded": 2006,
+      "status": "Scam",
+      "reviewCount": 36,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/finex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/finex/"
+      }
+    },
+    {
+      "rank": 354,
+      "name": "ITradeFX",
+      "slug": "itradefx",
+      "yearFounded": 2006,
+      "status": "Scam",
+      "reviewCount": 7,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/itradefx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/itradefx/"
+      }
+    },
+    {
+      "rank": 355,
+      "name": "Prime 4X",
+      "slug": "prime4x",
+      "yearFounded": 2006,
+      "status": "Scam",
+      "reviewCount": 25,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/prime4x/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/prime4x/"
+      }
+    },
+    {
+      "rank": 356,
+      "name": "Crown Forex",
+      "slug": "crownforex",
+      "yearFounded": 2006,
+      "status": "Scam",
+      "reviewCount": 6,
+      "brokerTypes": [
+        "ECN"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/crownforex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/crownforex/"
+      }
+    },
+    {
+      "rank": 357,
+      "name": "STIFX",
+      "slug": "stifx",
+      "yearFounded": 1998,
+      "status": "Scam",
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/stifx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/stifx/"
+      }
+    },
+    {
+      "rank": 358,
+      "name": "TradexFx",
+      "slug": "tradexfx",
+      "yearFounded": 2005,
+      "status": "Scam",
+      "reviewCount": 2,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/tradexfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/tradexfx/"
+      }
+    },
+    {
+      "rank": 359,
+      "name": "Money Gram",
+      "slug": "moneygram",
+      "yearFounded": 2006,
+      "status": "Scam",
+      "reviewCount": 2,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/moneygram/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/moneygram/"
+      }
+    },
+    {
+      "rank": 360,
+      "name": "MGI",
+      "slug": "mgi",
+      "yearFounded": 2006,
+      "status": "Scam",
+      "reviewCount": 2,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/mgi/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/mgi/"
+      }
+    },
+    {
+      "rank": 361,
+      "name": "NordMarkets",
+      "slug": "nordmarkets",
+      "yearFounded": 2006,
+      "status": "Scam",
+      "reviewCount": 4,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/nordmarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/nordmarkets/"
+      }
+    },
+    {
+      "rank": 363,
+      "name": "FxCast",
+      "slug": "fxcast",
+      "yearFounded": 2006,
+      "status": "Scam",
+      "reviewCount": 4,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxcast/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxcast/"
+      }
+    },
+    {
+      "rank": 364,
+      "name": "ForexYard",
+      "slug": "forexyard",
+      "yearFounded": 1999,
+      "status": "Scam",
+      "reviewCount": 5,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/forexyard/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/forexyard/"
+      }
+    },
+    {
+      "rank": 365,
+      "name": "ODL",
+      "slug": "odl",
+      "yearFounded": 2010,
+      "status": "Scam",
+      "reviewCount": 6,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/odl/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/odl/"
+      }
+    },
+    {
+      "rank": 366,
+      "name": "Ikon-Royal",
+      "slug": "ikonroyal",
+      "yearFounded": 2006,
+      "status": "Scam",
+      "reviewCount": 3,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/ikonroyal/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/ikonroyal/"
+      }
+    },
+    {
+      "rank": 367,
+      "name": "FXTSP",
+      "slug": "fxtsp",
+      "yearFounded": 2006,
+      "status": "Scam",
+      "reviewCount": 3,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxtsp/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxtsp/"
+      }
+    },
+    {
+      "rank": 368,
+      "name": "ForexCycle",
+      "slug": "forexcycle",
+      "yearFounded": 2006,
+      "status": "Scam",
+      "reviewCount": 2,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/forexcycle/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/forexcycle/"
+      }
+    },
+    {
+      "rank": 369,
+      "name": "FX Universal",
+      "slug": "fxuniversal",
+      "yearFounded": 2011,
+      "status": "Scam",
+      "reviewCount": 2,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxuniversal/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxuniversal/"
+      }
+    },
+    {
+      "rank": 370,
+      "name": "Nixse",
+      "slug": "nixse",
+      "yearFounded": 2019,
+      "status": "Scam",
+      "reviewCount": 205,
+      "brokerTypes": [
+        "ECN"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/nixse/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/nixse/"
+      }
+    },
+    {
+      "rank": 371,
+      "name": "RetailFx",
+      "slug": "retailfx",
+      "yearFounded": 2006,
+      "status": "Scam",
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/retailfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/retailfx/"
+      }
+    },
+    {
+      "rank": 372,
+      "name": "LQD Markets",
+      "slug": "lqdmarkets",
+      "yearFounded": 2006,
+      "status": "Scam",
+      "reviewCount": 2,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC, MiFID",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/lqdmarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/lqdmarkets/"
+      }
+    },
+    {
+      "rank": 373,
+      "name": "Marketiva",
+      "slug": "marketiva",
+      "yearFounded": 2009,
+      "status": "Scam",
+      "reviewCount": 3,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/marketiva/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/marketiva/"
+      }
+    },
+    {
+      "rank": 374,
+      "name": "Armada Markets",
+      "slug": "armada-markets",
+      "yearFounded": 2011,
+      "status": "Scam",
+      "reviewCount": 9,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "MKM",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/armada-markets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/armada-markets/"
+      }
+    },
+    {
+      "rank": 375,
+      "name": "TradeFort",
+      "slug": "tradefort",
+      "yearFounded": 2010,
+      "status": "Scam",
+      "reviewCount": 6,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "registration nu...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/tradefort/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/tradefort/"
+      }
+    },
+    {
+      "rank": 376,
+      "name": "MB Trading",
+      "slug": "mb-trading",
+      "yearFounded": 1999,
+      "status": "Scam",
+      "reviewCount": 3,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA, FINRA, SIP...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/mb-trading/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/mb-trading/"
+      }
+    },
+    {
+      "rank": 377,
+      "name": "CapitalXP",
+      "slug": "capitalxp",
+      "yearFounded": 2015,
+      "status": "Scam",
+      "reviewCount": 54,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "not regulated",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/capitalxp/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/capitalxp/"
+      }
+    },
+    {
+      "rank": 378,
+      "name": "Maxi Forex",
+      "slug": "maxiforex",
+      "yearFounded": 2008,
+      "status": "Scam",
+      "reviewCount": 6,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "Not regulated",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/maxiforex/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/maxiforex/"
+      }
+    },
+    {
+      "rank": 379,
+      "name": "Noble Trading",
+      "slug": "nobletrading",
+      "yearFounded": 1999,
+      "status": "Scam",
+      "reviewCount": 3,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CFTC/NFA, 03328...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/nobletrading/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/nobletrading/"
+      }
+    },
+    {
+      "rank": 380,
+      "name": "FinFX",
+      "slug": "finfx",
+      "yearFounded": 2010,
+      "status": "Scam",
+      "reviewCount": 4,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC, FSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/finfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/finfx/"
+      }
+    },
+    {
+      "rank": 381,
+      "name": "FXTG",
+      "slug": "fxtg",
+      "yearFounded": 2005,
+      "status": "Scam",
+      "reviewCount": 3,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "ForexTG Pty Ltd...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxtg/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxtg/"
+      }
+    },
+    {
+      "rank": 382,
+      "name": "UFX",
+      "slug": "ufxmarkets",
+      "yearFounded": 2007,
+      "status": "Scam",
+      "reviewCount": 7,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/ufxmarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/ufxmarkets/"
+      }
+    },
+    {
+      "rank": 383,
+      "name": "Falcon Brokers",
+      "slug": "falcon-brokers",
+      "yearFounded": 2012,
+      "status": "Scam",
+      "reviewCount": 4,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "regulated by th...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/falcon-brokers/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/falcon-brokers/"
+      }
+    },
+    {
+      "rank": 384,
+      "name": "Forexite",
+      "slug": "forexite",
+      "yearFounded": 1999,
+      "status": "Scam",
+      "reviewCount": 5,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "IFSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/forexite/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/forexite/"
+      }
+    },
+    {
+      "rank": 385,
+      "name": "FXall",
+      "slug": "fxall",
+      "yearFounded": 2012,
+      "status": "Scam",
+      "reviewCount": 3,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CFTC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxall/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxall/"
+      }
+    },
+    {
+      "rank": 386,
+      "name": "Sunbird",
+      "slug": "sunbird",
+      "yearFounded": 2005,
+      "status": "Scam",
+      "reviewCount": 5,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "NA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/sunbird/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/sunbird/"
+      }
+    },
+    {
+      "rank": 387,
+      "name": "Forex-Market",
+      "slug": "forexmarket",
+      "yearFounded": 2009,
+      "status": "Scam",
+      "reviewCount": 6,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FMRRC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/forexmarket/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/forexmarket/"
+      }
+    },
+    {
+      "rank": 388,
+      "name": "OptionTrade",
+      "slug": "optiontrade",
+      "yearFounded": 2004,
+      "status": "Scam",
+      "reviewCount": 9,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "EU licensed and...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/optiontrade/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/optiontrade/"
+      }
+    },
+    {
+      "rank": 389,
+      "name": "GulliverFX",
+      "slug": "gulliverfx",
+      "yearFounded": 2014,
+      "status": "Scam",
+      "reviewCount": 3,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/gulliverfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/gulliverfx/"
+      }
+    },
+    {
+      "rank": 390,
+      "name": "xCFD",
+      "slug": "xcfd",
+      "yearFounded": 2013,
+      "status": "Scam",
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSCL",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/xcfd/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/xcfd/"
+      }
+    },
+    {
+      "rank": 391,
+      "name": "FortFS",
+      "slug": "fortfs",
+      "yearFounded": 2010,
+      "status": "Scam",
+      "reviewCount": 74,
+      "brokerTypes": [
+        "Broker",
+        "ECN",
+        "STP"
+      ],
+      "regulation": "IFSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fortfs/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fortfs/"
+      }
+    },
+    {
+      "rank": 392,
+      "name": "DMM FX Australia",
+      "slug": "dmmfx",
+      "yearFounded": 2016,
+      "status": "Scam",
+      "reviewCount": 5,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "ASIC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/dmmfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/dmmfx/"
+      }
+    },
+    {
+      "rank": 393,
+      "name": "HiWayFX",
+      "slug": "hiwayfx",
+      "yearFounded": 2014,
+      "status": "Scam",
+      "reviewCount": 14,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/hiwayfx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/hiwayfx/"
+      }
+    },
+    {
+      "rank": 394,
+      "name": "Trade12",
+      "slug": "trade12",
+      "yearFounded": 2015,
+      "status": "Scam",
+      "reviewCount": 56,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "GFS",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/trade12/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/trade12/"
+      }
+    },
+    {
+      "rank": 395,
+      "name": "PrivateFX",
+      "slug": "privatefx",
+      "yearFounded": 2015,
+      "status": "Scam",
+      "reviewCount": 2,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySec",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/privatefx/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/privatefx/"
+      }
+    },
+    {
+      "rank": 396,
+      "name": "Vinson Financials Ltd",
+      "slug": "vinsonfinancials",
+      "yearFounded": 2012,
+      "status": "Scam",
+      "reviewCount": 4,
+      "brokerTypes": [
+        "STP",
+        "MM"
+      ],
+      "regulation": "CySEC 184/12 Re...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/vinsonfinancials/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/vinsonfinancials/"
+      }
+    },
+    {
+      "rank": 397,
+      "name": "Vlom",
+      "slug": "vlom",
+      "yearFounded": 2019,
+      "status": "Scam",
+      "reviewCount": 83,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/vlom/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/vlom/"
+      }
+    },
+    {
+      "rank": 398,
+      "name": "Core Spreads",
+      "slug": "corespreads",
+      "yearFounded": 2014,
+      "status": "Scam",
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA, ASIC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/corespreads/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/corespreads/"
+      }
+    },
+    {
+      "rank": 399,
+      "name": "Nas broker",
+      "slug": "nasbroker",
+      "yearFounded": 2013,
+      "status": "Scam",
+      "reviewCount": 4,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "SVGFSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/nasbroker/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/nasbroker/"
+      }
+    },
+    {
+      "rank": 400,
+      "name": "Atom8",
+      "slug": "atom8",
+      "yearFounded": 2013,
+      "status": "Scam",
+      "reviewCount": 1,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/atom8/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/atom8/"
+      }
+    },
+    {
+      "rank": 401,
+      "name": "DF Markets",
+      "slug": "dfmarkets",
+      "yearFounded": 2010,
+      "status": "Scam",
+      "reviewCount": 4,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/dfmarkets/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/dfmarkets/"
+      }
+    },
+    {
+      "rank": 402,
+      "name": "STO",
+      "slug": "sto",
+      "yearFounded": 2010,
+      "status": "Scam",
+      "reviewCount": 0,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "FCA, CySEC, CON...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/sto/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/sto/"
+      }
+    },
+    {
+      "rank": 403,
+      "name": "FX Giants",
+      "slug": "fxgiants",
+      "yearFounded": 2015,
+      "status": "Scam",
+      "reviewCount": 11,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "FCA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxgiants/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxgiants/"
+      }
+    },
+    {
+      "rank": 404,
+      "name": "Formax",
+      "slug": "formax",
+      "yearFounded": 2014,
+      "status": "Scam",
+      "reviewCount": 0,
+      "brokerTypes": [
+        "STP",
+        "ECN"
+      ],
+      "regulation": "Financial Condu...",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/formax/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/formax/"
+      }
+    },
+    {
+      "rank": 405,
+      "name": "InvestLite",
+      "slug": "investlite",
+      "yearFounded": 2020,
+      "status": "Scam",
+      "reviewCount": 5,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "IFSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/investlite/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/investlite/"
+      }
+    },
+    {
+      "rank": 406,
+      "name": "Adamant Finance",
+      "slug": "adamantfinance",
+      "yearFounded": 2015,
+      "status": "Scam",
+      "reviewCount": 0,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "IFSA",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/adamantfinance/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/adamantfinance/"
+      }
+    },
+    {
+      "rank": 407,
+      "name": "AussieTrust",
+      "slug": "aussietrust",
+      "yearFounded": 1997,
+      "status": "Scam",
+      "reviewCount": 51,
+      "brokerTypes": [
+        "ECN"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/aussietrust/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/aussietrust/"
+      }
+    },
+    {
+      "rank": 408,
+      "name": "ABInvesting",
+      "slug": "abinvesting",
+      "yearFounded": 2020,
+      "status": "Scam",
+      "reviewCount": 60,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "FSC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/abinvesting/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/abinvesting/"
+      }
+    },
+    {
+      "rank": 409,
+      "name": "Rentalzi",
+      "slug": "rentalzi",
+      "yearFounded": 2023,
+      "status": "Scam",
+      "reviewCount": 169,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/rentalzi/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/rentalzi/"
+      }
+    },
+    {
+      "rank": 410,
+      "name": "InvestiGram",
+      "slug": "investigram",
+      "yearFounded": 2019,
+      "status": "Scam",
+      "reviewCount": 108,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/investigram/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/investigram/"
+      }
+    },
+    {
+      "rank": 411,
+      "name": "101investing",
+      "slug": "101investing",
+      "yearFounded": 2016,
+      "status": "Scam",
+      "reviewCount": 101,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/101investing/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/101investing/"
+      }
+    },
+    {
+      "rank": 412,
+      "name": "Finmarket",
+      "slug": "finmarket",
+      "yearFounded": 2015,
+      "status": "Scam",
+      "reviewCount": 68,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySec",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/finmarket/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/finmarket/"
+      }
+    },
+    {
+      "rank": 413,
+      "name": "Brokereo",
+      "slug": "brokereo",
+      "yearFounded": 2020,
+      "status": "Scam",
+      "reviewCount": 99,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/brokereo/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/brokereo/"
+      }
+    },
+    {
+      "rank": 414,
+      "name": "TradedWell",
+      "slug": "tradedwell",
+      "yearFounded": 2020,
+      "status": "Scam",
+      "reviewCount": 78,
+      "brokerTypes": [
+        "Broker"
+      ],
+      "regulation": "CySEC",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/tradedwell/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/tradedwell/"
+      }
+    },
+    {
+      "rank": 415,
+      "name": "OBRinvest",
+      "slug": "obrinvest",
+      "yearFounded": 2012,
+      "status": "Scam",
+      "reviewCount": 2,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": null,
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/obrinvest/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/obrinvest/"
+      }
+    },
+    {
+      "rank": 416,
+      "name": "BTG Capital",
+      "slug": "btg-capital",
+      "yearFounded": 2021,
+      "status": "Scam",
+      "reviewCount": 122,
+      "brokerTypes": [
+        "STP"
+      ],
+      "regulation": "FSC Mauritius",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/btg-capital/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/btg-capital/"
+      }
+    },
+    {
+      "rank": 417,
+      "name": "Kaarat",
+      "slug": "kaarat",
+      "yearFounded": 2021,
+      "status": "Scam",
+      "reviewCount": 262,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/kaarat/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/kaarat/"
+      }
+    },
+    {
+      "rank": 418,
+      "name": "Demaxis",
+      "slug": "demaxis",
+      "yearFounded": 2022,
+      "status": "Scam",
+      "reviewCount": 190,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/demaxis/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/demaxis/"
+      }
+    },
+    {
+      "rank": 419,
+      "name": "FxRevenues",
+      "slug": "fxrevenues",
+      "yearFounded": 2021,
+      "status": "Scam",
+      "reviewCount": 419,
+      "brokerTypes": [
+        "MM"
+      ],
+      "regulation": "n/a",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/fxrevenues/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/fxrevenues/"
+      }
+    },
+    {
+      "rank": 420,
+      "name": "NWB",
+      "slug": "nwb",
+      "yearFounded": null,
+      "status": "Scam",
+      "reviewCount": 0,
+      "brokerTypes": [],
+      "regulation": "N/A",
+      "urls": {
+        "broker": "https://www.forex-ratings.com/forex-brokers/nwb/",
+        "reviews": "https://www.forex-ratings.com/forex-reviews/nwb/"
+      }
+    }
+  ]
+}
