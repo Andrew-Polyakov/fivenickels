@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static wagtailcore_tags wagtailmarkdown %}
+{% load static wagtailcore_tags search_tags %}
 
 {% block body_class %}template-searchresults{% endblock %}
 
@@ -13,13 +13,13 @@
     {% for result in search_results %}
     <article class="search-result" role="listitem">
         <h2 class="search-result__title">
-            <a href="{% pageurl result %}">{{ result.title }}</a>
+            <a href="{% pageurl result %}">{{ result|search_highlight_title:search_query|safe }}</a>
         </h2>
-        {% if result.search_description %}
-        <div class="search-result__preview search-result__preview--plain">{{ result.search_description }}</div>
-        {% elif result.content_type.model == "taggedcontentpage" and result.specific.tile_preview %}
-        <div class="search-result__preview search-result__preview--md">{{ result.specific.tile_preview|markdown }}</div>
+        {% with prev=result|search_highlight_preview:search_query %}
+        {% if prev %}
+        <div class="search-result__preview search-result__preview--plain">{{ prev|safe }}</div>
         {% endif %}
+        {% endwith %}
     </article>
     {% endfor %}
 </div>

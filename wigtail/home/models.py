@@ -10,6 +10,7 @@ from wagtail.contrib.routable_page.models import RoutablePageMixin, route
 from wagtail.fields import StreamField
 from wagtail.images import get_image_model_string
 from wagtail.models import Page
+from wagtail.search import index
 from wagtail.snippets.models import register_snippet
 from wagtailmarkdown.fields import MarkdownField
 
@@ -234,6 +235,11 @@ class SubsectionIndexPage(Page):
 
 
 class TaggedContentPage(Page):
+    search_fields = Page.search_fields + [
+        index.SearchField("tile_preview"),
+        index.SearchField("body"),
+    ]
+
     section_term = models.ForeignKey(
         TaxonomyTerm,
         on_delete=models.PROTECT,
