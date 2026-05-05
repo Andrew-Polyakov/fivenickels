@@ -225,11 +225,18 @@ class SubsectionIndexPage(Page):
             home_page=routable_home,
         )
         context["featured_quad_pages"] = quad_pages
-        context["featured_category_terms"] = list_category_terms_for_sector(
+        featured_terms = list_category_terms_for_sector(
             self.section_term,
             home_page=routable_home,
         )
+        context["featured_category_terms"] = featured_terms
         context["featured_category_selected"] = selected
+        selected_term = next((t for t in featured_terms if t.slug == selected), None)
+        context["featured_category_selected_term"] = selected_term
+        context["featured_category_child_terms"] = (
+            list(selected_term.get_visible_children()) if selected_term else []
+        )
+        context["featured_category_parent_term"] = self.section_term
         context["sector_nav_active"] = self.section_term.slug
         return context
 
@@ -434,6 +441,10 @@ class HomePage(RoutablePageMixin, Page):
             if active_node is not None
             else []
         )
+        selected_term = next(
+            (t for t in featured_terms if t.slug == featured_selected),
+            None,
+        )
         return self.render(
             request,
             template="home/taxonomy/taxonomy_drilldown_page.html",
@@ -445,6 +456,11 @@ class HomePage(RoutablePageMixin, Page):
                 "featured_quad_pages": quad_pages,
                 "featured_category_terms": featured_terms,
                 "featured_category_selected": featured_selected,
+                "featured_category_selected_term": selected_term,
+                "featured_category_child_terms": (
+                    list(selected_term.get_visible_children()) if selected_term else []
+                ),
+                "featured_category_parent_term": active_node,
             },
         )
 

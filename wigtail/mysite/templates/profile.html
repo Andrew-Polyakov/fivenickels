@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Profile{% endblock %}
+
+{% block body_class %}page-profile{% endblock %}
+
+{% block content %}
+<section class="profile-card">
+    <h1 class="profile-card__title">Profile</h1>
+    <dl class="profile-card__list">
+        <div class="profile-card__row">
+            <dt>Username</dt>
+            <dd>{{ request.user.get_username }}</dd>
+        </div>
+        <div class="profile-card__row">
+            <dt>Email</dt>
+            <dd>{{ request.user.email|default:"Not set" }}</dd>
+        </div>
+    </dl>
+    <form method="post" action="{% url 'popup_logout' %}" data-turbo-frame="_top">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="/" />
+        <button type="submit" class="btn btn--raised">Sign out</button>
+    </form>
+</section>
+{% endblock %}

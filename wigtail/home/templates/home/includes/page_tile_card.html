@@ -8,7 +8,19 @@
 
     {% endif %}
 
-    <h3 class="markdown-tile__title">{{ page.title }}</h3>
+    <h3 class="markdown-tile__title">
+        {% if request.user.is_authenticated and request.user.is_staff or request.user.is_superuser %}
+            <button
+                type="button"
+                class="markdown-tile__title-edit"
+                data-inline-tile-title
+                data-page-id="{{ page.pk }}"
+                data-update-url="{% url 'inline_update_tile_title' %}"
+            >{{ page.title }}</button>
+        {% else %}
+            {{ page.title }}
+        {% endif %}
+    </h3>
 
     {% if page.hero_image %}
 

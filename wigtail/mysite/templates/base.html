@@ -135,10 +135,22 @@
 
                             <div class="site-header__cluster site-header__cluster--right">
                                 <a href="#subscribe" class="btn btn--raised site-header__cta">Subscribe</a>
-                                <a href="{% url 'wagtailadmin_login' %}" class="btn btn--raised site-header__signin">
+                                {% if request.user.is_authenticated %}
+                                <a href="{% url 'profile' %}" class="btn btn--raised site-header__signin">
+                                    <span class="material-symbols-outlined site-header__signin-icon" aria-hidden="true">account_circle</span>
+                                    Profile
+                                </a>
+                                {% else %}
+                                <button
+                                    type="button"
+                                    class="btn btn--raised site-header__signin"
+                                    data-auth-modal-open
+                                    data-auth-tab="login"
+                                >
                                     <span class="material-symbols-outlined site-header__signin-icon" aria-hidden="true">person</span>
                                     Sign in
-                                </a>
+                                </button>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -147,7 +159,9 @@
                 {% if not request.in_preview_panel %}
                 <turbo-frame id="main" data-turbo-action="advance">
                 {% endif %}
+                {% if not request.META.HTTP_TURBO_FRAME %}
                 {% wagtailuserbar %}
+                {% endif %}
                 <div class="site-shell">
                 <div class="site-content">
                 {% if header_home and site_nav_rows %}
@@ -166,6 +180,76 @@
         {% block site_footer %}
         {% include "components/site_footer.html" %}
         {% endblock site_footer %}
+
+        {% if not request.user.is_authenticated %}
+        <div class="auth-modal" data-auth-modal-root hidden>
+            <div class="auth-modal__backdrop" data-auth-modal-close></div>
+            <section
+                class="auth-modal__dialog"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="auth-modal-title"
+            >
+                <button
+                    type="button"
+                    class="auth-modal__close btn btn--icon"
+                    aria-label="Close sign-in dialog"
+                    data-auth-modal-close
+                >
+                    <span class="material-symbols-outlined" aria-hidden="true">close</span>
+                </button>
+                <h2 id="auth-modal-title" class="auth-modal__title">Welcome</h2>
+                <p class="auth-modal__subtitle">Sign in or create an account to access your profile.</p>
+
+                <div class="auth-modal__tabs" role="tablist" aria-label="Authentication tabs">
+                    <button type="button" class="auth-modal__tab" data-auth-tab-trigger="login" role="tab" aria-selected="true">
+                        Sign in
+                    </button>
+                    <button type="button" class="auth-modal__tab" data-auth-tab-trigger="signup" role="tab" aria-selected="false">
+                        Sign up
+                    </button>
+                </div>
+
+                <div class="auth-modal__messages">
+                    {% for message in messages %}
+                        {% if "auth-login" in message.tags or "auth-signup" in message.tags %}
+                        <p class="auth-modal__error">{{ message }}</p>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <div class="auth-modal__panes">
+                    <section class="auth-modal__pane" data-auth-pane="login" role="tabpanel">
+                        <form method="post" action="{% url 'popup_login' %}" class="auth-modal__form" data-turbo-frame="_top">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+                            <label class="auth-modal__label" for="auth-login-identity">Username or email</label>
+                            <input id="auth-login-identity" class="auth-modal__input" type="text" name="username_or_email" required autocomplete="username" />
+                            <label class="auth-modal__label" for="auth-login-password">Password</label>
+                            <input id="auth-login-password" class="auth-modal__input" type="password" name="password" required autocomplete="current-password" />
+                            <button type="submit" class="btn btn--raised auth-modal__submit">Sign in</button>
+                        </form>
+                    </section>
+
+                    <section class="auth-modal__pane" data-auth-pane="signup" role="tabpanel" hidden>
+                        <form method="post" action="{% url 'popup_signup' %}" class="auth-modal__form" data-turbo-frame="_top">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+                            <label class="auth-modal__label" for="auth-signup-username">Username</label>
+                            <input id="auth-signup-username" class="auth-modal__input" type="text" name="username" required autocomplete="username" />
+                            <label class="auth-modal__label" for="auth-signup-email">Email</label>
+                            <input id="auth-signup-email" class="auth-modal__input" type="email" name="email" required autocomplete="email" />
+                            <label class="auth-modal__label" for="auth-signup-password1">Password</label>
+                            <input id="auth-signup-password1" class="auth-modal__input" type="password" name="password1" required autocomplete="new-password" />
+                            <label class="auth-modal__label" for="auth-signup-password2">Confirm password</label>
+                            <input id="auth-signup-password2" class="auth-modal__input" type="password" name="password2" required autocomplete="new-password" />
+                            <button type="submit" class="btn btn--raised auth-modal__submit">Create account</button>
+                        </form>
+                    </section>
+                </div>
+            </section>
+        </div>
+        {% endif %}
 
         {# Global javascript #}
         <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8.0.12/dist/turbo.es2017-umd.js" defer></script>

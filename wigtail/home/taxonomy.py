@@ -147,12 +147,13 @@ def build_nav_rows(
     home_page: HomePage,
 ) -> list[dict]:
     roots = list(taxonomy_roots_for_nav(home_page))
-    rows: list[dict] = [{"depth": 1, "nodes": roots}]
+    rows: list[dict] = [{"depth": 1, "nodes": roots, "parent_id": None}]
     for i, node in enumerate(trail):
         rows.append(
             {
                 "depth": i + 2,
                 "nodes": virtual_children_for(node, home_page=home_page),
+                "parent_id": node.pk,
             }
         )
     return rows

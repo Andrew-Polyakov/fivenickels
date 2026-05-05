@@ -12,7 +12,10 @@
         if (anchor.getAttribute("data-turbo") === "false") {
             return false;
         }
-        if (anchor.getAttribute("data-turbo-frame") === "site-nav") {
+        if (anchor.hasAttribute("data-turbo-frame")) {
+            return false;
+        }
+        if (anchor.classList.contains("featured-category-chip")) {
             return false;
         }
         if (anchor.target && anchor.target.toLowerCase() === "_blank") {
@@ -26,6 +29,9 @@
             return false;
         }
         if (hrefAttr.charAt(0) === "#" && hrefAttr.indexOf("/") === -1) {
+            return false;
+        }
+        if (hrefAttr.indexOf("category=") >= 0) {
             return false;
         }
         var u;
@@ -162,6 +168,247 @@
         });
     }
 
+    function getCookie(name) {
+        var value = "; " + document.cookie;
+        var parts = value.split("; " + name + "=");
+        if (parts.length === 2) {
+            return parts.pop().split(";").shift();
+        }
+        return "";
+    }
+
+    function getCsrfToken() {
+        var fromCookie = getCookie("csrftoken");
+        if (fromCookie) {
+            return fromCookie;
+        }
+        var input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+        if (input && input.value) {
+            return input.value;
+        }
+        return "";
+    }
+
+    function postJson(url, payload) {
+        return fetch(url, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCsrfToken(),
+                Accept: "application/json",
+            },
+            body: JSON.stringify(payload || {}),
+        }).then(function (res) {
+            return res.json().then(function (data) {
+                if (!res.ok) {
+                    throw new Error((data && data.error) || "Request failed.");
+                }
+                return data;
+            });
+        });
+    }
+
+    function refreshCurrentPage() {
+        if (window.Turbo && typeof window.Turbo.visit === "function") {
+            window.Turbo.visit(window.location.href, { action: "replace" });
+            return;
+        }
+        window.location.reload();
+    }
+
+    function initInlineChipsAdmin() {
+        var roots = document.querySelectorAll("[data-inline-chips]");
+        roots.forEach(function (root) {
+            if (root.getAttribute("data-inline-chips-bound") === "1") {
+                return;
+            }
+            root.setAttribute("data-inline-chips-bound", "1");
+            if (root.getAttribute("data-can-edit") !== "1") {
+                return;
+            }
+            var createUrl = root.getAttribute("data-create-url");
+            var deleteUrl = root.getAttribute("data-delete-url");
+            if (!createUrl || !deleteUrl) {
+                return;
+            }
+
+            root.addEventListener("mouseover", function (evt) {
+                var deleteBtn = evt.target.closest("[data-inline-chip-delete]");
+                if (!deleteBtn) {
+                    return;
+                }
+                var wrap = deleteBtn.closest(".featured-category-chip-wrap");
+                if (wrap) {
+                    wrap.classList.add("is-delete-armed");
+                }
+            });
+            root.addEventListener("mouseout", function (evt) {
+                var deleteBtn = evt.target.closest("[data-inline-chip-delete]");
+                if (!deleteBtn) {
+                    return;
+                }
+                var wrap = deleteBtn.closest(".featured-category-chip-wrap");
+                if (wrap) {
+                    wrap.classList.remove("is-delete-armed");
+                }
+            });
+
+            root.addEventListener("click", function (evt) {
+                var addBtn = evt.target.closest("[data-inline-chip-add]");
+                if (addBtn) {
+                    evt.preventDefault();
+                    var parentId = addBtn.getAttribute("data-parent-id");
+                    var shell = document.createElement("span");
+                    shell.className = "featured-category-chip-wrap featured-category-chip-wrap--editor";
+                    var input = document.createElement("input");
+                    input.type = "text";
+                    input.className = "featured-category-chip-input";
+                    input.placeholder = "New category";
+                    input.setAttribute("aria-label", "New category");
+                    shell.appendChild(input);
+                    addBtn.insertAdjacentElement("beforebegin", shell);
+                    input.focus();
+
+                    var finished = false;
+                    function closeEditor() {
+                        if (finished) {
+                            return;
+                        }
+                        finished = true;
+                        shell.remove();
+                    }
+
+                    input.addEventListener("keydown", function (keyEvt) {
+                        if (keyEvt.key === "Escape") {
+                            keyEvt.preventDefault();
+                            closeEditor();
+                            return;
+                        }
+                        if (keyEvt.key !== "Enter") {
+                            return;
+                        }
+                        keyEvt.preventDefault();
+                        var name = (input.value || "").trim();
+                        if (!name) {
+                            closeEditor();
+                            return;
+                        }
+                        input.disabled = true;
+                        postJson(createUrl, {
+                            name: name,
+                            parent_id: parentId || null,
+                        })
+                            .then(function () {
+                                refreshCurrentPage();
+                            })
+                            .catch(function (err) {
+                                input.disabled = false;
+                                alert(err.message || "Could not create category.");
+                                input.focus();
+                            });
+                    });
+                    input.addEventListener("blur", function () {
+                        window.setTimeout(closeEditor, 120);
+                    });
+                    return;
+                }
+
+                var deleteBtn = evt.target.closest("[data-inline-chip-delete]");
+                if (!deleteBtn) {
+                    return;
+                }
+                evt.preventDefault();
+                var termId = deleteBtn.getAttribute("data-inline-chip-id");
+                if (!termId) {
+                    return;
+                }
+                if (!window.confirm("Delete this category? This cannot be undone.")) {
+                    return;
+                }
+                postJson(deleteUrl, { term_id: termId })
+                    .then(function () {
+                        refreshCurrentPage();
+                    })
+                    .catch(function (err) {
+                        alert(err.message || "Could not delete category.");
+                    });
+            });
+        });
+    }
+
+    function initInlineTileTitleAdmin() {
+        var titleButtons = document.querySelectorAll("[data-inline-tile-title]");
+        titleButtons.forEach(function (btn) {
+            if (btn.getAttribute("data-inline-title-bound") === "1") {
+                return;
+            }
+            btn.setAttribute("data-inline-title-bound", "1");
+            btn.addEventListener("click", function (evt) {
+                evt.preventDefault();
+                evt.stopPropagation();
+
+                var updateUrl = btn.getAttribute("data-update-url");
+                var pageId = btn.getAttribute("data-page-id");
+                if (!updateUrl || !pageId) {
+                    return;
+                }
+                var startTitle = (btn.textContent || "").trim();
+                var input = document.createElement("input");
+                input.type = "text";
+                input.className = "markdown-tile__title-input";
+                input.value = startTitle;
+                btn.hidden = true;
+                btn.insertAdjacentElement("afterend", input);
+                input.focus();
+                input.select();
+
+                var done = false;
+                function teardown() {
+                    if (done) {
+                        return;
+                    }
+                    done = true;
+                    input.remove();
+                    btn.hidden = false;
+                }
+
+                input.addEventListener("keydown", function (keyEvt) {
+                    if (keyEvt.key === "Escape") {
+                        keyEvt.preventDefault();
+                        teardown();
+                        return;
+                    }
+                    if (keyEvt.key !== "Enter") {
+                        return;
+                    }
+                    keyEvt.preventDefault();
+                    var nextTitle = (input.value || "").trim();
+                    if (!nextTitle || nextTitle === startTitle) {
+                        teardown();
+                        return;
+                    }
+                    input.disabled = true;
+                    postJson(updateUrl, {
+                        page_id: pageId,
+                        title: nextTitle,
+                    })
+                        .then(function () {
+                            refreshCurrentPage();
+                        })
+                        .catch(function (err) {
+                            input.disabled = false;
+                            alert(err.message || "Could not update title.");
+                            input.focus();
+                        });
+                });
+                input.addEventListener("blur", function () {
+                    window.setTimeout(teardown, 120);
+                });
+            });
+        });
+    }
+
     function afterMainFrameVisit(htmlDocumentOptional) {
         if (htmlDocumentOptional) {
             syncBodyAndTitleFromResponse(htmlDocumentOptional);
@@ -169,6 +416,8 @@
         syncHeaderFromUrl();
         initSectorScroll();
         initCarousels();
+        initInlineChipsAdmin();
+        initInlineTileTitleAdmin();
     }
 
     function handleTurboFrameLoad(e) {
@@ -389,6 +638,87 @@
         });
     }
 
+    function initAuthModal() {
+        if (isTurboPreview()) {
+            return;
+        }
+        var root = document.querySelector("[data-auth-modal-root]");
+        if (!root || root.getAttribute("data-auth-modal-bound") === "1") {
+            return;
+        }
+        root.setAttribute("data-auth-modal-bound", "1");
+        var dialog = root.querySelector(".auth-modal__dialog");
+        var closeTargets = root.querySelectorAll("[data-auth-modal-close]");
+        var openTargets = document.querySelectorAll("[data-auth-modal-open]");
+        var tabTriggers = root.querySelectorAll("[data-auth-tab-trigger]");
+        var panes = root.querySelectorAll("[data-auth-pane]");
+        var defaultTab = "login";
+        var activeTab = defaultTab;
+
+        function setTab(tabName) {
+            activeTab = tabName === "signup" ? "signup" : "login";
+            tabTriggers.forEach(function (trigger) {
+                var isActive = trigger.getAttribute("data-auth-tab-trigger") === activeTab;
+                trigger.classList.toggle("is-active", isActive);
+                trigger.setAttribute("aria-selected", isActive ? "true" : "false");
+            });
+            panes.forEach(function (pane) {
+                pane.hidden = pane.getAttribute("data-auth-pane") !== activeTab;
+            });
+        }
+
+        function openModal(tabName) {
+            setTab(tabName || defaultTab);
+            root.hidden = false;
+            document.body.classList.add("is-auth-modal-open");
+            var firstInput = root.querySelector(
+                '[data-auth-pane="' + activeTab + '"] input:not([type="hidden"])'
+            );
+            if (firstInput) {
+                firstInput.focus();
+            }
+        }
+
+        function closeModal() {
+            root.hidden = true;
+            document.body.classList.remove("is-auth-modal-open");
+        }
+
+        closeTargets.forEach(function (target) {
+            target.addEventListener("click", closeModal);
+        });
+
+        openTargets.forEach(function (target) {
+            target.addEventListener("click", function () {
+                openModal(target.getAttribute("data-auth-tab") || defaultTab);
+            });
+        });
+
+        tabTriggers.forEach(function (trigger) {
+            trigger.addEventListener("click", function () {
+                setTab(trigger.getAttribute("data-auth-tab-trigger") || defaultTab);
+            });
+        });
+
+        dialog.addEventListener("click", function (e) {
+            e.stopPropagation();
+        });
+
+        document.addEventListener("keydown", function (e) {
+            if (e.key === "Escape" && !root.hidden) {
+                closeModal();
+            }
+        });
+
+        var params = new URLSearchParams(window.location.search);
+        var openFromUrl = params.get("auth");
+        if (openFromUrl === "login" || openFromUrl === "signup") {
+            openModal(openFromUrl);
+        } else {
+            setTab(defaultTab);
+        }
+    }
+
     document.addEventListener("DOMContentLoaded", function () {
         if (!isTurboPreview()) {
             syncHeaderFromUrl();
@@ -396,6 +726,9 @@
         initSectorScroll();
         initCarousels();
         initSiteSearchLive();
+        initAuthModal();
+        initInlineChipsAdmin();
+        initInlineTileTitleAdmin();
     });
 
     document.addEventListener("turbo:load", function () {
@@ -405,6 +738,9 @@
             initCarousels();
         }
         initSiteSearchLive();
+        initAuthModal();
+        initInlineChipsAdmin();
+        initInlineTileTitleAdmin();
     });
 
     document.addEventListener("turbo:frame-load", handleTurboFrameLoad);

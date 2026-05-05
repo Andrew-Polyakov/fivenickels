@@ -11,6 +11,7 @@ from home.models import (
 from decimal import Decimal
 from unittest.mock import patch
 
+from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils import timezone
 
@@ -360,7 +361,7 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, "Energy one")
-        self.assertContains(r, "featured-category-chips")
+        self.assertNotContains(r, "featured-category-chips")
 
     def test_tag_archive_route(self):
         url = f"{self.homepage.url}tags/alpha/"
@@ -420,9 +421,13 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         self.assertContains(r, "template-taxonomy-drilldown")
         self.assertContains(r, "featured-category-quad")
         self.assertContains(r, "energy-one")
+        self.assertContains(r, 'data-turbo-frame="main"')
+        self.assertNotContains(r, 'data-turbo="false"')
         r_frame = self.client.get(url, HTTP_TURBO_FRAME="site-nav")
         self.assertEqual(r_frame.status_code, 200)
-        self.assertContains(r_frame, '<turbo-frame id="site-nav"')
+        self.assertContains(r_frame, "<turbo-frame")
+        self.assertContains(r_frame, 'id="site-nav"')
+        self.assertContains(r_frame, 'data-turbo-frame="main"')
         self.assertNotContains(r_frame, "taxonomy-drilldown")
 
     def test_financials_drilldown_shows_random_tile_grid(self):
@@ -752,3 +757,117 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         self.assertContains(r, "Energy one")
         self.assertContains(r, "Energy two")
         self.assertNotContains(r, magic)
+
+
+class InlineEditingApiTests(WagtailPageTestCase):
+    def setUp(self):
+        root_page = Page.get_first_root_node()
+        self.homepage = (
+            HomePage.objects.child_of(root_page).filter(slug="home").first()
+            or HomePage.objects.filter(slug="home").first()
+        )
+        if self.homepage is None:
+            self.homepage = HomePage(title="Home")
+            root_page.add_child(instance=self.homepage)
+        self.homepage.save_revision().publish()
+        site = Site.objects.filter(is_default_site=True).first()
+        if site:
+            Site.objects.filter(pk=site.pk).update(
+                hostname="testserver",
+                port=80,
+                root_page_id=self.homepage.pk,
+            )
+        else:
+            Site.objects.create(
+                hostname="testserver",
+                port=80,
+                root_page=self.homepage,
+                is_default_site=True,
+            )
+        self.energy = TaxonomyTerm.objects.get(slug="energy")
+        User = get_user_model()
+        self.admin_user = User.objects.create_user(
+            username="inline-admin",
+            password="pass12345",
+            is_staff=True,
+        )
+        self.non_admin = User.objects.create_user(
+            username="inline-user",
+            password="pass12345",
+        )
+
+    def test_create_taxonomy_term_requires_staff(self):
+        self.client.force_login(self.non_admin)
+        response = self.client.post(
+            reverse("inline_create_taxonomy_term"),
+            data='{"name":"Test child","parent_id": null}',
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 302)
+
+    def test_create_taxonomy_term_attaches_to_selected_parent(self):
+        self.client.force_login(self.admin_user)
+        response = self.client.post(
+            reverse("inline_create_taxonomy_term"),
+            data='{"name":"Inline Energy Child","parent_id": %d}' % self.energy.pk,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        term = TaxonomyTerm.objects.get(slug="inline-energy-child")
+        self.assertEqual(term.get_parent().pk, self.energy.pk)
+
+    def test_delete_taxonomy_term_blocks_used_terms(self):
+        self.client.force_login(self.admin_user)
+        page = TaggedContentPage(
+            title="Inline Delete Guard",
+            slug="inline-delete-guard",
+            section_term=self.energy,
+            tile_preview="guard",
+        )
+        self.homepage.add_child(instance=page)
+        page.save_revision().publish()
+
+        response = self.client.post(
+            reverse("inline_delete_taxonomy_term"),
+            data='{"term_id": %d}' % self.energy.pk,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertTrue(TaxonomyTerm.objects.filter(pk=self.energy.pk).exists())
+
+    def test_update_tile_title_regenerates_unique_slug(self):
+        self.client.force_login(self.admin_user)
+        page_a = TaggedContentPage(
+            title="Alpha Story",
+            slug="alpha-story",
+            section_term=self.energy,
+            tile_preview="a",
+        )
+        self.homepage.add_child(instance=page_a)
+        page_a.save_revision().publish()
+
+        page_b = TaggedContentPage(
+            title="Beta Story",
+            slug="beta-story",
+            section_term=self.energy,
+            tile_preview="b",
+        )
+        self.homepage.add_child(instance=page_b)
+        page_b.save_revision().publish()
+
+        response = self.client.post(
+            reverse("inline_update_tile_title"),
+            data='{"page_id": %d, "title":"Alpha Story"}' % page_b.pk,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        page_b.refresh_from_db()
+        self.assertEqual(page_b.title, "Alpha Story")
+        self.assertEqual(page_b.slug, "alpha-story-2")
+
+    def test_staff_homepage_renders_inline_chip_delete_controls(self):
+        self.client.force_login(self.admin_user)
+        response = self.client.get(self.homepage.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "data-inline-chips")
+        self.assertContains(response, "data-inline-chip-delete")

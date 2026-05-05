@@ -8,6 +8,8 @@ from wagtail.admin import urls as wagtailadmin_urls
 from wagtail import urls as wagtail_urls
 from wagtail.documents import urls as wagtaildocs_urls
 
+from home import auth_views
+from home import inline_edit_views
 from search import views as search_views
 
 from home.ticker_serve import render_ticker_page
@@ -22,6 +24,25 @@ urlpatterns = [
     path("django-admin/", admin.site.urls),
     path("admin/", include(wagtailadmin_urls)),
     path("documents/", include(wagtaildocs_urls)),
+    path("auth/login/", auth_views.popup_login, name="popup_login"),
+    path("auth/signup/", auth_views.popup_signup, name="popup_signup"),
+    path("auth/logout/", auth_views.popup_logout, name="popup_logout"),
+    path("profile/", auth_views.profile, name="profile"),
+    path(
+        "inline/taxonomy/create/",
+        inline_edit_views.create_taxonomy_term,
+        name="inline_create_taxonomy_term",
+    ),
+    path(
+        "inline/taxonomy/delete/",
+        inline_edit_views.delete_taxonomy_term,
+        name="inline_delete_taxonomy_term",
+    ),
+    path(
+        "inline/tile/update-title/",
+        inline_edit_views.update_tile_title,
+        name="inline_update_tile_title",
+    ),
     path("search/suggest/", search_views.search_suggest, name="search_suggest"),
     path("search/", search_views.search, name="search"),
     path(
