@@ -1,5 +1,5 @@
 """
-Fill SubsectionIndexPage ``intro`` with a markdown_tiles block built from random
+Fill SubsectionIndexPage ``intro`` with ``card`` StreamField blocks pointing at random
 published TaggedContentPage rows in that sector.
 
 Usage (from wigtail/):
@@ -33,8 +33,8 @@ def _sector_display_name(slug: str) -> str:
 
 class Command(BaseCommand):
     help = (
-        "Populate subsection hub intros with markdown tiles linking to random articles "
-        "from each sector."
+        "Populate subsection hub intros with shadcn-style article cards linking to "
+        "random articles from each sector."
     )
 
     def add_arguments(self, parser):
@@ -143,29 +143,7 @@ class Command(BaseCommand):
             random.shuffle(pages)
             picked = pages[: min(count, len(pages))]
 
-            tiles: list[dict] = []
-            for page in picked:
-                anchor = f"tile-{page.pk}-{page.slug}"[:200]
-                anchor = "".join(c if c.isalnum() or c in "-_" else "-" for c in anchor)
-                preview = (page.tile_preview or "").strip()
-                url = page.url or "#"
-                link_line = f"[Read full article →]({url})"
-                if preview:
-                    body_md = f"{preview}\n\n{link_line}"
-                else:
-                    body_md = link_line
-
-                tiles.append(
-                    {
-                        "title": page.title,
-                        "slug": anchor[:200],
-                        "taxonomy": term,
-                        "image": page.hero_image,
-                        "body": body_md,
-                    }
-                )
-
-            intro_stream = [
+            intro_stream: list = [
                 ("heading", {"level": "h2", "text": f"{term.name} spotlight"}),
                 (
                     "paragraph",
@@ -176,11 +154,24 @@ class Command(BaseCommand):
                         "</p>"
                     ),
                 ),
-                ("markdown_tiles", {"tiles": tiles}),
             ]
+            for page in picked:
+                intro_stream.append(
+                    (
+                        "card",
+                        {
+                            "article": {
+                                "importance": 10,
+                                "section_term": term,
+                                "mode": "manual_article",
+                                "manual_page": page,
+                            }
+                        },
+                    )
+                )
 
             self.stdout.write(
-                f"{sector_slug}: {len(tiles)} tile(s) on “{idx.title}” ({idx.url})"
+                f"{sector_slug}: {len(picked)} card(s) on “{idx.title}” ({idx.url})"
             )
             if dry_run:
                 continue

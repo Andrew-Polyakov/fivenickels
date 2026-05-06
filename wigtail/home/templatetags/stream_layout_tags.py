@@ -1,0 +1,45 @@
+import uuid
+
+from django import template
+
+from home.card_layout import iter_main_site_stream_segments, serialize_article_card_for_related
+
+register = template.Library()
+
+
+@register.inclusion_tag("home/includes/shadcn_article_card_mount.html", takes_context=True)
+def similar_article_card_mount(context, page):
+    request = context.get("request")
+    payload = serialize_article_card_for_related(page, request)
+    uid = f"similar-card-{page.pk}"
+    return {"uid": uid, "payload": payload}
+
+
+def _template_context_dict(context) -> dict:
+    if hasattr(context, "flatten"):
+        return context.flatten()
+    try:
+        flat: dict = {}
+        for d in context.dicts:
+            if isinstance(d, dict):
+                flat.update(d)
+        return flat
+    except Exception:
+        return {}
+
+
+@register.inclusion_tag("home/includes/main_site_stream.html", takes_context=True)
+def render_main_site_stream(context, stream):
+    sector = context.get("sector_tile_filter")
+    segments_in = list(
+        iter_main_site_stream_segments(
+            stream, _template_context_dict(context), sector_slug=sector
+        )
+    )
+    segments = []
+    for seg in segments_in:
+        if seg["type"] == "card_layout":
+            segments.append({**seg, "uid": f"scn-{uuid.uuid4().hex[:12]}"})
+        else:
+            segments.append(seg)
+    return {"segments": segments}

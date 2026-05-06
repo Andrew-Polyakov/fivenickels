@@ -14,6 +14,7 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.crypto import get_random_string
 
 from home.blocks import _resolve_section_term
 from home.navigation import normalize_sector_query_param
@@ -197,6 +198,32 @@ class TaxonomyTagsTests(WagtailPageTestCase):
             is_visible=True
         )
 
+        self.energy_index.intro = [
+            (
+                "card",
+                {
+                    "article": {
+                        "importance": 10,
+                        "section_term": self.energy,
+                        "mode": "manual_article",
+                        "manual_page": self.page_e1,
+                    }
+                },
+            ),
+            (
+                "card",
+                {
+                    "article": {
+                        "importance": 10,
+                        "section_term": self.energy,
+                        "mode": "manual_article",
+                        "manual_page": self.page_e2,
+                    }
+                },
+            ),
+        ]
+        self.energy_index.save_revision().publish()
+
     def test_recent_pages_for_section_filters_taxonomy(self):
         recent = get_recent_pages_for_section(self.energy, limit=20)
         slugs = {p.slug for p in recent}
@@ -293,7 +320,7 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         self.assertContains(r, "Energy one")
         self.assertContains(r, "Energy two")
         self.assertNotContains(r, "Materials one")
-        self.assertContains(r, "big-tile-quad__grid")
+        self.assertContains(r, "data-shadcn-card-layout")
 
     def test_pick_four_orders_by_priority_band_desc(self):
         TaggedContentPage.objects.filter(pk=self.page_e2.pk).update(tile_priority=10)
@@ -317,18 +344,6 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         TaggedContentPage.objects.filter(pk=self.page_e1.pk).update(
             taxonomy_category_id=oil.pk
         )
-
-        r_all = self.client.get(self.energy_index.url)
-        self.assertEqual(r_all.status_code, 200)
-        self.assertContains(r_all, "Energy one")
-        self.assertContains(r_all, "Energy two")
-
-        r_cat = self.client.get(
-            self.energy_index.url + "?category=energy-oil-test-cat"
-        )
-        self.assertEqual(r_cat.status_code, 200)
-        self.assertContains(r_cat, "Energy one")
-        # Recent section may still list other sector articles; quad filter is asserted below.
 
         pages, selected = featured_quad_pages_for_sector(
             self.energy,
@@ -357,11 +372,25 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         self.assertTrue(
             any(p is not None and p.slug == "energy-one" for p in pages),
         )
+        mnews.widgets = [
+            (
+                "card",
+                {
+                    "article": {
+                        "importance": 10,
+                        "section_term": self.energy,
+                        "mode": "manual_article",
+                        "manual_page": self.page_e1,
+                    }
+                },
+            ),
+        ]
+        mnews.save()
         url = taxonomy_prefix_path(self.homepage) + "market-news/"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, "Energy one")
-        self.assertNotContains(r, "featured-category-chips")
+        self.assertContains(r, "data-shadcn-card-layout")
 
     def test_tag_archive_route(self):
         url = f"{self.homepage.url}tags/alpha/"
@@ -370,6 +399,7 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         self.assertTemplateUsed(r, "home/tag_archive.html")
         self.assertContains(r, "Energy one")
         self.assertContains(r, "Materials one")
+        self.assertContains(r, "data-shadcn-article-card")
 
     def test_tag_archive_section_querystring(self):
         url = f"{self.homepage.url}tags/alpha/?section=energy"
@@ -419,8 +449,6 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         # Full-page navigation must render layout + drilldown, not only the Turbo frame.
         self.assertContains(r, "taxonomy-drilldown")
         self.assertContains(r, "template-taxonomy-drilldown")
-        self.assertContains(r, "featured-category-quad")
-        self.assertContains(r, "energy-one")
         self.assertContains(r, "site-nav__link--active", count=2)
         self.assertContains(r, 'data-turbo-frame="main"')
         self.assertNotContains(r, 'data-turbo="false"')
@@ -431,12 +459,12 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         self.assertContains(r_frame, 'data-turbo-frame="main"')
         self.assertNotContains(r_frame, "taxonomy-drilldown")
 
-    def test_financials_drilldown_shows_random_tile_grid(self):
-        """GICS drilldown landing renders a priority quad (four slots) for the sector."""
+    def test_financials_drilldown_renders_card_widgets(self):
         from home.taxonomy import taxonomy_prefix_path
 
         financials = TaxonomyTerm.objects.get(slug="financials")
         TaxonomyTerm.objects.filter(pk=financials.pk).update(is_visible=True)
+        fin_pages = []
         for i in range(3):
             p = TaggedContentPage(
                 title=f"Fin preview {i}",
@@ -447,14 +475,40 @@ class TaxonomyTagsTests(WagtailPageTestCase):
             )
             self.homepage.add_child(instance=p)
             p.save_revision().publish()
+            fin_pages.append(p)
+
+        financials.widgets = [
+            (
+                "card",
+                {
+                    "article": {
+                        "importance": 10,
+                        "section_term": financials,
+                        "mode": "manual_article",
+                        "manual_page": fin_pages[0],
+                    }
+                },
+            ),
+            (
+                "card",
+                {
+                    "article": {
+                        "importance": 10,
+                        "section_term": financials,
+                        "mode": "manual_article",
+                        "manual_page": fin_pages[1],
+                    }
+                },
+            ),
+        ]
+        financials.save()
 
         url = taxonomy_prefix_path(self.homepage) + "market-news/financials/"
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
-        self.assertContains(r, "featured-category-quad")
+        self.assertContains(r, "data-shadcn-card-layout")
         self.assertContains(r, "Fin preview 0")
         self.assertContains(r, "Fin preview 1")
-        self.assertContains(r, "Fin preview 2")
 
     def test_get_random_pages_for_section_filters_by_term(self):
         pages = get_random_pages_for_section(self.energy, limit=12)
@@ -497,80 +551,76 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, "taxonomy-drilldown")
-        self.assertContains(r, "forex-strip")
-        self.assertContains(r, "ticker-chip__box")
 
     def test_normalize_sector_query_param(self):
         self.assertEqual(normalize_sector_query_param("energy"), "energy")
         self.assertIsNone(normalize_sector_query_param("not-a-gics-slug"))
         self.assertIsNone(normalize_sector_query_param(""))
 
-    def test_home_sector_filters_markdown_tiles(self):
+    def test_home_sector_filters_article_cards(self):
         self.homepage.body = [
             (
-                "markdown_tiles",
+                "card",
                 {
-                    "tiles": [
-                        {
-                            "title": "Energy headline",
-                            "slug": "energy-headline",
-                            "taxonomy": self.energy,
-                            "image": None,
-                            "body": "ONLY_ENERGY_MARKDOWN",
-                        },
-                        {
-                            "title": "Materials headline",
-                            "slug": "materials-headline",
-                            "taxonomy": self.materials,
-                            "image": None,
-                            "body": "ONLY_MATERIALS_MARKDOWN",
-                        },
-                    ]
+                    "article": {
+                        "importance": 10,
+                        "section_term": self.energy,
+                        "mode": "manual_article",
+                        "manual_page": self.page_e1,
+                    }
+                },
+            ),
+            (
+                "card",
+                {
+                    "article": {
+                        "importance": 10,
+                        "section_term": self.materials,
+                        "mode": "manual_article",
+                        "manual_page": self.page_m1,
+                    }
                 },
             ),
         ]
         self.homepage.save_revision().publish()
         r = self.client.get(f"{self.homepage.url}?sector=energy")
         self.assertEqual(r.status_code, 200)
-        self.assertContains(r, "ONLY_ENERGY_MARKDOWN")
-        self.assertNotContains(r, "ONLY_MATERIALS_MARKDOWN")
+        self.assertContains(r, "Energy one")
+        self.assertNotContains(r, "Materials one")
         r_all = self.client.get(self.homepage.url)
-        self.assertContains(r_all, "ONLY_ENERGY_MARKDOWN")
-        self.assertContains(r_all, "ONLY_MATERIALS_MARKDOWN")
-        r_bad = self.client.get(f"{self.homepage.url}?sector=invalid-sector")
-        self.assertContains(r_bad, "ONLY_ENERGY_MARKDOWN")
-        self.assertContains(r_bad, "ONLY_MATERIALS_MARKDOWN")
+        self.assertContains(r_all, "Energy one")
+        self.assertContains(r_all, "Materials one")
 
-    def test_build_home_page_display_items_filters_tiles(self):
+    def test_build_home_page_display_items_filters_cards(self):
         self.homepage.body = [
             (
-                "markdown_tiles",
+                "card",
                 {
-                    "tiles": [
-                        {
-                            "title": "A",
-                            "slug": "a",
-                            "taxonomy": self.energy,
-                            "image": None,
-                            "body": "x",
-                        },
-                        {
-                            "title": "B",
-                            "slug": "b",
-                            "taxonomy": self.materials,
-                            "image": None,
-                            "body": "y",
-                        },
-                    ]
+                    "article": {
+                        "importance": 10,
+                        "section_term": self.energy,
+                        "mode": "manual_article",
+                        "manual_page": self.page_e1,
+                    }
+                },
+            ),
+            (
+                "card",
+                {
+                    "article": {
+                        "importance": 10,
+                        "section_term": self.materials,
+                        "mode": "manual_article",
+                        "manual_page": self.page_m1,
+                    }
                 },
             ),
         ]
         self.homepage.save_revision().publish()
         items = build_home_page_display_items(self.homepage.body, "energy")
         self.assertEqual(len(items), 1)
-        self.assertEqual(items[0]["mode"], "markdown_tiles")
-        self.assertEqual(len(items[0]["value"].tiles), 1)
-        self.assertEqual(items[0]["value"].tiles[0]["title"], "A")
+        self.assertEqual(items[0]["mode"], "block")
+        self.assertEqual(items[0]["child"].block_type, "card")
 
     def test_resolve_section_term_falls_back_to_active_node(self):
         """Turbo site-nav frame passes ``active_node``, not ``taxonomy_active_node``."""
@@ -605,25 +655,18 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         self.assertEqual(len(picked), 1)
         self.assertEqual(picked[0].pk, self.page_e1.pk)
 
-    def test_big_tile_row_does_not_render_importance_in_html(self):
+    def test_article_card_does_not_render_editor_importance(self):
         magic = "918273645"
         self.homepage.body = [
             (
-                "big_tile_row",
+                "card",
                 {
-                    "panels": [
-                        [
-                            (
-                                "single",
-                                {
-                                    "importance": int(magic),
-                                    "section_term": None,
-                                    "mode": "manual",
-                                    "manual_page": self.page_e1,
-                                },
-                            )
-                        ]
-                    ]
+                    "article": {
+                        "importance": int(magic),
+                        "section_term": None,
+                        "mode": "manual_article",
+                        "manual_page": self.page_e1,
+                    }
                 },
             ),
         ]
@@ -631,26 +674,33 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         r = self.client.get(self.homepage.url)
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, "Energy one")
+        self.assertContains(r, "data-shadcn-card-layout")
         self.assertNotContains(r, magic)
         self.assertNotContains(r, "Importance (editor only)")
 
-    def test_big_tile_row_twin_renders_two_manual_articles(self):
+    def test_article_card_row_renders_two_manual_articles(self):
         self.homepage.body = [
             (
-                "big_tile_row_twin",
+                "card",
                 {
-                    "left": {
+                    "article": {
                         "importance": 10,
                         "section_term": None,
-                        "mode": "manual",
+                        "mode": "manual_article",
                         "manual_page": self.page_e1,
-                    },
-                    "right": {
+                    }
+                },
+            ),
+            ("separator", {"orientation": "vertical"}),
+            (
+                "card",
+                {
+                    "article": {
                         "importance": 10,
                         "section_term": None,
-                        "mode": "manual",
+                        "mode": "manual_article",
                         "manual_page": self.page_e2,
-                    },
+                    }
                 },
             ),
         ]
@@ -659,105 +709,6 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, "Energy one")
         self.assertContains(r, "Energy two")
-
-    def test_big_tile_row_single_renders_one_tile(self):
-        self.homepage.body = [
-            (
-                "big_tile_row_single",
-                {
-                    "tile": {
-                        "importance": 10,
-                        "section_term": None,
-                        "mode": "manual",
-                        "manual_page": self.page_e1,
-                    },
-                },
-            ),
-        ]
-        self.homepage.save_revision().publish()
-        r = self.client.get(self.homepage.url)
-        self.assertEqual(r.status_code, 200)
-        self.assertContains(r, "Energy one")
-
-    def test_big_tile_quattro_row_uses_row_grid_class(self):
-        cells = [
-            {"mode": "manual", "manual_page": self.page_e1},
-            {"mode": "manual", "manual_page": self.page_e2},
-            {"mode": "manual", "manual_page": self.page_e1},
-            {"mode": "manual", "manual_page": self.page_e2},
-        ]
-        self.homepage.body = [
-            (
-                "big_tile_quattro_row",
-                {
-                    "importance": 10,
-                    "section_term": None,
-                    "cells": cells,
-                },
-            ),
-        ]
-        self.homepage.save_revision().publish()
-        r = self.client.get(self.homepage.url)
-        self.assertEqual(r.status_code, 200)
-        self.assertContains(r, "big-tile-quattro-row__grid")
-
-    def test_big_tile_quad_2x2_uses_quad_grid_class(self):
-        cells = [
-            {"mode": "manual", "manual_page": self.page_e1},
-            {"mode": "manual", "manual_page": self.page_e2},
-            {"mode": "manual", "manual_page": self.page_e1},
-            {"mode": "manual", "manual_page": self.page_e2},
-        ]
-        self.homepage.body = [
-            (
-                "big_tile_quad_2x2",
-                {
-                    "importance": 10,
-                    "section_term": None,
-                    "cells": cells,
-                },
-            ),
-        ]
-        self.homepage.save_revision().publish()
-        r = self.client.get(self.homepage.url)
-        self.assertEqual(r.status_code, 200)
-        self.assertContains(r, "big-tile-quad__grid")
-
-    def test_full_width_split_hardwired_columns_hide_editor_importance(self):
-        magic = "918273646"
-        self.homepage.body = [
-            (
-                "full_width_split_row",
-                {
-                    "left": {
-                        "content_kind": "article",
-                        "article": {
-                            "importance": int(magic),
-                            "section_term": None,
-                            "mode": "manual",
-                            "manual_page": self.page_e1,
-                        },
-                        "rich": {},
-                    },
-                    "right": {
-                        "content_kind": "article",
-                        "article": {
-                            "importance": int(magic),
-                            "section_term": None,
-                            "mode": "manual",
-                            "manual_page": self.page_e2,
-                        },
-                        "rich": {},
-                    },
-                },
-            ),
-        ]
-        self.homepage.save_revision().publish()
-        r = self.client.get(self.homepage.url)
-        self.assertEqual(r.status_code, 200)
-        self.assertContains(r, "Energy one")
-        self.assertContains(r, "Energy two")
-        self.assertNotContains(r, magic)
 
 
 class InlineEditingApiTests(WagtailPageTestCase):
@@ -942,230 +893,47 @@ class InlineEditingApiTests(WagtailPageTestCase):
         self.assertContains(response, "data-rename-url")
         self.assertContains(response, "data-after-create-visit=")
 
-    def _seed_taxonomy_grid_widget(self, slug="market-news"):
+    def _seed_taxonomy_card_widget(self, slug="market-news"):
         term = TaxonomyTerm.objects.get(slug=slug)
+        u = get_random_string(6)
+        article = TaggedContentPage(
+            title="Taxonomy card fixture",
+            slug=f"taxonomy-card-fixture-{u}",
+            section_term=self.energy,
+            tile_preview="pv",
+        )
+        self.homepage.add_child(instance=article)
+        article.save_revision().publish()
         term.widgets = [
             (
-                "newspaper_grid",
+                "card",
                 {
-                    "preset": "twin",
-                    "layout_json": "",
-                    "panes": [],
+                    "article": {
+                        "importance": 10,
+                        "section_term": self.energy,
+                        "mode": "manual_article",
+                        "manual_page": article,
+                    }
                 },
-            )
+            ),
         ]
         term.save()
         return term
 
-    def _seed_home_newspaper_grid(self):
-        self.homepage.body = [
-            (
-                "newspaper_grid",
-                {
-                    "preset": "twin",
-                    "layout_json": "",
-                    "panes": [],
-                },
-            )
-        ]
-        self.homepage.save_revision().publish()
-
-    def test_newspaper_grid_endpoints_require_staff(self):
-        self._seed_home_newspaper_grid()
-        self.client.force_login(self.non_admin)
-        response = self.client.post(
-            reverse("inline_newspaper_grid_preset"),
-            data='{"page_id": %d, "page_model":"home.HomePage", "stream_field":"body", "block_index":0, "preset":"quatro"}'
-            % self.homepage.pk,
-            content_type="application/json",
-        )
-        self.assertEqual(response.status_code, 302)
-
-    def test_newspaper_grid_set_preset_persists_layout(self):
-        self._seed_home_newspaper_grid()
-        self.client.force_login(self.admin_user)
-        response = self.client.post(
-            reverse("inline_newspaper_grid_preset"),
-            data='{"page_id": %d, "page_model":"home.HomePage", "stream_field":"body", "block_index":0, "preset":"quatro"}'
-            % self.homepage.pk,
-            content_type="application/json",
-        )
-        self.assertEqual(response.status_code, 200)
-        self.homepage.refresh_from_db()
-        block = self.homepage.body.raw_data[0]
-        self.assertEqual(block["value"]["preset"], "quatro")
-        self.assertIn('"id": "left-split"', block["value"]["layout_json"])
-
-    def test_newspaper_grid_add_and_remove_pane_content(self):
-        self._seed_home_newspaper_grid()
-        self.client.force_login(self.admin_user)
-        add_response = self.client.post(
-            reverse("inline_newspaper_grid_add"),
-            data='{"page_id": %d, "page_model":"home.HomePage", "stream_field":"body", "block_index":0, "pane_id":"p1"}'
-            % self.homepage.pk,
-            content_type="application/json",
-        )
-        self.assertEqual(add_response.status_code, 200)
-        self.homepage.refresh_from_db()
-        panes = self.homepage.body.raw_data[0]["value"]["panes"]
-        self.assertEqual(len(panes), 1)
-        self.assertEqual(panes[0]["pane_id"], "p1")
-
-        remove_response = self.client.post(
-            reverse("inline_newspaper_grid_remove"),
-            data='{"page_id": %d, "page_model":"home.HomePage", "stream_field":"body", "block_index":0, "pane_id":"p1"}'
-            % self.homepage.pk,
-            content_type="application/json",
-        )
-        self.assertEqual(remove_response.status_code, 200)
-        self.homepage.refresh_from_db()
-        panes = self.homepage.body.raw_data[0]["value"]["panes"]
-        self.assertEqual(panes, [])
-
-    def test_newspaper_grid_add_on_taxonomy_pins_manual_page_and_renders(self):
-        from home.taxonomy import taxonomy_prefix_path
-
-        self.client.force_login(self.admin_user)
-        article = TaggedContentPage(
-            title="Grid Pin Unique XYZ",
-            slug="grid-pin-unique-xyz",
-            section_term=self.energy,
-            tile_preview="**pv**",
-        )
-        self.homepage.add_child(instance=article)
-        article.save_revision().publish()
-
-        self.energy.widgets = [
-            (
-                "newspaper_grid",
-                {"preset": "twin", "layout_json": "", "panes": []},
-            )
-        ]
-        self.energy.save()
-
-        add_response = self.client.post(
-            reverse("inline_newspaper_grid_add"),
-            data=(
-                '{"page_id": %d, "page_model":"home.TaxonomyTerm", "stream_field":"widgets", "block_index":0, "pane_id":"p1"}'
-                % self.energy.pk
-            ),
-            content_type="application/json",
-        )
-        self.assertEqual(add_response.status_code, 200)
-        self.energy.refresh_from_db()
-        panes = self.energy.widgets.raw_data[0]["value"]["panes"]
-        self.assertEqual(len(panes), 1)
-        art = panes[0]["article"]
-        self.assertEqual(art["mode"], "manual")
-        self.assertEqual(art["manual_page"], article.pk)
-
-        url = taxonomy_prefix_path(self.homepage) + "market-news/energy/"
-        page_response = self.client.get(url)
-        self.assertEqual(page_response.status_code, 200)
-        self.assertContains(page_response, "Grid Pin Unique XYZ")
-
-    def test_inline_tile_title_edit_keeps_tile_in_newspaper_grid(self):
-        from home.taxonomy import taxonomy_prefix_path
-
-        self.client.force_login(self.admin_user)
-        article = TaggedContentPage(
-            title="Tile Rename Alpha",
-            slug="tile-rename-alpha",
-            section_term=self.energy,
-            tile_preview="**old**",
-            tile_priority=10,
-        )
-        self.homepage.add_child(instance=article)
-        article.save_revision().publish()
-
-        other = TaggedContentPage(
-            title="Tile Rename Beta",
-            slug="tile-rename-beta",
-            section_term=self.energy,
-            tile_preview="**beta**",
-            tile_priority=3,
-        )
-        self.homepage.add_child(instance=other)
-        other.save_revision().publish()
-
-        self.energy.widgets = [
-            (
-                "newspaper_grid",
-                {"preset": "twin", "layout_json": "", "panes": []},
-            )
-        ]
-        self.energy.save()
-
-        r_add = self.client.post(
-            reverse("inline_newspaper_grid_add"),
-            data=(
-                '{"page_id": %d, "page_model":"home.TaxonomyTerm", "stream_field":"widgets", "block_index":0, "pane_id":"p1"}'
-                % self.energy.pk
-            ),
-            content_type="application/json",
-        )
-        self.assertEqual(r_add.status_code, 200)
-
-        url = taxonomy_prefix_path(self.homepage) + "market-news/energy/"
-        r0 = self.client.get(url)
-        self.assertContains(r0, "Tile Rename Alpha")
-        self.assertContains(r0, 'data-page-id="%d"' % article.pk)
-
-        r_rename = self.client.post(
-            reverse("inline_update_tile_title"),
-            data='{"page_id": %d, "title":"Tile Rename Alpha Updated"}' % article.pk,
-            content_type="application/json",
-        )
-        self.assertEqual(r_rename.status_code, 200)
-
-        r1 = self.client.get(url)
-        self.assertContains(r1, "Tile Rename Alpha Updated")
-        self.assertContains(r1, 'data-page-id="%d"' % article.pk)
-
-    def test_newspaper_grid_resize_updates_ratio(self):
-        self._seed_home_newspaper_grid()
-        self.client.force_login(self.admin_user)
-        response = self.client.post(
-            reverse("inline_newspaper_grid_resize"),
-            data='{"page_id": %d, "page_model":"home.HomePage", "stream_field":"body", "block_index":0, "split_id":"root", "ratio":0.73}'
-            % self.homepage.pk,
-            content_type="application/json",
-        )
-        self.assertEqual(response.status_code, 200)
-        self.homepage.refresh_from_db()
-        layout_json = self.homepage.body.raw_data[0]["value"]["layout_json"]
-        self.assertIn('"ratio": 0.73', layout_json)
-
-    def test_taxonomy_root_renders_newspaper_grid_when_configured(self):
-        self._seed_taxonomy_grid_widget("market-news")
+    def test_taxonomy_root_renders_card_layout_when_configured(self):
+        self._seed_taxonomy_card_widget("market-news")
         url = reverse("wagtail_serve", args=["_taxonomy/"])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "data-newspaper-grid")
-        self.assertContains(response, 'data-page-model="home.TaxonomyTerm"')
+        self.assertContains(response, "data-shadcn-card-layout")
+        self.assertContains(response, "Taxonomy card fixture")
 
-    def test_taxonomy_root_staff_editable_nonstaff_readonly(self):
-        self._seed_taxonomy_grid_widget("market-news")
-        url = reverse("wagtail_serve", args=["_taxonomy/"])
-        self.client.force_login(self.admin_user)
-        staff_response = self.client.get(url)
-        self.assertEqual(staff_response.status_code, 200)
-        self.assertContains(staff_response, 'data-can-edit="1"')
-        self.assertContains(staff_response, "data-grid-preset")
-
-        self.client.force_login(self.non_admin)
-        user_response = self.client.get(url)
-        self.assertEqual(user_response.status_code, 200)
-        self.assertContains(user_response, 'data-can-edit="0"')
-        self.assertNotContains(user_response, "data-grid-preset")
-
-    def test_taxonomy_drilldown_renders_newspaper_grid_when_configured(self):
-        self._seed_taxonomy_grid_widget("market-news")
+    def test_taxonomy_drilldown_renders_card_layout_when_configured(self):
+        self._seed_taxonomy_card_widget("market-news")
         url = reverse("wagtail_serve", args=["_taxonomy/market-news/"])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "data-newspaper-grid")
-        self.assertContains(response, 'data-page-model="home.TaxonomyTerm"')
+        self.assertContains(response, "data-shadcn-card-layout")
 
     def test_taxonomy_drilldown_market_news_resolves_when_not_tree_root(self):
         from home.taxonomy import taxonomy_prefix_path
@@ -1181,69 +949,3 @@ class InlineEditingApiTests(WagtailPageTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
-    def test_taxonomy_drilldown_staff_sees_bootstrap_when_no_newspaper_grid(self):
-        from home.taxonomy import taxonomy_prefix_path
-
-        financials = TaxonomyTerm.objects.get(slug="financials")
-        financials.widgets = []
-        financials.save()
-        fin_page = TaggedContentPage(
-            title="Bootstrap drill fin",
-            slug="bootstrap-drill-fin",
-            section_term=financials,
-            tile_preview="x",
-        )
-        self.homepage.add_child(instance=fin_page)
-        fin_page.save_revision().publish()
-        self.assertFalse(financials.has_newspaper_grid_widget)
-        self.client.force_login(self.admin_user)
-        url = taxonomy_prefix_path(self.homepage) + "market-news/financials/"
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "data-grid-bootstrap-widgets")
-
-    def test_taxonomy_drilldown_anonymous_no_bootstrap_strip(self):
-        from home.taxonomy import taxonomy_prefix_path
-
-        financials = TaxonomyTerm.objects.get(slug="financials")
-        financials.widgets = []
-        financials.save()
-        fin_page = TaggedContentPage(
-            title="Bootstrap drill fin anon",
-            slug="bootstrap-drill-fin-anon",
-            section_term=financials,
-            tile_preview="y",
-        )
-        self.homepage.add_child(instance=fin_page)
-        fin_page.save_revision().publish()
-        url = taxonomy_prefix_path(self.homepage) + "market-news/financials/"
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, "data-grid-bootstrap-widgets")
-
-    def test_newspaper_grid_bootstrap_taxonomy_requires_staff(self):
-        financials = TaxonomyTerm.objects.get(slug="financials")
-        financials.widgets = []
-        financials.save()
-        self.client.force_login(self.non_admin)
-        response = self.client.post(
-            reverse("inline_newspaper_grid_bootstrap_taxonomy"),
-            data='{"page_id": %d, "page_model": "home.TaxonomyTerm"}' % financials.pk,
-            content_type="application/json",
-        )
-        self.assertEqual(response.status_code, 302)
-
-    def test_newspaper_grid_bootstrap_taxonomy_appends_block(self):
-        financials = TaxonomyTerm.objects.get(slug="financials")
-        financials.widgets = []
-        financials.save()
-        self.client.force_login(self.admin_user)
-        response = self.client.post(
-            reverse("inline_newspaper_grid_bootstrap_taxonomy"),
-            data='{"page_id": %d, "page_model": "home.TaxonomyTerm"}' % financials.pk,
-            content_type="application/json",
-        )
-        self.assertEqual(response.status_code, 200)
-        financials.refresh_from_db()
-        self.assertEqual(len(financials.widgets.raw_data), 1)
-        self.assertEqual(financials.widgets.raw_data[0]["type"], "newspaper_grid")

@@ -6,8 +6,9 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 
 import { TaxonomyChipWidgetComponent } from './app/taxonomy-chip-widget.component';
 import { appMaterialDialogDefaults } from './app/dialog-defaults';
+import { mountShadcnAuthDialogBridge, type AuthTab } from './app/auth-dialog-shadcn';
+import { mountShadcnArticleCards, mountShadcnCardLayouts } from './app/shadcn-card-layout';
 import {
-  AuthDialogComponent,
   ConfirmDialogComponent,
   MessageDialogComponent,
   PromptDialogComponent,
@@ -21,6 +22,8 @@ declare global {
     showMaterialAlert?: (message: string, title?: string) => Promise<void>;
     showMaterialPrompt?: (data: PromptDialogData) => Promise<string | undefined>;
     showMaterialAuthDialog?: (initialTab: 'login' | 'signup') => void;
+    mountShadcnCardLayouts?: () => void;
+    mountShadcnArticleCards?: () => void;
   }
 }
 
@@ -68,6 +71,7 @@ createApplication({
 })
   .then((appRef) => {
     const dialog = appRef.injector.get(MatDialog);
+    const authDialogBridge = mountShadcnAuthDialogBridge();
     const taxonomyElement = createCustomElement(TaxonomyChipWidgetComponent, {
       injector: appRef.injector,
     });
@@ -75,6 +79,8 @@ createApplication({
       customElements.define('taxonomy-chip-widget', taxonomyElement);
     }
     window.mountTaxonomyChipWidgets = mountTaxonomyChipWidgets;
+    window.mountShadcnCardLayouts = mountShadcnCardLayouts;
+    window.mountShadcnArticleCards = mountShadcnArticleCards;
     window.showMaterialConfirm = (message: string, title?: string) =>
       new Promise<boolean>((resolve) => {
         dialog
@@ -106,25 +112,11 @@ createApplication({
           .afterClosed()
           .subscribe((value) => resolve(value ?? undefined));
       });
-    window.showMaterialAuthDialog = (initialTab: 'login' | 'signup') => {
-      const body = document.body;
-      const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]') as HTMLInputElement | null;
-      const loginUrl = body?.getAttribute('data-auth-login-url') || '/auth/login/';
-      const signupUrl = body?.getAttribute('data-auth-signup-url') || '/auth/signup/';
-      const next = body?.getAttribute('data-auth-next') || window.location.pathname;
-      const csrfToken = csrfInput?.value || '';
-      dialog.open(AuthDialogComponent, {
-        ...appMaterialDialogDefaults(),
-        autoFocus: false,
-        data: {
-          loginUrl,
-          signupUrl,
-          next,
-          csrfToken,
-          initialTab,
-        },
-      });
+    window.showMaterialAuthDialog = (initialTab: AuthTab) => {
+      authDialogBridge.openAuthDialog(initialTab);
     };
     mountTaxonomyChipWidgets();
+    mountShadcnCardLayouts();
+    mountShadcnArticleCards();
   })
   .catch((err) => console.error(err));

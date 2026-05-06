@@ -4,9 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatTabsModule } from '@angular/material/tabs';
 
 export type ConfirmDialogData = {
   title?: string;
@@ -111,92 +109,5 @@ export class PromptDialogComponent {
       return;
     }
     this.dialogRef.close(this.trimmed);
-  }
-}
-
-export type AuthDialogData = {
-  loginUrl: string;
-  signupUrl: string;
-  next: string;
-  csrfToken: string;
-  initialTab: 'login' | 'signup';
-};
-
-@Component({
-  standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatDialogModule,
-    MatButtonModule,
-    MatTabsModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatIconModule,
-  ],
-  template: `
-    <h2 mat-dialog-title>Welcome</h2>
-    <mat-dialog-content>
-      <mat-tab-group [selectedIndex]="tabIndex">
-        <mat-tab label="Sign in">
-          <form class="auth-mat-form" method="post" [attr.action]="data.loginUrl">
-            <input type="hidden" name="csrfmiddlewaretoken" [value]="data.csrfToken" />
-            <input type="hidden" name="next" [value]="data.next" />
-            <mat-form-field appearance="outline">
-              <mat-label>Username or email</mat-label>
-              <input matInput name="username_or_email" autocomplete="username" required />
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Password</mat-label>
-              <input matInput type="password" name="password" autocomplete="current-password" required />
-            </mat-form-field>
-            <button mat-flat-button color="primary" type="submit">Sign in</button>
-          </form>
-        </mat-tab>
-        <mat-tab label="Sign up">
-          <form class="auth-mat-form" method="post" [attr.action]="data.signupUrl">
-            <input type="hidden" name="csrfmiddlewaretoken" [value]="data.csrfToken" />
-            <input type="hidden" name="next" [value]="data.next" />
-            <mat-form-field appearance="outline">
-              <mat-label>Username</mat-label>
-              <input matInput name="username" autocomplete="username" required />
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Email</mat-label>
-              <input matInput type="email" name="email" autocomplete="email" required />
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Password</mat-label>
-              <input matInput type="password" name="password1" autocomplete="new-password" required />
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Confirm password</mat-label>
-              <input matInput type="password" name="password2" autocomplete="new-password" required />
-            </mat-form-field>
-            <button mat-flat-button color="primary" type="submit">Create account</button>
-          </form>
-        </mat-tab>
-      </mat-tab-group>
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-button type="button" (click)="dialogRef.close()">Close</button>
-    </mat-dialog-actions>
-  `,
-  styles: `
-    .auth-mat-form {
-      display: grid;
-      gap: 0.6rem;
-      padding-top: 0.65rem;
-    }
-  `,
-})
-export class AuthDialogComponent {
-  tabIndex = 0;
-
-  constructor(
-    @Inject(MAT_DIALOG_DATA) public data: AuthDialogData,
-    public dialogRef: MatDialogRef<AuthDialogComponent, void>
-  ) {
-    this.tabIndex = data.initialTab === 'signup' ? 1 : 0;
   }
 }

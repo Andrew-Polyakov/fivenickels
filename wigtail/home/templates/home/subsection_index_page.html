@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% load wagtailcore_tags newspaper_grid_tags %}
+{% load wagtailcore_tags stream_layout_tags %}
 
 {% block body_class %}template-subsection-index{% endblock %}
 
@@ -8,37 +8,8 @@
 
 <div class="home-stream">
 
-    {% for block in page.intro %}
-        {% if block.block_type == "newspaper_grid" %}
-            {% render_newspaper_grid block.value page.pk "home.SubsectionIndexPage" "intro" forloop.counter0 %}
-        {% else %}
-            {% include_block block %}
-        {% endif %}
-
-    {% endfor %}
+    {% render_main_site_stream page.intro %}
 
 </div>
-
-{% include "home/includes/featured_category_quad.html" %}
-
-<section class="markdown-tiles-section subsection-recent" aria-label="Recent in this subsection">
-
-    <h2 class="subsection-recent__heading">Recent</h2>
-
-    <div class="markdown-tiles-grid markdown-tiles-grid--landing">
-
-        {% for p in recent_pages %}
-
-            {% include "home/includes/page_tile_card.html" with page=p %}
-
-        {% empty %}
-
-            <p class="subsection-recent__empty">No published pages in this subsection yet.</p>
-
-        {% endfor %}
-
-    </div>
-
-</section>
 
 {% endblock content %}

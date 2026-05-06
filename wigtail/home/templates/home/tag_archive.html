@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% load wagtailcore_tags %}
+{% load wagtailcore_tags stream_layout_tags %}
 
 {% block body_class %}template-tag-archive{% endblock %}
 
@@ -22,11 +22,15 @@
 
     <section class="markdown-tiles-section" aria-label="Pages with this tag">
 
-        <div class="markdown-tiles-grid markdown-tiles-grid--landing">
+        <div class="markdown-tiles-grid markdown-tiles-grid--landing markdown-tiles-grid--shadcn-cards">
 
             {% for p in archive_pages %}
 
-                {% include "home/includes/page_tile_card.html" with page=p %}
+                <div class="markdown-tiles-grid__card-slot">
+
+                    {% similar_article_card_mount p %}
+
+                </div>
 
             {% empty %}
 

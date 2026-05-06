@@ -1,0 +1,13 @@
+{% load wagtailcore_tags %}
+{% for segment in segments %}
+    {% if segment.type == "block" %}
+        {% include_block segment.block %}
+    {% else %}
+        <div
+            class="shadcn-card-layout-root"
+            data-shadcn-card-layout
+            data-layout-json-id="{{ segment.uid }}"
+        ></div>
+        {{ segment.payload|json_script:segment.uid }}
+    {% endif %}
+{% endfor %}

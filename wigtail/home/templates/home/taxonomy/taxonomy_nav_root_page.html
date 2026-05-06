@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load wagtailcore_tags newspaper_grid_tags %}
+{% load wagtailcore_tags stream_layout_tags %}
 
 {% block title %}Sections · {% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.title }}{% endif %}{% endblock %}
 
@@ -9,41 +9,15 @@
 
 <div class="taxonomy-drilldown">
     <h1 class="taxonomy-drilldown__title">Sections</h1>
-    <p class="taxonomy-drilldown__lede">
-        Use the navigation above to browse Market News, Opinions, and Personal Finance.
-    </p>
 
     {% if taxonomy_root_terms %}
         {% for term in taxonomy_root_terms %}
-            {% if term.widgets or request.user.is_authenticated and request.user.is_staff or request.user.is_authenticated and request.user.is_superuser and not term.has_newspaper_grid_widget %}
+            {% if term.widgets %}
                 <section class="taxonomy-drilldown__hub" aria-label="{{ term.name }} widgets">
                     <h2 class="subsection-recent__heading">{{ term.name }}</h2>
-                    {% if request.user.is_authenticated %}
-                        {% if request.user.is_staff or request.user.is_superuser %}
-                        {% if not term.has_newspaper_grid_widget %}
-                            <section class="taxonomy-grid-bootstrap" aria-label="Add layout editor">
-                                <p class="taxonomy-grid-bootstrap__lede">
-                                    Add a newspaper grid to edit this section’s layout here.
-                                </p>
-                                <button
-                                    type="button"
-                                    class="btn btn--raised taxonomy-grid-bootstrap__btn"
-                                    data-grid-bootstrap-widgets
-                                    data-bootstrap-url="{% url 'inline_newspaper_grid_bootstrap_taxonomy' %}"
-                                    data-page-id="{{ term.pk }}"
-                                    data-page-model="home.TaxonomyTerm"
-                                >Add grid layout</button>
-                            </section>
-                        {% endif %}
-                        {% endif %}
-                    {% endif %}
-                    {% for block in term.widgets %}
-                        {% if block.block_type == "newspaper_grid" %}
-                            {% render_newspaper_grid block.value term.pk "home.TaxonomyTerm" "widgets" forloop.counter0 %}
-                        {% else %}
-                            {% include_block block %}
-                        {% endif %}
-                    {% endfor %}
+                    <div class="home-stream">
+                        {% render_main_site_stream term.widgets %}
+                    </div>
                 </section>
             {% endif %}
         {% endfor %}

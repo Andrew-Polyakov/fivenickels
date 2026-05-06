@@ -1,41 +1,19 @@
 {% extends "base.html" %}
 
-{% load wagtailcore_tags newspaper_grid_tags %}
-
-
+{% load wagtailcore_tags stream_layout_tags %}
 
 {% block body_class %}template-homepage{% endblock %}
-
-
 
 {% block extra_css %}
 
 {% endblock extra_css %}
 
-
-
 {% block content %}
 
 <div class="home-stream">
 
-    {% for item in home_display_items %}
-
-        {% if item.mode == "block" %}
-            {% if item.child.block_type == "newspaper_grid" %}
-                {% render_newspaper_grid item.child.value page.pk "home.HomePage" "body" item.stream_index %}
-            {% else %}
-                {% include_block item.child %}
-            {% endif %}
-
-        {% else %}
-
-            {% include "home/blocks/markdown_tiles.html" with value=item.value only %}
-
-        {% endif %}
-
-    {% endfor %}
+    {% render_main_site_stream page.body %}
 
 </div>
 
 {% endblock content %}
-

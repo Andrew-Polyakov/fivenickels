@@ -42,7 +42,8 @@
   padding: 0.75rem 1.25rem 1rem;
   margin: 0;
   color: rgba(248, 250, 252, 0.92);
-  max-height: min(70vh, 32rem);
+  max-height: none;
+  overflow: hidden;
 }
 
 .cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-dialog-actions {
@@ -66,6 +67,16 @@
 .cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-input-element {
   caret-color: #4ade80;
   color: #f8fafc;
+  background: transparent;
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-input-element:-webkit-autofill,
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-input-element:-webkit-autofill:hover,
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-input-element:-webkit-autofill:focus,
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-input-element:-webkit-autofill:active {
+  -webkit-text-fill-color: #f8fafc;
+  transition: background-color 9999s ease-in-out 0s;
+  box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0) inset;
 }
 
 .cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-dialog-actions .mat-mdc-button:not(.mat-mdc-unelevated-button):not(.mat-mdc-outlined-button) {
@@ -93,13 +104,303 @@
   box-shadow: 0 0 22px rgba(74, 222, 128, 0.55);
 }
 
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-raised-button.mat-primary {
+  background-color: #4ade80;
+  color: #0a0f14;
+  font-weight: 600;
+  box-shadow: 0 0 18px rgba(74, 222, 128, 0.45);
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-raised-button.mat-primary:hover {
+  box-shadow: 0 0 22px rgba(74, 222, 128, 0.55);
+}
+
 .cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-tab-group {
   --mat-tab-label-text-color: rgba(248, 250, 252, 0.65);
   --mat-tab-active-label-text-color: #4ade80;
   --mat-tab-active-indicator-color: #4ade80;
 }
 
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mdc-dialog__content,
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-tab-body-content {
+  overflow: hidden;
+}
+
 .cdk-overlay-container .cdk-overlay-pane.app-material-dialog .prompt-dialog__field {
   width: 100%;
   margin-top: 0.35rem;
+}
+
+/* shadcn-style auth dialog */
+.scn-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(2, 6, 23, 0.78);
+}
+
+.scn-dialog-content {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 1001;
+  width: min(92vw, 430px);
+  transform: translate(-50%, -50%);
+  border-radius: 14px;
+  border: 1px solid rgba(92, 255, 138, 0.42);
+  background: linear-gradient(165deg, rgba(17, 27, 46, 0.98), rgba(7, 11, 18, 0.98) 58%, rgba(5, 8, 14, 0.99));
+  color: #f8fafc;
+  padding: 1rem;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 22px rgba(74, 222, 128, 0.45),
+    0 0 56px rgba(74, 222, 128, 0.14);
+}
+
+.scn-dialog-close {
+  position: absolute;
+  right: 0.65rem;
+  top: 0.55rem;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.scn-dialog-header {
+  display: grid;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.scn-dialog-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.scn-dialog-description {
+  font-size: 0.92rem;
+  color: rgba(248, 250, 252, 0.78);
+}
+
+.scn-tabs-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid rgba(148, 163, 184, 0.36);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.scn-tabs-trigger {
+  border: 0;
+  background: rgba(15, 23, 42, 0.7);
+  color: rgba(248, 250, 252, 0.75);
+  padding: 0.55rem 0.65rem;
+  cursor: pointer;
+}
+
+.scn-tabs-trigger[data-state='active'] {
+  background: rgba(74, 222, 128, 0.18);
+  color: #d1fae5;
+}
+
+.scn-tabs-content {
+  margin-top: 0.75rem;
+}
+
+.scn-auth-form {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.scn-field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.scn-label {
+  font-size: 0.86rem;
+  color: rgba(248, 250, 252, 0.82);
+}
+
+.scn-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 10px;
+  color: #f8fafc;
+  padding: 0.52rem 0.65rem;
+  outline: none;
+}
+
+.scn-input:focus {
+  border-color: rgba(92, 255, 138, 0.72);
+  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.2);
+}
+
+.scn-button {
+  border-radius: 10px;
+  font-weight: 600;
+  padding: 0.52rem 0.8rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.scn-button--default {
+  background: #4ade80;
+  color: #0a0f14;
+  box-shadow: 0 0 16px rgba(74, 222, 128, 0.38);
+}
+
+.scn-button--outline {
+  background: transparent;
+  color: rgba(248, 250, 252, 0.9);
+  border-color: rgba(92, 255, 138, 0.45);
+}
+
+.scn-button--ghost {
+  background: transparent;
+  color: rgba(248, 250, 252, 0.9);
+}
+
+.scn-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.8rem;
+}
+
+/* Shadcn-style article cards + resizable rows (taxonomy / stream layouts) */
+.scn-card-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  width: 100%;
+}
+
+.scn-card-layout__sep {
+  margin: 0.25rem 0;
+  background: rgba(148, 163, 184, 0.45);
+}
+
+.scn-card-row--single {
+  width: 100%;
+}
+
+.scn-card-row--panels {
+  width: 100%;
+  min-height: 200px;
+}
+
+.scn-card-row__panel {
+  min-width: 0;
+}
+
+.scn-resize-handle {
+  flex: 0 0 5px;
+  margin: 0 2px;
+  border-radius: 4px;
+  background: transparent;
+  outline: none;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.scn-resize-handle:hover,
+.scn-resize-handle:focus-visible {
+  background: rgba(74, 222, 128, 0.35);
+  box-shadow: 0 0 12px rgba(74, 222, 128, 0.35);
+}
+
+.scn-resize-handle__sep {
+  height: 60%;
+  margin: auto;
+  align-self: center;
+  background: rgba(148, 163, 184, 0.55);
+}
+
+.scn-card {
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  background: rgba(15, 23, 42, 0.55);
+  color: #f8fafc;
+  overflow: hidden;
+  height: 100%;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.scn-card__header {
+  padding: 0.65rem 1rem 0;
+}
+
+.scn-card__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.scn-card__content {
+  padding: 0.5rem 1rem 1rem;
+  font-size: 0.92rem;
+  color: rgba(248, 250, 252, 0.88);
+}
+
+.scn-article-card__shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+
+.scn-article-card__shell:hover .scn-card__title {
+  color: #bbf7d0;
+}
+
+.scn-article-card__media {
+  aspect-ratio: 16 / 9;
+  background: rgba(2, 6, 23, 0.65);
+  overflow: hidden;
+}
+
+.scn-article-card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.scn-article-card__excerpt {
+  margin: 0 0 0.5rem;
+  white-space: pre-wrap;
+}
+
+.scn-article-card__cta {
+  font-weight: 600;
+  color: #4ade80;
+  font-size: 0.88rem;
+}
+
+.scn-article-card--empty .scn-article-card__empty,
+.scn-article-card--stub .scn-article-card__excerpt {
+  color: rgba(248, 250, 252, 0.65);
+}
+
+.scn-separator {
+  align-self: stretch;
+}
+
+.scn-separator--horizontal {
+  height: 1px;
+  width: 100%;
+  background: rgba(148, 163, 184, 0.45);
+}
+
+.scn-separator--vertical {
+  width: 1px;
+  min-height: 48px;
+  background: rgba(148, 163, 184, 0.45);
 }

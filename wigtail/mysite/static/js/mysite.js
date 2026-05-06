@@ -358,6 +358,15 @@
         }
     }
 
+    function initShadcnCardLayouts() {
+        if (window.mountShadcnCardLayouts && typeof window.mountShadcnCardLayouts === "function") {
+            window.mountShadcnCardLayouts();
+        }
+        if (window.mountShadcnArticleCards && typeof window.mountShadcnArticleCards === "function") {
+            window.mountShadcnArticleCards();
+        }
+    }
+
     function initInlineTileTitleAdmin() {
         var titleButtons = document.querySelectorAll("[data-inline-tile-title]");
         titleButtons.forEach(function (btn) {
@@ -438,182 +447,31 @@
         });
     }
 
-    function initNewspaperGridBootstrap() {
-        var btns = document.querySelectorAll("[data-grid-bootstrap-widgets]");
-        btns.forEach(function (btn) {
-            if (btn.getAttribute("data-grid-bootstrap-bound") === "1") {
+    function initTileShareButtons() {
+        var buttons = document.querySelectorAll("[data-share-permalink]");
+        buttons.forEach(function (btn) {
+            if (btn.getAttribute("data-share-bound") === "1") {
                 return;
             }
-            btn.setAttribute("data-grid-bootstrap-bound", "1");
+            btn.setAttribute("data-share-bound", "1");
             btn.addEventListener("click", function (evt) {
                 evt.preventDefault();
-                var url = btn.getAttribute("data-bootstrap-url");
-                var pageId = btn.getAttribute("data-page-id");
-                var pageModel = btn.getAttribute("data-page-model") || "home.TaxonomyTerm";
-                if (!url || !pageId) {
-                    return;
-                }
-                btn.disabled = true;
-                postJson(url, {
-                    page_id: pageId,
-                    page_model: pageModel,
-                })
+                evt.stopPropagation();
+                var sharePath = btn.getAttribute("data-share-path") || "";
+                var permalink = sharePath
+                    ? new URL(sharePath, window.location.origin).toString()
+                    : window.location.href;
+                var writePromise =
+                    navigator.clipboard && navigator.clipboard.writeText
+                        ? navigator.clipboard.writeText(permalink)
+                        : Promise.reject(new Error("Clipboard API unavailable"));
+                writePromise
                     .then(function () {
-                        refreshCurrentPage();
+                        showMaterialAlert("Permalink copied to clipboard.", "Share");
                     })
-                    .catch(function (err) {
-                        btn.disabled = false;
-                        showMaterialAlert(err.message || "Could not add grid layout.");
+                    .catch(function () {
+                        showMaterialAlert("Could not copy automatically. Link: " + permalink, "Share");
                     });
-            });
-        });
-    }
-
-    function initNewspaperGridEditor() {
-        var roots = document.querySelectorAll("[data-newspaper-grid]");
-        roots.forEach(function (root) {
-            if (root.getAttribute("data-newspaper-grid-bound") === "1") {
-                return;
-            }
-            root.setAttribute("data-newspaper-grid-bound", "1");
-            if (root.getAttribute("data-can-edit") !== "1") {
-                return;
-            }
-
-            var pageId = root.getAttribute("data-page-id");
-            var pageModel = root.getAttribute("data-page-model");
-            var streamField = root.getAttribute("data-stream-field");
-            var blockIndex = root.getAttribute("data-block-index");
-            var presetUrl = root.getAttribute("data-preset-url");
-            var addUrl = root.getAttribute("data-add-url");
-            var removeUrl = root.getAttribute("data-remove-url");
-            var resizeUrl = root.getAttribute("data-resize-url");
-
-            function basePayload() {
-                return {
-                    page_id: pageId,
-                    page_model: pageModel,
-                    stream_field: streamField,
-                    block_index: blockIndex,
-                };
-            }
-
-            root.addEventListener("click", function (evt) {
-                var presetBtn = evt.target.closest("[data-grid-preset]");
-                if (presetBtn && presetUrl) {
-                    evt.preventDefault();
-                    postJson(
-                        presetUrl,
-                        Object.assign(basePayload(), {
-                            preset: presetBtn.getAttribute("data-grid-preset"),
-                        })
-                    )
-                        .then(refreshCurrentPage)
-                        .catch(function (err) {
-                            showMaterialAlert(err.message || "Could not apply preset.");
-                        });
-                    return;
-                }
-
-                var addBtn = evt.target.closest("[data-grid-add]");
-                if (addBtn && addUrl) {
-                    evt.preventDefault();
-                    postJson(
-                        addUrl,
-                        Object.assign(basePayload(), {
-                            pane_id: addBtn.getAttribute("data-pane-id"),
-                        })
-                    )
-                        .then(refreshCurrentPage)
-                        .catch(function (err) {
-                            showMaterialAlert(err.message || "Could not add content.");
-                        });
-                    return;
-                }
-
-                var removeBtn = evt.target.closest("[data-grid-remove]");
-                if (removeBtn && removeUrl) {
-                    evt.preventDefault();
-                    showMaterialConfirm("Remove content from this segment?", "Remove content").then(function (ok) {
-                        if (!ok) {
-                            return;
-                        }
-                        postJson(
-                            removeUrl,
-                            Object.assign(basePayload(), {
-                                pane_id: removeBtn.getAttribute("data-pane-id"),
-                            })
-                        )
-                            .then(refreshCurrentPage)
-                            .catch(function (err) {
-                                showMaterialAlert(err.message || "Could not remove content.");
-                            });
-                        });
-                }
-            });
-
-            var activeDrag = null;
-            function onPointerMove(moveEvt) {
-                if (!activeDrag) {
-                    return;
-                }
-                var split = activeDrag.split;
-                var rect = split.getBoundingClientRect();
-                if (!rect.width || !rect.height) {
-                    return;
-                }
-                var ratio;
-                if (activeDrag.axis === "vertical") {
-                    ratio = (moveEvt.clientX - rect.left) / rect.width;
-                } else {
-                    ratio = (moveEvt.clientY - rect.top) / rect.height;
-                }
-                ratio = Math.max(0.2, Math.min(0.8, ratio));
-                split.style.setProperty("--first-ratio", String(ratio));
-                activeDrag.ratio = ratio;
-            }
-            function onPointerUp() {
-                if (!activeDrag) {
-                    return;
-                }
-                var done = activeDrag;
-                activeDrag = null;
-                document.body.classList.remove("is-grid-resizing");
-                if (!resizeUrl) {
-                    return;
-                }
-                postJson(
-                    resizeUrl,
-                    Object.assign(basePayload(), {
-                        split_id: done.splitId,
-                        ratio: done.ratio,
-                    })
-                ).catch(function (err) {
-                    showMaterialAlert(err.message || "Could not save resize.");
-                });
-                window.removeEventListener("pointermove", onPointerMove);
-                window.removeEventListener("pointerup", onPointerUp);
-            }
-
-            root.addEventListener("pointerdown", function (evt) {
-                var handle = evt.target.closest("[data-grid-handle]");
-                if (!handle) {
-                    return;
-                }
-                var split = handle.closest("[data-grid-split]");
-                if (!split) {
-                    return;
-                }
-                evt.preventDefault();
-                activeDrag = {
-                    split: split,
-                    splitId: split.getAttribute("data-split-id"),
-                    axis: split.getAttribute("data-axis"),
-                    ratio: parseFloat(getComputedStyle(split).getPropertyValue("--first-ratio")) || 0.5,
-                };
-                document.body.classList.add("is-grid-resizing");
-                window.addEventListener("pointermove", onPointerMove);
-                window.addEventListener("pointerup", onPointerUp);
             });
         });
     }
@@ -628,8 +486,8 @@
         initInlineChipsAdmin();
         initAngularTaxonomyWidgets();
         initInlineTileTitleAdmin();
-        initNewspaperGridBootstrap();
-        initNewspaperGridEditor();
+        initTileShareButtons();
+        initShadcnCardLayouts();
     }
 
     function handleTurboFrameLoad(e) {
@@ -862,16 +720,16 @@
         if (!openTargets.length) {
             return;
         }
-        if (document.body.getAttribute("data-auth-material-bound") === "1") {
-            return;
-        }
-        document.body.setAttribute("data-auth-material-bound", "1");
 
         var hasMaterialDialog =
             window.showMaterialAuthDialog &&
             typeof window.showMaterialAuthDialog === "function";
 
         openTargets.forEach(function (target) {
+            if (target.getAttribute("data-auth-modal-bound") === "1") {
+                return;
+            }
+            target.setAttribute("data-auth-modal-bound", "1");
             target.addEventListener("click", function () {
                 var tab = target.getAttribute("data-auth-tab") === "signup" ? "signup" : "login";
                 if (hasMaterialDialog) {
@@ -899,8 +757,8 @@
         initInlineChipsAdmin();
         initAngularTaxonomyWidgets();
         initInlineTileTitleAdmin();
-        initNewspaperGridBootstrap();
-        initNewspaperGridEditor();
+        initTileShareButtons();
+        initShadcnCardLayouts();
     });
 
     document.addEventListener("turbo:load", function () {
@@ -914,8 +772,8 @@
         initInlineChipsAdmin();
         initAngularTaxonomyWidgets();
         initInlineTileTitleAdmin();
-        initNewspaperGridBootstrap();
-        initNewspaperGridEditor();
+        initTileShareButtons();
+        initShadcnCardLayouts();
     });
 
     document.addEventListener("turbo:frame-load", handleTurboFrameLoad);

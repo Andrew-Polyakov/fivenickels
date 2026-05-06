@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% load wagtailcore_tags newspaper_grid_tags %}
+{% load wagtailcore_tags stream_layout_tags %}
 
 {% block title %}
     {{ taxonomy_active_node.name }} · {% if page.seo_title %}{{ page.seo_title }}{% else %}{{ page.title }}{% endif %}
@@ -12,64 +12,41 @@
 
 <div class="taxonomy-drilldown">
 
-    <nav class="taxonomy-drilldown__breadcrumb" aria-label="You are here">
-        {% for item in taxonomy_breadcrumbs %}
-            {% if not forloop.first %}
-                <span class="taxonomy-drilldown__crumb-sep" aria-hidden="true">/</span>
-            {% endif %}
-            {% if forloop.last %}
-                <span class="taxonomy-drilldown__crumb taxonomy-drilldown__crumb--current">{{ item.term.name }}</span>
-            {% else %}
-                <a class="taxonomy-drilldown__crumb" href="{{ item.url }}">{{ item.term.name }}</a>
-            {% endif %}
-        {% endfor %}
+    <nav class="taxonomy-drilldown__breadcrumb" aria-label="Breadcrumb">
+        <ol class="taxonomy-drilldown__breadcrumb-list">
+            {% for item in taxonomy_breadcrumbs %}
+                <li class="taxonomy-drilldown__breadcrumb-item">
+                    {% if forloop.last %}
+                        <span class="taxonomy-drilldown__crumb taxonomy-drilldown__crumb--current" aria-current="page">{{ item.term.name }}</span>
+                    {% else %}
+                        <a class="taxonomy-drilldown__crumb" href="{{ item.url }}">{{ item.term.name }}</a>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ol>
     </nav>
 
     <h1 class="taxonomy-drilldown__title">{{ taxonomy_active_node.name }}</h1>
 
-    {% if taxonomy_active_node.slug == "forex" %}
-        <div class="taxonomy-drilldown__forex">
-            {% include "components/forex_strip.html" with forex_strip_modifier="section" %}
+    {% if taxonomy_active_node.widgets %}
+        <div class="home-stream taxonomy-drilldown__widgets">
+            {% render_main_site_stream taxonomy_active_node.widgets %}
         </div>
     {% endif %}
 
-    {% if taxonomy_active_node.link_page %}
-        <p class="taxonomy-drilldown__hub">
-            <a class="btn btn--raised" href="{% pageurl taxonomy_active_node.link_page %}">Open section hub</a>
-        </p>
-    {% endif %}
-
-    {% include "home/includes/featured_category_quad.html" %}
-
-    {% if request.user.is_authenticated %}
-        {% if request.user.is_staff or request.user.is_superuser %}
-            {% if not taxonomy_active_node.has_newspaper_grid_widget %}
-                <section class="taxonomy-grid-bootstrap" aria-label="Add layout editor">
-                    <p class="taxonomy-grid-bootstrap__lede">
-                        This section has no newspaper grid yet. Add one to use the layout editor here.
-                    </p>
-                    <button
-                        type="button"
-                        class="btn btn--raised taxonomy-grid-bootstrap__btn"
-                        data-grid-bootstrap-widgets
-                        data-bootstrap-url="{% url 'inline_newspaper_grid_bootstrap_taxonomy' %}"
-                        data-page-id="{{ taxonomy_active_node.pk }}"
-                        data-page-model="home.TaxonomyTerm"
-                    >Add grid layout</button>
-                </section>
-            {% endif %}
-        {% endif %}
-    {% endif %}
-
-    {% if taxonomy_active_node.widgets %}
-        {% for block in taxonomy_active_node.widgets %}
-            {% if block.block_type == "newspaper_grid" %}
-                {% render_newspaper_grid block.value taxonomy_active_node.pk "home.TaxonomyTerm" "widgets" forloop.counter0 %}
-            {% else %}
-                {% include_block block %}
-            {% endif %}
-        {% endfor %}
-    {% endif %}
+    <nav class="taxonomy-drilldown__breadcrumb taxonomy-drilldown__breadcrumb--bottom" aria-label="Breadcrumb">
+        <ol class="taxonomy-drilldown__breadcrumb-list">
+            {% for item in taxonomy_breadcrumbs %}
+                <li class="taxonomy-drilldown__breadcrumb-item">
+                    {% if forloop.last %}
+                        <span class="taxonomy-drilldown__crumb taxonomy-drilldown__crumb--current" aria-current="page">{{ item.term.name }}</span>
+                    {% else %}
+                        <a class="taxonomy-drilldown__crumb" href="{{ item.url }}">{{ item.term.name }}</a>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ol>
+    </nav>
 
 </div>
 

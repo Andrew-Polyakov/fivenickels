@@ -48,31 +48,6 @@ urlpatterns = [
         inline_edit_views.update_tile_title,
         name="inline_update_tile_title",
     ),
-    path(
-        "inline/newspaper-grid/preset/",
-        inline_edit_views.newspaper_grid_set_preset,
-        name="inline_newspaper_grid_preset",
-    ),
-    path(
-        "inline/newspaper-grid/add/",
-        inline_edit_views.newspaper_grid_add_pane_content,
-        name="inline_newspaper_grid_add",
-    ),
-    path(
-        "inline/newspaper-grid/remove/",
-        inline_edit_views.newspaper_grid_remove_pane_content,
-        name="inline_newspaper_grid_remove",
-    ),
-    path(
-        "inline/newspaper-grid/resize/",
-        inline_edit_views.newspaper_grid_resize,
-        name="inline_newspaper_grid_resize",
-    ),
-    path(
-        "inline/newspaper-grid/bootstrap-taxonomy/",
-        inline_edit_views.newspaper_grid_bootstrap_taxonomy_widgets,
-        name="inline_newspaper_grid_bootstrap_taxonomy",
-    ),
     path("search/suggest/", search_views.search_suggest, name="search_suggest"),
     path("search/", search_views.search, name="search"),
     path(

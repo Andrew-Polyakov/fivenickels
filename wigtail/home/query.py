@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import random
-from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 from django.db.models import Q, Value
@@ -13,30 +12,17 @@ if TYPE_CHECKING:
 
 def build_home_page_display_items(body_stream, sector_slug: str | None) -> list[dict]:
     """
-    Build items for the home template: full stream children, or filtered markdown_tiles
-    when ``sector_slug`` is set (only tiles whose taxonomy matches; empty sections omitted).
+    Legacy hook for tests: linear stream items with optional sector filtering on ``card`` blocks.
+
+    Prefer ``iter_main_site_stream_segments`` + ``render_main_site_stream`` in templates.
     """
+    from home.card_layout import card_visible_for_sector
+
     items: list[dict] = []
     for idx, child in enumerate(body_stream):
-        if sector_slug and child.block_type == "markdown_tiles":
-            raw_tiles = child.value["tiles"]
-            filtered = [
-                t
-                for t in raw_tiles
-                if t.get("taxonomy") is not None
-                and t["taxonomy"].slug == sector_slug
-            ]
-            if not filtered:
-                continue
-            items.append(
-                {
-                    "mode": "markdown_tiles",
-                    "value": SimpleNamespace(tiles=filtered),
-                    "stream_index": idx,
-                }
-            )
-        else:
-            items.append({"mode": "block", "child": child, "stream_index": idx})
+        if child.block_type == "card" and not card_visible_for_sector(child.value, sector_slug):
+            continue
+        items.append({"mode": "block", "child": child, "stream_index": idx})
     return items
 
 
@@ -52,14 +38,14 @@ def taxonomy_term_has_public_pages(term: TaxonomyTerm) -> bool:
 
 
 def home_stream_includes_taxonomy_term(home_page: HomePage, term: TaxonomyTerm) -> bool:
-    """True if a markdown tile on the home stream uses this taxonomy term."""
+    """True if an article card on the home stream pins this taxonomy term as section override."""
     for block in home_page.body:
-        if block.block_type != "markdown_tiles":
+        if block.block_type != "card":
             continue
-        for tile in block.value["tiles"]:
-            tax = tile.get("taxonomy")
-            if tax is not None and tax.pk == term.pk:
-                return True
+        art = block.value.get("article") or {}
+        st = art.get("section_term")
+        if st is not None and st.pk == term.pk:
+            return True
     return False
 
 

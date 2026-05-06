@@ -16,7 +16,6 @@ from wagtailmarkdown.fields import MarkdownField
 
 from home.blocks import MAIN_SITE_STREAMBLOCK
 from home.navigation import normalize_sector_query_param
-from home.query import build_home_page_display_items
 
 
 @register_snippet
@@ -77,14 +76,6 @@ class TaxonomyTerm(MP_Node):
             .filter(is_visible=True)
             .order_by("sort_order", "name")
         )
-
-    @property
-    def has_newspaper_grid_widget(self) -> bool:
-        """True if this term's ``widgets`` stream includes a ``newspaper_grid`` block."""
-        for block in self.widgets:
-            if block.block_type == "newspaper_grid":
-                return True
-        return False
 
     def save(self, *args, **kwargs):
         if self._state.adding and len(self.path or "") < self.steplen:
@@ -214,37 +205,7 @@ class SubsectionIndexPage(Page):
     ]
 
     def get_context(self, request, *args, **kwargs):
-        from home.query import (
-            featured_quad_pages_for_sector,
-            get_recent_pages_for_section,
-            list_category_terms_for_sector,
-        )
-
         context = super().get_context(request, *args, **kwargs)
-        context["recent_pages"] = get_recent_pages_for_section(
-            self.section_term,
-            limit=self.recent_tile_limit,
-        )
-        category_slug = request.GET.get("category")
-        routable_home = HomePage.objects.live().public().first()
-        quad_pages, selected = featured_quad_pages_for_sector(
-            self.section_term,
-            category_slug,
-            home_page=routable_home,
-        )
-        context["featured_quad_pages"] = quad_pages
-        featured_terms = list_category_terms_for_sector(
-            self.section_term,
-            home_page=routable_home,
-        )
-        context["featured_category_terms"] = featured_terms
-        context["featured_category_selected"] = selected
-        selected_term = next((t for t in featured_terms if t.slug == selected), None)
-        context["featured_category_selected_term"] = selected_term
-        context["featured_category_child_terms"] = (
-            list(selected_term.get_visible_children()) if selected_term else []
-        )
-        context["featured_category_parent_term"] = self.section_term
         context["sector_nav_active"] = self.section_term.slug
         return context
 
@@ -418,10 +379,6 @@ class HomePage(RoutablePageMixin, Page):
 
     @route(r"^_taxonomy/(?P<path>[-\w/]+)/$", name="taxonomy_nav_path")
     def taxonomy_nav_path(self, request, path):
-        from home.query import (
-            featured_quad_pages_for_sector,
-            list_category_terms_for_sector,
-        )
         from home.taxonomy import (
             build_site_nav_context,
             render_site_nav_frame,
@@ -452,21 +409,6 @@ class HomePage(RoutablePageMixin, Page):
 
         trail = ctx["trail"]
         active_node = ctx["active_node"]
-        category_slug = request.GET.get("category")
-        quad_pages, featured_selected = featured_quad_pages_for_sector(
-            active_node,
-            category_slug,
-            home_page=self,
-        )
-        featured_terms = (
-            list_category_terms_for_sector(active_node, home_page=self)
-            if active_node is not None
-            else []
-        )
-        selected_term = next(
-            (t for t in featured_terms if t.slug == featured_selected),
-            None,
-        )
         return self.render(
             request,
             template="home/taxonomy/taxonomy_drilldown_page.html",
@@ -475,14 +417,6 @@ class HomePage(RoutablePageMixin, Page):
                 "taxonomy_active_node": active_node,
                 "taxonomy_prefix": ctx["taxonomy_prefix"],
                 "taxonomy_breadcrumbs": taxonomy_breadcrumb_items(self, trail),
-                "featured_quad_pages": quad_pages,
-                "featured_category_terms": featured_terms,
-                "featured_category_selected": featured_selected,
-                "featured_category_selected_term": selected_term,
-                "featured_category_child_terms": (
-                    list(selected_term.get_visible_children()) if selected_term else []
-                ),
-                "featured_category_parent_term": active_node,
             },
         )
 
@@ -523,5 +457,4 @@ class HomePage(RoutablePageMixin, Page):
             if sector
             else None
         )
-        context["home_display_items"] = build_home_page_display_items(self.body, sector)
         return context
