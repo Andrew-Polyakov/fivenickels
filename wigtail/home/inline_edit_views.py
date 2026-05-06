@@ -174,6 +174,37 @@ def rename_taxonomy_term(request: HttpRequest) -> JsonResponse:
     )
 
 
+def _normalize_master_layout_payload(layout: object) -> dict | None:
+    if not isinstance(layout, dict):
+        return None
+    rows = layout.get("rows")
+    if not isinstance(rows, list) or len(rows) > 120:
+        return None
+    return {"rows": rows}
+
+
+@require_POST
+@user_passes_test(_admin_inline_access)
+def save_taxonomy_master_layout(request: HttpRequest) -> JsonResponse:
+    payload = _json_payload(request)
+    try:
+        term_id = int(payload.get("term_id"))
+    except (TypeError, ValueError):
+        return JsonResponse({"error": "Category id is required."}, status=400)
+
+    layout = _normalize_master_layout_payload(payload.get("layout"))
+    if layout is None:
+        return JsonResponse({"error": "Invalid layout payload."}, status=400)
+
+    term = TaxonomyTerm.objects.filter(pk=term_id).first()
+    if term is None:
+        return JsonResponse({"error": "Category not found."}, status=404)
+
+    term.master_layout_json = layout
+    term.save(update_fields=["master_layout_json"])
+    return JsonResponse({"saved": True, "term_id": term.pk})
+
+
 @require_POST
 @user_passes_test(_admin_inline_access)
 def update_tile_title(request: HttpRequest) -> JsonResponse:

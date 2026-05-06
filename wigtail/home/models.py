@@ -37,6 +37,11 @@ class TaxonomyTerm(MP_Node):
         blank=True,
         use_json_field=True,
     )
+    master_layout_json = models.JSONField(
+        null=True,
+        blank=True,
+        help_text="Master pane resizable layout (rows/columns) when widgets StreamField is empty; staff-only edit via site UI.",
+    )
     is_visible = models.BooleanField(
         default=True,
         help_text="If unchecked, this term is hidden from site navigation.",
@@ -64,6 +69,7 @@ class TaxonomyTerm(MP_Node):
         FieldPanel("is_visible"),
         FieldPanel("sort_order"),
         FieldPanel("widgets"),
+        FieldPanel("master_layout_json"),
     ]
 
     class Meta:
@@ -407,6 +413,8 @@ class HomePage(RoutablePageMixin, Page):
         except Http404:
             raise Http404("Taxonomy path not found")
 
+        from home.inline_edit_views import _admin_inline_access
+
         trail = ctx["trail"]
         active_node = ctx["active_node"]
         bc_list = taxonomy_breadcrumb_items(self, trail)
@@ -416,6 +424,11 @@ class HomePage(RoutablePageMixin, Page):
             if i < len(bc_list) - 1:
                 entry["href"] = row["url"]
             breadcrumb_payload.append(entry)
+        layout_payload = {"rows": []}
+        raw_layout = getattr(active_node, "master_layout_json", None)
+        if isinstance(raw_layout, dict) and isinstance(raw_layout.get("rows"), list):
+            layout_payload = {"rows": raw_layout["rows"]}
+
         return self.render(
             request,
             template="home/taxonomy/taxonomy_drilldown_page.html",
@@ -424,6 +437,8 @@ class HomePage(RoutablePageMixin, Page):
                 "taxonomy_active_node": active_node,
                 "taxonomy_prefix": ctx["taxonomy_prefix"],
                 "taxonomy_breadcrumbs_payload": breadcrumb_payload,
+                "taxonomy_master_layout_payload": layout_payload,
+                "can_save_taxonomy_master_layout": _admin_inline_access(request.user),
             },
         )
 

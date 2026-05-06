@@ -42,6 +42,63 @@ function stubRow(panelCount: number, startLabel: number): LayoutRow {
   return { kind: 'row', items };
 }
 
+function cloneRows(rows: LayoutRow[]): LayoutRow[] {
+  return structuredClone(rows);
+}
+
+function isVerticalSeparatorItem(item: RowItem | undefined): boolean {
+  return item?.type === 'separator' && item.orientation === 'vertical';
+}
+
+/** Removes one card and any adjacent vertical separator; returns null if index invalid. */
+function removeCardFromRowItems(items: RowItem[], itemIndex: number): RowItem[] | null {
+  if (itemIndex < 0 || itemIndex >= items.length) {
+    return null;
+  }
+  const victim = items[itemIndex];
+  if (victim.type !== 'card') {
+    return null;
+  }
+  const next = [...items];
+  if (itemIndex > 0 && isVerticalSeparatorItem(next[itemIndex - 1])) {
+    next.splice(itemIndex - 1, 2);
+  } else if (itemIndex < next.length - 1 && isVerticalSeparatorItem(next[itemIndex + 1])) {
+    next.splice(itemIndex, 2);
+  } else {
+    next.splice(itemIndex, 1);
+  }
+  while (next.length > 0 && isVerticalSeparatorItem(next[0])) {
+    next.shift();
+  }
+  while (next.length > 0 && isVerticalSeparatorItem(next[next.length - 1])) {
+    next.pop();
+  }
+  return next;
+}
+
+type CardPanelEntry = {
+  card: ArticleCardPayload;
+  itemIndex: number;
+  dividerBefore: boolean;
+};
+
+function collectCardPanels(items: RowItem[]): CardPanelEntry[] {
+  const out: CardPanelEntry[] = [];
+  let dividerBefore = false;
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    if (item.type === 'separator' && item.orientation === 'vertical') {
+      dividerBefore = true;
+      continue;
+    }
+    if (item.type === 'card') {
+      out.push({ card: item.card, itemIndex: i, dividerBefore });
+      dividerBefore = false;
+    }
+  }
+  return out;
+}
+
 export function presetToRows(preset: LayoutPresetId): LayoutRow[] {
   switch (preset) {
     case 'twin':
@@ -70,10 +127,44 @@ type ContextMenuState = {
   rowIndex: number | null;
 };
 
-function ArticleCardView({ data }: { data: ArticleCardPayload }): React.JSX.Element {
+function getCookie(name: string): string | null {
+  const escaped = name.replace(/[.$?*|{}()[\]\\/+^]/g, '\\$&');
+  const match = document.cookie.match(new RegExp(`(?:^|; )${escaped}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function getCsrfToken(): string | null {
+  return getCookie('csrftoken');
+}
+
+function ArticleCardView({
+  data,
+  onDelete,
+}: {
+  data: ArticleCardPayload;
+  onDelete?: () => void;
+}): React.JSX.Element {
+  const deleteBtn =
+    onDelete != null ? (
+      <button
+        type="button"
+        className="scn-article-card__delete"
+        aria-label="Remove panel"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onDelete();
+        }}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        <span aria-hidden="true">×</span>
+      </button>
+    ) : null;
+
   if (data.kind === 'empty') {
     return (
       <Card className="scn-article-card scn-article-card--empty">
+        {deleteBtn}
         <CardContent>
           <p className="scn-article-card__empty">No article.</p>
         </CardContent>
@@ -83,6 +174,7 @@ function ArticleCardView({ data }: { data: ArticleCardPayload }): React.JSX.Elem
   if (data.kind === 'stub') {
     return (
       <Card className="scn-article-card scn-article-card--stub">
+        {deleteBtn}
         <CardHeader>
           <CardTitle>Top viewed</CardTitle>
         </CardHeader>
@@ -111,77 +203,85 @@ function ArticleCardView({ data }: { data: ArticleCardPayload }): React.JSX.Elem
   if (data.href) {
     return (
       <Card className="scn-article-card scn-article-card--linked">
+        {deleteBtn}
         <a className="scn-article-card__shell" href={data.href}>
           {body}
         </a>
       </Card>
     );
   }
-  return <Card className="scn-article-card">{body}</Card>;
-}
-
-function panelEntriesFromRowItems(items: RowItem[]): { card: ArticleCardPayload; dividerBefore: boolean }[] {
-  const out: { card: ArticleCardPayload; dividerBefore: boolean }[] = [];
-  let dividerBefore = false;
-  for (const item of items) {
-    if (item.type === 'separator' && item.orientation === 'vertical') {
-      dividerBefore = true;
-      continue;
-    }
-    if (item.type === 'card') {
-      out.push({ card: item.card, dividerBefore });
-      dividerBefore = false;
-    }
-  }
-  return out;
+  return (
+    <Card className="scn-article-card">
+      {deleteBtn}
+      {body}
+    </Card>
+  );
 }
 
 function ResizableCardRow({
   items,
   panelGroupKey,
+  rowIndex,
+  enableMasterPane,
+  onDeleteCard,
 }: {
   items: RowItem[];
   panelGroupKey: string;
+  rowIndex: number;
+  enableMasterPane: boolean;
+  onDeleteCard: (rowIndex: number, itemIndex: number) => void;
 }): React.JSX.Element {
-  const entries = panelEntriesFromRowItems(items);
-  if (entries.length === 0) {
+  const panels = collectCardPanels(items);
+  if (panels.length === 0) {
     return <></>;
   }
-  if (entries.length === 1) {
+  const onDel = enableMasterPane ? onDeleteCard : undefined;
+  if (panels.length === 1) {
     return (
       <div className="scn-card-row scn-card-row--single">
-        <ArticleCardView data={entries[0].card} />
+        <ArticleCardView
+          data={panels[0].card}
+          onDelete={onDel ? () => onDel(rowIndex, panels[0].itemIndex) : undefined}
+        />
       </div>
     );
   }
-  const defaultPct = `${100 / entries.length}%`;
+  const defaultPct = `${100 / panels.length}%`;
+  const horizontalChildren = panels.flatMap((entry, idx) => {
+    const panel = (
+      <Panel
+        key={`scn-panel-${panelGroupKey}-${entry.itemIndex}`}
+        defaultSize={defaultPct}
+        minSize={12}
+        id={`scn-panel-${panelGroupKey}-${entry.itemIndex}`}
+        className="scn-card-row__panel"
+        style={{ overflow: 'hidden' }}
+      >
+        <ArticleCardView
+          data={entry.card}
+          onDelete={onDel ? () => onDel(rowIndex, entry.itemIndex) : undefined}
+        />
+      </Panel>
+    );
+    if (idx === 0) {
+      return [panel];
+    }
+    return [
+      <ResizeSeparator
+        key={`scn-hsep-${panelGroupKey}-${entry.itemIndex}`}
+        className={cn('scn-resize-handle', entry.dividerBefore && 'scn-resize-handle--with-separator')}
+        id={`scn-hsep-${panelGroupKey}-${entry.itemIndex}`}
+      >
+        {entry.dividerBefore ? (
+          <UiSeparator orientation="vertical" className="scn-resize-handle__sep" decorative />
+        ) : null}
+      </ResizeSeparator>,
+      panel,
+    ];
+  });
   return (
     <Group orientation="horizontal" className="scn-card-row scn-card-row--panels">
-      {entries.map((entry, idx) => (
-        <React.Fragment key={idx}>
-          {idx > 0 ? (
-            <ResizeSeparator
-              className={cn(
-                'scn-resize-handle',
-                entry.dividerBefore && 'scn-resize-handle--with-separator'
-              )}
-            >
-              {entry.dividerBefore ? (
-                <UiSeparator orientation="vertical" className="scn-resize-handle__sep" decorative />
-              ) : null}
-            </ResizeSeparator>
-          ) : null}
-          <Panel
-            defaultSize={defaultPct}
-            minSize={12}
-            id={`scn-panel-${panelGroupKey}-${idx}`}
-            className="scn-card-row__panel"
-            style={{ overflow: 'hidden' }}
-          >
-            <ArticleCardView data={entry.card} />
-          </Panel>
-        </React.Fragment>
-      ))}
+      {horizontalChildren}
     </Group>
   );
 }
@@ -189,12 +289,24 @@ function ResizableCardRow({
 export function CardLayoutRoot({
   payload,
   enableMasterPane,
+  sectionTitle = '',
+  taxonomyTermId = '',
+  canSaveMasterLayout = false,
+  saveMasterLayoutUrl = '',
 }: {
   payload: CardLayoutPayload;
   enableMasterPane: boolean;
+  sectionTitle?: string;
+  taxonomyTermId?: string;
+  canSaveMasterLayout?: boolean;
+  saveMasterLayoutUrl?: string;
 }): React.JSX.Element {
-  const [rows, setRows] = React.useState<LayoutRow[]>(payload.rows);
+  const baselineRowsRef = React.useRef<LayoutRow[]>(cloneRows(payload.rows));
+  const [rows, setRows] = React.useState<LayoutRow[]>(() => cloneRows(payload.rows));
   const [layoutDialogOpen, setLayoutDialogOpen] = React.useState(false);
+  const [paneMenuOpen, setPaneMenuOpen] = React.useState(false);
+  const [savePending, setSavePending] = React.useState(false);
+  const paneMenuRef = React.useRef<HTMLDivElement>(null);
   const [menu, setMenu] = React.useState<ContextMenuState>({
     open: false,
     x: 0,
@@ -203,10 +315,84 @@ export function CardLayoutRoot({
   });
 
   React.useEffect(() => {
-    setRows(payload.rows);
+    baselineRowsRef.current = cloneRows(payload.rows);
+    setRows(cloneRows(payload.rows));
     setMenu({ open: false, x: 0, y: 0, rowIndex: null });
     setLayoutDialogOpen(false);
+    setPaneMenuOpen(false);
+    setSavePending(false);
   }, [payload]);
+
+  const deleteCard = React.useCallback((rowIndex: number, itemIndex: number) => {
+    setRows((prev) => {
+      const row = prev[rowIndex];
+      if (!row || row.kind !== 'row') {
+        return prev;
+      }
+      const nextItems = removeCardFromRowItems(row.items, itemIndex);
+      if (nextItems === null) {
+        return prev;
+      }
+      if (nextItems.length === 0) {
+        const out = [...prev];
+        out.splice(rowIndex, 1);
+        return out;
+      }
+      const out = [...prev];
+      out[rowIndex] = { kind: 'row', items: nextItems };
+      return out;
+    });
+  }, []);
+
+  const handlePaneSave = React.useCallback(() => {
+    const url = saveMasterLayoutUrl.trim();
+    const tid = taxonomyTermId.trim();
+    if (!canSaveMasterLayout || !url || !tid) {
+      setPaneMenuOpen(false);
+      return;
+    }
+    setSavePending(true);
+    void (async () => {
+      try {
+        const token = getCsrfToken();
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'X-CSRFToken': token } : {}),
+          },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            term_id: Number.parseInt(tid, 10),
+            layout: { rows: cloneRows(rows) },
+          }),
+        });
+        let data: { error?: string } = {};
+        try {
+          data = (await res.json()) as { error?: string };
+        } catch {
+          /* ignore */
+        }
+        if (!res.ok) {
+          await (window.showMaterialAlert?.(data.error || `Save failed (${res.status})`, 'Layout') ??
+            Promise.resolve());
+          return;
+        }
+        baselineRowsRef.current = cloneRows(rows);
+        await (window.showMaterialAlert?.('Layout saved to the server.', 'Saved') ?? Promise.resolve());
+      } catch {
+        await (window.showMaterialAlert?.('Could not reach the server.', 'Save failed') ?? Promise.resolve());
+      } finally {
+        setSavePending(false);
+        setPaneMenuOpen(false);
+      }
+    })();
+  }, [canSaveMasterLayout, saveMasterLayoutUrl, taxonomyTermId, rows]);
+
+  const handlePaneReset = React.useCallback(() => {
+    setRows(cloneRows(baselineRowsRef.current));
+    setPaneMenuOpen(false);
+  }, []);
 
   React.useEffect(() => {
     if (!menu.open) {
@@ -221,11 +407,37 @@ export function CardLayoutRoot({
     };
   }, [menu.open]);
 
+  React.useEffect(() => {
+    if (!paneMenuOpen) {
+      return;
+    }
+    const onDocClick = (e: MouseEvent) => {
+      const el = paneMenuRef.current;
+      if (el && !el.contains(e.target as Node)) {
+        setPaneMenuOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setPaneMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [paneMenuOpen]);
+
   const onContextMenu = (evt: React.MouseEvent<HTMLDivElement>) => {
     if (!enableMasterPane || rows.length === 0) {
       return;
     }
     const target = evt.target as HTMLElement;
+    if (target.closest('.scn-pane-menubar')) {
+      return;
+    }
     if (target.closest('.scn-article-card') || target.closest('.scn-resize-handle')) {
       return;
     }
@@ -311,98 +523,180 @@ export function CardLayoutRoot({
     setMenu((prev) => ({ ...prev, open: false }));
   };
 
-  return (
-    <div className="scn-card-layout" onContextMenu={onContextMenu}>
-      {rows.map((row, i) => (
-        <div key={i} data-layout-row-index={i} className="scn-card-layout__slot">
+  /** Vertical rule between columns is stored as `RowItem` separator + card; use “Add column”. */
+  const rowPct = rows.length ? `${100 / rows.length}%` : '100%';
+  const verticalRowChildren = rows.flatMap((row, i) => {
+    const panel = (
+      <Panel
+        key={`scn-vrow-${i}`}
+        defaultSize={rowPct}
+        minSize={10}
+        id={`scn-vrow-${i}`}
+        className="scn-card-layout__row-panel"
+        style={{ overflow: 'hidden' }}
+      >
+        <div data-layout-row-index={i} className="scn-card-layout__slot">
           {row.kind === 'separator' ? (
             <UiSeparator orientation="horizontal" className="scn-card-layout__sep" />
           ) : (
-            <ResizableCardRow items={row.items} panelGroupKey={String(i)} />
+            <ResizableCardRow
+              items={row.items}
+              panelGroupKey={String(i)}
+              rowIndex={i}
+              enableMasterPane={enableMasterPane}
+              onDeleteCard={deleteCard}
+            />
           )}
         </div>
-      ))}
-      {rows.length === 0 && enableMasterPane ? (
-        <Dialog open={layoutDialogOpen} onOpenChange={setLayoutDialogOpen}>
-          <Empty className="scn-card-layout__empty-state">
-            <EmptyHeader>
-              <EmptyTitle>No layout yet</EmptyTitle>
-              <EmptyDescription>
-                Start from a resizable preset. You can add cards and horizontal separators after the layout
-                exists.
-              </EmptyDescription>
-            </EmptyHeader>
-            <EmptyContent>
-              <Button type="button" onClick={() => setLayoutDialogOpen(true)}>
-                Create layout
-              </Button>
-            </EmptyContent>
-          </Empty>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Choose a layout preset</DialogTitle>
-              <DialogDescription>
-                Each option creates stub panels you can resize. Use right-click on the layout to add more
-                cards or separators.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="scn-layout-preset-grid">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setRows(presetToRows('twin'));
-                  setLayoutDialogOpen(false);
-                }}
-              >
-                Twin split (2)
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setRows(presetToRows('three'));
-                  setLayoutDialogOpen(false);
-                }}
-              >
-                Three-way (3)
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setRows(presetToRows('quattro'));
-                  setLayoutDialogOpen(false);
-                }}
-              >
-                Quattro (4)
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setRows(presetToRows('grid-2x4'));
-                  setLayoutDialogOpen(false);
-                }}
-              >
-                2×4 grid
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      ) : null}
-      {menu.open && enableMasterPane && rows.length > 0 ? (
-        <div className="scn-context-menu" style={{ left: menu.x, top: menu.y }} role="menu">
-          <button type="button" className="scn-context-menu__item" onClick={insertCard}>
-            Add card
-          </button>
-          <button type="button" className="scn-context-menu__item" onClick={insertSeparator}>
-            Add separator
-          </button>
+      </Panel>
+    );
+    if (i === 0) {
+      return [panel];
+    }
+    return [
+      <ResizeSeparator
+        key={`scn-row-sep-${i}`}
+        className={cn('scn-resize-handle', 'scn-resize-handle--between-rows')}
+        id={`scn-row-sep-${i}`}
+      />,
+      panel,
+    ];
+  });
+
+  const emptyPresetDialog =
+    rows.length === 0 && enableMasterPane ? (
+      <Dialog open={layoutDialogOpen} onOpenChange={setLayoutDialogOpen}>
+        <Empty className="scn-card-layout__empty-state">
+          <EmptyHeader>
+            <EmptyTitle>No layout yet</EmptyTitle>
+            <EmptyDescription>
+              Start from a resizable preset. Then right-click empty areas to add columns (vertical split and
+              rule) or horizontal rules between rows. Drag handles to resize column widths and row heights.
+              {canSaveMasterLayout ? ' Staff can save the layout from the Pane menu.' : ''}
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <Button type="button" onClick={() => setLayoutDialogOpen(true)}>
+              Create layout
+            </Button>
+          </EmptyContent>
+        </Empty>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Choose a layout preset</DialogTitle>
+            <DialogDescription>
+              Each option creates stub panels. Drag handles between columns for width; drag horizontal bars between
+              rows for height. Right-click to add columns (includes a vertical rule) or row separators.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="scn-layout-preset-grid">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setRows(presetToRows('twin'));
+                setLayoutDialogOpen(false);
+              }}
+            >
+              Twin split (2)
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setRows(presetToRows('three'));
+                setLayoutDialogOpen(false);
+              }}
+            >
+              Three-way (3)
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setRows(presetToRows('quattro'));
+                setLayoutDialogOpen(false);
+              }}
+            >
+              Quattro (4)
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setRows(presetToRows('grid-2x4'));
+                setLayoutDialogOpen(false);
+              }}
+            >
+              2×4 grid
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    ) : null;
+
+  const paneMenubar =
+    enableMasterPane && rows.length > 0 ? (
+      <div className="scn-pane-menubar" ref={paneMenuRef}>
+        <div className="scn-pane-menubar__track">
+          <div className="scn-pane-menubar__menu-wrap">
+            <button
+              type="button"
+              className="scn-pane-menubar__trigger"
+              aria-expanded={paneMenuOpen}
+              aria-haspopup="menu"
+              onClick={() => setPaneMenuOpen((o) => !o)}
+            >
+              Pane
+            </button>
+            {paneMenuOpen ? (
+              <div className="scn-pane-menubar__dropdown" role="menu">
+                {canSaveMasterLayout && saveMasterLayoutUrl.trim() ? (
+                  <button
+                    type="button"
+                    className="scn-pane-menubar__item"
+                    role="menuitem"
+                    disabled={savePending}
+                    onClick={handlePaneSave}
+                  >
+                    Save
+                  </button>
+                ) : null}
+                <button type="button" className="scn-pane-menubar__item" role="menuitem" onClick={handlePaneReset}>
+                  Reset
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
-      ) : null}
-    </div>
-  );
+      </div>
+    ) : null;
+
+  if (rows.length > 0) {
+    return (
+      <div className="scn-content-outline taxonomy-drilldown__outline">
+        {sectionTitle ? <h1 className="taxonomy-drilldown__title">{sectionTitle}</h1> : null}
+        <div className="scn-card-layout-host" onContextMenu={onContextMenu}>
+          <Group orientation="vertical" className={cn('scn-card-layout', 'scn-card-layout--vertical-stack')}>
+            {verticalRowChildren}
+          </Group>
+          {menu.open && enableMasterPane ? (
+            <div className="scn-context-menu" style={{ left: menu.x, top: menu.y }} role="menu">
+              <button type="button" className="scn-context-menu__item" onClick={insertCard}>
+                Add column (card + vertical rule)
+              </button>
+              <button type="button" className="scn-context-menu__item" onClick={insertSeparator}>
+                Add horizontal separator (row)
+              </button>
+            </div>
+          ) : null}
+          {paneMenubar}
+        </div>
+      </div>
+    );
+  }
+
+  return <div className="scn-card-layout-host scn-card-layout-host--empty-only">{emptyPresetDialog}</div>;
 }
 
 function readPayloadScript(jsonId: string): CardLayoutPayload | ArticleCardPayload | null {
@@ -439,7 +733,20 @@ export function mountShadcnCardLayouts(): void {
       layoutRoots.set(host, root);
     }
     const enableMasterPane = host.dataset['masterPaneEnabled'] === '1';
-    root.render(<CardLayoutRoot payload={parsed} enableMasterPane={enableMasterPane} />);
+    const sectionTitle = host.dataset['taxonomySectionTitle'] ?? '';
+    const taxonomyTermId = host.dataset['taxonomyTermId'] ?? '';
+    const canSaveMasterLayout = host.dataset['canSaveMasterLayout'] === '1';
+    const saveMasterLayoutUrl = host.dataset['saveMasterLayoutUrl'] ?? '';
+    root.render(
+      <CardLayoutRoot
+        payload={parsed}
+        enableMasterPane={enableMasterPane}
+        sectionTitle={sectionTitle}
+        taxonomyTermId={taxonomyTermId}
+        canSaveMasterLayout={canSaveMasterLayout}
+        saveMasterLayoutUrl={saveMasterLayoutUrl}
+      />
+    );
   });
 }
 

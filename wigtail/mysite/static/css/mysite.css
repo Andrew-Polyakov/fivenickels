@@ -1422,7 +1422,8 @@ body.template-taxonomy-root {
 
 }
 
-.taxonomy-drilldown__widgets .scn-card-layout {
+.taxonomy-drilldown__widgets .scn-card-layout,
+.taxonomy-drilldown__master-pane .scn-card-layout {
 
     display: grid;
 
@@ -1432,7 +1433,8 @@ body.template-taxonomy-root {
 
 }
 
-.taxonomy-drilldown__widgets .scn-card-layout__sep {
+.taxonomy-drilldown__widgets .scn-card-layout__sep,
+.taxonomy-drilldown__master-pane .scn-card-layout__sep {
 
     margin: 0.1rem 0 0.2rem;
 

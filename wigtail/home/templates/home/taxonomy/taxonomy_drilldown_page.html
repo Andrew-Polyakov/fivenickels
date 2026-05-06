@@ -21,23 +21,34 @@
 
 <div class="taxonomy-drilldown">
 
-    <div class="scn-content-outline taxonomy-drilldown__outline">
-        <h1 class="taxonomy-drilldown__title">{{ taxonomy_active_node.name }}</h1>
+    {% if taxonomy_active_node.widgets %}
+        <div class="scn-content-outline taxonomy-drilldown__outline">
+            <h1 class="taxonomy-drilldown__title">{{ taxonomy_active_node.name }}</h1>
 
-        <div class="home-stream taxonomy-drilldown__widgets" data-taxonomy-master-pane>
-            {% if taxonomy_active_node.widgets %}
+            <div class="home-stream taxonomy-drilldown__widgets" data-taxonomy-master-pane>
                 {% render_main_site_stream taxonomy_active_node.widgets %}
-            {% else %}
-                <div
-                    class="shadcn-card-layout-root"
-                    data-shadcn-card-layout
-                    data-master-pane-enabled="1"
-                    data-layout-json-id="taxonomy-master-empty-layout"
-                ></div>
-                <script id="taxonomy-master-empty-layout" type="application/json">{"rows":[]}</script>
-            {% endif %}
+            </div>
         </div>
-    </div>
+    {% else %}
+        {{ taxonomy_master_layout_payload|json_script:"taxonomy-master-layout-json" }}
+        <div
+            class="taxonomy-drilldown__master-pane taxonomy-drilldown__widgets"
+            data-taxonomy-master-pane
+        >
+            <div
+                class="shadcn-card-layout-root"
+                data-shadcn-card-layout
+                data-master-pane-enabled="1"
+                data-layout-json-id="taxonomy-master-layout-json"
+                data-taxonomy-section-title="{{ taxonomy_active_node.name }}"
+                data-taxonomy-term-id="{{ taxonomy_active_node.pk }}"
+                data-can-save-master-layout="{% if can_save_taxonomy_master_layout %}1{% else %}0{% endif %}"
+                {% if can_save_taxonomy_master_layout %}
+                data-save-master-layout-url="{% url 'save_taxonomy_master_layout' %}"
+                {% endif %}
+            ></div>
+        </div>
+    {% endif %}
 
 </div>
 
