@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from urllib.parse import urlparse
 
 from django.http import Http404, HttpResponse
 from django.template.loader import render_to_string
@@ -20,18 +19,90 @@ TOP_ROW_SLUGS: tuple[str, ...] = (
 )
 TOP_ROW_SLUGS_SET = frozenset(TOP_ROW_SLUGS)
 
+# Seed rows for migrations and ``ensure_top_row_taxonomy_terms`` (slug, display name, sort_order).
+TOP_ROW_SEED: tuple[tuple[str, str, int], ...] = (
+    (MARKET_NEWS_SLUG, "Market News", 5),
+    ("opinions", "Opinions", 8),
+    ("personal-finance", "Personal Finance", 9),
+)
 
-def _home_path_only(home_page: HomePage) -> str:
-    u = home_page.get_url() or "/"
-    if u.startswith("http://") or u.startswith("https://"):
-        u = urlparse(u).path or "/"
-    return u
+
+def ensure_top_row_taxonomy_terms() -> None:
+    """
+    Ensure Market News, Opinions, and Personal Finance terms exist.
+
+    Idempotent: safe when terms were deleted or DB was copied without migrations.
+    """
+    from home.models import TaxonomyTerm
+
+    for slug, name, sort_order in TOP_ROW_SEED:
+        existing = TaxonomyTerm.objects.filter(slug=slug).first()
+        if existing is not None:
+            TaxonomyTerm.objects.filter(pk=existing.pk).update(
+                name=name,
+                sort_order=sort_order,
+                is_visible=True,
+            )
+            continue
+        last = TaxonomyTerm.get_last_root_node()
+        if last is not None:
+            last.add_sibling(
+                "sorted-sibling",
+                name=name,
+                slug=slug,
+                sort_order=sort_order,
+                is_visible=True,
+            )
+        else:
+            TaxonomyTerm.add_root(
+                name=name,
+                slug=slug,
+                sort_order=sort_order,
+                is_visible=True,
+            )
+    TaxonomyTerm.fix_tree()
+
+
+def wagtail_serve_taxonomy_url(
+    home_page: HomePage, path_within_taxonomy: str = ""
+) -> str:
+    """
+    Site-relative URL for HomePage routable ``_taxonomy/...`` views.
+
+    Uses ``reverse("wagtail_serve", ...)`` with the same path shape Wagtail uses
+    internally (``Page.get_url_parts``), so links work when the home URL is not
+    ``/`` (e.g. ``/home/_taxonomy/...``).
+    """
+    from django.urls import NoReverseMatch, reverse
+
+    parts = home_page.get_url_parts(request=None)
+    root_rel = ""
+    if parts and parts[2]:
+        root_rel = parts[2].strip("/")
+
+    inner = (path_within_taxonomy or "").strip("/")
+    tail = f"_taxonomy/{inner}/" if inner else "_taxonomy/"
+    if root_rel:
+        serve_arg = f"{root_rel}/{tail}".replace("//", "/")
+    else:
+        serve_arg = tail
+
+    try:
+        return reverse("wagtail_serve", args=(serve_arg,))
+    except NoReverseMatch:
+        from urllib.parse import urljoin
+
+        home_path = "/"
+        if parts and parts[2]:
+            home_path = parts[2]
+            if not home_path.endswith("/"):
+                home_path += "/"
+        return urljoin(home_path, tail)
 
 
 def taxonomy_prefix_path(home_page: HomePage) -> str:
-    """Path prefix for routable `_taxonomy/` URLs under the home page (relative path)."""
-    base = _home_path_only(home_page).rstrip("/")
-    return f"{base}/_taxonomy/" if base else "/_taxonomy/"
+    """Path prefix for routable `_taxonomy/` URLs under the home page (matches ``wagtail_serve``)."""
+    return wagtail_serve_taxonomy_url(home_page, "")
 
 
 def taxonomy_roots_for_nav(home_page: HomePage | None):
@@ -112,12 +183,13 @@ def resolve_taxonomy_trail(
 
     if not slugs:
         return None
-    root = (
-        TaxonomyTerm.get_root_nodes()
-        .filter(slug=slugs[0], is_visible=True)
-        .first()
-    )
-    if root is None or root.slug not in TOP_ROW_SLUGS_SET:
+    first = slugs[0]
+    if first not in TOP_ROW_SLUGS_SET:
+        return None
+    # Match inline_create_taxonomy_term: top-row sections are identified by slug,
+    # not strictly tree roots (reparented terms must still resolve).
+    root = TaxonomyTerm.objects.filter(slug=first, is_visible=True).first()
+    if root is None:
         return None
     trail: list[TaxonomyTerm] = [root]
     current = root

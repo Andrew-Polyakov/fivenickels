@@ -78,6 +78,14 @@ class TaxonomyTerm(MP_Node):
             .order_by("sort_order", "name")
         )
 
+    @property
+    def has_newspaper_grid_widget(self) -> bool:
+        """True if this term's ``widgets`` stream includes a ``newspaper_grid`` block."""
+        for block in self.widgets:
+            if block.block_type == "newspaper_grid":
+                return True
+        return False
+
     def save(self, *args, **kwargs):
         if self._state.adding and len(self.path or "") < self.steplen:
             parent = self.parent_for_create
@@ -395,13 +403,17 @@ class HomePage(RoutablePageMixin, Page):
 
     @route(r"^_taxonomy/$", name="taxonomy_nav_root")
     def taxonomy_nav_root(self, request):
-        from home.taxonomy import render_site_nav_frame
+        from home.taxonomy import render_site_nav_frame, taxonomy_roots_for_nav
 
         if request.headers.get("Turbo-Frame") == "site-nav":
             return render_site_nav_frame(request, self, [])
+        root_terms = list(taxonomy_roots_for_nav(self))
         return self.render(
             request,
             template="home/taxonomy/taxonomy_nav_root_page.html",
+            context_overrides={
+                "taxonomy_root_terms": root_terms,
+            },
         )
 
     @route(r"^_taxonomy/(?P<path>[-\w/]+)/$", name="taxonomy_nav_path")
@@ -418,6 +430,16 @@ class HomePage(RoutablePageMixin, Page):
 
         part = (path or "").strip("/")
         slugs = [s for s in part.split("/") if s]
+
+        # Dev / partial DB copies may omit seeded nav roots; lazy-heal only when absent.
+        if slugs:
+            from home.taxonomy import TOP_ROW_SLUGS_SET, ensure_top_row_taxonomy_terms
+
+            if (
+                slugs[0] in TOP_ROW_SLUGS_SET
+                and not TaxonomyTerm.objects.filter(slug=slugs[0]).exists()
+            ):
+                ensure_top_row_taxonomy_terms()
 
         # Turbo loads only the nav frame; full browser visits need a real page (CSS + layout).
         if request.headers.get("Turbo-Frame") == "site-nav":

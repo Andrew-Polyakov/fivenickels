@@ -1,3 +1,5 @@
+import json
+
 from django.core.validators import RegexValidator
 
 from wagtail import blocks
@@ -421,6 +423,141 @@ class FullWidthSplitRowBlock(blocks.StructBlock):
         template = "home/blocks/full_width_split_row.html"
 
 
+def _newspaper_default_layout(preset: str) -> dict:
+    if preset == "quatro":
+        return {
+            "type": "split",
+            "id": "root",
+            "axis": "vertical",
+            "ratio": 0.5,
+            "first": {
+                "type": "split",
+                "id": "left-split",
+                "axis": "horizontal",
+                "ratio": 0.5,
+                "first": {"type": "leaf", "pane_id": "p1"},
+                "second": {"type": "leaf", "pane_id": "p2"},
+            },
+            "second": {
+                "type": "split",
+                "id": "right-split",
+                "axis": "horizontal",
+                "ratio": 0.5,
+                "first": {"type": "leaf", "pane_id": "p3"},
+                "second": {"type": "leaf", "pane_id": "p4"},
+            },
+        }
+    return {
+        "type": "split",
+        "id": "root",
+        "axis": "vertical",
+        "ratio": 0.5,
+        "first": {"type": "leaf", "pane_id": "p1"},
+        "second": {"type": "leaf", "pane_id": "p2"},
+    }
+
+
+def build_newspaper_grid_tree(value, parent_context=None):
+    """Build the recursive grid tree used by ``newspaper_grid.html`` (dict ``value`` from StreamField)."""
+    value = value or {}
+    layout_raw = (value.get("layout_json") or "").strip()
+    preset = value.get("preset") or "twin"
+    try:
+        layout = json.loads(layout_raw) if layout_raw else _newspaper_default_layout(preset)
+    except json.JSONDecodeError:
+        layout = _newspaper_default_layout(preset)
+
+    pane_values = value.get("panes") or []
+    pane_map: dict[str, dict] = {}
+    for pane in pane_values:
+        pane_id = str(pane.get("pane_id") or "").strip()
+        if pane_id:
+            pane_map[pane_id] = pane
+
+    def _render(node):
+        if not isinstance(node, dict):
+            return {"kind": "leaf", "pane_id": "", "state": {"kind": "empty"}}
+        if node.get("type") == "split":
+            axis = "horizontal" if node.get("axis") == "horizontal" else "vertical"
+            ratio = node.get("ratio")
+            try:
+                ratio = float(ratio)
+            except (TypeError, ValueError):
+                ratio = 0.5
+            ratio = min(0.8, max(0.2, ratio))
+            return {
+                "kind": "split",
+                "split_id": str(node.get("id") or "split"),
+                "axis": axis,
+                "ratio": ratio,
+                "first": _render(node.get("first")),
+                "second": _render(node.get("second")),
+            }
+        pane_id = str(node.get("pane_id") or "").strip()
+        pane = pane_map.get(pane_id) or {}
+        state: dict = {"kind": "empty"}
+        if pane:
+            kind = pane.get("content_kind") or "article"
+            if kind == "rich" and pane.get("rich"):
+                state = {"kind": "rich", "rich": pane.get("rich")}
+            else:
+                article = pane.get("article") or {}
+                term = _resolve_section_term(
+                    {**article, "section_term": article.get("section_term")},
+                    parent_context,
+                )
+                state = {
+                    "kind": "article",
+                    "tile_page": _pick_one_tile_page(article, term, []),
+                }
+        return {"kind": "leaf", "pane_id": pane_id, "state": state}
+
+    return _render(layout)
+
+
+class NewspaperPaneBlock(blocks.StructBlock):
+    pane_id = blocks.CharBlock(required=True, max_length=64)
+    content_kind = blocks.ChoiceBlock(
+        choices=[
+            ("article", "Article preview"),
+            ("rich", "Rich markdown tile"),
+        ],
+        default="article",
+    )
+    article = ArticleTileSourceBlock(required=False, label="Article preview")
+    rich = MarkdownTileBlock(required=False, label="Rich markdown tile")
+
+    class Meta:
+        icon = "placeholder"
+        label = "Grid pane"
+
+
+class NewspaperGridBlock(blocks.StructBlock):
+    preset = blocks.ChoiceBlock(
+        choices=[
+            ("twin", "Twin split"),
+            ("quatro", "Quatro (2x2)"),
+        ],
+        default="twin",
+    )
+    layout_json = blocks.TextBlock(
+        required=False,
+        default="",
+        help_text="Internal JSON layout tree. Leave empty to use preset defaults.",
+    )
+    panes = blocks.ListBlock(NewspaperPaneBlock(), required=False, label="Pane content")
+
+    def get_context(self, value, parent_context=None):
+        context = super().get_context(value, parent_context)
+        context["grid_tree"] = build_newspaper_grid_tree(value, parent_context)
+        return context
+
+    class Meta:
+        icon = "grip"
+        label = "Newspaper grid"
+        template = "home/blocks/newspaper_grid.html"
+
+
 MAIN_SITE_STREAMBLOCK = blocks.StreamBlock(
     [
         ("heading", HeadingBlock()),
@@ -435,6 +572,7 @@ MAIN_SITE_STREAMBLOCK = blocks.StreamBlock(
         ("big_tile_quad_2x2", BigTileQuadBlock()),
         ("big_tile_quattro_row", BigTileQuattroRowBlock()),
         ("full_width_split_row", FullWidthSplitRowBlock()),
+        ("newspaper_grid", NewspaperGridBlock()),
     ],
     use_json_field=True,
 )

@@ -1,0 +1,26 @@
+{% load wagtailcore_tags %}
+
+<section
+    class="newspaper-grid"
+    data-newspaper-grid
+    data-page-id="{{ page_id|default:'' }}"
+    data-page-model="{{ page_model|default:'' }}"
+    data-stream-field="{{ stream_field|default:'' }}"
+    data-block-index="{{ block_index|default:'' }}"
+    data-preset-url="{% url 'inline_newspaper_grid_preset' %}"
+    data-add-url="{% url 'inline_newspaper_grid_add' %}"
+    data-remove-url="{% url 'inline_newspaper_grid_remove' %}"
+    data-resize-url="{% url 'inline_newspaper_grid_resize' %}"
+    data-can-edit="{% if request.user.is_authenticated %}{% if request.user.is_staff or request.user.is_superuser %}1{% else %}0{% endif %}{% else %}0{% endif %}"
+>
+    {% if request.user.is_authenticated %}{% if request.user.is_staff or request.user.is_superuser %}
+        <div class="newspaper-grid__toolbar">
+            <button type="button" class="btn btn--raised newspaper-grid__preset" data-grid-preset="twin">Twin</button>
+            <button type="button" class="btn btn--raised newspaper-grid__preset" data-grid-preset="quatro">Quatro</button>
+        </div>
+    {% endif %}{% endif %}
+
+    <div class="newspaper-grid__root">
+        {% include "home/blocks/newspaper_grid_node.html" with node=grid_tree only %}
+    </div>
+</section>

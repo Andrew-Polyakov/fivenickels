@@ -7,76 +7,36 @@
         data-inline-chips
         data-create-url="{% url 'inline_create_taxonomy_term' %}"
         data-delete-url="{% url 'inline_delete_taxonomy_term' %}"
+        data-rename-url="{% url 'inline_rename_taxonomy_term' %}"
         data-can-edit="{% if request.user.is_authenticated and request.user.is_staff or request.user.is_superuser %}1{% else %}0{% endif %}"
         data-selected-parent-id="{% if featured_category_selected_term %}{{ featured_category_selected_term.pk }}{% endif %}"
     >
             {% if not taxonomy_active_node %}
                 <nav class="featured-category-chips featured-category-chips--level" aria-label="Categories">
-                    <a href="{{ request.path }}" data-turbo="false" class="featured-category-chip{% if not featured_category_selected %} featured-category-chip--active{% endif %}">All</a>
-                    {% for term in featured_category_terms %}
-                        <span class="featured-category-chip-wrap">
-                            <a
-                                href="{{ request.path }}?category={{ term.slug }}"
-                                data-turbo="false"
-                                class="featured-category-chip{% if featured_category_selected == term.slug %} featured-category-chip--active{% endif %}"
-                                data-inline-chip-id="{{ term.pk }}"
-                                data-inline-chip-name="{{ term.name }}"
-                            >{{ term.name }}</a>
-                            {% if request.user.is_authenticated and request.user.is_staff or request.user.is_superuser %}
-                                <button
-                                    type="button"
-                                    class="featured-category-chip-delete"
-                                    aria-label="Delete {{ term.name }}"
-                                    title="Delete {{ term.name }}"
-                                    data-inline-chip-delete
-                                    data-inline-chip-id="{{ term.pk }}"
-                                >-</button>
-                            {% endif %}
-                        </span>
-                    {% endfor %}
-                    {% if request.user.is_authenticated and request.user.is_staff or request.user.is_superuser %}
-                        <button
-                            type="button"
-                            class="featured-category-chip-add"
-                            aria-label="Add top-level category"
-                            title="Add top-level category"
-                            data-inline-chip-add
-                            {% if featured_category_parent_term %}data-parent-id="{{ featured_category_parent_term.pk }}"{% endif %}
-                        >+</button>
-                    {% endif %}
+                    <div
+                        data-taxonomy-chip-widget
+                        data-can-edit="{% if request.user.is_authenticated and request.user.is_staff or request.user.is_superuser %}1{% else %}0{% endif %}"
+                        data-create-url="{% url 'inline_create_taxonomy_term' %}"
+                        data-delete-url="{% url 'inline_delete_taxonomy_term' %}"
+                        data-rename-url="{% url 'inline_rename_taxonomy_term' %}"
+                        {% if featured_category_parent_term %}data-parent-id="{{ featured_category_parent_term.pk }}"{% endif %}
+                        data-placeholder="Add new"
+                        data-chips-json='[{"id":"all","name":"All","url":"{{ request.path|escapejs }}","active":{% if not featured_category_selected %}true{% else %}false{% endif %},"removable":false}{% for term in featured_category_terms %},{"id":"{{ term.pk }}","name":"{{ term.name|escapejs }}","url":"{{ request.path|escapejs }}?category={{ term.slug|escapejs }}","active":{% if featured_category_selected == term.slug %}true{% else %}false{% endif %},"removable":true}{% endfor %}]'
+                    ></div>
                 </nav>
 
                 {% if featured_category_selected_term %}
                     <nav class="featured-category-chips featured-category-chips--sublevel" aria-label="Subcategories">
-                        {% for term in featured_category_child_terms %}
-                            <span class="featured-category-chip-wrap">
-                                <span
-                                    class="featured-category-chip featured-category-chip--sublevel"
-                                    data-inline-chip-id="{{ term.pk }}"
-                                    data-inline-chip-name="{{ term.name }}"
-                                >{{ term.name }}</span>
-                                {% if request.user.is_authenticated and request.user.is_staff or request.user.is_superuser %}
-                                    <button
-                                        type="button"
-                                        class="featured-category-chip-delete"
-                                        aria-label="Delete {{ term.name }}"
-                                        title="Delete {{ term.name }}"
-                                        data-inline-chip-delete
-                                        data-inline-chip-id="{{ term.pk }}"
-                                    >-</button>
-                                {% endif %}
-                            </span>
-                        {% endfor %}
-                        {% if request.user.is_authenticated and request.user.is_staff or request.user.is_superuser %}
-                            <button
-                                type="button"
-                                class="featured-category-chip-add"
-                                aria-label="Add subcategory"
-                                title="Add subcategory"
-                                data-inline-chip-add
-                                data-parent-id="{{ featured_category_selected_term.pk }}"
-                            >+</button>
-                        {% endif %}
+                        <div
+                            data-taxonomy-chip-widget
+                            data-can-edit="{% if request.user.is_authenticated and request.user.is_staff or request.user.is_superuser %}1{% else %}0{% endif %}"
+                            data-create-url="{% url 'inline_create_taxonomy_term' %}"
+                            data-delete-url="{% url 'inline_delete_taxonomy_term' %}"
+                            data-rename-url="{% url 'inline_rename_taxonomy_term' %}"
+                            data-parent-id="{{ featured_category_selected_term.pk }}"
+                            data-placeholder="Add new"
+                            data-chips-json='[{% for term in featured_category_child_terms %}{"id":"{{ term.pk }}","name":"{{ term.name|escapejs }}","url":"{{ request.path|escapejs }}?category={{ term.slug|escapejs }}","active":{% if featured_category_selected == term.slug %}true{% else %}false{% endif %},"removable":true}{% if not forloop.last %},{% endif %}{% endfor %}]'
+                        ></div>
                     </nav>
                 {% endif %}
             {% endif %}

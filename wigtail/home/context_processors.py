@@ -9,6 +9,7 @@ from home.ticker_utils import chip_context_for_row
 from home.taxonomy import (
     MARKET_NEWS_SLUG,
     get_site_nav_template_context,
+    taxonomy_prefix_path,
     taxonomy_roots_for_nav,
 )
 
@@ -43,7 +44,20 @@ def market_header(request):
             home = root
     if home is None:
         home = HomePage.objects.live().public().first()
-    nav_ctx = get_site_nav_template_context(request, home) if home else None
+    nav_ctx = None
+    if home:
+        try:
+            nav_ctx = get_site_nav_template_context(request, home)
+        except Exception:
+            roots = list(taxonomy_roots_for_nav(home))
+            nav_ctx = {
+                "home_page": home,
+                "taxonomy_prefix": taxonomy_prefix_path(home),
+                "nav_rows": [{"depth": 1, "nodes": roots}],
+                "active_node": None,
+                "trail": [],
+                "trail_slugs": [],
+            }
     site_footer_roots = (
         [t for t in taxonomy_roots_for_nav(home) if t.slug != MARKET_NEWS_SLUG]
         if home

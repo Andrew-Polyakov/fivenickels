@@ -1360,6 +1360,40 @@ body.template-taxonomy-root {
 
 }
 
+.taxonomy-grid-bootstrap {
+
+    margin: 0 0 1.25rem;
+
+    padding: 0.85rem 1rem;
+
+    border-radius: 0.45rem;
+
+    border: 1px dashed rgba(92, 255, 138, 0.45);
+
+    background: rgba(0, 0, 0, 0.22);
+
+    max-width: 42rem;
+
+}
+
+.taxonomy-grid-bootstrap__lede {
+
+    margin: 0 0 0.65rem;
+
+    font-size: 0.88rem;
+
+    line-height: 1.45;
+
+    color: var(--color-text-muted);
+
+}
+
+.taxonomy-grid-bootstrap__btn {
+
+    margin: 0;
+
+}
+
 
 .btn {
 
@@ -2208,6 +2242,38 @@ a.markdown-tile--link:hover {
 
 }
 
+a.markdown-tile__main-link {
+
+    text-decoration: none;
+
+    color: inherit;
+
+    display: flex;
+
+    flex-direction: column;
+
+    flex: 1;
+
+    min-height: 0;
+
+    box-sizing: border-box;
+
+}
+
+a.markdown-tile__title-link {
+
+    color: inherit;
+
+    text-decoration: none;
+
+}
+
+a.markdown-tile__title-link:hover {
+
+    color: var(--color-link);
+
+}
+
 
 
 .subsection-recent__heading {
@@ -2250,13 +2316,135 @@ a.markdown-tile--link:hover {
 
     align-items: center;
 
-    justify-content: center;
+    justify-content: flex-start;
 
     max-width: 52rem;
 
     margin: 0 auto 1.25rem;
 
     padding: 0 1rem;
+
+}
+
+.featured-category-chips [data-taxonomy-chip-widget],
+.site-nav__row [data-taxonomy-chip-widget] {
+
+    width: 100%;
+
+}
+
+taxonomy-chip-widget {
+
+    display: block;
+
+    width: 100%;
+
+}
+
+/* Angular Material taxonomy chips: default = black bg + white text; selected = green bg + black text */
+.site-nav__row taxonomy-chip-widget .mat-mdc-form-field,
+.featured-category-chips taxonomy-chip-widget .mat-mdc-form-field {
+
+    width: 100%;
+
+    --mat-form-field-outlined-outline-color: rgba(255, 255, 255, 0.22);
+
+    --mat-form-field-outlined-hover-outline-color: rgba(92, 255, 138, 0.45);
+
+    --mat-form-field-outlined-focus-outline-color: var(--neon-green);
+
+    --mat-form-field-outlined-label-text-color: rgba(255, 255, 255, 0.72);
+
+}
+
+.site-nav__row taxonomy-chip-widget .mat-mdc-text-field-wrapper,
+.featured-category-chips taxonomy-chip-widget .mat-mdc-text-field-wrapper {
+
+    background: transparent;
+
+}
+
+.site-nav__row taxonomy-chip-widget .mat-mdc-standard-chip:not(.mat-mdc-chip-highlighted),
+.featured-category-chips taxonomy-chip-widget .mat-mdc-standard-chip:not(.mat-mdc-chip-highlighted) {
+
+    --mdc-chip-outline-color: rgba(92, 255, 138, 0.45);
+
+    --mdc-chip-elevated-container-color: rgba(0, 0, 0, 0.92);
+
+    --mdc-chip-label-text-color: #ffffff;
+
+    --mdc-chip-with-avatar-avatar-shape-color: transparent;
+
+    border: 1px solid rgba(92, 255, 138, 0.45);
+
+    box-shadow:
+
+        inset 0 1px 0 rgba(255, 255, 255, 0.06),
+
+        0 0 12px var(--neon-green-glow);
+
+}
+
+.site-nav__row taxonomy-chip-widget .mat-mdc-standard-chip .mat-mdc-chip-action,
+.featured-category-chips taxonomy-chip-widget .mat-mdc-standard-chip .mat-mdc-chip-action {
+
+    --mdc-chip-label-text-color: inherit;
+
+}
+
+.site-nav__row taxonomy-chip-widget .mat-mdc-standard-chip:not(.mat-mdc-chip-highlighted) .taxonomy-chip-widget__link,
+.featured-category-chips taxonomy-chip-widget .mat-mdc-standard-chip:not(.mat-mdc-chip-highlighted) .taxonomy-chip-widget__link {
+
+    color: #ffffff;
+
+}
+
+.site-nav__row taxonomy-chip-widget .mat-mdc-standard-chip:not(.mat-mdc-chip-highlighted) .taxonomy-chip-widget__edit-glyph,
+.featured-category-chips taxonomy-chip-widget .mat-mdc-standard-chip:not(.mat-mdc-chip-highlighted) .taxonomy-chip-widget__edit-glyph {
+
+    color: #ffffff;
+
+}
+
+.site-nav__row taxonomy-chip-widget .mat-mdc-standard-chip.mat-mdc-chip-highlighted,
+.featured-category-chips taxonomy-chip-widget .mat-mdc-standard-chip.mat-mdc-chip-highlighted {
+
+    --mdc-chip-elevated-container-color: var(--neon-green);
+
+    --mdc-chip-label-text-color: #0a0f14;
+
+    --mdc-chip-outline-color: transparent;
+
+    border-color: transparent;
+
+    box-shadow: 0 0 14px rgba(74, 222, 128, 0.45);
+
+}
+
+.site-nav__row taxonomy-chip-widget .mat-mdc-standard-chip.mat-mdc-chip-highlighted .taxonomy-chip-widget__link,
+.featured-category-chips taxonomy-chip-widget .mat-mdc-standard-chip.mat-mdc-chip-highlighted .taxonomy-chip-widget__link {
+
+    color: #0a0f14;
+
+}
+
+.site-nav__row taxonomy-chip-widget .mat-mdc-standard-chip.mat-mdc-chip-highlighted .mat-icon,
+.featured-category-chips taxonomy-chip-widget .mat-mdc-standard-chip.mat-mdc-chip-highlighted .mat-icon {
+
+    color: #0a0f14;
+
+}
+
+.site-nav__row taxonomy-chip-widget .taxonomy-chip-widget__add,
+.featured-category-chips taxonomy-chip-widget .taxonomy-chip-widget__add {
+
+    align-self: center;
+
+    border-color: rgba(92, 255, 138, 0.55);
+
+    color: #ffffff;
+
+    background: rgba(0, 0, 0, 0.75);
 
 }
 
@@ -2273,6 +2461,37 @@ a.markdown-tile--link:hover {
 .featured-category-chips--sublevel {
 
     justify-content: flex-start;
+
+}
+
+/* Taxonomy chip widget: always left-align chip rows across all taxonomy pages */
+.site-nav__row taxonomy-chip-widget .taxonomy-chip-widget__set,
+.featured-category-chips taxonomy-chip-widget .taxonomy-chip-widget__set {
+
+    justify-content: flex-start;
+
+}
+
+/* Selected chips: force green fill + stronger glow (2x) */
+.site-nav__row taxonomy-chip-widget .taxonomy-chip-widget__chip.mat-mdc-chip-highlighted,
+.featured-category-chips taxonomy-chip-widget .taxonomy-chip-widget__chip.mat-mdc-chip-highlighted {
+
+    background: var(--neon-green);
+
+    color: #0a0f14;
+
+    border-color: transparent;
+
+    box-shadow: 0 0 28px rgba(74, 222, 128, 0.9);
+
+}
+
+.site-nav__row taxonomy-chip-widget .taxonomy-chip-widget__chip.mat-mdc-chip-highlighted .taxonomy-chip-widget__link-btn,
+.featured-category-chips taxonomy-chip-widget .taxonomy-chip-widget__chip.mat-mdc-chip-highlighted .taxonomy-chip-widget__link-btn,
+.site-nav__row taxonomy-chip-widget .taxonomy-chip-widget__chip.mat-mdc-chip-highlighted .mat-icon,
+.featured-category-chips taxonomy-chip-widget .taxonomy-chip-widget__chip.mat-mdc-chip-highlighted .mat-icon {
+
+    color: #0a0f14;
 
 }
 
@@ -2434,6 +2653,50 @@ a.markdown-tile--link:hover {
     background: var(--color-surface);
 
     border: 1px solid rgba(92, 255, 138, 0.45);
+
+}
+
+.featured-category-chip-input-wrap {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 0.35rem;
+
+    border: 1px solid rgba(56, 189, 248, 0.35);
+
+    border-radius: 999px;
+
+    background: rgba(0, 0, 0, 0.25);
+
+    padding: 0.12rem 0.45rem;
+
+}
+
+.featured-category-chip-input-wrap::before {
+
+    content: "+";
+
+    color: var(--color-text-muted);
+
+    font-weight: 700;
+
+    font-size: 0.95rem;
+
+    line-height: 1;
+
+}
+
+.featured-category-chip-input-wrap .featured-category-chip-input {
+
+    min-width: 8.5rem;
+
+    border: 0;
+
+    background: transparent;
+
+    padding: 0.2rem 0;
 
 }
 
@@ -4226,6 +4489,123 @@ body.template-searchresults h1 {
 
 /* --- Big tile row (560×560 panels, max two per row) + full-width split --- */
 
+.newspaper-grid {
+    margin: 0 auto 2rem;
+    max-width: 72rem;
+    padding: 0 1rem;
+}
+
+.newspaper-grid__toolbar {
+    display: flex;
+    gap: 0.5rem;
+    margin: 0 0 0.5rem;
+}
+
+.newspaper-grid__root {
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    min-height: 18rem;
+}
+
+.newspaper-grid__split {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    min-height: 16rem;
+}
+
+.newspaper-grid__split--vertical {
+    grid-template-columns: minmax(0, calc(var(--first-ratio) * 100%)) 0.65rem minmax(0, calc((1 - var(--first-ratio)) * 100%));
+}
+
+.newspaper-grid__split--horizontal {
+    grid-template-rows: minmax(0, calc(var(--first-ratio) * 100%)) 0.65rem minmax(0, calc((1 - var(--first-ratio)) * 100%));
+}
+
+.newspaper-grid__part {
+    min-width: 0;
+    min-height: 0;
+}
+
+.newspaper-grid__handle {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    border-radius: 0.35rem;
+    background: linear-gradient(180deg, rgba(148, 163, 184, 0.25) 0%, rgba(148, 163, 184, 0.08) 100%);
+}
+
+.newspaper-grid__split--vertical .newspaper-grid__handle {
+    cursor: col-resize;
+    border-left: 1px solid rgba(148, 163, 184, 0.4);
+    border-right: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+.newspaper-grid__split--horizontal .newspaper-grid__handle {
+    cursor: row-resize;
+    border-top: 1px solid rgba(148, 163, 184, 0.4);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+.newspaper-grid__handle:hover {
+    background: linear-gradient(180deg, rgba(92, 255, 138, 0.28) 0%, rgba(92, 255, 138, 0.08) 100%);
+}
+
+.newspaper-grid__leaf {
+    position: relative;
+    min-height: 6rem;
+}
+
+.newspaper-grid__leaf .markdown-tile {
+    height: 100%;
+}
+
+.newspaper-grid__leaf-toolbar {
+    position: absolute;
+    top: 0.35rem;
+    right: 0.35rem;
+    z-index: 2;
+}
+
+.newspaper-grid__remove,
+.newspaper-grid__add {
+    width: 1.55rem;
+    height: 1.55rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-border-subtle);
+    background: rgba(0, 0, 0, 0.38);
+    color: var(--color-text);
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.newspaper-grid__remove:hover {
+    border-color: rgba(248, 113, 113, 0.8);
+    background: rgba(248, 113, 113, 0.32);
+}
+
+.newspaper-grid__empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 8rem;
+    border: 1px dashed var(--color-border-subtle);
+    border-radius: 0.5rem;
+}
+
+.newspaper-grid__add:hover {
+    border-color: rgba(92, 255, 138, 0.8);
+    background: rgba(92, 255, 138, 0.2);
+}
+
+body.is-grid-resizing {
+    cursor: move;
+    user-select: none;
+}
+
 
 
 .big-tile-row-section {
@@ -4710,5 +5090,109 @@ body.is-auth-modal-open {
 
 .profile-card__row dd {
     margin: 0;
+}
+
+/* --- Angular Material dialogs: panelClass is on .cdk-overlay-pane (match site night + neon edge) --- */
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-dialog-container {
+    padding: 0;
+    border-radius: 14px;
+    border: 1px solid rgba(92, 255, 138, 0.52);
+    background: linear-gradient(
+        165deg,
+        rgba(17, 27, 46, 0.98) 0%,
+        rgba(7, 11, 18, 0.98) 55%,
+        rgba(5, 8, 14, 0.99) 100%
+    );
+    color: var(--neon-white);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.06),
+        0 0 22px var(--neon-green-glow),
+        0 0 56px rgba(74, 222, 128, 0.14);
+    --mat-sys-surface: rgba(12, 18, 32, 0.96);
+    --mat-sys-on-surface: var(--neon-white);
+    --mat-sys-on-surface-variant: rgba(248, 250, 252, 0.72);
+    --mat-sys-primary: var(--neon-green);
+    --mat-sys-on-primary: #0a0f14;
+    --mat-sys-outline: rgba(92, 255, 138, 0.38);
+    --mat-sys-outline-variant: rgba(148, 163, 184, 0.35);
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-dialog-container .mat-mdc-dialog-surface {
+    background: transparent;
+    box-shadow: none;
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-dialog-title {
+    padding: 1rem 1.25rem 0;
+    margin: 0;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--neon-white);
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-dialog-content {
+    padding: 0.75rem 1.25rem 1rem;
+    margin: 0;
+    color: rgba(248, 250, 252, 0.92);
+    max-height: min(70vh, 32rem);
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-dialog-actions {
+    padding: 0.5rem 1rem 1rem;
+    margin: 0;
+    gap: 0.5rem;
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-form-field {
+    --mat-form-field-outlined-outline-color: rgba(255, 255, 255, 0.22);
+    --mat-form-field-outlined-hover-outline-color: rgba(92, 255, 138, 0.45);
+    --mat-form-field-outlined-focus-outline-color: var(--neon-green);
+    --mat-form-field-outlined-label-text-color: rgba(255, 255, 255, 0.72);
+    --mat-form-field-filled-label-text-color: rgba(255, 255, 255, 0.72);
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-text-field-wrapper {
+    background: rgba(0, 0, 0, 0.35);
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-input-element {
+    caret-color: var(--neon-green);
+    color: var(--neon-white);
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-dialog-actions .mat-mdc-button:not(.mat-mdc-unelevated-button):not(.mat-mdc-outlined-button) {
+    color: rgba(248, 250, 252, 0.88);
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-outlined-button:not(:disabled) {
+    color: rgba(248, 250, 252, 0.92);
+    border-color: rgba(92, 255, 138, 0.42);
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-outlined-button:not(:disabled):hover {
+    border-color: rgba(92, 255, 138, 0.65);
+    box-shadow: 0 0 14px rgba(74, 222, 128, 0.22);
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-unelevated-button.mat-primary {
+    background-color: var(--neon-green);
+    color: #0a0f14;
+    font-weight: 600;
+    box-shadow: 0 0 18px var(--neon-green-glow);
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-unelevated-button.mat-primary:hover {
+    box-shadow: 0 0 22px rgba(74, 222, 128, 0.55);
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-tab-group {
+    --mat-tab-label-text-color: rgba(248, 250, 252, 0.65);
+    --mat-tab-active-label-text-color: var(--neon-green);
+    --mat-tab-active-indicator-color: var(--neon-green);
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .prompt-dialog__field {
+    width: 100%;
+    margin-top: 0.35rem;
 }
 

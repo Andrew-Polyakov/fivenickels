@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% load wagtailcore_tags wagtailimages_tags wagtailroutablepage_tags %}
+{% load wagtailcore_tags wagtailimages_tags wagtailroutablepage_tags newspaper_grid_tags %}
 
 {% block body_class %}template-tagged-content{% endblock %}
 
@@ -37,8 +37,11 @@
     <div class="home-stream tagged-content__body">
 
         {% for block in page.body %}
-
-            {% include_block block %}
+            {% if block.block_type == "newspaper_grid" %}
+                {% render_newspaper_grid block.value page.pk "home.TaggedContentPage" "body" forloop.counter0 %}
+            {% else %}
+                {% include_block block %}
+            {% endif %}
 
         {% endfor %}
 

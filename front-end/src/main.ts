@@ -1,6 +1,130 @@
-import { bootstrapApplication } from '@angular/platform-browser';
-import { appConfig } from './app/app.config';
-import { App } from './app/app';
+import { createApplication } from '@angular/platform-browser';
+import { provideAnimations } from '@angular/platform-browser/animations';
+import { createCustomElement } from '@angular/elements';
+import { importProvidersFrom } from '@angular/core';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 
-bootstrapApplication(App, appConfig)
+import { TaxonomyChipWidgetComponent } from './app/taxonomy-chip-widget.component';
+import { appMaterialDialogDefaults } from './app/dialog-defaults';
+import {
+  AuthDialogComponent,
+  ConfirmDialogComponent,
+  MessageDialogComponent,
+  PromptDialogComponent,
+  type PromptDialogData,
+} from './app/material-dialogs.component';
+
+declare global {
+  interface Window {
+    mountTaxonomyChipWidgets?: () => void;
+    showMaterialConfirm?: (message: string, title?: string) => Promise<boolean>;
+    showMaterialAlert?: (message: string, title?: string) => Promise<void>;
+    showMaterialPrompt?: (data: PromptDialogData) => Promise<string | undefined>;
+    showMaterialAuthDialog?: (initialTab: 'login' | 'signup') => void;
+  }
+}
+
+function mountTaxonomyChipWidgets(): void {
+  const hosts = document.querySelectorAll<HTMLElement>('[data-taxonomy-chip-widget]');
+  hosts.forEach((host) => {
+    if (host.getAttribute('data-taxonomy-chip-widget-bound') === '1') {
+      return;
+    }
+    host.setAttribute('data-taxonomy-chip-widget-bound', '1');
+    const el = document.createElement('taxonomy-chip-widget');
+    if (host.dataset['canEdit']) {
+      el.setAttribute('can-edit', host.dataset['canEdit']);
+    }
+    if (host.dataset['createUrl']) {
+      el.setAttribute('create-url', host.dataset['createUrl']);
+    }
+    if (host.dataset['deleteUrl']) {
+      el.setAttribute('delete-url', host.dataset['deleteUrl']);
+    }
+    if (host.dataset['parentId']) {
+      el.setAttribute('parent-id', host.dataset['parentId']);
+    }
+    if (host.dataset['createRoot']) {
+      el.setAttribute('create-root', host.dataset['createRoot']);
+    }
+    if (host.dataset['placeholder']) {
+      el.setAttribute('placeholder', host.dataset['placeholder']);
+    }
+    if (host.dataset['chipsJson']) {
+      el.setAttribute('chips-json', host.dataset['chipsJson']);
+    }
+    if (host.dataset['renameUrl']) {
+      el.setAttribute('rename-url', host.dataset['renameUrl']);
+    }
+    if (host.dataset['afterCreateVisit']) {
+      el.setAttribute('after-create-visit', host.dataset['afterCreateVisit']);
+    }
+    host.replaceChildren(el);
+  });
+}
+
+createApplication({
+  providers: [provideAnimations(), importProvidersFrom(MatDialogModule)],
+})
+  .then((appRef) => {
+    const dialog = appRef.injector.get(MatDialog);
+    const taxonomyElement = createCustomElement(TaxonomyChipWidgetComponent, {
+      injector: appRef.injector,
+    });
+    if (!customElements.get('taxonomy-chip-widget')) {
+      customElements.define('taxonomy-chip-widget', taxonomyElement);
+    }
+    window.mountTaxonomyChipWidgets = mountTaxonomyChipWidgets;
+    window.showMaterialConfirm = (message: string, title?: string) =>
+      new Promise<boolean>((resolve) => {
+        dialog
+          .open(ConfirmDialogComponent, {
+            ...appMaterialDialogDefaults(),
+            data: { message, title },
+          })
+          .afterClosed()
+          .subscribe((value) => resolve(Boolean(value)));
+      });
+    window.showMaterialAlert = (message: string, title?: string) =>
+      new Promise<void>((resolve) => {
+        dialog
+          .open(MessageDialogComponent, {
+            ...appMaterialDialogDefaults(),
+            data: { message, title },
+          })
+          .afterClosed()
+          .subscribe(() => resolve());
+      });
+    window.showMaterialPrompt = (data: PromptDialogData) =>
+      new Promise<string | undefined>((resolve) => {
+        dialog
+          .open(PromptDialogComponent, {
+            ...appMaterialDialogDefaults(),
+            data,
+            width: '360px',
+          })
+          .afterClosed()
+          .subscribe((value) => resolve(value ?? undefined));
+      });
+    window.showMaterialAuthDialog = (initialTab: 'login' | 'signup') => {
+      const body = document.body;
+      const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]') as HTMLInputElement | null;
+      const loginUrl = body?.getAttribute('data-auth-login-url') || '/auth/login/';
+      const signupUrl = body?.getAttribute('data-auth-signup-url') || '/auth/signup/';
+      const next = body?.getAttribute('data-auth-next') || window.location.pathname;
+      const csrfToken = csrfInput?.value || '';
+      dialog.open(AuthDialogComponent, {
+        ...appMaterialDialogDefaults(),
+        autoFocus: false,
+        data: {
+          loginUrl,
+          signupUrl,
+          next,
+          csrfToken,
+          initialTab,
+        },
+      });
+    };
+    mountTaxonomyChipWidgets();
+  })
   .catch((err) => console.error(err));

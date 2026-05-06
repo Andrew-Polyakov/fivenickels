@@ -1,0 +1,105 @@
+/* Global widget styles (Material theme from angular.json). Site overrides live in mysite.css when Wagtail loads it last. */
+
+/* Dark dialog + neon edge — panelClass sits on .cdk-overlay-pane */
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-dialog-container {
+  padding: 0;
+  border-radius: 14px;
+  border: 1px solid rgba(92, 255, 138, 0.52);
+  background: linear-gradient(
+    165deg,
+    rgba(17, 27, 46, 0.98) 0%,
+    rgba(7, 11, 18, 0.98) 55%,
+    rgba(5, 8, 14, 0.99) 100%
+  );
+  color: #f8fafc;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 22px rgba(74, 222, 128, 0.45),
+    0 0 56px rgba(74, 222, 128, 0.14);
+  --mat-sys-surface: rgba(12, 18, 32, 0.96);
+  --mat-sys-on-surface: #f8fafc;
+  --mat-sys-on-surface-variant: rgba(248, 250, 252, 0.72);
+  --mat-sys-primary: #4ade80;
+  --mat-sys-on-primary: #0a0f14;
+  --mat-sys-outline: rgba(92, 255, 138, 0.38);
+  --mat-sys-outline-variant: rgba(148, 163, 184, 0.35);
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-dialog-container .mat-mdc-dialog-surface {
+  background: transparent;
+  box-shadow: none;
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-dialog-title {
+  padding: 1rem 1.25rem 0;
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #f8fafc;
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-dialog-content {
+  padding: 0.75rem 1.25rem 1rem;
+  margin: 0;
+  color: rgba(248, 250, 252, 0.92);
+  max-height: min(70vh, 32rem);
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-dialog-actions {
+  padding: 0.5rem 1rem 1rem;
+  margin: 0;
+  gap: 0.5rem;
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-form-field {
+  --mat-form-field-outlined-outline-color: rgba(255, 255, 255, 0.22);
+  --mat-form-field-outlined-hover-outline-color: rgba(92, 255, 138, 0.45);
+  --mat-form-field-outlined-focus-outline-color: #4ade80;
+  --mat-form-field-outlined-label-text-color: rgba(255, 255, 255, 0.72);
+  --mat-form-field-filled-label-text-color: rgba(255, 255, 255, 0.72);
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-text-field-wrapper {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-input-element {
+  caret-color: #4ade80;
+  color: #f8fafc;
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-dialog-actions .mat-mdc-button:not(.mat-mdc-unelevated-button):not(.mat-mdc-outlined-button) {
+  color: rgba(248, 250, 252, 0.88);
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-outlined-button:not(:disabled) {
+  color: rgba(248, 250, 252, 0.92);
+  border-color: rgba(92, 255, 138, 0.42);
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-outlined-button:not(:disabled):hover {
+  border-color: rgba(92, 255, 138, 0.65);
+  box-shadow: 0 0 14px rgba(74, 222, 128, 0.22);
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-unelevated-button.mat-primary {
+  background-color: #4ade80;
+  color: #0a0f14;
+  font-weight: 600;
+  box-shadow: 0 0 18px rgba(74, 222, 128, 0.45);
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-unelevated-button.mat-primary:hover {
+  box-shadow: 0 0 22px rgba(74, 222, 128, 0.55);
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .mat-mdc-tab-group {
+  --mat-tab-label-text-color: rgba(248, 250, 252, 0.65);
+  --mat-tab-active-label-text-color: #4ade80;
+  --mat-tab-active-indicator-color: #4ade80;
+}
+
+.cdk-overlay-container .cdk-overlay-pane.app-material-dialog .prompt-dialog__field {
+  width: 100%;
+  margin-top: 0.35rem;
+}

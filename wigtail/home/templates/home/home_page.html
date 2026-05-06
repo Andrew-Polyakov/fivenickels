@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% load wagtailcore_tags %}
+{% load wagtailcore_tags newspaper_grid_tags %}
 
 
 
@@ -21,8 +21,11 @@
     {% for item in home_display_items %}
 
         {% if item.mode == "block" %}
-
-            {% include_block item.child %}
+            {% if item.child.block_type == "newspaper_grid" %}
+                {% render_newspaper_grid item.child.value page.pk "home.HomePage" "body" item.stream_index %}
+            {% else %}
+                {% include_block item.child %}
+            {% endif %}
 
         {% else %}
 

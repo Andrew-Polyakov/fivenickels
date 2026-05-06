@@ -209,12 +209,32 @@
         });
     }
 
+    function showMaterialAlert(message, title) {
+        if (window.showMaterialAlert && typeof window.showMaterialAlert === "function") {
+            return window.showMaterialAlert(message, title);
+        }
+        alert(message || "Request failed.");
+        return Promise.resolve();
+    }
+
+    function showMaterialConfirm(message, title) {
+        if (window.showMaterialConfirm && typeof window.showMaterialConfirm === "function") {
+            return window.showMaterialConfirm(message, title);
+        }
+        return Promise.resolve(window.confirm(message || "Are you sure?"));
+    }
+
     function refreshCurrentPage() {
-        if (window.Turbo && typeof window.Turbo.visit === "function") {
-            window.Turbo.visit(window.location.href, { action: "replace" });
+        if (!window.Turbo || typeof window.Turbo.visit !== "function") {
+            window.location.reload();
             return;
         }
-        window.location.reload();
+        var mainFrame = document.querySelector("turbo-frame#main");
+        if (mainFrame) {
+            window.Turbo.visit(window.location.href, { action: "replace", frame: "main" });
+            return;
+        }
+        window.Turbo.visit(window.location.href, { action: "replace" });
     }
 
     function initInlineChipsAdmin() {
@@ -224,6 +244,9 @@
                 return;
             }
             root.setAttribute("data-inline-chips-bound", "1");
+            if (root.querySelector("[data-taxonomy-chip-widget]")) {
+                return;
+            }
             if (root.getAttribute("data-can-edit") !== "1") {
                 return;
             }
@@ -254,66 +277,53 @@
                 }
             });
 
-            root.addEventListener("click", function (evt) {
-                var addBtn = evt.target.closest("[data-inline-chip-add]");
-                if (addBtn) {
-                    evt.preventDefault();
-                    var parentId = addBtn.getAttribute("data-parent-id");
-                    var shell = document.createElement("span");
-                    shell.className = "featured-category-chip-wrap featured-category-chip-wrap--editor";
-                    var input = document.createElement("input");
-                    input.type = "text";
-                    input.className = "featured-category-chip-input";
-                    input.placeholder = "New category";
-                    input.setAttribute("aria-label", "New category");
-                    shell.appendChild(input);
-                    addBtn.insertAdjacentElement("beforebegin", shell);
-                    input.focus();
-
-                    var finished = false;
-                    function closeEditor() {
-                        if (finished) {
-                            return;
-                        }
-                        finished = true;
-                        shell.remove();
-                    }
-
-                    input.addEventListener("keydown", function (keyEvt) {
-                        if (keyEvt.key === "Escape") {
-                            keyEvt.preventDefault();
-                            closeEditor();
-                            return;
-                        }
-                        if (keyEvt.key !== "Enter") {
-                            return;
-                        }
-                        keyEvt.preventDefault();
-                        var name = (input.value || "").trim();
-                        if (!name) {
-                            closeEditor();
-                            return;
-                        }
-                        input.disabled = true;
-                        postJson(createUrl, {
-                            name: name,
-                            parent_id: parentId || null,
-                        })
-                            .then(function () {
-                                refreshCurrentPage();
-                            })
-                            .catch(function (err) {
-                                input.disabled = false;
-                                alert(err.message || "Could not create category.");
-                                input.focus();
-                            });
-                    });
-                    input.addEventListener("blur", function () {
-                        window.setTimeout(closeEditor, 120);
-                    });
+            function bindChipInput(input) {
+                if (!input || input.getAttribute("data-inline-chip-input-bound") === "1") {
                     return;
                 }
+                input.setAttribute("data-inline-chip-input-bound", "1");
+                input.addEventListener("keydown", function (keyEvt) {
+                    if (keyEvt.key === "Escape") {
+                        keyEvt.preventDefault();
+                        input.value = "";
+                        input.blur();
+                        return;
+                    }
+                    if (
+                        keyEvt.key !== "Enter" &&
+                        keyEvt.key !== "," &&
+                        keyEvt.key !== "Tab"
+                    ) {
+                        return;
+                    }
+                    var name = (input.value || "").trim();
+                    if (!name) {
+                        if (keyEvt.key === "Enter" || keyEvt.key === ",") {
+                            keyEvt.preventDefault();
+                        }
+                        return;
+                    }
+                    keyEvt.preventDefault();
+                    input.disabled = true;
+                    postJson(createUrl, {
+                        name: name,
+                        parent_id: input.getAttribute("data-parent-id") || null,
+                    })
+                        .then(function () {
+                            refreshCurrentPage();
+                        })
+                        .catch(function (err) {
+                            input.disabled = false;
+                            showMaterialAlert(err.message || "Could not create category.");
+                            input.focus();
+                        });
+                });
+            }
 
+            var chipInputs = root.querySelectorAll("[data-inline-chip-input]");
+            chipInputs.forEach(bindChipInput);
+
+            root.addEventListener("click", function (evt) {
                 var deleteBtn = evt.target.closest("[data-inline-chip-delete]");
                 if (!deleteBtn) {
                     return;
@@ -323,18 +333,29 @@
                 if (!termId) {
                     return;
                 }
-                if (!window.confirm("Delete this category? This cannot be undone.")) {
-                    return;
-                }
-                postJson(deleteUrl, { term_id: termId })
-                    .then(function () {
-                        refreshCurrentPage();
-                    })
-                    .catch(function (err) {
-                        alert(err.message || "Could not delete category.");
-                    });
+                showMaterialConfirm("Delete this category? This cannot be undone.", "Delete category").then(function (ok) {
+                    if (!ok) {
+                        return;
+                    }
+                    postJson(deleteUrl, { term_id: termId })
+                        .then(function () {
+                            refreshCurrentPage();
+                        })
+                        .catch(function (err) {
+                            showMaterialAlert(err.message || "Could not delete category.");
+                        });
+                });
             });
         });
+    }
+
+    function initAngularTaxonomyWidgets() {
+        if (
+            window.mountTaxonomyChipWidgets &&
+            typeof window.mountTaxonomyChipWidgets === "function"
+        ) {
+            window.mountTaxonomyChipWidgets();
+        }
     }
 
     function initInlineTileTitleAdmin() {
@@ -394,17 +415,205 @@
                         title: nextTitle,
                     })
                         .then(function () {
+                            done = true;
+                            btn.textContent = nextTitle;
+                            input.remove();
+                            btn.hidden = false;
                             refreshCurrentPage();
                         })
                         .catch(function (err) {
                             input.disabled = false;
-                            alert(err.message || "Could not update title.");
+                            showMaterialAlert(err.message || "Could not update title.");
                             input.focus();
                         });
                 });
                 input.addEventListener("blur", function () {
-                    window.setTimeout(teardown, 120);
+                    window.setTimeout(function () {
+                        if (!input.disabled) {
+                            teardown();
+                        }
+                    }, 120);
                 });
+            });
+        });
+    }
+
+    function initNewspaperGridBootstrap() {
+        var btns = document.querySelectorAll("[data-grid-bootstrap-widgets]");
+        btns.forEach(function (btn) {
+            if (btn.getAttribute("data-grid-bootstrap-bound") === "1") {
+                return;
+            }
+            btn.setAttribute("data-grid-bootstrap-bound", "1");
+            btn.addEventListener("click", function (evt) {
+                evt.preventDefault();
+                var url = btn.getAttribute("data-bootstrap-url");
+                var pageId = btn.getAttribute("data-page-id");
+                var pageModel = btn.getAttribute("data-page-model") || "home.TaxonomyTerm";
+                if (!url || !pageId) {
+                    return;
+                }
+                btn.disabled = true;
+                postJson(url, {
+                    page_id: pageId,
+                    page_model: pageModel,
+                })
+                    .then(function () {
+                        refreshCurrentPage();
+                    })
+                    .catch(function (err) {
+                        btn.disabled = false;
+                        showMaterialAlert(err.message || "Could not add grid layout.");
+                    });
+            });
+        });
+    }
+
+    function initNewspaperGridEditor() {
+        var roots = document.querySelectorAll("[data-newspaper-grid]");
+        roots.forEach(function (root) {
+            if (root.getAttribute("data-newspaper-grid-bound") === "1") {
+                return;
+            }
+            root.setAttribute("data-newspaper-grid-bound", "1");
+            if (root.getAttribute("data-can-edit") !== "1") {
+                return;
+            }
+
+            var pageId = root.getAttribute("data-page-id");
+            var pageModel = root.getAttribute("data-page-model");
+            var streamField = root.getAttribute("data-stream-field");
+            var blockIndex = root.getAttribute("data-block-index");
+            var presetUrl = root.getAttribute("data-preset-url");
+            var addUrl = root.getAttribute("data-add-url");
+            var removeUrl = root.getAttribute("data-remove-url");
+            var resizeUrl = root.getAttribute("data-resize-url");
+
+            function basePayload() {
+                return {
+                    page_id: pageId,
+                    page_model: pageModel,
+                    stream_field: streamField,
+                    block_index: blockIndex,
+                };
+            }
+
+            root.addEventListener("click", function (evt) {
+                var presetBtn = evt.target.closest("[data-grid-preset]");
+                if (presetBtn && presetUrl) {
+                    evt.preventDefault();
+                    postJson(
+                        presetUrl,
+                        Object.assign(basePayload(), {
+                            preset: presetBtn.getAttribute("data-grid-preset"),
+                        })
+                    )
+                        .then(refreshCurrentPage)
+                        .catch(function (err) {
+                            showMaterialAlert(err.message || "Could not apply preset.");
+                        });
+                    return;
+                }
+
+                var addBtn = evt.target.closest("[data-grid-add]");
+                if (addBtn && addUrl) {
+                    evt.preventDefault();
+                    postJson(
+                        addUrl,
+                        Object.assign(basePayload(), {
+                            pane_id: addBtn.getAttribute("data-pane-id"),
+                        })
+                    )
+                        .then(refreshCurrentPage)
+                        .catch(function (err) {
+                            showMaterialAlert(err.message || "Could not add content.");
+                        });
+                    return;
+                }
+
+                var removeBtn = evt.target.closest("[data-grid-remove]");
+                if (removeBtn && removeUrl) {
+                    evt.preventDefault();
+                    showMaterialConfirm("Remove content from this segment?", "Remove content").then(function (ok) {
+                        if (!ok) {
+                            return;
+                        }
+                        postJson(
+                            removeUrl,
+                            Object.assign(basePayload(), {
+                                pane_id: removeBtn.getAttribute("data-pane-id"),
+                            })
+                        )
+                            .then(refreshCurrentPage)
+                            .catch(function (err) {
+                                showMaterialAlert(err.message || "Could not remove content.");
+                            });
+                        });
+                }
+            });
+
+            var activeDrag = null;
+            function onPointerMove(moveEvt) {
+                if (!activeDrag) {
+                    return;
+                }
+                var split = activeDrag.split;
+                var rect = split.getBoundingClientRect();
+                if (!rect.width || !rect.height) {
+                    return;
+                }
+                var ratio;
+                if (activeDrag.axis === "vertical") {
+                    ratio = (moveEvt.clientX - rect.left) / rect.width;
+                } else {
+                    ratio = (moveEvt.clientY - rect.top) / rect.height;
+                }
+                ratio = Math.max(0.2, Math.min(0.8, ratio));
+                split.style.setProperty("--first-ratio", String(ratio));
+                activeDrag.ratio = ratio;
+            }
+            function onPointerUp() {
+                if (!activeDrag) {
+                    return;
+                }
+                var done = activeDrag;
+                activeDrag = null;
+                document.body.classList.remove("is-grid-resizing");
+                if (!resizeUrl) {
+                    return;
+                }
+                postJson(
+                    resizeUrl,
+                    Object.assign(basePayload(), {
+                        split_id: done.splitId,
+                        ratio: done.ratio,
+                    })
+                ).catch(function (err) {
+                    showMaterialAlert(err.message || "Could not save resize.");
+                });
+                window.removeEventListener("pointermove", onPointerMove);
+                window.removeEventListener("pointerup", onPointerUp);
+            }
+
+            root.addEventListener("pointerdown", function (evt) {
+                var handle = evt.target.closest("[data-grid-handle]");
+                if (!handle) {
+                    return;
+                }
+                var split = handle.closest("[data-grid-split]");
+                if (!split) {
+                    return;
+                }
+                evt.preventDefault();
+                activeDrag = {
+                    split: split,
+                    splitId: split.getAttribute("data-split-id"),
+                    axis: split.getAttribute("data-axis"),
+                    ratio: parseFloat(getComputedStyle(split).getPropertyValue("--first-ratio")) || 0.5,
+                };
+                document.body.classList.add("is-grid-resizing");
+                window.addEventListener("pointermove", onPointerMove);
+                window.addEventListener("pointerup", onPointerUp);
             });
         });
     }
@@ -417,7 +626,10 @@
         initSectorScroll();
         initCarousels();
         initInlineChipsAdmin();
+        initAngularTaxonomyWidgets();
         initInlineTileTitleAdmin();
+        initNewspaperGridBootstrap();
+        initNewspaperGridEditor();
     }
 
     function handleTurboFrameLoad(e) {
@@ -605,12 +817,16 @@
             }
             hidePanel();
             if (window.Turbo && typeof window.Turbo.visit === "function") {
-                window.Turbo.visit(
+                var searchUrl =
                     searchPageUrl +
-                        (searchPageUrl.indexOf("?") >= 0 ? "&" : "?") +
-                        "query=" +
-                        encodeURIComponent(q)
-                );
+                    (searchPageUrl.indexOf("?") >= 0 ? "&" : "?") +
+                    "query=" +
+                    encodeURIComponent(q);
+                if (document.querySelector("turbo-frame#main")) {
+                    window.Turbo.visit(searchUrl, { frame: "main" });
+                } else {
+                    window.Turbo.visit(searchUrl);
+                }
             } else {
                 window.location.href =
                     searchPageUrl +
@@ -642,80 +858,33 @@
         if (isTurboPreview()) {
             return;
         }
-        var root = document.querySelector("[data-auth-modal-root]");
-        if (!root || root.getAttribute("data-auth-modal-bound") === "1") {
+        var openTargets = document.querySelectorAll("[data-auth-modal-open]");
+        if (!openTargets.length) {
             return;
         }
-        root.setAttribute("data-auth-modal-bound", "1");
-        var dialog = root.querySelector(".auth-modal__dialog");
-        var closeTargets = root.querySelectorAll("[data-auth-modal-close]");
-        var openTargets = document.querySelectorAll("[data-auth-modal-open]");
-        var tabTriggers = root.querySelectorAll("[data-auth-tab-trigger]");
-        var panes = root.querySelectorAll("[data-auth-pane]");
-        var defaultTab = "login";
-        var activeTab = defaultTab;
-
-        function setTab(tabName) {
-            activeTab = tabName === "signup" ? "signup" : "login";
-            tabTriggers.forEach(function (trigger) {
-                var isActive = trigger.getAttribute("data-auth-tab-trigger") === activeTab;
-                trigger.classList.toggle("is-active", isActive);
-                trigger.setAttribute("aria-selected", isActive ? "true" : "false");
-            });
-            panes.forEach(function (pane) {
-                pane.hidden = pane.getAttribute("data-auth-pane") !== activeTab;
-            });
+        if (document.body.getAttribute("data-auth-material-bound") === "1") {
+            return;
         }
+        document.body.setAttribute("data-auth-material-bound", "1");
 
-        function openModal(tabName) {
-            setTab(tabName || defaultTab);
-            root.hidden = false;
-            document.body.classList.add("is-auth-modal-open");
-            var firstInput = root.querySelector(
-                '[data-auth-pane="' + activeTab + '"] input:not([type="hidden"])'
-            );
-            if (firstInput) {
-                firstInput.focus();
-            }
-        }
-
-        function closeModal() {
-            root.hidden = true;
-            document.body.classList.remove("is-auth-modal-open");
-        }
-
-        closeTargets.forEach(function (target) {
-            target.addEventListener("click", closeModal);
-        });
+        var hasMaterialDialog =
+            window.showMaterialAuthDialog &&
+            typeof window.showMaterialAuthDialog === "function";
 
         openTargets.forEach(function (target) {
             target.addEventListener("click", function () {
-                openModal(target.getAttribute("data-auth-tab") || defaultTab);
+                var tab = target.getAttribute("data-auth-tab") === "signup" ? "signup" : "login";
+                if (hasMaterialDialog) {
+                    window.showMaterialAuthDialog(tab);
+                    return;
+                }
             });
-        });
-
-        tabTriggers.forEach(function (trigger) {
-            trigger.addEventListener("click", function () {
-                setTab(trigger.getAttribute("data-auth-tab-trigger") || defaultTab);
-            });
-        });
-
-        dialog.addEventListener("click", function (e) {
-            e.stopPropagation();
-        });
-
-        document.addEventListener("keydown", function (e) {
-            if (e.key === "Escape" && !root.hidden) {
-                closeModal();
-            }
         });
 
         var params = new URLSearchParams(window.location.search);
         var openFromUrl = params.get("auth");
-        if (openFromUrl === "login" || openFromUrl === "signup") {
-            openModal(openFromUrl);
-        } else {
-            setTab(defaultTab);
+        if (hasMaterialDialog && (openFromUrl === "login" || openFromUrl === "signup")) {
+            window.showMaterialAuthDialog(openFromUrl);
         }
     }
 
@@ -728,7 +897,10 @@
         initSiteSearchLive();
         initAuthModal();
         initInlineChipsAdmin();
+        initAngularTaxonomyWidgets();
         initInlineTileTitleAdmin();
+        initNewspaperGridBootstrap();
+        initNewspaperGridEditor();
     });
 
     document.addEventListener("turbo:load", function () {
@@ -740,7 +912,10 @@
         initSiteSearchLive();
         initAuthModal();
         initInlineChipsAdmin();
+        initAngularTaxonomyWidgets();
         initInlineTileTitleAdmin();
+        initNewspaperGridBootstrap();
+        initNewspaperGridEditor();
     });
 
     document.addEventListener("turbo:frame-load", handleTurboFrameLoad);

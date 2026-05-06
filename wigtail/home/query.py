@@ -17,7 +17,7 @@ def build_home_page_display_items(body_stream, sector_slug: str | None) -> list[
     when ``sector_slug`` is set (only tiles whose taxonomy matches; empty sections omitted).
     """
     items: list[dict] = []
-    for child in body_stream:
+    for idx, child in enumerate(body_stream):
         if sector_slug and child.block_type == "markdown_tiles":
             raw_tiles = child.value["tiles"]
             filtered = [
@@ -32,10 +32,11 @@ def build_home_page_display_items(body_stream, sector_slug: str | None) -> list[
                 {
                     "mode": "markdown_tiles",
                     "value": SimpleNamespace(tiles=filtered),
+                    "stream_index": idx,
                 }
             )
         else:
-            items.append({"mode": "block", "child": child})
+            items.append({"mode": "block", "child": child, "stream_index": idx})
     return items
 
 
@@ -112,7 +113,10 @@ def get_random_pages_for_section_prioritized(
 ):
     """
     Live public articles for a section: higher ``tile_priority`` first (blank = 10),
-    then random tie-break. Optionally exclude page ids (e.g. other quad cells).
+    then stable tie-break (newer publish first, then pk). Optionally exclude page ids.
+
+    Ordering is deterministic so newspaper-grid “random” panes and quad cells do not swap
+    articles on every full page load (which made inline title edits look like disappearing tiles).
     """
     from home.models import TaggedContentPage
 
@@ -121,7 +125,7 @@ def get_random_pages_for_section_prioritized(
         .public()
         .filter(section_term=section_term)
         .annotate(_effective_priority=Coalesce("tile_priority", Value(10)))
-        .order_by("-_effective_priority", "?")
+        .order_by("-_effective_priority", "-first_published_at", "pk")
     )
     if exclude_ids:
         qs = qs.exclude(pk__in=exclude_ids)

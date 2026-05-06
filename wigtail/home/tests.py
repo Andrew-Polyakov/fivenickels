@@ -421,6 +421,7 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         self.assertContains(r, "template-taxonomy-drilldown")
         self.assertContains(r, "featured-category-quad")
         self.assertContains(r, "energy-one")
+        self.assertContains(r, "site-nav__link--active", count=2)
         self.assertContains(r, 'data-turbo-frame="main"')
         self.assertNotContains(r, 'data-turbo="false"')
         r_frame = self.client.get(url, HTTP_TURBO_FRAME="site-nav")
@@ -816,6 +817,71 @@ class InlineEditingApiTests(WagtailPageTestCase):
         term = TaxonomyTerm.objects.get(slug="inline-energy-child")
         self.assertEqual(term.get_parent().pk, self.energy.pk)
 
+    def test_create_taxonomy_term_without_parent_defaults_to_market_news(self):
+        self.client.force_login(self.admin_user)
+        mnews = TaxonomyTerm.objects.get(slug="market-news")
+        response = self.client.post(
+            reverse("inline_create_taxonomy_term"),
+            data='{"name":"Top Row Inline Category","parent_id": null}',
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["parent_id"], mnews.pk)
+        term = TaxonomyTerm.objects.get(slug="top-row-inline-category")
+        self.assertEqual(term.get_parent().pk, mnews.pk)
+
+    def test_rename_taxonomy_term_requires_staff(self):
+        self.client.force_login(self.non_admin)
+        response = self.client.post(
+            reverse("inline_rename_taxonomy_term"),
+            data='{"term_id": %d, "name":"Hacked"}' % self.energy.pk,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 302)
+
+    def test_rename_taxonomy_term_updates_name_and_slug(self):
+        self.client.force_login(self.admin_user)
+        create = self.client.post(
+            reverse("inline_create_taxonomy_term"),
+            data='{"name":"Rename Me Please","parent_id": %d}' % self.energy.pk,
+            content_type="application/json",
+        )
+        self.assertEqual(create.status_code, 200)
+        term_id = create.json()["id"]
+        response = self.client.post(
+            reverse("inline_rename_taxonomy_term"),
+            data='{"term_id": %s, "name":"Renamed Label"}' % term_id,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        term = TaxonomyTerm.objects.get(pk=term_id)
+        self.assertEqual(term.name, "Renamed Label")
+        self.assertEqual(term.slug, "renamed-label")
+
+    def test_rename_taxonomy_term_avoids_slug_collision(self):
+        self.client.force_login(self.admin_user)
+        first = self.client.post(
+            reverse("inline_create_taxonomy_term"),
+            data='{"name":"Slug Twin A","parent_id": %d}' % self.energy.pk,
+            content_type="application/json",
+        )
+        second = self.client.post(
+            reverse("inline_create_taxonomy_term"),
+            data='{"name":"Slug Twin B","parent_id": %d}' % self.energy.pk,
+            content_type="application/json",
+        )
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(second.status_code, 200)
+        id_b = second.json()["id"]
+        response = self.client.post(
+            reverse("inline_rename_taxonomy_term"),
+            data='{"term_id": %s, "name":"Slug Twin A"}' % id_b,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        term = TaxonomyTerm.objects.get(pk=id_b)
+        self.assertEqual(term.slug, "slug-twin-a-2")
+
     def test_delete_taxonomy_term_blocks_used_terms(self):
         self.client.force_login(self.admin_user)
         page = TaggedContentPage(
@@ -869,5 +935,315 @@ class InlineEditingApiTests(WagtailPageTestCase):
         self.client.force_login(self.admin_user)
         response = self.client.get(self.homepage.url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "data-inline-chips")
-        self.assertContains(response, "data-inline-chip-delete")
+        self.assertContains(response, "data-taxonomy-chip-widget")
+        self.assertContains(response, 'data-can-edit="1"')
+        self.assertContains(response, "data-create-url")
+        self.assertContains(response, "data-delete-url")
+        self.assertContains(response, "data-rename-url")
+        self.assertContains(response, "data-after-create-visit=")
+
+    def _seed_taxonomy_grid_widget(self, slug="market-news"):
+        term = TaxonomyTerm.objects.get(slug=slug)
+        term.widgets = [
+            (
+                "newspaper_grid",
+                {
+                    "preset": "twin",
+                    "layout_json": "",
+                    "panes": [],
+                },
+            )
+        ]
+        term.save()
+        return term
+
+    def _seed_home_newspaper_grid(self):
+        self.homepage.body = [
+            (
+                "newspaper_grid",
+                {
+                    "preset": "twin",
+                    "layout_json": "",
+                    "panes": [],
+                },
+            )
+        ]
+        self.homepage.save_revision().publish()
+
+    def test_newspaper_grid_endpoints_require_staff(self):
+        self._seed_home_newspaper_grid()
+        self.client.force_login(self.non_admin)
+        response = self.client.post(
+            reverse("inline_newspaper_grid_preset"),
+            data='{"page_id": %d, "page_model":"home.HomePage", "stream_field":"body", "block_index":0, "preset":"quatro"}'
+            % self.homepage.pk,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 302)
+
+    def test_newspaper_grid_set_preset_persists_layout(self):
+        self._seed_home_newspaper_grid()
+        self.client.force_login(self.admin_user)
+        response = self.client.post(
+            reverse("inline_newspaper_grid_preset"),
+            data='{"page_id": %d, "page_model":"home.HomePage", "stream_field":"body", "block_index":0, "preset":"quatro"}'
+            % self.homepage.pk,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.homepage.refresh_from_db()
+        block = self.homepage.body.raw_data[0]
+        self.assertEqual(block["value"]["preset"], "quatro")
+        self.assertIn('"id": "left-split"', block["value"]["layout_json"])
+
+    def test_newspaper_grid_add_and_remove_pane_content(self):
+        self._seed_home_newspaper_grid()
+        self.client.force_login(self.admin_user)
+        add_response = self.client.post(
+            reverse("inline_newspaper_grid_add"),
+            data='{"page_id": %d, "page_model":"home.HomePage", "stream_field":"body", "block_index":0, "pane_id":"p1"}'
+            % self.homepage.pk,
+            content_type="application/json",
+        )
+        self.assertEqual(add_response.status_code, 200)
+        self.homepage.refresh_from_db()
+        panes = self.homepage.body.raw_data[0]["value"]["panes"]
+        self.assertEqual(len(panes), 1)
+        self.assertEqual(panes[0]["pane_id"], "p1")
+
+        remove_response = self.client.post(
+            reverse("inline_newspaper_grid_remove"),
+            data='{"page_id": %d, "page_model":"home.HomePage", "stream_field":"body", "block_index":0, "pane_id":"p1"}'
+            % self.homepage.pk,
+            content_type="application/json",
+        )
+        self.assertEqual(remove_response.status_code, 200)
+        self.homepage.refresh_from_db()
+        panes = self.homepage.body.raw_data[0]["value"]["panes"]
+        self.assertEqual(panes, [])
+
+    def test_newspaper_grid_add_on_taxonomy_pins_manual_page_and_renders(self):
+        from home.taxonomy import taxonomy_prefix_path
+
+        self.client.force_login(self.admin_user)
+        article = TaggedContentPage(
+            title="Grid Pin Unique XYZ",
+            slug="grid-pin-unique-xyz",
+            section_term=self.energy,
+            tile_preview="**pv**",
+        )
+        self.homepage.add_child(instance=article)
+        article.save_revision().publish()
+
+        self.energy.widgets = [
+            (
+                "newspaper_grid",
+                {"preset": "twin", "layout_json": "", "panes": []},
+            )
+        ]
+        self.energy.save()
+
+        add_response = self.client.post(
+            reverse("inline_newspaper_grid_add"),
+            data=(
+                '{"page_id": %d, "page_model":"home.TaxonomyTerm", "stream_field":"widgets", "block_index":0, "pane_id":"p1"}'
+                % self.energy.pk
+            ),
+            content_type="application/json",
+        )
+        self.assertEqual(add_response.status_code, 200)
+        self.energy.refresh_from_db()
+        panes = self.energy.widgets.raw_data[0]["value"]["panes"]
+        self.assertEqual(len(panes), 1)
+        art = panes[0]["article"]
+        self.assertEqual(art["mode"], "manual")
+        self.assertEqual(art["manual_page"], article.pk)
+
+        url = taxonomy_prefix_path(self.homepage) + "market-news/energy/"
+        page_response = self.client.get(url)
+        self.assertEqual(page_response.status_code, 200)
+        self.assertContains(page_response, "Grid Pin Unique XYZ")
+
+    def test_inline_tile_title_edit_keeps_tile_in_newspaper_grid(self):
+        from home.taxonomy import taxonomy_prefix_path
+
+        self.client.force_login(self.admin_user)
+        article = TaggedContentPage(
+            title="Tile Rename Alpha",
+            slug="tile-rename-alpha",
+            section_term=self.energy,
+            tile_preview="**old**",
+            tile_priority=10,
+        )
+        self.homepage.add_child(instance=article)
+        article.save_revision().publish()
+
+        other = TaggedContentPage(
+            title="Tile Rename Beta",
+            slug="tile-rename-beta",
+            section_term=self.energy,
+            tile_preview="**beta**",
+            tile_priority=3,
+        )
+        self.homepage.add_child(instance=other)
+        other.save_revision().publish()
+
+        self.energy.widgets = [
+            (
+                "newspaper_grid",
+                {"preset": "twin", "layout_json": "", "panes": []},
+            )
+        ]
+        self.energy.save()
+
+        r_add = self.client.post(
+            reverse("inline_newspaper_grid_add"),
+            data=(
+                '{"page_id": %d, "page_model":"home.TaxonomyTerm", "stream_field":"widgets", "block_index":0, "pane_id":"p1"}'
+                % self.energy.pk
+            ),
+            content_type="application/json",
+        )
+        self.assertEqual(r_add.status_code, 200)
+
+        url = taxonomy_prefix_path(self.homepage) + "market-news/energy/"
+        r0 = self.client.get(url)
+        self.assertContains(r0, "Tile Rename Alpha")
+        self.assertContains(r0, 'data-page-id="%d"' % article.pk)
+
+        r_rename = self.client.post(
+            reverse("inline_update_tile_title"),
+            data='{"page_id": %d, "title":"Tile Rename Alpha Updated"}' % article.pk,
+            content_type="application/json",
+        )
+        self.assertEqual(r_rename.status_code, 200)
+
+        r1 = self.client.get(url)
+        self.assertContains(r1, "Tile Rename Alpha Updated")
+        self.assertContains(r1, 'data-page-id="%d"' % article.pk)
+
+    def test_newspaper_grid_resize_updates_ratio(self):
+        self._seed_home_newspaper_grid()
+        self.client.force_login(self.admin_user)
+        response = self.client.post(
+            reverse("inline_newspaper_grid_resize"),
+            data='{"page_id": %d, "page_model":"home.HomePage", "stream_field":"body", "block_index":0, "split_id":"root", "ratio":0.73}'
+            % self.homepage.pk,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.homepage.refresh_from_db()
+        layout_json = self.homepage.body.raw_data[0]["value"]["layout_json"]
+        self.assertIn('"ratio": 0.73', layout_json)
+
+    def test_taxonomy_root_renders_newspaper_grid_when_configured(self):
+        self._seed_taxonomy_grid_widget("market-news")
+        url = reverse("wagtail_serve", args=["_taxonomy/"])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "data-newspaper-grid")
+        self.assertContains(response, 'data-page-model="home.TaxonomyTerm"')
+
+    def test_taxonomy_root_staff_editable_nonstaff_readonly(self):
+        self._seed_taxonomy_grid_widget("market-news")
+        url = reverse("wagtail_serve", args=["_taxonomy/"])
+        self.client.force_login(self.admin_user)
+        staff_response = self.client.get(url)
+        self.assertEqual(staff_response.status_code, 200)
+        self.assertContains(staff_response, 'data-can-edit="1"')
+        self.assertContains(staff_response, "data-grid-preset")
+
+        self.client.force_login(self.non_admin)
+        user_response = self.client.get(url)
+        self.assertEqual(user_response.status_code, 200)
+        self.assertContains(user_response, 'data-can-edit="0"')
+        self.assertNotContains(user_response, "data-grid-preset")
+
+    def test_taxonomy_drilldown_renders_newspaper_grid_when_configured(self):
+        self._seed_taxonomy_grid_widget("market-news")
+        url = reverse("wagtail_serve", args=["_taxonomy/market-news/"])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "data-newspaper-grid")
+        self.assertContains(response, 'data-page-model="home.TaxonomyTerm"')
+
+    def test_taxonomy_drilldown_market_news_resolves_when_not_tree_root(self):
+        from home.taxonomy import taxonomy_prefix_path
+
+        mnews = TaxonomyTerm.objects.get(slug="market-news")
+        opinions = TaxonomyTerm.objects.get(slug="opinions")
+        self.assertTrue(mnews.is_root())
+        mnews.move(opinions, pos="sorted-child")
+        mnews.refresh_from_db()
+        self.assertFalse(mnews.is_root())
+
+        url = taxonomy_prefix_path(self.homepage) + "market-news/"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_taxonomy_drilldown_staff_sees_bootstrap_when_no_newspaper_grid(self):
+        from home.taxonomy import taxonomy_prefix_path
+
+        financials = TaxonomyTerm.objects.get(slug="financials")
+        financials.widgets = []
+        financials.save()
+        fin_page = TaggedContentPage(
+            title="Bootstrap drill fin",
+            slug="bootstrap-drill-fin",
+            section_term=financials,
+            tile_preview="x",
+        )
+        self.homepage.add_child(instance=fin_page)
+        fin_page.save_revision().publish()
+        self.assertFalse(financials.has_newspaper_grid_widget)
+        self.client.force_login(self.admin_user)
+        url = taxonomy_prefix_path(self.homepage) + "market-news/financials/"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "data-grid-bootstrap-widgets")
+
+    def test_taxonomy_drilldown_anonymous_no_bootstrap_strip(self):
+        from home.taxonomy import taxonomy_prefix_path
+
+        financials = TaxonomyTerm.objects.get(slug="financials")
+        financials.widgets = []
+        financials.save()
+        fin_page = TaggedContentPage(
+            title="Bootstrap drill fin anon",
+            slug="bootstrap-drill-fin-anon",
+            section_term=financials,
+            tile_preview="y",
+        )
+        self.homepage.add_child(instance=fin_page)
+        fin_page.save_revision().publish()
+        url = taxonomy_prefix_path(self.homepage) + "market-news/financials/"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "data-grid-bootstrap-widgets")
+
+    def test_newspaper_grid_bootstrap_taxonomy_requires_staff(self):
+        financials = TaxonomyTerm.objects.get(slug="financials")
+        financials.widgets = []
+        financials.save()
+        self.client.force_login(self.non_admin)
+        response = self.client.post(
+            reverse("inline_newspaper_grid_bootstrap_taxonomy"),
+            data='{"page_id": %d, "page_model": "home.TaxonomyTerm"}' % financials.pk,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 302)
+
+    def test_newspaper_grid_bootstrap_taxonomy_appends_block(self):
+        financials = TaxonomyTerm.objects.get(slug="financials")
+        financials.widgets = []
+        financials.save()
+        self.client.force_login(self.admin_user)
+        response = self.client.post(
+            reverse("inline_newspaper_grid_bootstrap_taxonomy"),
+            data='{"page_id": %d, "page_model": "home.TaxonomyTerm"}' % financials.pk,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        financials.refresh_from_db()
+        self.assertEqual(len(financials.widgets.raw_data), 1)
+        self.assertEqual(financials.widgets.raw_data[0]["type"], "newspaper_grid")

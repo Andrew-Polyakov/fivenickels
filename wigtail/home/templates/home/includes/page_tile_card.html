@@ -1,45 +1,58 @@
 {% load wagtailcore_tags wagtailimages_tags wagtailmarkdown %}
 
-<a href="{% pageurl page %}" class="markdown-tile markdown-tile--link"{% if page.section_term %} data-taxonomy="{{ page.section_term.slug }}"{% endif %}>
-
+{% if request.user.is_authenticated and request.user.is_staff or request.user.is_superuser %}
+<div
+    class="markdown-tile"
+    {% if page.section_term %} data-taxonomy="{{ page.section_term.slug }}"{% endif %}
+>
     {% if page.section_term %}
-
         <span class="markdown-tile__taxonomy" data-taxonomy-slug="{{ page.section_term.slug }}">{{ page.section_term.name }}</span>
-
     {% endif %}
 
     <h3 class="markdown-tile__title">
-        {% if request.user.is_authenticated and request.user.is_staff or request.user.is_superuser %}
-            <button
-                type="button"
-                class="markdown-tile__title-edit"
-                data-inline-tile-title
-                data-page-id="{{ page.pk }}"
-                data-update-url="{% url 'inline_update_tile_title' %}"
-            >{{ page.title }}</button>
-        {% else %}
-            {{ page.title }}
+        <button
+            type="button"
+            class="markdown-tile__title-edit"
+            data-inline-tile-title
+            data-page-id="{{ page.pk }}"
+            data-update-url="{% url 'inline_update_tile_title' %}"
+        >{{ page.title }}</button>
+    </h3>
+
+    <a href="{% pageurl page %}" class="markdown-tile--link markdown-tile__main-link">
+        {% if page.hero_image %}
+            <div class="markdown-tile__media">
+                {% image page.hero_image width-480 class="markdown-tile__image" %}
+            </div>
         {% endif %}
+
+        {% with preview_md=page.listing_preview_markdown %}
+            {% if preview_md %}
+                <div class="markdown-tile__body">{{ preview_md|markdown }}</div>
+            {% endif %}
+        {% endwith %}
+    </a>
+</div>
+{% else %}
+<a href="{% pageurl page %}" class="markdown-tile markdown-tile--link"{% if page.section_term %} data-taxonomy="{{ page.section_term.slug }}"{% endif %}>
+    {% if page.section_term %}
+        <span class="markdown-tile__taxonomy" data-taxonomy-slug="{{ page.section_term.slug }}">{{ page.section_term.name }}</span>
+    {% endif %}
+
+    <h3 class="markdown-tile__title">
+        {{ page.title }}
     </h3>
 
     {% if page.hero_image %}
-
         <div class="markdown-tile__media">
-
             {% image page.hero_image width-480 class="markdown-tile__image" %}
-
         </div>
-
     {% endif %}
 
     {% with preview_md=page.listing_preview_markdown %}
-
         {% if preview_md %}
-
             <div class="markdown-tile__body">{{ preview_md|markdown }}</div>
-
         {% endif %}
-
     {% endwith %}
-
 </a>
+{% endif %}

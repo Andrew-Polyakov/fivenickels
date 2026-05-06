@@ -29,17 +29,34 @@
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
 
-        {# Global stylesheets #}
+        {# Global stylesheets: Angular Material theme first, then site (dialog + chips match night theme). #}
+        <link rel="stylesheet" type="text/css" href="{% static 'angular-taxonomy-chip-widget/browser/styles.css' %}">
         <link rel="stylesheet" type="text/css" href="{% static 'css/mysite.css' %}">
 
         {% block extra_css %}
         {# Override this in templates to add extra stylesheets #}
         {% endblock %}
+
+        {# Turbo + app bundles in head with defer: avoids re-running on every body swap and clears the body-script warning. #}
+        <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8.0.12/dist/turbo.es2017-umd.js" defer></script>
+        <script src="{% static 'angular-taxonomy-chip-widget/browser/main.js' %}" defer></script>
+        <script src="{% static 'js/mysite.js' %}" defer></script>
+        {% block extra_head_js %}
+        {# Optional: page-specific head scripts (defer recommended) #}
+        {% endblock %}
     </head>
 
-    <body class="{% block body_class %}{% endblock %}"{% if request.in_preview_panel %} data-turbo-preview="1"{% endif %}>
+    <body
+        class="{% block body_class %}{% endblock %}"
+        data-turbo-suppress-warning
+        data-auth-login-url="{% url 'popup_login' %}"
+        data-auth-signup-url="{% url 'popup_signup' %}"
+        data-auth-next="{{ request.get_full_path|escape }}"
+        {% if request.in_preview_panel %}data-turbo-preview="1"{% endif %}
+    >
         {% wagtail_site as current_site %}
         {% block site_header %}
         <header
@@ -156,15 +173,18 @@
                     </div>
                 </div>
 
+                {# Outside #main; data-turbo-permanent keeps this node across full-page Turbo visits (avoids re-running userbar.js / duplicate customElements.define). #}
+                {% if not request.META.HTTP_TURBO_FRAME %}
+                <div id="wagtail-userbar-mount" data-turbo-permanent>
+                    {% wagtailuserbar %}
+                </div>
+                {% endif %}
                 {% if not request.in_preview_panel %}
                 <turbo-frame id="main" data-turbo-action="advance">
                 {% endif %}
-                {% if not request.META.HTTP_TURBO_FRAME %}
-                {% wagtailuserbar %}
-                {% endif %}
                 <div class="site-shell">
                 <div class="site-content">
-                {% if header_home and site_nav_rows %}
+                {% if header_home %}
                     {% include "home/taxonomy/site_nav_frame.html" with home_page=site_nav_home_page nav_rows=site_nav_rows trail_slugs=site_nav_trail_slugs active_node=site_nav_active_node %}
                 {% endif %}
                 {% block content %}{% endblock %}
@@ -181,82 +201,8 @@
         {% include "components/site_footer.html" %}
         {% endblock site_footer %}
 
-        {% if not request.user.is_authenticated %}
-        <div class="auth-modal" data-auth-modal-root hidden>
-            <div class="auth-modal__backdrop" data-auth-modal-close></div>
-            <section
-                class="auth-modal__dialog"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="auth-modal-title"
-            >
-                <button
-                    type="button"
-                    class="auth-modal__close btn btn--icon"
-                    aria-label="Close sign-in dialog"
-                    data-auth-modal-close
-                >
-                    <span class="material-symbols-outlined" aria-hidden="true">close</span>
-                </button>
-                <h2 id="auth-modal-title" class="auth-modal__title">Welcome</h2>
-                <p class="auth-modal__subtitle">Sign in or create an account to access your profile.</p>
-
-                <div class="auth-modal__tabs" role="tablist" aria-label="Authentication tabs">
-                    <button type="button" class="auth-modal__tab" data-auth-tab-trigger="login" role="tab" aria-selected="true">
-                        Sign in
-                    </button>
-                    <button type="button" class="auth-modal__tab" data-auth-tab-trigger="signup" role="tab" aria-selected="false">
-                        Sign up
-                    </button>
-                </div>
-
-                <div class="auth-modal__messages">
-                    {% for message in messages %}
-                        {% if "auth-login" in message.tags or "auth-signup" in message.tags %}
-                        <p class="auth-modal__error">{{ message }}</p>
-                        {% endif %}
-                    {% endfor %}
-                </div>
-
-                <div class="auth-modal__panes">
-                    <section class="auth-modal__pane" data-auth-pane="login" role="tabpanel">
-                        <form method="post" action="{% url 'popup_login' %}" class="auth-modal__form" data-turbo-frame="_top">
-                            {% csrf_token %}
-                            <input type="hidden" name="next" value="{{ request.get_full_path }}" />
-                            <label class="auth-modal__label" for="auth-login-identity">Username or email</label>
-                            <input id="auth-login-identity" class="auth-modal__input" type="text" name="username_or_email" required autocomplete="username" />
-                            <label class="auth-modal__label" for="auth-login-password">Password</label>
-                            <input id="auth-login-password" class="auth-modal__input" type="password" name="password" required autocomplete="current-password" />
-                            <button type="submit" class="btn btn--raised auth-modal__submit">Sign in</button>
-                        </form>
-                    </section>
-
-                    <section class="auth-modal__pane" data-auth-pane="signup" role="tabpanel" hidden>
-                        <form method="post" action="{% url 'popup_signup' %}" class="auth-modal__form" data-turbo-frame="_top">
-                            {% csrf_token %}
-                            <input type="hidden" name="next" value="{{ request.get_full_path }}" />
-                            <label class="auth-modal__label" for="auth-signup-username">Username</label>
-                            <input id="auth-signup-username" class="auth-modal__input" type="text" name="username" required autocomplete="username" />
-                            <label class="auth-modal__label" for="auth-signup-email">Email</label>
-                            <input id="auth-signup-email" class="auth-modal__input" type="email" name="email" required autocomplete="email" />
-                            <label class="auth-modal__label" for="auth-signup-password1">Password</label>
-                            <input id="auth-signup-password1" class="auth-modal__input" type="password" name="password1" required autocomplete="new-password" />
-                            <label class="auth-modal__label" for="auth-signup-password2">Confirm password</label>
-                            <input id="auth-signup-password2" class="auth-modal__input" type="password" name="password2" required autocomplete="new-password" />
-                            <button type="submit" class="btn btn--raised auth-modal__submit">Create account</button>
-                        </form>
-                    </section>
-                </div>
-            </section>
-        </div>
-        {% endif %}
-
-        {# Global javascript #}
-        <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8.0.12/dist/turbo.es2017-umd.js" defer></script>
-        <script type="text/javascript" src="{% static 'js/mysite.js' %}" defer></script>
-
         {% block extra_js %}
-        {# Override this in templates to add extra javascript #}
+        {# Override for body-bottom scripts only when necessary (prefer extra_head_js + defer). #}
         {% endblock %}
     </body>
 </html>

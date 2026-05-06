@@ -1,0 +1,36 @@
+{% load wagtailcore_tags %}
+{% if node.kind == "split" %}
+    <div
+        class="newspaper-grid__split newspaper-grid__split--{{ node.axis }}"
+        style="--first-ratio: {{ node.ratio }};"
+        data-grid-split
+        data-split-id="{{ node.split_id }}"
+        data-axis="{{ node.axis }}"
+    >
+        <div class="newspaper-grid__part newspaper-grid__part--first">
+            {% include "home/blocks/newspaper_grid_node.html" with node=node.first only %}
+        </div>
+        <button type="button" class="newspaper-grid__handle" data-grid-handle aria-label="Resize split"></button>
+        <div class="newspaper-grid__part newspaper-grid__part--second">
+            {% include "home/blocks/newspaper_grid_node.html" with node=node.second only %}
+        </div>
+    </div>
+{% else %}
+    <div class="newspaper-grid__leaf" data-pane-id="{{ node.pane_id }}">
+        {% if node.state.kind == "article" and node.state.tile_page %}
+            <div class="newspaper-grid__leaf-toolbar">
+                <button type="button" class="newspaper-grid__remove" data-grid-remove data-pane-id="{{ node.pane_id }}" aria-label="Remove content">-</button>
+            </div>
+            {% include "home/includes/page_tile_card.html" with page=node.state.tile_page only %}
+        {% elif node.state.kind == "rich" and node.state.rich %}
+            <div class="newspaper-grid__leaf-toolbar">
+                <button type="button" class="newspaper-grid__remove" data-grid-remove data-pane-id="{{ node.pane_id }}" aria-label="Remove content">-</button>
+            </div>
+            {% include "home/blocks/rich_split_tile.html" with value=node.state.rich only %}
+        {% else %}
+            <div class="newspaper-grid__empty">
+                <button type="button" class="newspaper-grid__add" data-grid-add data-pane-id="{{ node.pane_id }}" aria-label="Add content">+</button>
+            </div>
+        {% endif %}
+    </div>
+{% endif %}
