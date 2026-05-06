@@ -409,6 +409,13 @@ class HomePage(RoutablePageMixin, Page):
 
         trail = ctx["trail"]
         active_node = ctx["active_node"]
+        bc_list = taxonomy_breadcrumb_items(self, trail)
+        breadcrumb_payload = []
+        for i, row in enumerate(bc_list):
+            entry = {"label": row["term"].name}
+            if i < len(bc_list) - 1:
+                entry["href"] = row["url"]
+            breadcrumb_payload.append(entry)
         return self.render(
             request,
             template="home/taxonomy/taxonomy_drilldown_page.html",
@@ -416,7 +423,7 @@ class HomePage(RoutablePageMixin, Page):
                 "taxonomy_trail": trail,
                 "taxonomy_active_node": active_node,
                 "taxonomy_prefix": ctx["taxonomy_prefix"],
-                "taxonomy_breadcrumbs": taxonomy_breadcrumb_items(self, trail),
+                "taxonomy_breadcrumbs_payload": breadcrumb_payload,
             },
         )
 

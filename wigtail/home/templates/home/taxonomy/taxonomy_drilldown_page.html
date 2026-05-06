@@ -8,46 +8,45 @@
 
 {% block body_class %}template-taxonomy-drilldown{% endblock %}
 
+{% block breadcrumbs_top %}
+    {{ taxonomy_breadcrumbs_payload|json_script:"taxonomy-breadcrumbs-payload" }}
+    <div
+        class="taxonomy-drilldown__breadcrumb taxonomy-drilldown__breadcrumb--top"
+        data-shadcn-breadcrumb
+        data-breadcrumb-json-id="taxonomy-breadcrumbs-payload"
+    ></div>
+{% endblock %}
+
 {% block content %}
 
 <div class="taxonomy-drilldown">
 
-    <nav class="taxonomy-drilldown__breadcrumb" aria-label="Breadcrumb">
-        <ol class="taxonomy-drilldown__breadcrumb-list">
-            {% for item in taxonomy_breadcrumbs %}
-                <li class="taxonomy-drilldown__breadcrumb-item">
-                    {% if forloop.last %}
-                        <span class="taxonomy-drilldown__crumb taxonomy-drilldown__crumb--current" aria-current="page">{{ item.term.name }}</span>
-                    {% else %}
-                        <a class="taxonomy-drilldown__crumb" href="{{ item.url }}">{{ item.term.name }}</a>
-                    {% endif %}
-                </li>
-            {% endfor %}
-        </ol>
-    </nav>
+    <div class="scn-content-outline taxonomy-drilldown__outline">
+        <h1 class="taxonomy-drilldown__title">{{ taxonomy_active_node.name }}</h1>
 
-    <h1 class="taxonomy-drilldown__title">{{ taxonomy_active_node.name }}</h1>
-
-    {% if taxonomy_active_node.widgets %}
-        <div class="home-stream taxonomy-drilldown__widgets">
-            {% render_main_site_stream taxonomy_active_node.widgets %}
+        <div class="home-stream taxonomy-drilldown__widgets" data-taxonomy-master-pane>
+            {% if taxonomy_active_node.widgets %}
+                {% render_main_site_stream taxonomy_active_node.widgets %}
+            {% else %}
+                <div
+                    class="shadcn-card-layout-root"
+                    data-shadcn-card-layout
+                    data-master-pane-enabled="1"
+                    data-layout-json-id="taxonomy-master-empty-layout"
+                ></div>
+                <script id="taxonomy-master-empty-layout" type="application/json">{"rows":[]}</script>
+            {% endif %}
         </div>
-    {% endif %}
-
-    <nav class="taxonomy-drilldown__breadcrumb taxonomy-drilldown__breadcrumb--bottom" aria-label="Breadcrumb">
-        <ol class="taxonomy-drilldown__breadcrumb-list">
-            {% for item in taxonomy_breadcrumbs %}
-                <li class="taxonomy-drilldown__breadcrumb-item">
-                    {% if forloop.last %}
-                        <span class="taxonomy-drilldown__crumb taxonomy-drilldown__crumb--current" aria-current="page">{{ item.term.name }}</span>
-                    {% else %}
-                        <a class="taxonomy-drilldown__crumb" href="{{ item.url }}">{{ item.term.name }}</a>
-                    {% endif %}
-                </li>
-            {% endfor %}
-        </ol>
-    </nav>
+    </div>
 
 </div>
 
 {% endblock content %}
+
+{% block breadcrumbs_bottom %}
+    <div
+        class="taxonomy-drilldown__breadcrumb taxonomy-drilldown__breadcrumb--bottom"
+        data-shadcn-breadcrumb
+        data-breadcrumb-json-id="taxonomy-breadcrumbs-payload"
+    ></div>
+{% endblock %}

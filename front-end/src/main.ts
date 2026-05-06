@@ -7,6 +7,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { TaxonomyChipWidgetComponent } from './app/taxonomy-chip-widget.component';
 import { appMaterialDialogDefaults } from './app/dialog-defaults';
 import { mountShadcnAuthDialogBridge, type AuthTab } from './app/auth-dialog-shadcn';
+import { mountShadcnBreadcrumbs } from './app/shadcn-breadcrumb';
 import { mountShadcnArticleCards, mountShadcnCardLayouts } from './app/shadcn-card-layout';
 import {
   ConfirmDialogComponent,
@@ -24,6 +25,7 @@ declare global {
     showMaterialAuthDialog?: (initialTab: 'login' | 'signup') => void;
     mountShadcnCardLayouts?: () => void;
     mountShadcnArticleCards?: () => void;
+    mountShadcnBreadcrumbs?: () => void;
   }
 }
 
@@ -81,6 +83,7 @@ createApplication({
     window.mountTaxonomyChipWidgets = mountTaxonomyChipWidgets;
     window.mountShadcnCardLayouts = mountShadcnCardLayouts;
     window.mountShadcnArticleCards = mountShadcnArticleCards;
+    window.mountShadcnBreadcrumbs = mountShadcnBreadcrumbs;
     window.showMaterialConfirm = (message: string, title?: string) =>
       new Promise<boolean>((resolve) => {
         dialog
@@ -118,5 +121,6 @@ createApplication({
     mountTaxonomyChipWidgets();
     mountShadcnCardLayouts();
     mountShadcnArticleCards();
+    mountShadcnBreadcrumbs();
   })
   .catch((err) => console.error(err));

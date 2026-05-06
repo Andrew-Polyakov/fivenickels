@@ -365,6 +365,9 @@
         if (window.mountShadcnArticleCards && typeof window.mountShadcnArticleCards === "function") {
             window.mountShadcnArticleCards();
         }
+        if (window.mountShadcnBreadcrumbs && typeof window.mountShadcnBreadcrumbs === "function") {
+            window.mountShadcnBreadcrumbs();
+        }
     }
 
     function initInlineTileTitleAdmin() {
@@ -491,7 +494,15 @@
     }
 
     function handleTurboFrameLoad(e) {
-        if (!e.target || e.target.id !== "main") {
+        if (!e.target || !e.target.id) {
+            return;
+        }
+        if (e.target.id === "site-nav") {
+            initInlineChipsAdmin();
+            initAngularTaxonomyWidgets();
+            return;
+        }
+        if (e.target.id !== "main") {
             return;
         }
         var fr = e.detail && e.detail.fetchResponse;

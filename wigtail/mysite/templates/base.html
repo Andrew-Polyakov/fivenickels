@@ -42,7 +42,8 @@
 
         {# Turbo + app bundles in head with defer: avoids re-running on every body swap and clears the body-script warning. #}
         <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8.0.12/dist/turbo.es2017-umd.js" defer></script>
-        <script src="{% static 'angular-taxonomy-chip-widget/browser/main.js' %}" defer></script>
+        {# Angular application build outputs ES modules; type="module" is required. Use `ng build --configuration widget` for stable main.js/styles.css names. #}
+        <script type="module" src="{% static 'angular-taxonomy-chip-widget/browser/main.js' %}"></script>
         <script src="{% static 'js/mysite.js' %}" defer></script>
         {% block extra_head_js %}
         {# Optional: page-specific head scripts (defer recommended) #}
@@ -187,7 +188,9 @@
                 {% if header_home %}
                     {% include "home/taxonomy/site_nav_frame.html" with home_page=site_nav_home_page nav_rows=site_nav_rows trail_slugs=site_nav_trail_slugs active_node=site_nav_active_node %}
                 {% endif %}
+                {% block breadcrumbs_top %}{% endblock %}
                 {% block content %}{% endblock %}
+                {% block breadcrumbs_bottom %}{% endblock %}
                 </div>
                 </div>
                 {% if not request.in_preview_panel %}

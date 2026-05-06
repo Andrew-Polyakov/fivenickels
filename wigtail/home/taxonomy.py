@@ -275,7 +275,7 @@ def get_site_nav_template_context(request, home_page: HomePage) -> dict:
         return {
             "home_page": home_page,
             "taxonomy_prefix": taxonomy_prefix_path(home_page),
-            "nav_rows": [{"depth": 1, "nodes": roots}],
+            "nav_rows": [{"depth": 1, "nodes": roots, "parent_id": None}],
             "active_node": None,
             "trail": [],
             "trail_slugs": [],
@@ -293,7 +293,7 @@ def render_site_nav_frame(request, home_page: HomePage, slug_parts: list[str]) -
         ctx = {
             "home_page": home_page,
             "taxonomy_prefix": taxonomy_prefix_path(home_page),
-            "nav_rows": [{"depth": 1, "nodes": roots}],
+            "nav_rows": [{"depth": 1, "nodes": roots, "parent_id": None}],
             "active_node": None,
             "trail": [],
             "trail_slugs": [],

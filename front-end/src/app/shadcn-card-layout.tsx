@@ -3,6 +3,15 @@ import { createRoot, type Root } from 'react-dom/client';
 import { Group, Panel, Separator as ResizeSeparator } from 'react-resizable-panels';
 
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from '../components/ui/empty';
 import { Separator as UiSeparator } from '../components/ui/separator';
 import { cn } from '../lib/utils';
 
@@ -19,8 +28,46 @@ type LayoutRow =
   | { kind: 'row'; items: RowItem[] }
   | { kind: 'separator'; orientation: 'horizontal' | 'vertical' };
 
+export type LayoutPresetId = 'twin' | 'three' | 'quattro' | 'grid-2x4';
+
+function stubRowItem(message: string): RowItem {
+  return { type: 'card', card: { kind: 'stub', message } };
+}
+
+function stubRow(panelCount: number, startLabel: number): LayoutRow {
+  const items: RowItem[] = [];
+  for (let i = 0; i < panelCount; i++) {
+    items.push(stubRowItem(`Panel ${startLabel + i}`));
+  }
+  return { kind: 'row', items };
+}
+
+export function presetToRows(preset: LayoutPresetId): LayoutRow[] {
+  switch (preset) {
+    case 'twin':
+      return [stubRow(2, 1)];
+    case 'three':
+      return [stubRow(3, 1)];
+    case 'quattro':
+      return [stubRow(4, 1)];
+    case 'grid-2x4':
+      return [
+        stubRow(4, 1),
+        { kind: 'separator', orientation: 'horizontal' },
+        stubRow(4, 5),
+      ];
+  }
+}
+
 export type CardLayoutPayload = {
   rows: LayoutRow[];
+};
+
+type ContextMenuState = {
+  open: boolean;
+  x: number;
+  y: number;
+  rowIndex: number | null;
 };
 
 function ArticleCardView({ data }: { data: ArticleCardPayload }): React.JSX.Element {
@@ -89,7 +136,13 @@ function panelEntriesFromRowItems(items: RowItem[]): { card: ArticleCardPayload;
   return out;
 }
 
-function ResizableCardRow({ items }: { items: RowItem[] }): React.JSX.Element {
+function ResizableCardRow({
+  items,
+  panelGroupKey,
+}: {
+  items: RowItem[];
+  panelGroupKey: string;
+}): React.JSX.Element {
   const entries = panelEntriesFromRowItems(items);
   if (entries.length === 0) {
     return <></>;
@@ -118,7 +171,13 @@ function ResizableCardRow({ items }: { items: RowItem[] }): React.JSX.Element {
               ) : null}
             </ResizeSeparator>
           ) : null}
-          <Panel defaultSize={defaultPct} minSize={12} id={`scn-panel-${idx}`} className="scn-card-row__panel">
+          <Panel
+            defaultSize={defaultPct}
+            minSize={12}
+            id={`scn-panel-${panelGroupKey}-${idx}`}
+            className="scn-card-row__panel"
+            style={{ overflow: 'hidden' }}
+          >
             <ArticleCardView data={entry.card} />
           </Panel>
         </React.Fragment>
@@ -127,16 +186,221 @@ function ResizableCardRow({ items }: { items: RowItem[] }): React.JSX.Element {
   );
 }
 
-export function CardLayoutRoot({ payload }: { payload: CardLayoutPayload }): React.JSX.Element {
+export function CardLayoutRoot({
+  payload,
+  enableMasterPane,
+}: {
+  payload: CardLayoutPayload;
+  enableMasterPane: boolean;
+}): React.JSX.Element {
+  const [rows, setRows] = React.useState<LayoutRow[]>(payload.rows);
+  const [layoutDialogOpen, setLayoutDialogOpen] = React.useState(false);
+  const [menu, setMenu] = React.useState<ContextMenuState>({
+    open: false,
+    x: 0,
+    y: 0,
+    rowIndex: null,
+  });
+
+  React.useEffect(() => {
+    setRows(payload.rows);
+    setMenu({ open: false, x: 0, y: 0, rowIndex: null });
+    setLayoutDialogOpen(false);
+  }, [payload]);
+
+  React.useEffect(() => {
+    if (!menu.open) {
+      return;
+    }
+    const close = () => setMenu((prev) => ({ ...prev, open: false }));
+    window.addEventListener('click', close);
+    window.addEventListener('keydown', close);
+    return () => {
+      window.removeEventListener('click', close);
+      window.removeEventListener('keydown', close);
+    };
+  }, [menu.open]);
+
+  const onContextMenu = (evt: React.MouseEvent<HTMLDivElement>) => {
+    if (!enableMasterPane || rows.length === 0) {
+      return;
+    }
+    const target = evt.target as HTMLElement;
+    if (target.closest('.scn-article-card') || target.closest('.scn-resize-handle')) {
+      return;
+    }
+    evt.preventDefault();
+    const rowEl = target.closest<HTMLElement>('[data-layout-row-index]');
+    let rowIndex: number | null = null;
+    const rowAttr = rowEl?.dataset['layoutRowIndex'];
+    if (typeof rowAttr === 'string') {
+      rowIndex = Number.parseInt(rowAttr, 10);
+    } else {
+      const host = evt.currentTarget;
+      const slots = Array.from(host.querySelectorAll<HTMLElement>('[data-layout-row-index]'));
+      let bestIdx: number | null = null;
+      let bestDistance = Number.POSITIVE_INFINITY;
+      slots.forEach((slot) => {
+        const idxAttr = slot.dataset['layoutRowIndex'];
+        if (!idxAttr) {
+          return;
+        }
+        const idx = Number.parseInt(idxAttr, 10);
+        if (Number.isNaN(idx)) {
+          return;
+        }
+        const rect = slot.getBoundingClientRect();
+        const centerY = rect.top + rect.height / 2;
+        const distance = Math.abs(evt.clientY - centerY);
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          bestIdx = idx;
+        }
+      });
+      rowIndex = bestIdx;
+    }
+    setMenu({
+      open: true,
+      x: evt.clientX,
+      y: evt.clientY,
+      rowIndex: Number.isNaN(rowIndex ?? NaN) ? null : rowIndex,
+    });
+  };
+
+  const insertCard = () => {
+    const newCard: RowItem = {
+      type: 'card',
+      card: { kind: 'stub', message: 'New card' },
+    };
+    setRows((prev) => {
+      if (prev.length === 0) {
+        return [{ kind: 'row', items: [newCard] }];
+      }
+      const at = menu.rowIndex;
+      if (at !== null && at >= 0 && at < prev.length && prev[at]?.kind === 'row') {
+        const current = prev[at] as Extract<LayoutRow, { kind: 'row' }>;
+        const nextItems = [...current.items];
+        if (nextItems.length > 0) {
+          nextItems.push({ type: 'separator', orientation: 'vertical' });
+        }
+        nextItems.push(newCard);
+        const cloned = [...prev];
+        cloned[at] = { ...current, items: nextItems };
+        return cloned;
+      }
+      const insertAt = at !== null && at >= 0 ? Math.min(at + 1, prev.length) : prev.length;
+      return [
+        ...prev.slice(0, insertAt),
+        { kind: 'row', items: [newCard] },
+        ...prev.slice(insertAt),
+      ];
+    });
+    setMenu((prev) => ({ ...prev, open: false }));
+  };
+
+  const insertSeparator = () => {
+    setRows((prev) => {
+      const at = menu.rowIndex;
+      const insertAt = at !== null && at >= 0 ? Math.min(at + 1, prev.length) : prev.length;
+      return [
+        ...prev.slice(0, insertAt),
+        { kind: 'separator', orientation: 'horizontal' as const },
+        ...prev.slice(insertAt),
+      ];
+    });
+    setMenu((prev) => ({ ...prev, open: false }));
+  };
+
   return (
-    <div className="scn-card-layout">
-      {payload.rows.map((row, i) =>
-        row.kind === 'separator' ? (
-          <UiSeparator key={i} orientation="horizontal" className="scn-card-layout__sep" />
-        ) : (
-          <ResizableCardRow key={i} items={row.items} />
-        )
-      )}
+    <div className="scn-card-layout" onContextMenu={onContextMenu}>
+      {rows.map((row, i) => (
+        <div key={i} data-layout-row-index={i} className="scn-card-layout__slot">
+          {row.kind === 'separator' ? (
+            <UiSeparator orientation="horizontal" className="scn-card-layout__sep" />
+          ) : (
+            <ResizableCardRow items={row.items} panelGroupKey={String(i)} />
+          )}
+        </div>
+      ))}
+      {rows.length === 0 && enableMasterPane ? (
+        <Dialog open={layoutDialogOpen} onOpenChange={setLayoutDialogOpen}>
+          <Empty className="scn-card-layout__empty-state">
+            <EmptyHeader>
+              <EmptyTitle>No layout yet</EmptyTitle>
+              <EmptyDescription>
+                Start from a resizable preset. You can add cards and horizontal separators after the layout
+                exists.
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button type="button" onClick={() => setLayoutDialogOpen(true)}>
+                Create layout
+              </Button>
+            </EmptyContent>
+          </Empty>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Choose a layout preset</DialogTitle>
+              <DialogDescription>
+                Each option creates stub panels you can resize. Use right-click on the layout to add more
+                cards or separators.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="scn-layout-preset-grid">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setRows(presetToRows('twin'));
+                  setLayoutDialogOpen(false);
+                }}
+              >
+                Twin split (2)
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setRows(presetToRows('three'));
+                  setLayoutDialogOpen(false);
+                }}
+              >
+                Three-way (3)
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setRows(presetToRows('quattro'));
+                  setLayoutDialogOpen(false);
+                }}
+              >
+                Quattro (4)
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setRows(presetToRows('grid-2x4'));
+                  setLayoutDialogOpen(false);
+                }}
+              >
+                2×4 grid
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      ) : null}
+      {menu.open && enableMasterPane && rows.length > 0 ? (
+        <div className="scn-context-menu" style={{ left: menu.x, top: menu.y }} role="menu">
+          <button type="button" className="scn-context-menu__item" onClick={insertCard}>
+            Add card
+          </button>
+          <button type="button" className="scn-context-menu__item" onClick={insertSeparator}>
+            Add separator
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -174,7 +438,8 @@ export function mountShadcnCardLayouts(): void {
       root = createRoot(host);
       layoutRoots.set(host, root);
     }
-    root.render(<CardLayoutRoot payload={parsed} />);
+    const enableMasterPane = host.dataset['masterPaneEnabled'] === '1';
+    root.render(<CardLayoutRoot payload={parsed} enableMasterPane={enableMasterPane} />);
   });
 }
 

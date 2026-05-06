@@ -112,7 +112,19 @@ def build_rows_from_card_buffer(
 
 
 def build_layout_payload(buffer_blocks: list, parent_context: dict | None) -> dict[str, Any]:
-    return {"rows": build_rows_from_card_buffer(buffer_blocks, parent_context)}
+    rows = build_rows_from_card_buffer(buffer_blocks, parent_context)
+    # Keep separators meaningful: no leading/trailing separators and no doubles.
+    cleaned: list[dict[str, Any]] = []
+    for row in rows:
+        if row.get("kind") == "separator":
+            if not cleaned:
+                continue
+            if cleaned[-1].get("kind") == "separator":
+                continue
+        cleaned.append(row)
+    while cleaned and cleaned[-1].get("kind") == "separator":
+        cleaned.pop()
+    return {"rows": cleaned}
 
 
 def iter_main_site_stream_segments(

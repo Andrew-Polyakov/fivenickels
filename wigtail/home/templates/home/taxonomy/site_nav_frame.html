@@ -21,7 +21,7 @@
                 {% if row.parent_id %}data-parent-id="{{ row.parent_id }}"{% endif %}
                 {% if row.depth == 1 %}data-create-root="1"{% endif %}
                 {% if row.depth == 1 and not trail_slugs %}data-after-create-visit="{% taxonomy_market_news_url home_page %}"{% endif %}
-                data-placeholder="Add new"
+                data-placeholder="{% if row.depth > 1 %}{% else %}Add new{% endif %}"
                 data-chips-json='[{% for term in row.nodes %}{% if term.link_page %}{"id":"{{ term.pk }}","name":"{{ term.name|escapejs }}","url":"{% pageurl term.link_page %}","active":{% if term.slug in trail_slugs or page and term.link_page_id == page.pk or page and page.section_term and page.section_term_id == term.id %}true{% else %}false{% endif %},"removable":true}{% else %}{% taxonomy_term_nav_url home_page trail_slugs row.depth term as nav_url %}{"id":"{{ term.pk }}","name":"{{ term.name|escapejs }}","url":"{{ nav_url|escapejs }}","active":{% if term.slug in trail_slugs or page and page.section_term and page.section_term_id == term.id %}true{% else %}false{% endif %},"removable":true}{% endif %}{% if not forloop.last %},{% endif %}{% endfor %}]'
             ></div>
             <div class="taxonomy-chip-widget__fallback" hidden>

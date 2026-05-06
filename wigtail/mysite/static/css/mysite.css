@@ -1422,6 +1422,44 @@ body.template-taxonomy-root {
 
 }
 
+.taxonomy-drilldown__widgets .scn-card-layout {
+
+    display: grid;
+
+    grid-template-columns: 1fr;
+
+    gap: 0.95rem;
+
+}
+
+.taxonomy-drilldown__widgets .scn-card-layout__sep {
+
+    margin: 0.1rem 0 0.2rem;
+
+    background: rgba(148, 163, 184, 0.45);
+
+}
+
+.taxonomy-master-pane__empty {
+
+    min-height: 11rem;
+
+    border: 1px dashed rgba(148, 163, 184, 0.4);
+
+    border-radius: 0.55rem;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    color: var(--color-text-muted);
+
+    font-size: 0.88rem;
+
+}
+
 
 .btn {
 
@@ -2491,6 +2529,44 @@ taxonomy-chip-widget {
     color: #ffffff;
 
     background: rgba(0, 0, 0, 0.75);
+
+}
+
+.site-nav__row--depth-2 taxonomy-chip-widget .taxonomy-chip-widget__add-chip,
+.site-nav__row--depth-3 taxonomy-chip-widget .taxonomy-chip-widget__add-chip,
+.site-nav__row--depth-4 taxonomy-chip-widget .taxonomy-chip-widget__add-chip {
+
+    border: 1px solid rgba(92, 255, 138, 0.55);
+
+    background: rgba(0, 0, 0, 0.8);
+
+    min-width: 1.9rem;
+
+    padding-left: 0.32rem;
+
+    padding-right: 0.32rem;
+
+}
+
+.site-nav__row--depth-2 taxonomy-chip-widget .taxonomy-chip-widget__add-chip .taxonomy-chip-widget__link-btn,
+.site-nav__row--depth-3 taxonomy-chip-widget .taxonomy-chip-widget__add-chip .taxonomy-chip-widget__link-btn,
+.site-nav__row--depth-4 taxonomy-chip-widget .taxonomy-chip-widget__add-chip .taxonomy-chip-widget__link-btn {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    min-width: 1.2rem;
+
+}
+
+.site-nav__row--depth-2 taxonomy-chip-widget .taxonomy-chip-widget__add-chip .taxonomy-chip-widget__add-chip-icon,
+.site-nav__row--depth-3 taxonomy-chip-widget .taxonomy-chip-widget__add-chip .taxonomy-chip-widget__add-chip-icon,
+.site-nav__row--depth-4 taxonomy-chip-widget .taxonomy-chip-widget__add-chip .taxonomy-chip-widget__add-chip-icon {
+
+    margin-right: 0;
 
 }
 

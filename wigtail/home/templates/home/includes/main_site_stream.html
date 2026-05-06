@@ -7,6 +7,7 @@
             class="shadcn-card-layout-root"
             data-shadcn-card-layout
             data-layout-json-id="{{ segment.uid }}"
+            {% if taxonomy_active_node %}data-master-pane-enabled="1"{% endif %}
         ></div>
         {{ segment.payload|json_script:segment.uid }}
     {% endif %}
