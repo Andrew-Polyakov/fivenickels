@@ -16,13 +16,14 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 
-from home.blocks import _resolve_section_term
+from home.blocks import _resolve_section_term, _resolve_universal_tile_state
 from home.navigation import normalize_sector_query_param
 from home.query import (
     build_home_page_display_items,
     featured_quad_pages_for_sector,
     get_random_pages_for_section,
     get_random_pages_for_section_prioritized,
+    get_priority_pages_for_section,
     get_recent_pages_for_section,
     get_related_pages_for_ticker,
     get_similar_pages,
@@ -948,4 +949,101 @@ class InlineEditingApiTests(WagtailPageTestCase):
         url = taxonomy_prefix_path(self.homepage) + "market-news/"
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+
+
+class CardSourcePropertiesTests(WagtailPageTestCase):
+    def setUp(self):
+        root_page = Page.get_first_root_node()
+        self.homepage = HomePage(title="Home")
+        root_page.add_child(instance=self.homepage)
+        self.homepage.save_revision().publish()
+        Site.objects.update_or_create(
+            hostname="testserver",
+            port=80,
+            defaults={"root_page": self.homepage, "is_default_site": True},
+        )
+
+        self.energy = TaxonomyTerm.objects.get(slug="energy")
+        self.tag_alpha = ContentTag.objects.create(name="Alpha x", slug=f"alpha-{get_random_string(6)}")
+        self.tag_beta = ContentTag.objects.create(name="Beta x", slug=f"beta-{get_random_string(6)}")
+
+        self.page_high = TaggedContentPage(
+            title="Priority High",
+            slug=f"priority-high-{get_random_string(5)}",
+            section_term=self.energy,
+            article_priority=10,
+            priority_expires_at=timezone.now() + timezone.timedelta(days=2),
+        )
+        self.homepage.add_child(instance=self.page_high)
+        self.page_high.save_revision().publish()
+        self.page_high.tags.add(self.tag_alpha)
+
+        self.page_expired = TaggedContentPage(
+            title="Priority Expired",
+            slug=f"priority-expired-{get_random_string(5)}",
+            section_term=self.energy,
+            article_priority=9,
+            priority_expires_at=timezone.now() - timezone.timedelta(days=1),
+        )
+        self.homepage.add_child(instance=self.page_expired)
+        self.page_expired.save_revision().publish()
+        self.page_expired.tags.add(self.tag_alpha)
+
+        self.page_tagged = TaggedContentPage(
+            title="Tagged Candidate",
+            slug=f"tagged-candidate-{get_random_string(5)}",
+            section_term=self.energy,
+        )
+        self.homepage.add_child(instance=self.page_tagged)
+        self.page_tagged.save_revision().publish()
+        self.page_tagged.tags.add(self.tag_beta)
+
+        user_model = get_user_model()
+        self.staff = user_model.objects.create_user(
+            username=f"staff_{get_random_string(6)}",
+            password="pass12345",
+            is_staff=True,
+        )
+
+    def test_priority_query_ignores_expired_rows(self):
+        picked = get_priority_pages_for_section(self.energy, limit=5)
+        picked_ids = {p.pk for p in picked}
+        self.assertIn(self.page_high.pk, picked_ids)
+        self.assertNotIn(self.page_expired.pk, picked_ids)
+
+    def test_tagged_with_mode_picks_matching_tag(self):
+        state = _resolve_universal_tile_state(
+            {
+                "mode": "tagged_with",
+                "section_term": self.energy,
+                "tags": [self.tag_beta],
+            },
+            {"page": self.homepage},
+            [],
+        )
+        self.assertEqual(state["kind"], "article")
+        self.assertEqual(getattr(state["tile_page"], "pk", None), self.page_tagged.pk)
+
+    def test_specific_article_mode_uses_specific_page(self):
+        state = _resolve_universal_tile_state(
+            {
+                "mode": "specific_article",
+                "specific_page": self.page_high,
+            },
+            {"page": self.homepage},
+            [],
+        )
+        self.assertEqual(getattr(state["tile_page"], "pk", None), self.page_high.pk)
+
+    def test_inline_selector_endpoints_return_results_for_staff(self):
+        self.client.force_login(self.staff)
+        r_articles = self.client.get(reverse("inline_search_articles"), {"q": "Priority"})
+        self.assertEqual(r_articles.status_code, 200)
+        payload_articles = r_articles.json()
+        self.assertTrue(any(x.get("id") == self.page_high.pk for x in payload_articles.get("results", [])))
+
+        r_tags = self.client.get(reverse("inline_list_content_tags"), {"q": "Alpha"})
+        self.assertEqual(r_tags.status_code, 200)
+        payload_tags = r_tags.json()
+        self.assertTrue(any(x.get("id") == self.tag_alpha.pk for x in payload_tags.get("results", [])))
 

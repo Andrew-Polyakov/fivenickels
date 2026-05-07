@@ -258,6 +258,18 @@ class TaggedContentPage(Page):
         validators=[MinValueValidator(1), MaxValueValidator(10)],
         help_text="1–10 for automated tiles; higher surfaces first. Leave blank for maximum weight (same as 10).",
     )
+    article_priority = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        db_index=True,
+        validators=[MinValueValidator(1), MaxValueValidator(10)],
+        help_text="1–10 content priority for shadcn card source mode: priority articles.",
+    )
+    priority_expires_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="After this date/time, article_priority is ignored for automated priority picks.",
+    )
     taxonomy_category = models.ForeignKey(
         TaxonomyTerm,
         null=True,
@@ -284,6 +296,8 @@ class TaggedContentPage(Page):
                 FieldPanel("hero_image"),
                 FieldPanel("tile_preview"),
                 FieldPanel("tile_priority"),
+                FieldPanel("article_priority"),
+                FieldPanel("priority_expires_at"),
             ],
             heading="Listing & taxonomy",
         ),

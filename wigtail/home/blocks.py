@@ -4,7 +4,11 @@ from wagtail.images.blocks import ImageChooserBlock
 from wagtail.snippets.blocks import SnippetChooserBlock
 from wagtailmarkdown.blocks import MarkdownBlock
 
-from home.query import get_random_pages_for_section_prioritized
+from home.query import (
+    get_pages_for_section_and_tags,
+    get_priority_pages_for_section,
+    get_random_pages_for_section_prioritized,
+)
 
 
 def _resolve_section_term(block_value, parent_context):
@@ -32,31 +36,60 @@ def _resolve_section_term(block_value, parent_context):
 
 def _pick_one_tile_page(cell_value, term, exclude_ids):
     mode = cell_value.get("mode")
-    if mode == "top_viewed":
+    if mode in ("top_viewed", "priority_articles_stub"):
         return None
-    if mode == "manual_article":
-        mode = "manual"
-    elif mode == "random_category":
-        mode = "random"
-    if mode == "manual" and cell_value.get("manual_page"):
-        return cell_value["manual_page"].specific
+    if mode in ("manual_article", "manual", "specific_article"):
+        specific = cell_value.get("specific_page") or cell_value.get("manual_page")
+        if specific:
+            return specific.specific
+        return None
+    if mode in ("random_category", "random"):
+        if term is None:
+            return None
+        picked = get_random_pages_for_section_prioritized(
+            term,
+            limit=1,
+            exclude_ids=exclude_ids or None,
+        )
+        return picked[0] if picked else None
+    if mode == "tagged_with":
+        if term is None:
+            return None
+        tag_values = cell_value.get("tags") or []
+        tag_ids = [int(getattr(t, "pk", 0)) for t in tag_values if getattr(t, "pk", None)]
+        picked = get_pages_for_section_and_tags(
+            term,
+            tag_ids=tag_ids,
+            limit=1,
+            exclude_ids=exclude_ids or None,
+        )
+        return picked[0] if picked else None
+    if mode == "priority_articles":
+        if term is None:
+            return None
+        picked = get_priority_pages_for_section(
+            term,
+            limit=1,
+            exclude_ids=exclude_ids or None,
+        )
+        return picked[0] if picked else None
     if term is None:
         return None
-    picked = get_random_pages_for_section_prioritized(
-        term,
-        limit=1,
-        exclude_ids=exclude_ids or None,
-    )
-    return picked[0] if picked else None
+    return None
 
 
 def _resolve_universal_tile_state(tile_value, parent_context, exclude_ids=None):
     tile_value = tile_value or {}
     mode = tile_value.get("mode") or "random_category"
+    # Backward compatibility for older serialized modes.
     if mode == "manual":
         mode = "manual_article"
     elif mode == "random":
         mode = "random_category"
+    if mode == "manual_article":
+        mode = "specific_article"
+    elif mode == "random_category":
+        mode = "random"
     if mode == "top_viewed":
         return {
             "kind": "stub",
@@ -69,8 +102,7 @@ def _resolve_universal_tile_state(tile_value, parent_context, exclude_ids=None):
         {**tile_value, "section_term": tile_value.get("section_term")},
         parent_context,
     )
-    legacy_pick_value = {**tile_value, "mode": "manual" if mode == "manual_article" else "random"}
-    tile_page = _pick_one_tile_page(legacy_pick_value, term, exclude_ids or [])
+    tile_page = _pick_one_tile_page({**tile_value, "mode": mode}, term, exclude_ids or [])
     return {
         "kind": "article",
         "mode": mode,
@@ -144,15 +176,27 @@ class ArticleTileSourceBlock(blocks.StructBlock):
     )
     mode = blocks.ChoiceBlock(
         choices=[
-            ("random_category", "Random from category"),
-            ("manual_article", "Pick article"),
-            ("top_viewed", "Top viewed (stub)"),
+            ("random", "Random"),
+            ("specific_article", "Specific article"),
+            ("tagged_with", "Tagged with"),
+            ("priority_articles", "Priority articles"),
         ],
-        default="random_category",
+        default="random",
     )
     manual_page = blocks.PageChooserBlock(
         target_model="home.TaggedContentPage",
         required=False,
+        label="Specific article (legacy)",
+    )
+    specific_page = blocks.PageChooserBlock(
+        target_model="home.TaggedContentPage",
+        required=False,
+        label="Specific article",
+    )
+    tags = blocks.ListBlock(
+        SnippetChooserBlock("home.ContentTag", required=True),
+        required=False,
+        label="Tags",
     )
 
     class Meta:

@@ -4,6 +4,9 @@ import { Group, Panel, Separator as ResizeSeparator } from 'react-resizable-pane
 
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Select } from '../components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -14,11 +17,20 @@ import {
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from '../components/ui/empty';
 import { Separator as UiSeparator } from '../components/ui/separator';
 import { cn } from '../lib/utils';
+import { Toaster, toast } from 'sonner';
+
+type ContentSourceMode = 'random' | 'specific_article' | 'tagged_with' | 'priority_articles';
+type ContentSourceConfig = {
+  mode: ContentSourceMode;
+  specificArticleId?: number | null;
+  specificArticleTitle?: string;
+  tagIds?: number[];
+};
 
 export type ArticleCardPayload =
-  | { kind: 'article'; title: string; href: string; excerpt: string; imageUrl: string }
-  | { kind: 'empty' }
-  | { kind: 'stub'; message: string }
+  | { kind: 'article'; title: string; href: string; excerpt: string; imageUrl: string; sourceConfig?: ContentSourceConfig }
+  | { kind: 'empty'; sourceConfig?: ContentSourceConfig }
+  | { kind: 'stub'; message: string; sourceConfig?: ContentSourceConfig }
   | {
       kind: 'layout';
       variant: 'biggies' | 'feature' | 'headline' | 'carousel' | 'free';
@@ -33,6 +45,7 @@ export type ArticleCardPayload =
       heightPx?: number;
       freeX?: number;
       freeY?: number;
+      sourceConfig?: ContentSourceConfig;
     };
 
 type RowItem =
@@ -450,27 +463,11 @@ function ArticleCardView({
   enableMasterPane?: boolean;
   onCarouselHeaderChange?: (nextHeader: string) => void;
 }): React.JSX.Element {
-  const deleteBtn =
-    onDelete != null ? (
-      <button
-        type="button"
-        className="scn-article-card__delete"
-        aria-label="Remove panel"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onDelete();
-        }}
-        onPointerDown={(e) => e.stopPropagation()}
-      >
-        <span aria-hidden="true">×</span>
-      </button>
-    ) : null;
+  void onDelete;
 
   if (data.kind === 'empty') {
     return (
       <Card className="scn-article-card scn-article-card--empty">
-        {deleteBtn}
         <CardContent>
           <p className="scn-article-card__empty">No article.</p>
         </CardContent>
@@ -480,7 +477,6 @@ function ArticleCardView({
   if (data.kind === 'stub') {
     return (
       <Card className="scn-article-card scn-article-card--stub">
-        {deleteBtn}
         <CardHeader>
           <CardTitle>Top viewed</CardTitle>
         </CardHeader>
@@ -495,7 +491,6 @@ function ArticleCardView({
     if (data.variant === 'carousel') {
       return (
         <Card className={cn('scn-article-card', cls)}>
-          {deleteBtn}
           <CardContent>
             {enableMasterPane ? (
               <input
@@ -519,7 +514,6 @@ function ArticleCardView({
     }
     return (
       <Card className={cn('scn-article-card', cls)}>
-        {deleteBtn}
         {(data.variant === 'biggies' || data.variant === 'feature') && data.imageUrl ? (
           <div className={cn('scn-article-card__media', data.imageMode === 'square' ? 'scn-media--square' : null)}>
             <img src={data.imageUrl} alt="" className="scn-article-card__img" loading="lazy" />
@@ -558,7 +552,6 @@ function ArticleCardView({
   if (data.href) {
     return (
       <Card className="scn-article-card scn-article-card--linked">
-        {deleteBtn}
         <a className="scn-article-card__shell" href={data.href}>
           {body}
         </a>
@@ -567,7 +560,6 @@ function ArticleCardView({
   }
   return (
     <Card className="scn-article-card">
-      {deleteBtn}
       {body}
     </Card>
   );
@@ -782,6 +774,45 @@ export function CardLayoutRoot({
     gapAfterSepIndex: null,
   });
   const [propertiesOpen, setPropertiesOpen] = React.useState(false);
+  const [propertiesSourceMode, setPropertiesSourceMode] = React.useState<ContentSourceMode>('random');
+  const [articleSearchQuery, setArticleSearchQuery] = React.useState('');
+  const [articleSearchResults, setArticleSearchResults] = React.useState<
+    Array<{ id: number; title: string; excerpt?: string; section: string; url: string }>
+  >([]);
+  const [specificArticle, setSpecificArticle] = React.useState<{ id: number | null; title: string; url: string }>({
+    id: null,
+    title: '',
+    url: '',
+  });
+  const [tagQuery, setTagQuery] = React.useState('');
+  const [tagResults, setTagResults] = React.useState<Array<{ id: number; name: string; slug: string }>>([]);
+  const [selectedTagIds, setSelectedTagIds] = React.useState<number[]>([]);
+  const fetchRandomArticlePreview = React.useCallback(async () => {
+    const res = await fetch('/inline/article/search/?random=1', { credentials: 'same-origin' });
+    if (!res.ok) {
+      throw new Error('Random article lookup failed');
+    }
+    const data = (await res.json()) as {
+      results?: Array<{ id: number; title: string; excerpt?: string; section: string; url: string }>;
+    };
+    return data.results?.[0] ?? null;
+  }, []);
+  const randomHydrationInFlightRef = React.useRef(false);
+
+  const activeCardTarget = React.useMemo(() => {
+    if (menu.rowIndex === null || menu.itemIndex === null) {
+      return null;
+    }
+    const row = rows[menu.rowIndex];
+    if (!row || row.kind !== 'row') {
+      return null;
+    }
+    const item = row.items[menu.itemIndex];
+    if (!item || item.type !== 'card') {
+      return null;
+    }
+    return { rowIndex: menu.rowIndex, itemIndex: menu.itemIndex, card: item.card };
+  }, [menu.rowIndex, menu.itemIndex, rows]);
 
   React.useEffect(() => {
     baselineRowsRef.current = cloneRows(payload.rows);
@@ -800,6 +831,79 @@ export function CardLayoutRoot({
     setPaneMenuOpen(false);
     setSavePending(false);
   }, [payload]);
+
+  React.useEffect(() => {
+    if (randomHydrationInFlightRef.current) {
+      return;
+    }
+    const randomTargets: Array<{ rowIndex: number; itemIndex: number }> = [];
+    rows.forEach((row, rowIndex) => {
+      if (row.kind !== 'row') {
+        return;
+      }
+      row.items.forEach((item, itemIndex) => {
+        if (item.type !== 'card') {
+          return;
+        }
+        if (item.card.sourceConfig?.mode !== 'random') {
+          return;
+        }
+        if (item.card.kind === 'article' && item.card.title.trim()) {
+          return;
+        }
+        randomTargets.push({ rowIndex, itemIndex });
+      });
+    });
+    if (randomTargets.length === 0) {
+      return;
+    }
+    randomHydrationInFlightRef.current = true;
+    void (async () => {
+      try {
+        const picked = await Promise.all(
+          randomTargets.map(async (target) => ({
+            target,
+            article: await fetchRandomArticlePreview(),
+          }))
+        );
+        setRows((prev) => {
+          const out = [...prev];
+          picked.forEach(({ target, article }) => {
+            if (!article?.id || !article.title) {
+              return;
+            }
+            const row = out[target.rowIndex];
+            if (!row || row.kind !== 'row') {
+              return;
+            }
+            const rowItems = [...row.items];
+            const rowItem = rowItems[target.itemIndex];
+            if (!rowItem || rowItem.type !== 'card') {
+              return;
+            }
+            if (rowItem.card.sourceConfig?.mode !== 'random') {
+              return;
+            }
+            rowItems[target.itemIndex] = {
+              type: 'card',
+              card: {
+                kind: 'article',
+                title: article.title,
+                href: article.url || '',
+                excerpt: article.excerpt || '',
+                imageUrl: '',
+                sourceConfig: rowItem.card.sourceConfig,
+              },
+            };
+            out[target.rowIndex] = { kind: 'row', items: rowItems };
+          });
+          return out;
+        });
+      } finally {
+        randomHydrationInFlightRef.current = false;
+      }
+    })();
+  }, [fetchRandomArticlePreview, rows]);
 
   const deleteHorizontalSeparator = React.useCallback((sepIdx: number) => {
     setRows((prev) => {
@@ -908,14 +1012,13 @@ export function CardLayoutRoot({
           /* ignore */
         }
         if (!res.ok) {
-          await (window.showMaterialAlert?.(data.error || `Save failed (${res.status})`, 'Layout') ??
-            Promise.resolve());
+          toast.error(data.error || `Save failed (${res.status})`);
           return;
         }
         baselineRowsRef.current = cloneRows(rows);
-        await (window.showMaterialAlert?.('Layout saved to the server.', 'Saved') ?? Promise.resolve());
+        toast.success('Layout saved to the server.');
       } catch {
-        await (window.showMaterialAlert?.('Could not reach the server.', 'Save failed') ?? Promise.resolve());
+        toast.error('Could not reach the server.');
       } finally {
         setSavePending(false);
         setPaneMenuOpen(false);
@@ -927,6 +1030,7 @@ export function CardLayoutRoot({
   const handlePaneReset = React.useCallback(() => {
     setRows(cloneRows(baselineRowsRef.current));
     setPaneMenuOpen(false);
+    toast.success('Layout restored.');
   }, []);
 
   const resetCardFromMenu = React.useCallback(() => {
@@ -964,6 +1068,64 @@ export function CardLayoutRoot({
     setMenu((prev) => ({ ...prev, open: false, itemIndex: null, isCardMenu: false }));
   }, [menu.rowIndex, menu.itemIndex, updateCard]);
 
+  const saveProperties = React.useCallback(() => {
+    if (!activeCardTarget) {
+      setPropertiesOpen(false);
+      return;
+    }
+    const nextSource: ContentSourceConfig = {
+      mode: propertiesSourceMode,
+      specificArticleId: propertiesSourceMode === 'specific_article' ? specificArticle.id : null,
+      specificArticleTitle: propertiesSourceMode === 'specific_article' ? specificArticle.title : '',
+      tagIds: propertiesSourceMode === 'tagged_with' ? selectedTagIds : [],
+    };
+    let nextCard: ArticleCardPayload = { ...activeCardTarget.card, sourceConfig: nextSource };
+    if (propertiesSourceMode === 'specific_article' && specificArticle.id && specificArticle.title) {
+      nextCard = {
+        kind: 'article',
+        title: specificArticle.title,
+        href: specificArticle.url || '',
+        excerpt: '',
+        imageUrl: '',
+        sourceConfig: nextSource,
+      };
+    }
+    if (propertiesSourceMode === 'random') {
+      void (async () => {
+        try {
+          const randomArticle = await fetchRandomArticlePreview();
+          if (randomArticle?.id && randomArticle.title) {
+            nextCard = {
+              kind: 'article',
+              title: randomArticle.title,
+              href: randomArticle.url || '',
+              excerpt: randomArticle.excerpt || '',
+              imageUrl: '',
+              sourceConfig: nextSource,
+            };
+          }
+          updateCard(activeCardTarget.rowIndex, activeCardTarget.itemIndex, nextCard);
+        } catch {
+          await (window.showMaterialAlert?.('Could not load random article preview.', 'Card properties') ??
+            Promise.resolve());
+          updateCard(activeCardTarget.rowIndex, activeCardTarget.itemIndex, nextCard);
+        } finally {
+          setPropertiesOpen(false);
+        }
+      })();
+      return;
+    }
+    updateCard(activeCardTarget.rowIndex, activeCardTarget.itemIndex, nextCard);
+    setPropertiesOpen(false);
+  }, [
+    activeCardTarget,
+    fetchRandomArticlePreview,
+    propertiesSourceMode,
+    selectedTagIds,
+    specificArticle,
+    updateCard,
+  ]);
+
   React.useEffect(() => {
     if (!menu.open) {
       return;
@@ -977,6 +1139,63 @@ export function CardLayoutRoot({
       window.removeEventListener('keydown', close);
     };
   }, [menu.open]);
+
+  React.useEffect(() => {
+    if (!propertiesOpen || !activeCardTarget) {
+      return;
+    }
+    const source = activeCardTarget.card.sourceConfig;
+    setPropertiesSourceMode(source?.mode ?? 'random');
+    setSelectedTagIds(source?.tagIds ?? []);
+    setSpecificArticle({
+      id: source?.specificArticleId ?? null,
+      title: source?.specificArticleTitle ?? '',
+      url: '',
+    });
+    setArticleSearchQuery('');
+    setArticleSearchResults([]);
+    setTagQuery('');
+  }, [propertiesOpen, activeCardTarget]);
+
+  React.useEffect(() => {
+    if (!propertiesOpen || propertiesSourceMode !== 'specific_article') {
+      return;
+    }
+    const q = articleSearchQuery.trim();
+    if (q.length < 2) {
+      setArticleSearchResults([]);
+      return;
+    }
+    const url = `/inline/article/search/?q=${encodeURIComponent(q)}`;
+    const ctl = new AbortController();
+    void fetch(url, { credentials: 'same-origin', signal: ctl.signal })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('search failed'))))
+      .then((data: { results?: Array<{ id: number; title: string; excerpt?: string; section: string; url: string }> }) => {
+        setArticleSearchResults(data.results ?? []);
+      })
+      .catch(() => {
+        setArticleSearchResults([]);
+      });
+    return () => ctl.abort();
+  }, [propertiesOpen, propertiesSourceMode, articleSearchQuery]);
+
+  React.useEffect(() => {
+    if (!propertiesOpen || propertiesSourceMode !== 'tagged_with') {
+      return;
+    }
+    const q = tagQuery.trim();
+    const url = `/inline/tags/list/?q=${encodeURIComponent(q)}`;
+    const ctl = new AbortController();
+    void fetch(url, { credentials: 'same-origin', signal: ctl.signal })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('tags failed'))))
+      .then((data: { results?: Array<{ id: number; name: string; slug: string }> }) => {
+        setTagResults(data.results ?? []);
+      })
+      .catch(() => {
+        setTagResults([]);
+      });
+    return () => ctl.abort();
+  }, [propertiesOpen, propertiesSourceMode, tagQuery]);
 
   React.useEffect(() => {
     if (!paneMenuOpen) {
@@ -1528,10 +1747,86 @@ export function CardLayoutRoot({
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Card properties</DialogTitle>
-                <DialogDescription>Settings UI stub. Detailed properties will be added next.</DialogDescription>
+                <DialogDescription>Configure content source for this card.</DialogDescription>
               </DialogHeader>
+              <div className="scn-auth-form">
+                <div className="scn-field">
+                  <Label>Content</Label>
+                  <Select
+                    value={propertiesSourceMode}
+                    onChange={(e) => setPropertiesSourceMode(e.currentTarget.value as ContentSourceMode)}
+                  >
+                    <option value="random">Random</option>
+                    <option value="specific_article">Specific Article</option>
+                    <option value="tagged_with">Tagged With</option>
+                    <option value="priority_articles">Priority Articles</option>
+                  </Select>
+                </div>
+
+                {propertiesSourceMode === 'specific_article' ? (
+                  <div className="scn-field">
+                    <Label>Search article</Label>
+                    <Input
+                      value={articleSearchQuery}
+                      onChange={(e) => setArticleSearchQuery(e.currentTarget.value)}
+                      placeholder="Type title..."
+                    />
+                    <div className="scn-properties-list">
+                      {articleSearchResults.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          className={cn(
+                            'scn-properties-list__item',
+                            specificArticle.id === item.id && 'scn-properties-list__item--active'
+                          )}
+                          onClick={() => setSpecificArticle({ id: item.id, title: item.title, url: item.url })}
+                        >
+                          {item.title}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {propertiesSourceMode === 'tagged_with' ? (
+                  <div className="scn-field">
+                    <Label>Tags</Label>
+                    <Input
+                      value={tagQuery}
+                      onChange={(e) => setTagQuery(e.currentTarget.value)}
+                      placeholder="Filter tags..."
+                    />
+                    <div className="scn-properties-list">
+                      {tagResults.map((tag) => {
+                        const checked = selectedTagIds.includes(tag.id);
+                        return (
+                          <label key={tag.id} className="scn-properties-list__checkbox">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() =>
+                                setSelectedTagIds((prev) =>
+                                  checked ? prev.filter((id) => id !== tag.id) : [...prev, tag.id]
+                                )
+                              }
+                            />
+                            <span>{tag.name}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+                <div className="scn-dialog-footer">
+                  <Button type="button" onClick={saveProperties}>
+                    Save
+                  </Button>
+                </div>
+              </div>
             </DialogContent>
           </Dialog>
+          <Toaster richColors position="top-right" />
           {paneMenubar}
         </div>
       </div>

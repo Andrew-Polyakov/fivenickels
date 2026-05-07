@@ -3,6 +3,7 @@ from __future__ import annotations
 import random
 from typing import TYPE_CHECKING
 
+from django.utils import timezone
 from django.db.models import Q, Value
 from django.db.models.functions import Coalesce
 
@@ -112,6 +113,58 @@ def get_random_pages_for_section_prioritized(
         .filter(section_term=section_term)
         .annotate(_effective_priority=Coalesce("tile_priority", Value(10)))
         .order_by("-_effective_priority", "-first_published_at", "pk")
+    )
+    if exclude_ids:
+        qs = qs.exclude(pk__in=exclude_ids)
+    return list(qs[:limit])
+
+
+def get_priority_pages_for_section(
+    section_term: TaxonomyTerm,
+    *,
+    limit: int = 1,
+    exclude_ids: list[int] | None = None,
+):
+    """Highest custom article priority first; expired priority falls back to low rank."""
+    from home.models import TaggedContentPage
+
+    now = timezone.now()
+    qs = (
+        TaggedContentPage.objects.live()
+        .public()
+        .filter(section_term=section_term)
+        .annotate(
+            _effective_article_priority=Coalesce(
+                "article_priority",
+                Value(0),
+            ),
+        )
+        .order_by("-_effective_article_priority", "-first_published_at", "pk")
+    )
+    qs = qs.filter(Q(priority_expires_at__isnull=True) | Q(priority_expires_at__gt=now))
+    if exclude_ids:
+        qs = qs.exclude(pk__in=exclude_ids)
+    return list(qs[:limit])
+
+
+def get_pages_for_section_and_tags(
+    section_term: TaxonomyTerm,
+    *,
+    tag_ids: list[int],
+    limit: int = 1,
+    exclude_ids: list[int] | None = None,
+):
+    """Newest pages in section matching any selected content tags."""
+    from home.models import TaggedContentPage
+
+    if not tag_ids:
+        return []
+    qs = (
+        TaggedContentPage.objects.live()
+        .public()
+        .filter(section_term=section_term, tags__in=tag_ids)
+        .distinct()
+        .order_by("-first_published_at", "pk")
     )
     if exclude_ids:
         qs = qs.exclude(pk__in=exclude_ids)

@@ -67,7 +67,7 @@ class ForexFetchTests(SimpleTestCase):
         mock_ff.assert_called_once()
         self.assertEqual(len(rows), 2)
         self.assertEqual(rows[0]["symbol"], "EURUSD")
-        self.assertEqual(rows[0]["mid_display"], "1.10000")
+        self.assertEqual(rows[0]["mid_display"], "1.100")
         self.assertEqual(rows[1]["mid_display"], "150.000")
 
     @patch("home.alpaca_forex_client.load_alpaca_credentials")
@@ -91,6 +91,6 @@ class ForexFetchTests(SimpleTestCase):
         self.assertEqual(quotes[0].mid, Decimal("1.081"))
         self.assertIsNotNone(quotes[0].pct_change)
         row = quote_row_dict(quotes[0])
-        self.assertEqual(row["mid_display"], "1.08100")
+        self.assertEqual(row["mid_display"], "1.081")
         self.assertEqual(row["pct_class"], "is-up")
         self.assertIn("%", row["pct_formatted"])

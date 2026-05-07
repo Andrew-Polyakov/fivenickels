@@ -53,6 +53,16 @@ urlpatterns = [
         inline_edit_views.update_tile_title,
         name="inline_update_tile_title",
     ),
+    path(
+        "inline/article/search/",
+        inline_edit_views.search_articles,
+        name="inline_search_articles",
+    ),
+    path(
+        "inline/tags/list/",
+        inline_edit_views.list_content_tags,
+        name="inline_list_content_tags",
+    ),
     path("search/suggest/", search_views.search_suggest, name="search_suggest"),
     path("search/", search_views.search, name="search"),
     path(

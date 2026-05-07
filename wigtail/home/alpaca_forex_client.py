@@ -56,12 +56,7 @@ def pair_label(symbol: str) -> str:
 def _format_mid(symbol: str, mid: Decimal | None) -> str:
     if mid is None:
         return "—"
-    s = symbol.upper()
-    # JPY quotes: fewer fractional digits
-    if s.endswith("JPY"):
-        q = mid.quantize(Decimal("0.001"))
-        return format(q, "f")
-    q = mid.quantize(Decimal("0.00001"))
+    q = mid.quantize(Decimal("0.001"))
     return format(q, "f")
 
 

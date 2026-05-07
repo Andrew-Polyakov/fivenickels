@@ -5,7 +5,7 @@ import json
 from django.contrib.auth.decorators import user_passes_test
 from django.http import HttpRequest, JsonResponse
 from django.utils.text import slugify
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 
 from home.models import SubsectionIndexPage, TaggedContentPage, TaxonomyTerm
 from home.taxonomy import MARKET_NEWS_SLUG, ensure_top_row_taxonomy_terms
@@ -233,3 +233,43 @@ def update_tile_title(request: HttpRequest) -> JsonResponse:
             "url": page.url,
         }
     )
+
+
+@require_GET
+def search_articles(request: HttpRequest) -> JsonResponse:
+    query = str(request.GET.get("q") or "").strip()
+    random_raw = str(request.GET.get("random") or "").strip().lower()
+    random_mode = random_raw in ("1", "true", "yes")
+    if not random_mode and not _admin_inline_access(request.user):
+        return JsonResponse({"results": []}, status=403)
+    qs = TaggedContentPage.objects.live().public().order_by("-first_published_at")
+    if random_mode:
+        qs = qs.order_by("?")
+    elif query:
+        qs = qs.filter(title__icontains=query)
+    limit = 1 if random_mode else 20
+    rows = list(qs.select_related("section_term")[:limit])
+    results = [
+        {
+            "id": row.pk,
+            "title": row.title,
+            "excerpt": row.listing_preview_markdown(),
+            "section": row.section_term.name if row.section_term_id else "",
+            "url": row.get_url(request=request) or row.url or "",
+        }
+        for row in rows
+    ]
+    return JsonResponse({"results": results})
+
+
+@require_GET
+@user_passes_test(_admin_inline_access)
+def list_content_tags(request: HttpRequest) -> JsonResponse:
+    query = str(request.GET.get("q") or "").strip()
+    from home.models import ContentTag
+
+    tag_qs = ContentTag.objects.order_by("name")
+    if query:
+        tag_qs = tag_qs.filter(name__icontains=query)
+    results = [{"id": tag.pk, "name": tag.name, "slug": tag.slug} for tag in tag_qs[:100]]
+    return JsonResponse({"results": results})
