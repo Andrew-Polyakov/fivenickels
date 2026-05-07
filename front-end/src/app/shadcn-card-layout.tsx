@@ -18,7 +18,22 @@ import { cn } from '../lib/utils';
 export type ArticleCardPayload =
   | { kind: 'article'; title: string; href: string; excerpt: string; imageUrl: string }
   | { kind: 'empty' }
-  | { kind: 'stub'; message: string };
+  | { kind: 'stub'; message: string }
+  | {
+      kind: 'layout';
+      variant: 'biggies' | 'feature' | 'headline' | 'carousel' | 'free';
+      title: string;
+      imageUrl?: string;
+      imageMode?: 'half' | 'third' | 'wide' | 'square';
+      authorName?: string;
+      avatarUrl?: string;
+      carouselHeader?: string;
+      subcards?: string[];
+      widthPx?: number;
+      heightPx?: number;
+      freeX?: number;
+      freeY?: number;
+    };
 
 type RowItem =
   | { type: 'card'; card: ArticleCardPayload }
@@ -279,6 +294,29 @@ type CardPanelEntry = {
   dividerBefore: boolean;
 };
 
+function isFreeLayoutCard(card: ArticleCardPayload): boolean {
+  return card.kind === 'layout' && card.variant === 'free';
+}
+
+function defaultCardForVariant(variant: 'biggies' | 'feature' | 'headline' | 'carousel' | 'free'): ArticleCardPayload {
+  return {
+    kind: 'layout',
+    variant,
+    title: variant === 'headline' ? 'Headline title' : 'Card title',
+    imageMode: variant === 'biggies' ? 'third' : variant === 'feature' ? 'wide' : undefined,
+    imageUrl:
+      variant === 'biggies' || variant === 'feature'
+        ? 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=60'
+        : undefined,
+    carouselHeader: variant === 'carousel' ? 'Subsection header' : undefined,
+    subcards: variant === 'carousel' ? ['Card 1', 'Card 2', 'Card 3', 'Card 4', 'Card 5'] : undefined,
+    widthPx: variant === 'free' ? 800 : undefined,
+    heightPx: variant === 'free' ? 500 : undefined,
+    freeX: variant === 'free' ? 0 : undefined,
+    freeY: variant === 'free' ? 0 : undefined,
+  };
+}
+
 function collectCardPanels(items: RowItem[]): CardPanelEntry[] {
   const out: CardPanelEntry[] = [];
   let dividerBefore = false;
@@ -383,6 +421,8 @@ type ContextMenuState = {
   x: number;
   y: number;
   rowIndex: number | null;
+  itemIndex: number | null;
+  isCardMenu: boolean;
   /** Viewport Y when menu opened; used to place adds above/below horizontal separators. */
   clientY: number;
   /** Insert first card row immediately after this horizontal separator index (+ button gap). */
@@ -402,9 +442,13 @@ function getCsrfToken(): string | null {
 function ArticleCardView({
   data,
   onDelete,
+  enableMasterPane,
+  onCarouselHeaderChange,
 }: {
   data: ArticleCardPayload;
   onDelete?: () => void;
+  enableMasterPane?: boolean;
+  onCarouselHeaderChange?: (nextHeader: string) => void;
 }): React.JSX.Element {
   const deleteBtn =
     onDelete != null ? (
@@ -443,6 +487,55 @@ function ArticleCardView({
         <CardContent>
           <p className="scn-article-card__excerpt">{data.message}</p>
         </CardContent>
+      </Card>
+    );
+  }
+  if (data.kind === 'layout') {
+    const cls = `scn-card-variant scn-card-variant--${data.variant}`;
+    if (data.variant === 'carousel') {
+      return (
+        <Card className={cn('scn-article-card', cls)}>
+          {deleteBtn}
+          <CardContent>
+            {enableMasterPane ? (
+              <input
+                className="scn-carousel-header-input"
+                value={data.carouselHeader ?? 'Subsection header'}
+                onChange={(e) => onCarouselHeaderChange?.(e.currentTarget.value)}
+              />
+            ) : (
+              <h3 className="scn-carousel-header">{data.carouselHeader ?? 'Subsection header'}</h3>
+            )}
+            <div className="scn-carousel-subcards">
+              {(data.subcards ?? ['Card 1', 'Card 2', 'Card 3', 'Card 4', 'Card 5']).slice(0, 5).map((s, idx) => (
+                <article key={idx} className="scn-carousel-subcard">
+                  {s}
+                </article>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+    return (
+      <Card className={cn('scn-article-card', cls)}>
+        {deleteBtn}
+        {(data.variant === 'biggies' || data.variant === 'feature') && data.imageUrl ? (
+          <div className={cn('scn-article-card__media', data.imageMode === 'square' ? 'scn-media--square' : null)}>
+            <img src={data.imageUrl} alt="" className="scn-article-card__img" loading="lazy" />
+          </div>
+        ) : null}
+        <CardHeader>
+          <CardTitle>{data.title}</CardTitle>
+        </CardHeader>
+        {data.variant === 'headline' ? (
+          <CardContent>
+            <div className="scn-headline-meta">
+              <img className="scn-headline-avatar" src={data.avatarUrl || ''} alt="" />
+              <span>{data.authorName || 'Author'}</span>
+            </div>
+          </CardContent>
+        ) : null}
       </Card>
     );
   }
@@ -486,6 +579,7 @@ function ResizableCardRow({
   rowIndex,
   enableMasterPane,
   onDeleteCard,
+  onUpdateCard,
   onRemoveSubsection,
 }: {
   items: RowItem[];
@@ -493,6 +587,7 @@ function ResizableCardRow({
   rowIndex: number;
   enableMasterPane: boolean;
   onDeleteCard: (rowIndex: number, itemIndex: number) => void;
+  onUpdateCard?: (rowIndex: number, itemIndex: number, card: ArticleCardPayload) => void;
   /** Removes this entire row band (empty or not); same as context menu “Remove section”. */
   onRemoveSubsection?: (rowIndex: number) => void;
 }): React.JSX.Element {
@@ -521,18 +616,33 @@ function ResizableCardRow({
     return <div className="scn-subsection-empty scn-subsection-empty--placeholder" aria-hidden="true" />;
   }
   const onDel = enableMasterPane ? onDeleteCard : undefined;
-  if (panels.length === 1) {
+  const fixedPanels = panels.filter((p) => !isFreeLayoutCard(p.card));
+  const freePanels = panels.filter((p) => isFreeLayoutCard(p.card));
+  if (panels.length === 1 && fixedPanels.length === 1) {
     return (
       <div className="scn-card-row scn-card-row--single">
-        <ArticleCardView
-          data={panels[0].card}
-          onDelete={onDel ? () => onDel(rowIndex, panels[0].itemIndex) : undefined}
-        />
+        <div data-layout-card-item-index={fixedPanels[0].itemIndex}>
+          <ArticleCardView
+            data={fixedPanels[0].card}
+            enableMasterPane={enableMasterPane}
+            onCarouselHeaderChange={(header) => {
+              if (!onUpdateCard) {
+                return;
+              }
+              const card = fixedPanels[0].card;
+              if (card.kind !== 'layout' || card.variant !== 'carousel') {
+                return;
+              }
+              onUpdateCard(rowIndex, fixedPanels[0].itemIndex, { ...card, carouselHeader: header });
+            }}
+            onDelete={onDel ? () => onDel(rowIndex, fixedPanels[0].itemIndex) : undefined}
+          />
+        </div>
       </div>
     );
   }
-  const defaultPct = `${100 / panels.length}%`;
-  const horizontalChildren = panels.flatMap((entry, idx) => {
+  const defaultPct = `${100 / Math.max(1, fixedPanels.length)}%`;
+  const horizontalChildren = fixedPanels.flatMap((entry, idx) => {
     const panel = (
       <Panel
         key={`scn-panel-${panelGroupKey}-${entry.itemIndex}`}
@@ -542,10 +652,23 @@ function ResizableCardRow({
         className="scn-card-row__panel"
         style={{ overflow: 'hidden' }}
       >
-        <ArticleCardView
-          data={entry.card}
-          onDelete={onDel ? () => onDel(rowIndex, entry.itemIndex) : undefined}
-        />
+        <div data-layout-card-item-index={entry.itemIndex}>
+          <ArticleCardView
+            data={entry.card}
+            enableMasterPane={enableMasterPane}
+            onCarouselHeaderChange={(header) => {
+              if (!onUpdateCard) {
+                return;
+              }
+              const card = entry.card;
+              if (card.kind !== 'layout' || card.variant !== 'carousel') {
+                return;
+              }
+              onUpdateCard(rowIndex, entry.itemIndex, { ...card, carouselHeader: header });
+            }}
+            onDelete={onDel ? () => onDel(rowIndex, entry.itemIndex) : undefined}
+          />
+        </div>
       </Panel>
     );
     if (idx === 0) {
@@ -573,6 +696,37 @@ function ResizableCardRow({
       panel,
     ];
   });
+
+  const freeCanvas =
+    freePanels.length > 0 ? (
+      <div className="scn-free-canvas">
+        {freePanels.map((entry, idx) => {
+          const card = entry.card;
+          if (card.kind !== 'layout' || card.variant !== 'free') {
+            return null;
+          }
+          const widthPx = Math.min(2800, Math.max(320, card.widthPx ?? 800));
+          const heightPx = Math.min(1100, Math.max(220, card.heightPx ?? 500));
+          const freeX = Math.max(0, card.freeX ?? idx * 24);
+          const freeY = Math.max(0, card.freeY ?? idx * 16);
+          return (
+            <div
+              key={`scn-free-${panelGroupKey}-${entry.itemIndex}`}
+              className="scn-free-canvas__card"
+              data-layout-card-item-index={entry.itemIndex}
+              style={{ width: `${widthPx}px`, height: `${heightPx}px`, left: `${freeX}px`, top: `${freeY}px` }}
+            >
+              <ArticleCardView data={entry.card} onDelete={onDel ? () => onDel(rowIndex, entry.itemIndex) : undefined} />
+            </div>
+          );
+        })}
+      </div>
+    ) : null;
+
+  if (fixedPanels.length === 0) {
+    return <div className="scn-card-row--panels-outer">{freeCanvas}</div>;
+  }
+
   return (
     <div className="scn-card-row--panels-outer">
       <Group
@@ -582,6 +736,7 @@ function ResizableCardRow({
       >
         {horizontalChildren}
       </Group>
+      {freeCanvas}
     </div>
   );
 }
@@ -621,14 +776,26 @@ export function CardLayoutRoot({
     x: 0,
     y: 0,
     rowIndex: null,
+    itemIndex: null,
+    isCardMenu: false,
     clientY: 0,
     gapAfterSepIndex: null,
   });
+  const [propertiesOpen, setPropertiesOpen] = React.useState(false);
 
   React.useEffect(() => {
     baselineRowsRef.current = cloneRows(payload.rows);
     setRows(cloneRows(payload.rows));
-    setMenu({ open: false, x: 0, y: 0, rowIndex: null, clientY: 0, gapAfterSepIndex: null });
+    setMenu({
+      open: false,
+      x: 0,
+      y: 0,
+      rowIndex: null,
+      itemIndex: null,
+      isCardMenu: false,
+      clientY: 0,
+      gapAfterSepIndex: null,
+    });
     setLayoutDialogOpen(false);
     setPaneMenuOpen(false);
     setSavePending(false);
@@ -693,6 +860,24 @@ export function CardLayoutRoot({
     });
   }, []);
 
+  const updateCard = React.useCallback((rowIndex: number, itemIndex: number, card: ArticleCardPayload) => {
+    setRows((prev) => {
+      const row = prev[rowIndex];
+      if (!row || row.kind !== 'row') {
+        return prev;
+      }
+      const item = row.items[itemIndex];
+      if (!item || item.type !== 'card') {
+        return prev;
+      }
+      const nextItems = [...row.items];
+      nextItems[itemIndex] = { type: 'card', card };
+      const out = [...prev];
+      out[rowIndex] = { kind: 'row', items: nextItems };
+      return out;
+    });
+  }, []);
+
   const handlePaneSave = React.useCallback(() => {
     const url = saveMasterLayoutUrl.trim();
     const tid = taxonomyTermId.trim();
@@ -743,6 +928,41 @@ export function CardLayoutRoot({
     setRows(cloneRows(baselineRowsRef.current));
     setPaneMenuOpen(false);
   }, []);
+
+  const resetCardFromMenu = React.useCallback(() => {
+    const rowIndex = menu.rowIndex;
+    const itemIndex = menu.itemIndex;
+    if (rowIndex === null || itemIndex === null) {
+      return;
+    }
+    const baselineRow = baselineRowsRef.current[rowIndex];
+    const baselineItem = baselineRow && baselineRow.kind === 'row' ? baselineRow.items[itemIndex] : null;
+    if (baselineItem && baselineItem.type === 'card') {
+      updateCard(rowIndex, itemIndex, baselineItem.card);
+      setMenu((prev) => ({ ...prev, open: false, itemIndex: null, isCardMenu: false }));
+      return;
+    }
+    setRows((prev) => {
+      const row = prev[rowIndex];
+      if (!row || row.kind !== 'row') {
+        return prev;
+      }
+      const item = row.items[itemIndex];
+      if (!item || item.type !== 'card') {
+        return prev;
+      }
+      const fallback =
+        item.card.kind === 'layout'
+          ? defaultCardForVariant(item.card.variant)
+          : ({ kind: 'stub', message: 'New card' } satisfies ArticleCardPayload);
+      const nextItems = [...row.items];
+      nextItems[itemIndex] = { type: 'card', card: fallback };
+      const out = [...prev];
+      out[rowIndex] = { kind: 'row', items: nextItems };
+      return out;
+    });
+    setMenu((prev) => ({ ...prev, open: false, itemIndex: null, isCardMenu: false }));
+  }, [menu.rowIndex, menu.itemIndex, updateCard]);
 
   React.useEffect(() => {
     if (!menu.open) {
@@ -796,6 +1016,25 @@ export function CardLayoutRoot({
       return;
     }
     evt.preventDefault();
+    const cardEl = target.closest<HTMLElement>('[data-layout-card-item-index]');
+    if (cardEl) {
+      const cardItemIndex = Number.parseInt(cardEl.dataset['layoutCardItemIndex'] ?? '', 10);
+      const cardRowEl = target.closest<HTMLElement>('[data-layout-row-index]');
+      const cardRowIndex = Number.parseInt(cardRowEl?.dataset['layoutRowIndex'] ?? '', 10);
+      if (!Number.isNaN(cardItemIndex) && !Number.isNaN(cardRowIndex)) {
+        setMenu({
+          open: true,
+          x: evt.clientX,
+          y: evt.clientY,
+          rowIndex: cardRowIndex,
+          itemIndex: cardItemIndex,
+          isCardMenu: true,
+          clientY: evt.clientY,
+          gapAfterSepIndex: null,
+        });
+        return;
+      }
+    }
     const rowEl = target.closest<HTMLElement>('[data-layout-row-index]');
     let rowIndex: number | null = null;
     const rowAttr = rowEl?.dataset['layoutRowIndex'];
@@ -830,16 +1069,50 @@ export function CardLayoutRoot({
       x: evt.clientX,
       y: evt.clientY,
       rowIndex: Number.isNaN(rowIndex ?? NaN) ? null : rowIndex,
+      itemIndex: null,
+      isCardMenu: false,
+      clientY: evt.clientY,
+      gapAfterSepIndex: null,
+    });
+  };
+
+  const onCardClick = (evt: React.MouseEvent<HTMLDivElement>) => {
+    if (!enableMasterPane) {
+      return;
+    }
+    const target = evt.target as HTMLElement;
+    const cardEl = target.closest<HTMLElement>('[data-layout-card-item-index]');
+    const rowEl = target.closest<HTMLElement>('[data-layout-row-index]');
+    if (!cardEl || !rowEl) {
+      return;
+    }
+    const rowIndex = Number.parseInt(rowEl.dataset['layoutRowIndex'] ?? '', 10);
+    const itemIndex = Number.parseInt(cardEl.dataset['layoutCardItemIndex'] ?? '', 10);
+    if (Number.isNaN(rowIndex) || Number.isNaN(itemIndex)) {
+      return;
+    }
+    evt.preventDefault();
+    evt.stopPropagation();
+    setMenu({
+      open: true,
+      x: evt.clientX,
+      y: evt.clientY,
+      rowIndex,
+      itemIndex,
+      isCardMenu: true,
       clientY: evt.clientY,
       gapAfterSepIndex: null,
     });
   };
 
   /** Append card with optional vertical rule before it (when row already has items). */
-  const insertCard = (withVerticalSeparator: boolean) => {
+  const insertCardOfVariant = (
+    variant: 'biggies' | 'feature' | 'headline' | 'carousel' | 'free',
+    withVerticalSeparator: boolean
+  ) => {
     const newCard: RowItem = {
       type: 'card',
-      card: { kind: 'stub', message: 'New card' },
+      card: defaultCardForVariant(variant),
     };
     setRows((prev) => {
       if (prev.length === 0) {
@@ -871,6 +1144,41 @@ export function CardLayoutRoot({
       const cloned = [...prev];
       cloned[target] = { ...current, items: nextItems };
       return cloned;
+    });
+    setMenu((prev) => ({ ...prev, open: false, gapAfterSepIndex: null }));
+  };
+
+  const insertEmptyRow = () => {
+    setRows((prev) => {
+      const host = cardLayoutHostRef.current;
+      let insertAt = resolveHorizontalSepInsertIndexFromPointer(prev, host, menu.clientY, menu.rowIndex);
+      insertAt = Math.max(0, Math.min(insertAt, prev.length));
+      return [...prev.slice(0, insertAt), { kind: 'row', items: [] }, ...prev.slice(insertAt)];
+    });
+    setMenu((prev) => ({ ...prev, open: false, gapAfterSepIndex: null }));
+  };
+
+  const insertColumnStructureOnly = () => {
+    setRows((prev) => {
+      const host = cardLayoutHostRef.current;
+      const target = resolveCardTargetRowFromPointer(prev, host, menu.clientY, menu.rowIndex);
+      if (target === APPEND_NEW_ROW || target < 0) {
+        return prev;
+      }
+      const row = prev[target];
+      if (!row || row.kind !== 'row' || row.items.length === 0) {
+        return prev;
+      }
+      const last = row.items[row.items.length - 1];
+      if (last?.type === 'separator' && last.orientation === 'vertical') {
+        return prev;
+      }
+      const out = [...prev];
+      out[target] = {
+        kind: 'row',
+        items: [...row.items, { type: 'separator', orientation: 'vertical' }],
+      };
+      return out;
     });
     setMenu((prev) => ({ ...prev, open: false, gapAfterSepIndex: null }));
   };
@@ -936,6 +1244,8 @@ export function CardLayoutRoot({
                         x: r.left + r.width / 2,
                         y: r.bottom + 8,
                         rowIndex: i,
+                        itemIndex: null,
+                        isCardMenu: false,
                         clientY: r.top + r.height / 2,
                         gapAfterSepIndex: i,
                       });
@@ -966,6 +1276,7 @@ export function CardLayoutRoot({
               rowIndex={i}
               enableMasterPane={enableMasterPane}
               onDeleteCard={deleteCard}
+              onUpdateCard={enableMasterPane ? updateCard : undefined}
               onRemoveSubsection={enableMasterPane ? removeSubsectionRow : undefined}
             />
           )}
@@ -1102,6 +1413,7 @@ export function CardLayoutRoot({
           ref={cardLayoutHostRef}
           className="scn-card-layout-host scn-card-layout-host--master-pane"
           onContextMenu={onContextMenu}
+          onClick={onCardClick}
         >
         <div
           ref={verticalStackMeasureRef}
@@ -1140,6 +1452,8 @@ export function CardLayoutRoot({
               x: e.clientX,
               y: e.clientY,
               rowIndex: null,
+              itemIndex: null,
+              isCardMenu: false,
               clientY: e.clientY,
               gapAfterSepIndex: null,
             });
@@ -1147,21 +1461,77 @@ export function CardLayoutRoot({
         />
           {menu.open && enableMasterPane ? (
             <div className="scn-context-menu" style={{ left: menu.x, top: menu.y }} role="menu">
-              <button type="button" className="scn-context-menu__item" onClick={() => insertCard(false)}>
-                Add card
-              </button>
-              <button type="button" className="scn-context-menu__item" onClick={() => insertCard(true)}>
-                Add column (card + vertical rule)
-              </button>
-              <button type="button" className="scn-context-menu__item" onClick={insertSeparator}>
-                Add horizontal separator (row)
-              </button>
-              <div className="scn-context-menu__divider" role="separator" />
-              <button type="button" className="scn-context-menu__item scn-context-menu__item--danger" onClick={removeSectionFromMenu}>
-                Remove section
-              </button>
+              {menu.isCardMenu ? (
+                <>
+                  <button
+                    type="button"
+                    className="scn-context-menu__item"
+                    onClick={() => {
+                      setPropertiesOpen(true);
+                      setMenu((prev) => ({ ...prev, open: false }));
+                    }}
+                  >
+                    Properties
+                  </button>
+                  <button
+                    type="button"
+                    className="scn-context-menu__item"
+                    onClick={() => {
+                      if (menu.rowIndex !== null && menu.itemIndex !== null) {
+                        deleteCard(menu.rowIndex, menu.itemIndex);
+                      }
+                      setMenu((prev) => ({ ...prev, open: false, itemIndex: null, isCardMenu: false }));
+                    }}
+                  >
+                    Remove
+                  </button>
+                  <button type="button" className="scn-context-menu__item" onClick={resetCardFromMenu}>
+                    Reset
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button type="button" className="scn-context-menu__item" onClick={() => insertCardOfVariant('biggies', false)}>
+                    Add Biggies card
+                  </button>
+                  <button type="button" className="scn-context-menu__item" onClick={() => insertCardOfVariant('feature', false)}>
+                    Add 840x1230 card
+                  </button>
+                  <button type="button" className="scn-context-menu__item" onClick={() => insertCardOfVariant('headline', false)}>
+                    Add 830x330 card
+                  </button>
+                  <button type="button" className="scn-context-menu__item" onClick={() => insertCardOfVariant('carousel', false)}>
+                    Add 800x1200 carousel
+                  </button>
+                  <button type="button" className="scn-context-menu__item" onClick={() => insertCardOfVariant('free', false)}>
+                    Add free card
+                  </button>
+                  <div className="scn-context-menu__divider" role="separator" />
+                  <button type="button" className="scn-context-menu__item" onClick={insertColumnStructureOnly}>
+                    Add column
+                  </button>
+                  <button type="button" className="scn-context-menu__item" onClick={insertEmptyRow}>
+                    Add row
+                  </button>
+                  <button type="button" className="scn-context-menu__item" onClick={insertSeparator}>
+                    Add horizontal separator
+                  </button>
+                  <div className="scn-context-menu__divider" role="separator" />
+                  <button type="button" className="scn-context-menu__item scn-context-menu__item--danger" onClick={removeSectionFromMenu}>
+                    Remove section
+                  </button>
+                </>
+              )}
             </div>
           ) : null}
+          <Dialog open={propertiesOpen} onOpenChange={setPropertiesOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Card properties</DialogTitle>
+                <DialogDescription>Settings UI stub. Detailed properties will be added next.</DialogDescription>
+              </DialogHeader>
+            </DialogContent>
+          </Dialog>
           {paneMenubar}
         </div>
       </div>

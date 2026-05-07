@@ -14,6 +14,33 @@ from home.taxonomy import (
 )
 
 
+def _build_market_movers(rows: list, selected_region_key: str) -> dict:
+    """Build left-rail market movers groups from ticker snapshots."""
+    eligible = [
+        row
+        for row in rows
+        if row.enabled
+        and row.percent_change is not None
+        and (getattr(row, "market_region", "US") or "US").upper() == selected_region_key
+    ]
+    winner_rows = sorted(
+        [row for row in eligible if row.percent_change > 0],
+        key=lambda row: row.percent_change,
+        reverse=True,
+    )[:10]
+    looser_rows = sorted(
+        [row for row in eligible if row.percent_change < 0],
+        key=lambda row: row.percent_change,
+    )[:10]
+    winners = [chip_context_for_row(row) for row in winner_rows]
+    loosers = [chip_context_for_row(row) for row in looser_rows]
+    return {
+        "winners": winners,
+        "loosers": loosers,
+        "has_data": bool(winners or loosers),
+    }
+
+
 def market_header(request):
     from wagtail.models import Site
 
@@ -67,7 +94,25 @@ def market_header(request):
     rows = list(
         MarketTickerRow.objects.filter(enabled=True).order_by("sort_order", "symbol")
     )
+    selected_region_raw = (request.GET.get("market_region") or "US").strip().upper()
+    selected_region_key = (
+        selected_region_raw
+        if selected_region_raw in {"US", "ASIA", "EUROPE"}
+        else "US"
+    )
     header_tickers = [chip_context_for_row(row) for row in rows]
+    market_mover_tabs = []
+    for key, label in (("US", "US"), ("ASIA", "Asia"), ("EUROPE", "Europe")):
+        q = request.GET.copy()
+        q["market_region"] = key
+        market_mover_tabs.append(
+            {
+                "key": key,
+                "label": label,
+                "active": key == selected_region_key,
+                "url": f"{request.path}?{q.urlencode()}",
+            }
+        )
 
     forex_quotes = get_cached_forex_quote_rows()
     if not forex_quotes and getattr(settings, "FOREX_PAIRS", None):
@@ -76,6 +121,8 @@ def market_header(request):
     out = {
         "header_tickers": header_tickers,
         "forex_quotes": forex_quotes,
+        "market_movers": _build_market_movers(rows, selected_region_key),
+        "market_mover_tabs": market_mover_tabs,
         "header_home": home,
         "site_footer_roots": site_footer_roots,
         "footer_careers_page": CareersPage.objects.live().public().first(),

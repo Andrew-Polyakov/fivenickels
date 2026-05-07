@@ -1001,6 +1001,120 @@
   color: rgba(248, 250, 252, 0.65);
 }
 
+.scn-card-variant {
+  width: min(100%, var(--scn-card-w, 100%));
+  height: min(100%, var(--scn-card-h, auto));
+  max-width: 100%;
+}
+
+.scn-card-variant--biggies {
+  --scn-card-w: 1400px;
+  --scn-card-h: 300px;
+}
+
+.scn-card-variant--biggies .scn-article-card__media {
+  height: 100px;
+}
+
+.scn-card-variant--feature {
+  --scn-card-w: 840px;
+  --scn-card-h: 1230px;
+}
+
+.scn-card-variant--feature .scn-article-card__media {
+  height: 430px;
+}
+
+.scn-card-variant--feature .scn-media--square {
+  height: 800px;
+}
+
+.scn-card-variant--headline {
+  --scn-card-w: 830px;
+  --scn-card-h: 330px;
+}
+
+.scn-card-variant--headline .scn-card__title {
+  font-size: 1.45rem;
+  font-weight: 700;
+}
+
+.scn-headline-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.scn-headline-avatar {
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.3);
+}
+
+.scn-card-variant--carousel {
+  --scn-card-w: 800px;
+  --scn-card-h: 1200px;
+}
+
+.scn-carousel-header,
+.scn-carousel-header-input {
+  text-align: center;
+  width: 100%;
+  margin: 0 0 0.75rem;
+  font-weight: 600;
+}
+
+.scn-carousel-header-input {
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: 8px;
+  background: rgba(2, 6, 23, 0.55);
+  color: #f8fafc;
+  padding: 0.4rem 0.55rem;
+}
+
+.scn-carousel-subcards {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.scn-carousel-subcard {
+  width: min(100%, 210px);
+  min-height: 180px;
+  max-height: 790px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 8px;
+  padding: 0.45rem;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.scn-card-variant--free {
+  --scn-card-w: 100%;
+  --scn-card-h: auto;
+  max-width: 2800px;
+  max-height: 1100px;
+  resize: both;
+  overflow: auto;
+}
+
+.scn-free-canvas {
+  position: relative;
+  width: 100%;
+  min-height: 280px;
+  margin-top: 0.6rem;
+  border: 1px dashed rgba(148, 163, 184, 0.35);
+  border-radius: 10px;
+  background: rgba(2, 6, 23, 0.42);
+  overflow: auto;
+}
+
+.scn-free-canvas__card {
+  position: absolute;
+  max-width: 2800px;
+  max-height: 1100px;
+}
+
 .scn-separator {
   align-self: stretch;
 }

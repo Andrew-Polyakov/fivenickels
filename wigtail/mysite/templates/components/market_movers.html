@@ -1,0 +1,48 @@
+{% if market_movers %}
+<section class="market-movers" data-market-movers-root aria-label="Market movers">
+    <div class="market-movers__card">
+        <header class="market-movers__header">
+            <h2 class="market-movers__title">MARKET MOVERS</h2>
+            <div class="market-movers__toggle-group" role="tablist" aria-label="Market movers region">
+                {% for tab in market_mover_tabs %}
+                    <a
+                        href="{{ tab.url }}"
+                        class="market-movers__toggle-item{% if tab.active %} market-movers__toggle-item--active{% endif %}"
+                        data-market-movers-region-link
+                        role="tab"
+                        aria-selected="{% if tab.active %}true{% else %}false{% endif %}"
+                    >
+                        {{ tab.label }}
+                    </a>
+                {% endfor %}
+            </div>
+        </header>
+
+        {% if market_movers.has_data %}
+            <div class="market-movers__group">
+                <p class="market-movers__group-title">Winners:</p>
+                <ul class="market-movers__chip-list">
+                    {% for chip in market_movers.winners %}
+                        <li class="market-movers__chip-item">
+                            {% include "components/ticker_chip.html" with chip=chip %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="market-movers__group">
+                <p class="market-movers__group-title">Loosers:</p>
+                <ul class="market-movers__chip-list">
+                    {% for chip in market_movers.loosers %}
+                        <li class="market-movers__chip-item">
+                            {% include "components/ticker_chip.html" with chip=chip %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% else %}
+            <p class="market-movers__empty">No market mover data yet.</p>
+        {% endif %}
+    </div>
+</section>
+{% endif %}

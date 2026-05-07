@@ -370,6 +370,54 @@
         }
     }
 
+    function initMarketMoversFilter() {
+        var root = document.querySelector("[data-market-movers-root]");
+        if (!root || root.getAttribute("data-market-movers-bound") === "1") {
+            return;
+        }
+        root.setAttribute("data-market-movers-bound", "1");
+
+        root.addEventListener("click", function (evt) {
+            var link = evt.target && evt.target.closest
+                ? evt.target.closest("a[data-market-movers-region-link]")
+                : null;
+            if (!link) {
+                return;
+            }
+            evt.preventDefault();
+            var href = link.getAttribute("href");
+            if (!href) {
+                return;
+            }
+            fetch(href, {
+                credentials: "same-origin",
+                headers: { Accept: "text/html" },
+            })
+                .then(function (res) {
+                    if (!res.ok) {
+                        throw new Error("market movers fetch failed");
+                    }
+                    return res.text();
+                })
+                .then(function (html) {
+                    var parser = new DOMParser();
+                    var doc = parser.parseFromString(html, "text/html");
+                    var nextRoot = doc.querySelector("[data-market-movers-root]");
+                    if (!nextRoot) {
+                        throw new Error("market movers root missing");
+                    }
+                    root.replaceWith(nextRoot);
+                    if (window.history && window.history.replaceState) {
+                        window.history.replaceState({}, "", href);
+                    }
+                    initMarketMoversFilter();
+                })
+                .catch(function () {
+                    window.location.href = href;
+                });
+        });
+    }
+
     function initInlineTileTitleAdmin() {
         var titleButtons = document.querySelectorAll("[data-inline-tile-title]");
         titleButtons.forEach(function (btn) {
@@ -491,6 +539,7 @@
         initInlineTileTitleAdmin();
         initTileShareButtons();
         initShadcnCardLayouts();
+        initMarketMoversFilter();
     }
 
     function handleTurboFrameLoad(e) {
@@ -770,6 +819,7 @@
         initInlineTileTitleAdmin();
         initTileShareButtons();
         initShadcnCardLayouts();
+        initMarketMoversFilter();
     });
 
     document.addEventListener("turbo:load", function () {
@@ -785,6 +835,7 @@
         initInlineTileTitleAdmin();
         initTileShareButtons();
         initShadcnCardLayouts();
+        initMarketMoversFilter();
     });
 
     document.addEventListener("turbo:frame-load", handleTurboFrameLoad);

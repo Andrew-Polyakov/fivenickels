@@ -4,20 +4,22 @@
     class="forex-strip{% if forex_strip_modifier %} forex-strip--{{ forex_strip_modifier }}{% endif %}"
     aria-label="Major FX pairs"
 >
-    <ul class="forex-strip__grid">
-        {% for row in forex_quotes %}
-            <li class="forex-strip__cell">
-                <div
-                    class="ticker-chip__box forex-strip__box ticker-chip__box--{{ row.pct_class }}"
-                >
-                    <span class="ticker-chip__label forex-strip__label">{{ row.label }}</span>
-                    <div class="forex-strip__quote-line">
-                        <span class="forex-strip__mid">{{ row.mid_display }}</span>
-                        <span class="ticker-chip__pct">{{ row.pct_formatted }}</span>
+    <div class="forex-strip__card">
+        <ul class="forex-strip__grid">
+            {% for row in forex_quotes %}
+                <li class="forex-strip__cell">
+                    <div
+                        class="ticker-chip__box forex-strip__box ticker-chip__box--{{ row.pct_class }}"
+                    >
+                        <span class="ticker-chip__label forex-strip__label">{{ row.label }}</span>
+                        <div class="forex-strip__quote-line">
+                            <span class="forex-strip__mid">{{ row.mid_display }}</span>
+                            <span class="ticker-chip__pct">{{ row.pct_formatted }}</span>
+                        </div>
                     </div>
-                </div>
-            </li>
-        {% endfor %}
-    </ul>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
 </section>
 {% endif %}

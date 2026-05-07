@@ -652,6 +652,20 @@ body.template-homepage {
 
 }
 
+.forex-strip__card {
+
+    border: 1px solid rgba(148, 163, 184, 0.26);
+
+    border-radius: 0.5rem;
+
+    background: rgba(15, 23, 42, 0.58);
+
+    box-shadow: 0 8px 28px rgba(2, 6, 23, 0.34);
+
+    padding: 0.36rem;
+
+}
+
 /* FX cells reuse .ticker-chip__box glow (see .ticker-chip__box); grid stacks pair + quote row */
 
 .forex-strip__grid {
@@ -809,6 +823,170 @@ body.template-homepage {
 .forex-strip--section .ticker-chip__pct {
 
     font-size: 0.95rem;
+
+}
+
+.market-movers {
+
+    margin: 0.55rem auto 0;
+
+    width: 100%;
+
+    max-width: calc(min(42vw, 11rem) + 0.72rem);
+
+    color: var(--neon-white);
+
+    box-sizing: border-box;
+
+}
+
+.market-movers__card {
+
+    border: 1px solid rgba(148, 163, 184, 0.26);
+
+    border-radius: 0.5rem;
+
+    background: rgba(15, 23, 42, 0.58);
+
+    box-shadow: 0 8px 28px rgba(2, 6, 23, 0.34);
+
+    padding: 0.5rem 0.45rem;
+
+}
+
+.market-movers__header {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 0.25rem;
+
+}
+
+.market-movers__title {
+
+    margin: 0;
+
+    font-size: 0.86rem;
+
+    font-weight: 800;
+
+    letter-spacing: 0.04em;
+
+}
+
+.market-movers__toggle-group {
+
+    display: flex;
+
+    flex-direction: row;
+
+    align-items: center;
+
+    gap: 0.1rem;
+
+    width: fit-content;
+
+    border: 1px solid rgba(148, 163, 184, 0.26);
+
+    border-radius: 0.32rem;
+
+    background: rgba(15, 23, 42, 0.7);
+
+    padding: 0.1rem;
+
+}
+
+.market-movers__toggle-item {
+
+    appearance: none;
+
+    border: 0;
+
+    border-radius: 0.24rem;
+
+    padding: 0.1rem 0.35rem;
+
+    font-size: 0.62rem;
+
+    font-weight: 700;
+
+    letter-spacing: 0.01em;
+
+    color: rgba(199, 210, 254, 0.78);
+
+    background: transparent;
+
+    text-decoration: none;
+
+    display: inline-flex;
+
+    align-items: center;
+
+    cursor: pointer;
+
+}
+
+.market-movers__toggle-item--active {
+
+    color: var(--neon-white);
+
+    background: rgba(56, 189, 248, 0.22);
+
+}
+
+.market-movers__group {
+
+    margin-top: 0.5rem;
+
+}
+
+.market-movers__group-title {
+
+    margin: 0 0 0.22rem;
+
+    color: rgba(191, 194, 204, 0.9);
+
+    font-size: 0.62rem;
+
+    font-weight: 800;
+
+    letter-spacing: 0.07em;
+
+}
+
+.market-movers__chip-list {
+
+    margin: 0;
+
+    padding: 0;
+
+    list-style: none;
+
+    display: flex;
+
+    flex-direction: row;
+
+    flex-wrap: wrap;
+
+    gap: 0.28rem;
+
+}
+
+.market-movers__chip-item .ticker-chip {
+
+    min-width: 0;
+
+}
+
+.market-movers__empty {
+
+    margin: 0.5rem 0 0;
+
+    color: rgba(229, 231, 235, 0.8);
+
+    font-size: 0.66rem;
 
 }
 

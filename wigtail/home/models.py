@@ -120,6 +120,14 @@ class ContentTag(models.Model):
 
 @register_snippet
 class MarketTickerRow(models.Model):
+    REGION_US = "US"
+    REGION_EUROPE = "EUROPE"
+    REGION_ASIA = "ASIA"
+    REGION_CHOICES = (
+        (REGION_US, "US"),
+        (REGION_EUROPE, "Europe"),
+        (REGION_ASIA, "Asia"),
+    )
     """
     One Alpaca symbol shown in the header carousel. Run `manage.py sync_market_tickers`
     to refresh prices from Alpaca snapshots. Use a tradable symbol (e.g. SPY for S&P 500).
@@ -133,6 +141,13 @@ class MarketTickerRow(models.Model):
         max_length=120,
         blank=True,
         help_text='Optional headline label (e.g. "S&P 500" for SPY). Leave blank to use the symbol.',
+    )
+    market_region = models.CharField(
+        max_length=16,
+        choices=REGION_CHOICES,
+        default=REGION_US,
+        db_index=True,
+        help_text="Region used by the Market Movers toggle.",
     )
     sort_order = models.PositiveSmallIntegerField(default=0)
     enabled = models.BooleanField(default=True)
@@ -159,6 +174,7 @@ class MarketTickerRow(models.Model):
     panels = [
         FieldPanel("symbol"),
         FieldPanel("label"),
+        FieldPanel("market_region"),
         FieldPanel("tradingview_symbol"),
         FieldPanel("sort_order"),
         FieldPanel("enabled"),
