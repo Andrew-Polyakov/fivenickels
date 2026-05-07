@@ -240,6 +240,58 @@
   box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.2);
 }
 
+.scn-input-group {
+  position: relative;
+  width: 100%;
+}
+
+.scn-input-group__input {
+  width: 100%;
+}
+
+.scn-input-group:has(.scn-input-group__addon--start) .scn-input-group__input {
+  padding-inline-start: 2.35rem;
+}
+
+.scn-input-group:has(.scn-input-group__addon--end) .scn-input-group__input {
+  padding-inline-end: 2.35rem;
+}
+
+.scn-input-group__addon {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  color: rgba(148, 163, 184, 0.75);
+}
+
+.scn-input-group__addon svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.scn-input-group__addon--start {
+  inset-inline-start: 0.65rem;
+}
+
+.scn-input-group__addon--end {
+  inset-inline-end: 0.65rem;
+}
+
+.scn-properties-content-select {
+  appearance: auto;
+  color-scheme: dark;
+}
+
+.scn-properties-content-select option {
+  background: rgba(15, 23, 42, 0.98);
+  color: #f8fafc;
+}
+
 .scn-button {
   border-radius: 10px;
   font-weight: 600;
@@ -286,11 +338,19 @@
   padding: 0.45rem 0.6rem;
   text-align: left;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
 }
 
 .scn-properties-list__item--active {
   border-color: rgba(92, 255, 138, 0.72);
   box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.32) inset;
+}
+
+.scn-properties-list__meta {
+  font-size: 0.8rem;
+  color: rgba(248, 250, 252, 0.7);
 }
 
 .scn-properties-list__checkbox {
@@ -721,6 +781,41 @@
 .scn-card-layout__subsection--content > .scn-card-row--panels-outer {
   flex: 1 1 auto;
   min-height: 0;
+}
+
+/* Taxonomy master pane: non-resizable vertical stack of subsection bands */
+.scn-card-layout__taxonomy-band.scn-card-layout__subsection--content {
+  flex: 0 0 auto;
+  min-height: 410px;
+}
+
+.scn-taxonomy-column-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.scn-taxonomy-column-stack__empty {
+  flex: 1 1 auto;
+  min-height: 120px;
+  min-width: 48px;
+}
+
+.scn-taxonomy-stack-card {
+  width: 100%;
+  min-width: 0;
+}
+
+.scn-taxonomy-column-single {
+  width: 100%;
+  min-width: 0;
+}
+
+.scn-card-row--taxonomy-columns {
+  align-items: stretch;
 }
 
 .scn-card-row__panel {

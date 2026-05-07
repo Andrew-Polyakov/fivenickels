@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 
 from django.contrib.auth.decorators import user_passes_test
 from django.http import HttpRequest, JsonResponse
@@ -8,6 +9,7 @@ from django.utils.text import slugify
 from django.views.decorators.http import require_GET, require_POST
 
 from home.models import SubsectionIndexPage, TaggedContentPage, TaxonomyTerm
+from home.query import _section_term_ids_for_taxonomy_scope
 from home.taxonomy import MARKET_NEWS_SLUG, ensure_top_row_taxonomy_terms
 
 
@@ -180,7 +182,11 @@ def _normalize_master_layout_payload(layout: object) -> dict | None:
     rows = layout.get("rows")
     if not isinstance(rows, list) or len(rows) > 120:
         return None
-    return {"rows": rows}
+    out: dict[str, Any] = {"rows": rows}
+    lv = layout.get("layoutVersion")
+    if isinstance(lv, int) and 1 <= lv <= 99:
+        out["layoutVersion"] = lv
+    return out
 
 
 @require_POST
@@ -240,13 +246,51 @@ def search_articles(request: HttpRequest) -> JsonResponse:
     query = str(request.GET.get("q") or "").strip()
     random_raw = str(request.GET.get("random") or "").strip().lower()
     random_mode = random_raw in ("1", "true", "yes")
+    section_term_id_raw = str(request.GET.get("section_term_id") or "").strip()
+    tag_ids_raw = str(request.GET.get("tag_ids") or "").strip()
+    tag_ids: list[int] = []
+    if tag_ids_raw:
+        for p in tag_ids_raw.split(","):
+            v = p.strip()
+            if not v:
+                continue
+            try:
+                tag_ids.append(int(v))
+            except ValueError:
+                continue
+    exclude_ids_raw = str(request.GET.get("exclude_ids") or "").strip()
+    exclude_ids: list[int] = []
+    if exclude_ids_raw:
+        for p in exclude_ids_raw.split(","):
+            v = p.strip()
+            if not v:
+                continue
+            try:
+                exclude_ids.append(int(v))
+            except ValueError:
+                continue
+        exclude_ids = exclude_ids[:200]
     if not random_mode and not _admin_inline_access(request.user):
         return JsonResponse({"results": []}, status=403)
     qs = TaggedContentPage.objects.live().public().order_by("-first_published_at")
+    if section_term_id_raw:
+        try:
+            term = TaxonomyTerm.objects.filter(pk=int(section_term_id_raw)).first()
+        except ValueError:
+            term = None
+        if term is not None:
+            term_ids = _section_term_ids_for_taxonomy_scope(term)
+            if term_ids:
+                qs = qs.filter(section_term_id__in=term_ids)
+    if tag_ids:
+        qs = qs.filter(tags__in=tag_ids).distinct()
+    if exclude_ids:
+        qs = qs.exclude(pk__in=exclude_ids)
     if random_mode:
         qs = qs.order_by("?")
     elif query:
-        qs = qs.filter(title__icontains=query)
+        for token in [t for t in query.split() if t]:
+            qs = qs.filter(title__icontains=token)
     limit = 1 if random_mode else 20
     rows = list(qs.select_related("section_term")[:limit])
     results = [

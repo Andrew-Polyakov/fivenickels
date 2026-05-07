@@ -8,6 +8,8 @@ from typing import Any
 
 from wagtail.models import Page
 
+from django.http import HttpRequest
+
 from home.blocks import _resolve_universal_tile_state
 from home.models import TaggedContentPage
 
@@ -46,16 +48,77 @@ def _article_card_dict(page: Page | None, request) -> dict[str, Any]:
     }
 
 
-def _card_entry_from_block_value(card_value: dict, parent_context: dict | None) -> dict[str, Any]:
+def _tag_ids_from_art(art: dict) -> list[int]:
+    ids: list[int] = []
+    for t in art.get("tags") or []:
+        pk = getattr(t, "pk", None)
+        if pk is not None:
+            ids.append(int(pk))
+    return ids
+
+
+def _source_config_from_art_block(art: dict, request: HttpRequest | None) -> dict[str, Any]:
+    """Payload shape mirrored in front-end ``ContentSourceConfig``."""
+    art = art or {}
+    mode_raw = art.get("mode") or "random"
+    mode = str(mode_raw).strip() if mode_raw else "random"
+    # Align with legacy block values expected by React ``ContentSourceConfig``.
+    if mode == "manual_article":
+        mode = "specific_article"
+    elif mode == "random_category":
+        mode = "random"
+    tag_ids = _tag_ids_from_art(art)
+    cfg: dict[str, Any] = {"mode": mode, "tagIds": tag_ids}
+    specific_page = art.get("specific_page") or art.get("manual_page")
+    if specific_page is not None:
+        sp = specific_page.specific
+        href = ""
+        try:
+            href = (
+                sp.get_url(request=request) if request is not None else getattr(sp, "url", "") or ""
+            )
+        except Exception:
+            href = getattr(sp, "url", "") or ""
+        cfg["specificArticleId"] = sp.pk
+        cfg["specificArticleTitle"] = sp.title or ""
+        cfg["specificArticleUrl"] = href or ""
+    else:
+        cfg["specificArticleId"] = None
+        cfg["specificArticleTitle"] = ""
+        cfg["specificArticleUrl"] = ""
+    return cfg
+
+
+def _attach_source_config(card_payload: dict[str, Any], source_config: dict[str, Any]) -> dict[str, Any]:
+    merged = dict(card_payload)
+    merged["sourceConfig"] = source_config
+    return merged
+
+
+def _card_entry_from_block_value(
+    card_value: dict,
+    parent_context: dict | None,
+    used_page_ids: list[int],
+) -> dict[str, Any]:
     art = (card_value or {}).get("article") or {}
-    state = _resolve_universal_tile_state(art, parent_context, [])
     request = (parent_context or {}).get("request")
+    source_cfg = _source_config_from_art_block(art, request)
+    exclude = list(used_page_ids)
+    state = _resolve_universal_tile_state(art, parent_context, exclude)
     if state["kind"] == "stub":
-        return {"type": "card", "card": {"kind": "stub", "message": state.get("message") or ""}}
+        return {
+            "type": "card",
+            "card": _attach_source_config({"kind": "stub", "message": state.get("message") or ""}, source_cfg),
+        }
     if state["kind"] == "article":
-        payload = _article_card_dict(state.get("tile_page"), request)
-        return {"type": "card", "card": payload}
-    return {"type": "card", "card": {"kind": "empty"}}
+        tile_page = state.get("tile_page")
+        if tile_page is not None:
+            pk = getattr(tile_page, "pk", None)
+            if pk is not None:
+                used_page_ids.append(int(pk))
+        payload = _article_card_dict(tile_page, request)
+        return {"type": "card", "card": _attach_source_config(payload, source_cfg)}
+    return {"type": "card", "card": _attach_source_config({"kind": "empty"}, source_cfg)}
 
 
 def _normalize_row_items(row_items: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -85,6 +148,7 @@ def build_rows_from_card_buffer(
     """
     rows: list[dict[str, Any]] = []
     current_row: list[dict[str, Any]] = []
+    used_page_ids: list[int] = []
 
     def flush_row():
         nonlocal current_row
@@ -104,7 +168,7 @@ def build_rows_from_card_buffer(
             else:
                 current_row.append({"type": "separator", "orientation": "vertical"})
         elif block.block_type == "card":
-            current_row.append(_card_entry_from_block_value(block.value, parent_context))
+            current_row.append(_card_entry_from_block_value(block.value, parent_context, used_page_ids))
         else:
             flush_row()
     flush_row()

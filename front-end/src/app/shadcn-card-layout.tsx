@@ -1,10 +1,12 @@
 import * as React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { SearchIcon } from 'lucide-react';
 import { Group, Panel, Separator as ResizeSeparator } from 'react-resizable-panels';
 
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '../components/ui/input-group';
 import { Label } from '../components/ui/label';
 import { Select } from '../components/ui/select';
 import {
@@ -24,6 +26,7 @@ type ContentSourceConfig = {
   mode: ContentSourceMode;
   specificArticleId?: number | null;
   specificArticleTitle?: string;
+  specificArticleUrl?: string;
   tagIds?: number[];
 };
 
@@ -56,15 +59,27 @@ type LayoutRow =
   | { kind: 'row'; items: RowItem[] }
   | { kind: 'separator'; orientation: 'horizontal' | 'vertical' };
 
+export type CardLayoutPayload = {
+  rows: LayoutRow[];
+  layoutVersion?: number;
+};
+
 export type LayoutPresetId = 'twin' | 'three' | 'quattro' | 'grid-2x4';
+
+/** Persisted with taxonomy master layout JSON when using subsection column stacks. */
+export const TAXONOMY_MASTER_LAYOUT_VERSION = 2;
 
 function stubRowItem(message: string): RowItem {
   return { type: 'card', card: { kind: 'stub', message } };
 }
 
-function stubRow(panelCount: number, startLabel: number): LayoutRow {
+/** Legacy presets: N side-by-side columns (vertical separators between stubs). */
+function stubRowWithColumns(panelCount: number, startLabel: number): LayoutRow {
   const items: RowItem[] = [];
   for (let i = 0; i < panelCount; i++) {
+    if (i > 0) {
+      items.push({ type: 'separator', orientation: 'vertical' });
+    }
     items.push(stubRowItem(`Panel ${startLabel + i}`));
   }
   return { kind: 'row', items };
@@ -347,26 +362,159 @@ function collectCardPanels(items: RowItem[]): CardPanelEntry[] {
   return out;
 }
 
+/** v1 taxonomy rows: each adjacent card pair was a separate column. v2: only explicit vertical seps split columns. */
+function migrateTaxonomyMasterRowsV1ToV2(rows: LayoutRow[]): LayoutRow[] {
+  return rows.map((row) => {
+    if (row.kind !== 'row') {
+      return row;
+    }
+    const next: RowItem[] = [];
+    const items = row.items;
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      next.push(it);
+      if (it.type === 'card') {
+        const nxt = items[i + 1];
+        if (nxt && nxt.type === 'card') {
+          next.push({ type: 'separator', orientation: 'vertical' });
+        }
+      }
+    }
+    return { kind: 'row', items: next };
+  });
+}
+
+function ingestEditorRowsFromPayload(payload: CardLayoutPayload, taxonomySubsectionLayout: boolean): LayoutRow[] {
+  const base = cloneRows(payload.rows);
+  if (!taxonomySubsectionLayout) {
+    return base;
+  }
+  const v = payload.layoutVersion ?? 1;
+  if (v < TAXONOMY_MASTER_LAYOUT_VERSION) {
+    return migrateTaxonomyMasterRowsV1ToV2(base);
+  }
+  return base;
+}
+
+/** Card item indices per column (split on vertical RowItem separators). */
+function collectTaxonomyColumnItemIndices(items: RowItem[]): number[][] {
+  const cols: number[][] = [];
+  let cur: number[] = [];
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    if (item.type === 'separator' && item.orientation === 'vertical') {
+      cols.push(cur);
+      cur = [];
+    } else if (item.type === 'card') {
+      cur.push(i);
+    }
+  }
+  cols.push(cur);
+  return cols;
+}
+
+/** Insert position in `items` so a new card lands in column `columnIndex` (handles empty columns). */
+function taxonomyInsertIndexForColumn(items: RowItem[], columnIndex: number): number {
+  const cols = collectTaxonomyColumnItemIndices(items);
+  if (columnIndex < 0 || columnIndex >= cols.length) {
+    return items.length;
+  }
+  const col = cols[columnIndex];
+  if (col.length > 0) {
+    return col[col.length - 1] + 1;
+  }
+  if (columnIndex === 0) {
+    return 0;
+  }
+  let seen = 0;
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    if (it.type === 'separator' && it.orientation === 'vertical') {
+      seen++;
+      if (seen === columnIndex) {
+        return i + 1;
+      }
+    }
+  }
+  return items.length;
+}
+
+/** Which column (0-based) the pointer is in for hit-testing empty stack areas. */
+function resolveTaxonomyColumnByClientX(rowSlot: HTMLElement, clientX: number): number {
+  const markers = Array.from(rowSlot.querySelectorAll<HTMLElement>('[data-taxonomy-column-index]')).filter((el) =>
+    rowSlot.contains(el)
+  );
+  if (markers.length === 0) {
+    return 0;
+  }
+  const annotated = markers
+    .map((el) => {
+      const idx = Number.parseInt(el.dataset['taxonomyColumnIndex'] ?? '', 10);
+      const r = el.getBoundingClientRect();
+      return { el, idx: Number.isNaN(idx) ? 0 : idx, r };
+    })
+    .sort((a, b) => a.r.left - b.r.left);
+
+  for (let i = 0; i < annotated.length; i++) {
+    const { el, r } = annotated[i];
+    const isLast = i === annotated.length - 1;
+    const inside = isLast ? clientX >= r.left && clientX <= r.right : clientX >= r.left && clientX < r.right;
+    if (inside) {
+      return Number.parseInt(el.dataset['taxonomyColumnIndex'] ?? '0', 10) || 0;
+    }
+  }
+  let bestIdx = annotated[0].idx;
+  let bestD = Number.POSITIVE_INFINITY;
+  for (const { el, r } of annotated) {
+    const mid = (r.left + r.right) / 2;
+    const d = Math.abs(clientX - mid);
+    if (d < bestD) {
+      bestD = d;
+      bestIdx = Number.parseInt(el.dataset['taxonomyColumnIndex'] ?? '0', 10) || 0;
+    }
+  }
+  return bestIdx;
+}
+
+/** Splice index: same column as anchor card, else column under pointer, else last column. */
+function taxonomyInsertPositionForNewCard(
+  items: RowItem[],
+  anchorItemIndex: number | null,
+  pointerColumnIndex: number | null
+): number {
+  const cols = collectTaxonomyColumnItemIndices(items);
+  if (cols.length === 0) {
+    return 0;
+  }
+  if (anchorItemIndex !== null) {
+    const found = cols.find((col) => col.includes(anchorItemIndex));
+    if (found && found.length > 0) {
+      return found[found.length - 1] + 1;
+    }
+  }
+  const ci =
+    pointerColumnIndex !== null && pointerColumnIndex >= 0 && pointerColumnIndex < cols.length
+      ? pointerColumnIndex
+      : cols.length - 1;
+  return taxonomyInsertIndexForColumn(items, ci);
+}
+
 export function presetToRows(preset: LayoutPresetId): LayoutRow[] {
   switch (preset) {
     case 'twin':
-      return [stubRow(2, 1)];
+      return [stubRowWithColumns(2, 1)];
     case 'three':
-      return [stubRow(3, 1)];
+      return [stubRowWithColumns(3, 1)];
     case 'quattro':
-      return [stubRow(4, 1)];
+      return [stubRowWithColumns(4, 1)];
     case 'grid-2x4':
       return [
-        stubRow(4, 1),
+        stubRowWithColumns(4, 1),
         { kind: 'separator', orientation: 'horizontal' },
-        stubRow(4, 5),
+        stubRowWithColumns(4, 5),
       ];
   }
 }
-
-export type CardLayoutPayload = {
-  rows: LayoutRow[];
-};
 
 /** Card content min 400px + 10px outer margin (must fit within container or resize breaks). */
 const CARD_MIN_CONTENT_PX = 400;
@@ -438,6 +586,10 @@ type ContextMenuState = {
   isCardMenu: boolean;
   /** Viewport Y when menu opened; used to place adds above/below horizontal separators. */
   clientY: number;
+  /** Viewport X when menu opened; taxonomy: which column partition was clicked. */
+  clientX: number;
+  /** Taxonomy subsection: 0-based column from pointer (or null → last column). */
+  taxonomyColumnIndex: number | null;
   /** Insert first card row immediately after this horizontal separator index (+ button gap). */
   gapAfterSepIndex: number | null;
 };
@@ -565,6 +717,187 @@ function ArticleCardView({
   );
 }
 
+/** Taxonomy master pane: columns of vertically stacked cards (horizontal resize between columns only). */
+function TaxonomyStackedCardRow({
+  items,
+  panelGroupKey,
+  rowIndex,
+  enableMasterPane,
+  onDeleteCard,
+  onUpdateCard,
+  onRemoveSubsection,
+}: {
+  items: RowItem[];
+  panelGroupKey: string;
+  rowIndex: number;
+  enableMasterPane: boolean;
+  onDeleteCard: (rowIndex: number, itemIndex: number) => void;
+  onUpdateCard?: (rowIndex: number, itemIndex: number, card: ArticleCardPayload) => void;
+  onRemoveSubsection?: (rowIndex: number) => void;
+}): React.JSX.Element {
+  const hasCard = items.some((x) => x.type === 'card');
+  if (!hasCard) {
+    if (enableMasterPane && onRemoveSubsection) {
+      return (
+        <div className="scn-subsection-empty">
+          <button
+            type="button"
+            className="scn-subsection-empty__remove"
+            aria-label="Remove section"
+            title="Remove this section"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onRemoveSubsection(rowIndex);
+            }}
+          >
+            ×
+          </button>
+        </div>
+      );
+    }
+    return <div className="scn-subsection-empty scn-subsection-empty--placeholder" aria-hidden="true" />;
+  }
+
+  const cols = collectTaxonomyColumnItemIndices(items);
+  const onDel = enableMasterPane ? onDeleteCard : undefined;
+
+  const renderStackCell = (itemIndex: number): React.JSX.Element | null => {
+    const item = items[itemIndex];
+    if (!item || item.type !== 'card') {
+      return null;
+    }
+    const card = item.card;
+    const free = isFreeLayoutCard(card);
+    const inner = (
+      <ArticleCardView
+        data={card}
+        enableMasterPane={enableMasterPane}
+        onCarouselHeaderChange={(header) => {
+          if (!onUpdateCard) {
+            return;
+          }
+          if (card.kind !== 'layout' || card.variant !== 'carousel') {
+            return;
+          }
+          onUpdateCard(rowIndex, itemIndex, { ...card, carouselHeader: header });
+        }}
+        onDelete={onDel ? () => onDel(rowIndex, itemIndex) : undefined}
+      />
+    );
+    if (free && card.kind === 'layout' && card.variant === 'free') {
+      const widthPx = Math.min(2800, Math.max(320, card.widthPx ?? 800));
+      const heightPx = Math.min(1100, Math.max(220, card.heightPx ?? 500));
+      return (
+        <div
+          key={`scn-tstack-cell-${panelGroupKey}-${itemIndex}`}
+          className="scn-taxonomy-stack-card scn-taxonomy-stack-card--free"
+          data-layout-card-item-index={itemIndex}
+          style={{ width: `${widthPx}px`, maxWidth: '100%' }}
+        >
+          <div className="scn-taxonomy-stack-card__free-inner" style={{ minHeight: `${heightPx}px` }}>
+            {inner}
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div
+        key={`scn-tstack-cell-${panelGroupKey}-${itemIndex}`}
+        className="scn-taxonomy-stack-card"
+        data-layout-card-item-index={itemIndex}
+      >
+        {inner}
+      </div>
+    );
+  };
+
+  const renderColumn = (colIndices: number[], colIdx: number): React.JSX.Element => {
+    const stackBody =
+      colIndices.length === 0 ? (
+        <div className="scn-taxonomy-column-stack__empty" aria-hidden="true" />
+      ) : (
+        colIndices.map((idx) => renderStackCell(idx))
+      );
+    const stack = <div className="scn-taxonomy-column-stack">{stackBody}</div>;
+    if (cols.length === 1) {
+      return (
+        <div
+          className="scn-taxonomy-column-single"
+          key={`scn-tstack-col-${panelGroupKey}-${colIdx}`}
+          data-taxonomy-column-index={colIdx}
+        >
+          {stack}
+        </div>
+      );
+    }
+    return (
+      <Panel
+        key={`scn-tpanel-${panelGroupKey}-${colIdx}`}
+        defaultSize={`${(100 / Math.max(1, cols.length)).toFixed(4)}%`}
+        minSize="0%"
+        id={`scn-tpanel-${panelGroupKey}-${colIdx}`}
+        className="scn-card-row__panel scn-taxonomy-column-panel"
+        style={{ overflow: 'hidden' }}
+      >
+        <div
+          className="scn-taxonomy-column-hit"
+          data-taxonomy-column-index={colIdx}
+          style={{ height: '100%', minHeight: 0, boxSizing: 'border-box' }}
+        >
+          {stack}
+        </div>
+      </Panel>
+    );
+  };
+
+  if (cols.length === 1) {
+    return (
+      <div className="scn-card-row--panels-outer scn-card-row--taxonomy-stack">
+        {renderColumn(cols[0] ?? [], 0)}
+      </div>
+    );
+  }
+
+  const horizontalChildren = cols.flatMap((colIndices, colIdx) => {
+    const panel = renderColumn(colIndices, colIdx);
+    if (colIdx === 0) {
+      return [panel];
+    }
+    return [
+      <ResizeSeparator
+        key={`scn-thsep-${panelGroupKey}-${colIdx}`}
+        className={cn(
+          'scn-resize-handle',
+          'scn-resize-handle--between-columns',
+          'scn-resize-handle--with-separator'
+        )}
+        id={`scn-thsep-${panelGroupKey}-${colIdx}`}
+      >
+        <UiSeparator
+          orientation="vertical"
+          decorative
+          className="scn-resize-handle__sep scn-resize-handle__sep--emphasis"
+        />
+      </ResizeSeparator>,
+      panel,
+    ];
+  });
+
+  return (
+    <div className="scn-card-row--panels-outer scn-card-row--taxonomy-stack">
+      <Group
+        orientation="horizontal"
+        className="scn-card-row scn-card-row--panels scn-card-row--taxonomy-columns"
+        style={{ height: '100%', width: '100%', alignSelf: 'stretch' }}
+      >
+        {horizontalChildren}
+      </Group>
+    </div>
+  );
+}
+
 function ResizableCardRow({
   items,
   panelGroupKey,
@@ -676,14 +1009,13 @@ function ResizableCardRow({
         )}
         id={`scn-hsep-${panelGroupKey}-${entry.itemIndex}`}
       >
-        <UiSeparator
-          orientation="vertical"
-          decorative
-          className={cn(
-            'scn-resize-handle__sep',
-            entry.dividerBefore && 'scn-resize-handle__sep--emphasis'
-          )}
-        />
+        {entry.dividerBefore ? (
+          <UiSeparator
+            orientation="vertical"
+            decorative
+            className="scn-resize-handle__sep scn-resize-handle__sep--emphasis"
+          />
+        ) : null}
       </ResizeSeparator>,
       panel,
     ];
@@ -736,6 +1068,7 @@ function ResizableCardRow({
 export function CardLayoutRoot({
   payload,
   enableMasterPane,
+  taxonomySubsectionLayout = false,
   sectionTitle = '',
   taxonomyTermId = '',
   canSaveMasterLayout = false,
@@ -743,20 +1076,26 @@ export function CardLayoutRoot({
 }: {
   payload: CardLayoutPayload;
   enableMasterPane: boolean;
+  /** Taxonomy drilldown master pane: stacked tiles per column, fixed-height subsection bands. */
+  taxonomySubsectionLayout?: boolean;
   sectionTitle?: string;
   taxonomyTermId?: string;
   canSaveMasterLayout?: boolean;
   saveMasterLayoutUrl?: string;
 }): React.JSX.Element {
-  const baselineRowsRef = React.useRef<LayoutRow[]>(cloneRows(payload.rows));
-  const [rows, setRows] = React.useState<LayoutRow[]>(() => cloneRows(payload.rows));
+  const baselineRowsRef = React.useRef<LayoutRow[]>(ingestEditorRowsFromPayload(payload, taxonomySubsectionLayout));
+  const [rows, setRows] = React.useState<LayoutRow[]>(() =>
+    ingestEditorRowsFromPayload(payload, taxonomySubsectionLayout)
+  );
   const [layoutDialogOpen, setLayoutDialogOpen] = React.useState(false);
   const [paneMenuOpen, setPaneMenuOpen] = React.useState(false);
   const [savePending, setSavePending] = React.useState(false);
   const paneMenuRef = React.useRef<HTMLDivElement>(null);
   const cardLayoutHostRef = React.useRef<HTMLDivElement>(null);
   const verticalStackMeasureRef = React.useRef<HTMLDivElement>(null);
-  const rowBandPanelCount = Math.max(1, rows.filter((r) => r.kind === 'row').length);
+  const rowBandPanelCount = taxonomySubsectionLayout
+    ? 1
+    : Math.max(1, rows.filter((r) => r.kind === 'row').length);
   const rowBandMinPct = useFeasiblePanelMinPercent(
     verticalStackMeasureRef,
     rowBandPanelCount,
@@ -771,13 +1110,15 @@ export function CardLayoutRoot({
     itemIndex: null,
     isCardMenu: false,
     clientY: 0,
+    clientX: 0,
+    taxonomyColumnIndex: null,
     gapAfterSepIndex: null,
   });
   const [propertiesOpen, setPropertiesOpen] = React.useState(false);
   const [propertiesSourceMode, setPropertiesSourceMode] = React.useState<ContentSourceMode>('random');
   const [articleSearchQuery, setArticleSearchQuery] = React.useState('');
   const [articleSearchResults, setArticleSearchResults] = React.useState<
-    Array<{ id: number; title: string; excerpt?: string; section: string; url: string }>
+    Array<{ title: string; preview: string; url: string }>
   >([]);
   const [specificArticle, setSpecificArticle] = React.useState<{ id: number | null; title: string; url: string }>({
     id: null,
@@ -787,17 +1128,41 @@ export function CardLayoutRoot({
   const [tagQuery, setTagQuery] = React.useState('');
   const [tagResults, setTagResults] = React.useState<Array<{ id: number; name: string; slug: string }>>([]);
   const [selectedTagIds, setSelectedTagIds] = React.useState<number[]>([]);
-  const fetchRandomArticlePreview = React.useCallback(async () => {
-    const res = await fetch('/inline/article/search/?random=1', { credentials: 'same-origin' });
-    if (!res.ok) {
-      throw new Error('Random article lookup failed');
-    }
-    const data = (await res.json()) as {
-      results?: Array<{ id: number; title: string; excerpt?: string; section: string; url: string }>;
-    };
-    return data.results?.[0] ?? null;
+  const showSpecificArticleControls = propertiesSourceMode === 'specific_article';
+  const showTaggedWithControls = propertiesSourceMode === 'tagged_with';
+  const plainText = React.useCallback((value: string): string => {
+    const el = document.createElement('div');
+    el.innerHTML = value || '';
+    return (el.textContent || '').trim();
   }, []);
+
+  const fetchRandomArticlePreview = React.useCallback(
+    async (opts?: { tagIds?: number[]; excludeIds?: number[] }) => {
+      const q = new URLSearchParams();
+      q.set('random', '1');
+      const sectionTermId = Number.parseInt(taxonomyTermId, 10);
+      if (!Number.isNaN(sectionTermId) && sectionTermId > 0) {
+        q.set('section_term_id', String(sectionTermId));
+      }
+      if (opts?.tagIds && opts.tagIds.length > 0) {
+        q.set('tag_ids', opts.tagIds.join(','));
+      }
+      if (opts?.excludeIds && opts.excludeIds.length > 0) {
+        q.set('exclude_ids', opts.excludeIds.join(','));
+      }
+      const res = await fetch(`/inline/article/search/?${q.toString()}`, { credentials: 'same-origin' });
+      if (!res.ok) {
+        throw new Error('Random article lookup failed');
+      }
+      const data = (await res.json()) as {
+        results?: Array<{ id: number; title: string; excerpt?: string; section: string; url: string }>;
+      };
+      return data.results?.[0] ?? null;
+    },
+    [taxonomyTermId]
+  );
   const randomHydrationInFlightRef = React.useRef(false);
+  const attemptedAutoHydrationRef = React.useRef<Set<string>>(new Set());
 
   const activeCardTarget = React.useMemo(() => {
     if (menu.rowIndex === null || menu.itemIndex === null) {
@@ -815,8 +1180,10 @@ export function CardLayoutRoot({
   }, [menu.rowIndex, menu.itemIndex, rows]);
 
   React.useEffect(() => {
-    baselineRowsRef.current = cloneRows(payload.rows);
-    setRows(cloneRows(payload.rows));
+    const ingested = ingestEditorRowsFromPayload(payload, taxonomySubsectionLayout);
+    baselineRowsRef.current = cloneRows(ingested);
+    setRows(cloneRows(ingested));
+    attemptedAutoHydrationRef.current = new Set();
     setMenu({
       open: false,
       x: 0,
@@ -825,18 +1192,20 @@ export function CardLayoutRoot({
       itemIndex: null,
       isCardMenu: false,
       clientY: 0,
+      clientX: 0,
+      taxonomyColumnIndex: null,
       gapAfterSepIndex: null,
     });
     setLayoutDialogOpen(false);
     setPaneMenuOpen(false);
     setSavePending(false);
-  }, [payload]);
+  }, [payload, taxonomySubsectionLayout]);
 
   React.useEffect(() => {
     if (randomHydrationInFlightRef.current) {
       return;
     }
-    const randomTargets: Array<{ rowIndex: number; itemIndex: number }> = [];
+    const randomTargets: Array<{ rowIndex: number; itemIndex: number; tagIds?: number[]; key: string }> = [];
     rows.forEach((row, rowIndex) => {
       if (row.kind !== 'row') {
         return;
@@ -845,27 +1214,48 @@ export function CardLayoutRoot({
         if (item.type !== 'card') {
           return;
         }
-        if (item.card.sourceConfig?.mode !== 'random') {
+        const mode = item.card.sourceConfig?.mode;
+        if (mode !== 'random' && mode !== 'tagged_with') {
           return;
         }
         if (item.card.kind === 'article' && item.card.title.trim()) {
           return;
         }
-        randomTargets.push({ rowIndex, itemIndex });
+        const cfg = item.card.sourceConfig;
+        const key = `${rowIndex}:${itemIndex}:${mode}:${(cfg?.tagIds ?? []).join(',')}:${cfg?.specificArticleId ?? ''}:${cfg?.specificArticleTitle ?? ''}`;
+        if (attemptedAutoHydrationRef.current.has(key)) {
+          return;
+        }
+        randomTargets.push({
+          rowIndex,
+          itemIndex,
+          tagIds: mode === 'tagged_with' ? item.card.sourceConfig?.tagIds : [],
+          key,
+        });
       });
     });
     if (randomTargets.length === 0) {
       return;
     }
+    randomTargets.forEach((t) => attemptedAutoHydrationRef.current.add(t.key));
     randomHydrationInFlightRef.current = true;
     void (async () => {
       try {
-        const picked = await Promise.all(
-          randomTargets.map(async (target) => ({
-            target,
-            article: await fetchRandomArticlePreview(),
-          }))
-        );
+        const usedArticleIds = new Set<number>();
+        const picked: Array<{
+          target: (typeof randomTargets)[0];
+          article: Awaited<ReturnType<typeof fetchRandomArticlePreview>>;
+        }> = [];
+        for (const target of randomTargets) {
+          const article = await fetchRandomArticlePreview({
+            tagIds: target.tagIds ?? [],
+            excludeIds: [...usedArticleIds],
+          });
+          picked.push({ target, article });
+          if (article?.id) {
+            usedArticleIds.add(article.id);
+          }
+        }
         setRows((prev) => {
           const out = [...prev];
           picked.forEach(({ target, article }) => {
@@ -881,7 +1271,8 @@ export function CardLayoutRoot({
             if (!rowItem || rowItem.type !== 'card') {
               return;
             }
-            if (rowItem.card.sourceConfig?.mode !== 'random') {
+            const mode = rowItem.card.sourceConfig?.mode;
+            if (mode !== 'random' && mode !== 'tagged_with') {
               return;
             }
             rowItems[target.itemIndex] = {
@@ -940,6 +1331,7 @@ export function CardLayoutRoot({
       ...m,
       open: false,
       gapAfterSepIndex: null,
+      taxonomyColumnIndex: null,
     }));
   }, [menu]);
 
@@ -981,16 +1373,13 @@ export function CardLayoutRoot({
       return out;
     });
   }, []);
-
-  const handlePaneSave = React.useCallback(() => {
-    const url = saveMasterLayoutUrl.trim();
-    const tid = taxonomyTermId.trim();
-    if (!canSaveMasterLayout || !url || !tid) {
-      setPaneMenuOpen(false);
-      return;
-    }
-    setSavePending(true);
-    void (async () => {
+  const saveLayoutRowsToServer = React.useCallback(
+    async (layoutRows: LayoutRow[], showSuccessToast: boolean): Promise<boolean> => {
+      const url = saveMasterLayoutUrl.trim();
+      const tid = taxonomyTermId.trim();
+      if (!canSaveMasterLayout || !url || !tid) {
+        return true;
+      }
       try {
         const token = getCsrfToken();
         const res = await fetch(url, {
@@ -1002,7 +1391,10 @@ export function CardLayoutRoot({
           credentials: 'same-origin',
           body: JSON.stringify({
             term_id: Number.parseInt(tid, 10),
-            layout: { rows: cloneRows(rows) },
+            layout: {
+              rows: cloneRows(layoutRows),
+              ...(taxonomySubsectionLayout ? { layoutVersion: TAXONOMY_MASTER_LAYOUT_VERSION } : {}),
+            },
           }),
         });
         let data: { error?: string } = {};
@@ -1013,18 +1405,36 @@ export function CardLayoutRoot({
         }
         if (!res.ok) {
           toast.error(data.error || `Save failed (${res.status})`);
-          return;
+          return false;
         }
-        baselineRowsRef.current = cloneRows(rows);
-        toast.success('Layout saved to the server.');
+        baselineRowsRef.current = cloneRows(layoutRows);
+        if (showSuccessToast) {
+          toast.success('Layout saved to the server.');
+        }
+        return true;
       } catch {
         toast.error('Could not reach the server.');
+        return false;
+      }
+    },
+    [canSaveMasterLayout, saveMasterLayoutUrl, taxonomySubsectionLayout, taxonomyTermId]
+  );
+
+  const handlePaneSave = React.useCallback(() => {
+    if (!canSaveMasterLayout || !saveMasterLayoutUrl.trim() || !taxonomyTermId.trim()) {
+      setPaneMenuOpen(false);
+      return;
+    }
+    setSavePending(true);
+    void (async () => {
+      try {
+        await saveLayoutRowsToServer(rows, true);
       } finally {
         setSavePending(false);
         setPaneMenuOpen(false);
       }
     })();
-  }, [canSaveMasterLayout, saveMasterLayoutUrl, taxonomyTermId, rows]);
+  }, [canSaveMasterLayout, rows, saveLayoutRowsToServer, saveMasterLayoutUrl, taxonomyTermId]);
 
   /** Restores layout rows only; does not change URL or taxonomy nav selection. */
   const handlePaneReset = React.useCallback(() => {
@@ -1043,7 +1453,13 @@ export function CardLayoutRoot({
     const baselineItem = baselineRow && baselineRow.kind === 'row' ? baselineRow.items[itemIndex] : null;
     if (baselineItem && baselineItem.type === 'card') {
       updateCard(rowIndex, itemIndex, baselineItem.card);
-      setMenu((prev) => ({ ...prev, open: false, itemIndex: null, isCardMenu: false }));
+      setMenu((prev) => ({
+        ...prev,
+        open: false,
+        itemIndex: null,
+        isCardMenu: false,
+        taxonomyColumnIndex: null,
+      }));
       return;
     }
     setRows((prev) => {
@@ -1065,7 +1481,13 @@ export function CardLayoutRoot({
       out[rowIndex] = { kind: 'row', items: nextItems };
       return out;
     });
-    setMenu((prev) => ({ ...prev, open: false, itemIndex: null, isCardMenu: false }));
+    setMenu((prev) => ({
+      ...prev,
+      open: false,
+      itemIndex: null,
+      isCardMenu: false,
+      taxonomyColumnIndex: null,
+    }));
   }, [menu.rowIndex, menu.itemIndex, updateCard]);
 
   const saveProperties = React.useCallback(() => {
@@ -1077,6 +1499,7 @@ export function CardLayoutRoot({
       mode: propertiesSourceMode,
       specificArticleId: propertiesSourceMode === 'specific_article' ? specificArticle.id : null,
       specificArticleTitle: propertiesSourceMode === 'specific_article' ? specificArticle.title : '',
+      specificArticleUrl: propertiesSourceMode === 'specific_article' ? specificArticle.url : '',
       tagIds: propertiesSourceMode === 'tagged_with' ? selectedTagIds : [],
     };
     let nextCard: ArticleCardPayload = { ...activeCardTarget.card, sourceConfig: nextSource };
@@ -1090,10 +1513,12 @@ export function CardLayoutRoot({
         sourceConfig: nextSource,
       };
     }
-    if (propertiesSourceMode === 'random') {
-      void (async () => {
+    void (async () => {
+      if (propertiesSourceMode === 'random' || propertiesSourceMode === 'tagged_with') {
         try {
-          const randomArticle = await fetchRandomArticlePreview();
+          const randomArticle = await fetchRandomArticlePreview({
+            tagIds: propertiesSourceMode === 'tagged_with' ? selectedTagIds : [],
+          });
           if (randomArticle?.id && randomArticle.title) {
             nextCard = {
               kind: 'article',
@@ -1104,26 +1529,32 @@ export function CardLayoutRoot({
               sourceConfig: nextSource,
             };
           }
-          updateCard(activeCardTarget.rowIndex, activeCardTarget.itemIndex, nextCard);
         } catch {
           await (window.showMaterialAlert?.('Could not load random article preview.', 'Card properties') ??
             Promise.resolve());
-          updateCard(activeCardTarget.rowIndex, activeCardTarget.itemIndex, nextCard);
-        } finally {
-          setPropertiesOpen(false);
         }
-      })();
-      return;
-    }
-    updateCard(activeCardTarget.rowIndex, activeCardTarget.itemIndex, nextCard);
-    setPropertiesOpen(false);
+      }
+      const nextRows = cloneRows(rows);
+      const row = nextRows[activeCardTarget.rowIndex];
+      if (row && row.kind === 'row') {
+        const item = row.items[activeCardTarget.itemIndex];
+        if (item && item.type === 'card') {
+          row.items[activeCardTarget.itemIndex] = { type: 'card', card: nextCard };
+        }
+      }
+      setRows(nextRows);
+      attemptedAutoHydrationRef.current = new Set();
+      await saveLayoutRowsToServer(nextRows, false);
+      setPropertiesOpen(false);
+    })();
   }, [
     activeCardTarget,
     fetchRandomArticlePreview,
     propertiesSourceMode,
+    rows,
+    saveLayoutRowsToServer,
     selectedTagIds,
     specificArticle,
-    updateCard,
   ]);
 
   React.useEffect(() => {
@@ -1131,7 +1562,12 @@ export function CardLayoutRoot({
       return;
     }
     const close = () =>
-      setMenu((prev) => ({ ...prev, open: false, gapAfterSepIndex: null }));
+      setMenu((prev) => ({
+        ...prev,
+        open: false,
+        gapAfterSepIndex: null,
+        taxonomyColumnIndex: null,
+      }));
     window.addEventListener('click', close);
     window.addEventListener('keydown', close);
     return () => {
@@ -1150,7 +1586,7 @@ export function CardLayoutRoot({
     setSpecificArticle({
       id: source?.specificArticleId ?? null,
       title: source?.specificArticleTitle ?? '',
-      url: '',
+      url: source?.specificArticleUrl ?? '',
     });
     setArticleSearchQuery('');
     setArticleSearchResults([]);
@@ -1166,18 +1602,23 @@ export function CardLayoutRoot({
       setArticleSearchResults([]);
       return;
     }
-    const url = `/inline/article/search/?q=${encodeURIComponent(q)}`;
+    const url = `/search/suggest/?q=${encodeURIComponent(q)}&limit=10`;
     const ctl = new AbortController();
     void fetch(url, { credentials: 'same-origin', signal: ctl.signal })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('search failed'))))
-      .then((data: { results?: Array<{ id: number; title: string; excerpt?: string; section: string; url: string }> }) => {
-        setArticleSearchResults(data.results ?? []);
+      .then((data: { results?: Array<{ title_html: string; preview_html: string; url: string }> }) => {
+        const rows = (data.results ?? []).map((item) => ({
+          title: plainText(item.title_html),
+          preview: plainText(item.preview_html),
+          url: item.url,
+        }));
+        setArticleSearchResults(rows);
       })
       .catch(() => {
         setArticleSearchResults([]);
       });
     return () => ctl.abort();
-  }, [propertiesOpen, propertiesSourceMode, articleSearchQuery]);
+  }, [articleSearchQuery, plainText, propertiesOpen, propertiesSourceMode]);
 
   React.useEffect(() => {
     if (!propertiesOpen || propertiesSourceMode !== 'tagged_with') {
@@ -1249,6 +1690,8 @@ export function CardLayoutRoot({
           itemIndex: cardItemIndex,
           isCardMenu: true,
           clientY: evt.clientY,
+          clientX: evt.clientX,
+          taxonomyColumnIndex: null,
           gapAfterSepIndex: null,
         });
         return;
@@ -1256,9 +1699,11 @@ export function CardLayoutRoot({
     }
     const rowEl = target.closest<HTMLElement>('[data-layout-row-index]');
     let rowIndex: number | null = null;
+    let slotEl: HTMLElement | null = null;
     const rowAttr = rowEl?.dataset['layoutRowIndex'];
     if (typeof rowAttr === 'string') {
       rowIndex = Number.parseInt(rowAttr, 10);
+      slotEl = rowEl;
     } else {
       const host = evt.currentTarget;
       const slots = Array.from(host.querySelectorAll<HTMLElement>('[data-layout-row-index]'));
@@ -1282,7 +1727,31 @@ export function CardLayoutRoot({
         }
       });
       rowIndex = bestIdx;
+      if (bestIdx !== null) {
+        slotEl = host.querySelector<HTMLElement>(`[data-layout-row-index="${bestIdx}"]`);
+      }
     }
+
+    let taxonomyColumnIndex: number | null = null;
+    if (
+      taxonomySubsectionLayout &&
+      rowIndex !== null &&
+      !Number.isNaN(rowIndex) &&
+      rows[rowIndex]?.kind === 'row' &&
+      slotEl
+    ) {
+      const colHit = target.closest<HTMLElement>('[data-taxonomy-column-index]');
+      if (colHit && slotEl.contains(colHit)) {
+        const v = Number.parseInt(colHit.dataset['taxonomyColumnIndex'] ?? '', 10);
+        if (!Number.isNaN(v)) {
+          taxonomyColumnIndex = v;
+        }
+      }
+      if (taxonomyColumnIndex === null) {
+        taxonomyColumnIndex = resolveTaxonomyColumnByClientX(slotEl, evt.clientX);
+      }
+    }
+
     setMenu({
       open: true,
       x: evt.clientX,
@@ -1291,35 +1760,8 @@ export function CardLayoutRoot({
       itemIndex: null,
       isCardMenu: false,
       clientY: evt.clientY,
-      gapAfterSepIndex: null,
-    });
-  };
-
-  const onCardClick = (evt: React.MouseEvent<HTMLDivElement>) => {
-    if (!enableMasterPane) {
-      return;
-    }
-    const target = evt.target as HTMLElement;
-    const cardEl = target.closest<HTMLElement>('[data-layout-card-item-index]');
-    const rowEl = target.closest<HTMLElement>('[data-layout-row-index]');
-    if (!cardEl || !rowEl) {
-      return;
-    }
-    const rowIndex = Number.parseInt(rowEl.dataset['layoutRowIndex'] ?? '', 10);
-    const itemIndex = Number.parseInt(cardEl.dataset['layoutCardItemIndex'] ?? '', 10);
-    if (Number.isNaN(rowIndex) || Number.isNaN(itemIndex)) {
-      return;
-    }
-    evt.preventDefault();
-    evt.stopPropagation();
-    setMenu({
-      open: true,
-      x: evt.clientX,
-      y: evt.clientY,
-      rowIndex,
-      itemIndex,
-      isCardMenu: true,
-      clientY: evt.clientY,
+      clientX: evt.clientX,
+      taxonomyColumnIndex,
       gapAfterSepIndex: null,
     });
   };
@@ -1356,6 +1798,13 @@ export function CardLayoutRoot({
       }
       const current = prev[target] as Extract<LayoutRow, { kind: 'row' }>;
       const nextItems = [...current.items];
+      if (taxonomySubsectionLayout) {
+        const at = taxonomyInsertPositionForNewCard(nextItems, menu.itemIndex, menu.taxonomyColumnIndex);
+        nextItems.splice(at, 0, newCard);
+        const cloned = [...prev];
+        cloned[target] = { ...current, items: nextItems };
+        return cloned;
+      }
       if (withVerticalSeparator && nextItems.length > 0) {
         nextItems.push({ type: 'separator', orientation: 'vertical' });
       }
@@ -1364,17 +1813,12 @@ export function CardLayoutRoot({
       cloned[target] = { ...current, items: nextItems };
       return cloned;
     });
-    setMenu((prev) => ({ ...prev, open: false, gapAfterSepIndex: null }));
-  };
-
-  const insertEmptyRow = () => {
-    setRows((prev) => {
-      const host = cardLayoutHostRef.current;
-      let insertAt = resolveHorizontalSepInsertIndexFromPointer(prev, host, menu.clientY, menu.rowIndex);
-      insertAt = Math.max(0, Math.min(insertAt, prev.length));
-      return [...prev.slice(0, insertAt), { kind: 'row', items: [] }, ...prev.slice(insertAt)];
-    });
-    setMenu((prev) => ({ ...prev, open: false, gapAfterSepIndex: null }));
+    setMenu((prev) => ({
+      ...prev,
+      open: false,
+      gapAfterSepIndex: null,
+      taxonomyColumnIndex: null,
+    }));
   };
 
   const insertColumnStructureOnly = () => {
@@ -1399,7 +1843,12 @@ export function CardLayoutRoot({
       };
       return out;
     });
-    setMenu((prev) => ({ ...prev, open: false, gapAfterSepIndex: null }));
+    setMenu((prev) => ({
+      ...prev,
+      open: false,
+      gapAfterSepIndex: null,
+      taxonomyColumnIndex: null,
+    }));
   };
 
   const insertSeparator = () => {
@@ -1415,11 +1864,111 @@ export function CardLayoutRoot({
       return [
         ...prev.slice(0, insertAt),
         { kind: 'separator', orientation: 'horizontal' as const },
+        { kind: 'row', items: [] },
         ...prev.slice(insertAt),
       ];
     });
-    setMenu((prev) => ({ ...prev, open: false, gapAfterSepIndex: null }));
+    setMenu((prev) => ({
+      ...prev,
+      open: false,
+      gapAfterSepIndex: null,
+      taxonomyColumnIndex: null,
+    }));
   };
+
+  const horizontalSeparatorGapUi = (i: number) =>
+    enableMasterPane && contentGapAfterHorizontalSep(rows, i) ? (
+      <div className="scn-sep-gap-actions">
+        <button
+          type="button"
+          className="scn-sep-gap__add"
+          aria-label="Add cards or columns"
+          title="Add cards or columns"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+            setMenu({
+              open: true,
+              x: r.left + r.width / 2,
+              y: r.bottom + 8,
+              rowIndex: i,
+              itemIndex: null,
+              isCardMenu: false,
+              clientY: r.top + r.height / 2,
+              clientX: r.left + r.width / 2,
+              taxonomyColumnIndex: null,
+              gapAfterSepIndex: i,
+            });
+          }}
+        >
+          +
+        </button>
+        <button
+          type="button"
+          className="scn-sep-gap__remove"
+          aria-label="Remove horizontal separator"
+          title="Remove separator"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            deleteHorizontalSeparator(i);
+          }}
+        >
+          ×
+        </button>
+      </div>
+    ) : null;
+
+  const renderSubsectionBand = (row: LayoutRow, i: number): React.JSX.Element => {
+    if (row.kind === 'separator') {
+      return (
+        <>
+          <UiSeparator orientation="horizontal" className="scn-card-layout__sep" />
+          {horizontalSeparatorGapUi(i)}
+        </>
+      );
+    }
+    if (taxonomySubsectionLayout) {
+      return (
+        <TaxonomyStackedCardRow
+          items={row.items}
+          panelGroupKey={String(i)}
+          rowIndex={i}
+          enableMasterPane={enableMasterPane}
+          onDeleteCard={deleteCard}
+          onUpdateCard={enableMasterPane ? updateCard : undefined}
+          onRemoveSubsection={enableMasterPane ? removeSubsectionRow : undefined}
+        />
+      );
+    }
+    return (
+      <ResizableCardRow
+        items={row.items}
+        panelGroupKey={String(i)}
+        rowIndex={i}
+        enableMasterPane={enableMasterPane}
+        onDeleteCard={deleteCard}
+        onUpdateCard={enableMasterPane ? updateCard : undefined}
+        onRemoveSubsection={enableMasterPane ? removeSubsectionRow : undefined}
+      />
+    );
+  };
+
+  const taxonomyOuterStack = rows.map((row, i) => (
+    <div
+      key={`scn-tax-outer-${i}`}
+      data-layout-row-index={i}
+      className={cn(
+        'scn-card-layout__slot',
+        'scn-card-layout__subsection',
+        row.kind === 'row' ? 'scn-card-layout__subsection--content' : 'scn-card-layout__subsection--separator',
+        row.kind === 'row' ? 'scn-card-layout__taxonomy-band' : null
+      )}
+    >
+      {renderSubsectionBand(row, i)}
+    </div>
+  ));
 
   /** Vertical rule between columns is stored as `RowItem` separator + card; use “Add column”. */
   const verticalWeights = rows.map((r) => (r.kind === 'separator' ? 3 : 48));
@@ -1444,61 +1993,7 @@ export function CardLayoutRoot({
               : 'scn-card-layout__subsection--separator'
           )}
         >
-          {row.kind === 'separator' ? (
-            <>
-              <UiSeparator orientation="horizontal" className="scn-card-layout__sep" />
-              {enableMasterPane && contentGapAfterHorizontalSep(rows, i) ? (
-                <div className="scn-sep-gap-actions">
-                  <button
-                    type="button"
-                    className="scn-sep-gap__add"
-                    aria-label="Add row (menu)"
-                    title="Add cards / columns"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                      setMenu({
-                        open: true,
-                        x: r.left + r.width / 2,
-                        y: r.bottom + 8,
-                        rowIndex: i,
-                        itemIndex: null,
-                        isCardMenu: false,
-                        clientY: r.top + r.height / 2,
-                        gapAfterSepIndex: i,
-                      });
-                    }}
-                  >
-                    +
-                  </button>
-                  <button
-                    type="button"
-                    className="scn-sep-gap__remove"
-                    aria-label="Remove horizontal separator"
-                    title="Remove separator"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      deleteHorizontalSeparator(i);
-                    }}
-                  >
-                    ×
-                  </button>
-                </div>
-              ) : null}
-            </>
-          ) : (
-            <ResizableCardRow
-              items={row.items}
-              panelGroupKey={String(i)}
-              rowIndex={i}
-              enableMasterPane={enableMasterPane}
-              onDeleteCard={deleteCard}
-              onUpdateCard={enableMasterPane ? updateCard : undefined}
-              onRemoveSubsection={enableMasterPane ? removeSubsectionRow : undefined}
-            />
-          )}
+          {renderSubsectionBand(row, i)}
         </div>
       </Panel>
     );
@@ -1522,9 +2017,20 @@ export function CardLayoutRoot({
           <EmptyHeader>
             <EmptyTitle>No layout yet</EmptyTitle>
             <EmptyDescription>
-              Start from a resizable preset. Then right-click empty areas to add columns (vertical split and
-              rule) or horizontal rules between rows. Drag handles to resize column widths and row heights.
-              {canSaveMasterLayout ? ' Staff can save the layout from the Pane menu.' : ''}
+              {taxonomySubsectionLayout ? (
+                <>
+                  Start from a preset. Right-click to add tiles (stacked in a column), add columns, or add a
+                  horizontal separator to start a new subsection. Drag handles resize width between columns only;
+                  subsection bands are fixed height.
+                  {canSaveMasterLayout ? ' Staff can save the layout from the Pane menu.' : ''}
+                </>
+              ) : (
+                <>
+                  Start from a resizable preset. Then right-click empty areas to add columns (vertical split and
+                  rule) or horizontal rules between rows. Drag handles to resize column widths and row heights.
+                  {canSaveMasterLayout ? ' Staff can save the layout from the Pane menu.' : ''}
+                </>
+              )}
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
@@ -1537,8 +2043,18 @@ export function CardLayoutRoot({
           <DialogHeader>
             <DialogTitle>Choose a layout preset</DialogTitle>
             <DialogDescription>
-              Each option creates stub panels. Drag handles between columns for width; drag horizontal bars between
-              rows for height. Right-click to add columns (includes a vertical rule) or row separators.
+              {taxonomySubsectionLayout ? (
+                <>
+                  Each option creates stub columns in one subsection. Add more tiles to stack vertically in a
+                  column, or use Add column for another column. Use Add horizontal separator for a new subsection
+                  below.
+                </>
+              ) : (
+                <>
+                  Each option creates stub panels. Drag handles between columns for width; drag horizontal bars
+                  between rows for height. Right-click to add columns (includes a vertical rule) or row separators.
+                </>
+              )}
             </DialogDescription>
           </DialogHeader>
           <div className="scn-layout-preset-grid">
@@ -1632,7 +2148,6 @@ export function CardLayoutRoot({
           ref={cardLayoutHostRef}
           className="scn-card-layout-host scn-card-layout-host--master-pane"
           onContextMenu={onContextMenu}
-          onClick={onCardClick}
         >
         <div
           ref={verticalStackMeasureRef}
@@ -1643,19 +2158,37 @@ export function CardLayoutRoot({
             } as React.CSSProperties
           }
         >
-          <Group
-            orientation="vertical"
-            className={cn('scn-card-layout', 'scn-card-layout--vertical-stack')}
-            style={{
-              flex: '1 1 auto',
-              minHeight: 0,
-              height: '100%',
-              width: '100%',
-              alignSelf: 'stretch',
-            }}
-          >
-            {verticalRowChildren}
-          </Group>
+          {taxonomySubsectionLayout ? (
+            <div
+              className={cn('scn-card-layout', 'scn-card-layout--taxonomy-outer-stack')}
+              style={{
+                flex: '1 1 auto',
+                minHeight: 0,
+                height: '100%',
+                width: '100%',
+                alignSelf: 'stretch',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 0,
+              }}
+            >
+              {taxonomyOuterStack}
+            </div>
+          ) : (
+            <Group
+              orientation="vertical"
+              className={cn('scn-card-layout', 'scn-card-layout--vertical-stack')}
+              style={{
+                flex: '1 1 auto',
+                minHeight: 0,
+                height: '100%',
+                width: '100%',
+                alignSelf: 'stretch',
+              }}
+            >
+              {verticalRowChildren}
+            </Group>
+          )}
         </div>
         <div
           className="scn-card-layout-pane-spacer"
@@ -1674,6 +2207,8 @@ export function CardLayoutRoot({
               itemIndex: null,
               isCardMenu: false,
               clientY: e.clientY,
+              clientX: e.clientX,
+              taxonomyColumnIndex: null,
               gapAfterSepIndex: null,
             });
           }}
@@ -1729,9 +2264,6 @@ export function CardLayoutRoot({
                   <button type="button" className="scn-context-menu__item" onClick={insertColumnStructureOnly}>
                     Add column
                   </button>
-                  <button type="button" className="scn-context-menu__item" onClick={insertEmptyRow}>
-                    Add row
-                  </button>
                   <button type="button" className="scn-context-menu__item" onClick={insertSeparator}>
                     Add horizontal separator
                   </button>
@@ -1753,6 +2285,7 @@ export function CardLayoutRoot({
                 <div className="scn-field">
                   <Label>Content</Label>
                   <Select
+                    className="scn-properties-content-select"
                     value={propertiesSourceMode}
                     onChange={(e) => setPropertiesSourceMode(e.currentTarget.value as ContentSourceMode)}
                   >
@@ -1763,56 +2296,76 @@ export function CardLayoutRoot({
                   </Select>
                 </div>
 
-                {propertiesSourceMode === 'specific_article' ? (
+                {showSpecificArticleControls ? (
                   <div className="scn-field">
-                    <Label>Search article</Label>
-                    <Input
-                      value={articleSearchQuery}
-                      onChange={(e) => setArticleSearchQuery(e.currentTarget.value)}
-                      placeholder="Type title..."
-                    />
+                    <Label>Article title search</Label>
+                    <InputGroup>
+                      <InputGroupInput
+                        value={articleSearchQuery}
+                        onChange={(e) => setArticleSearchQuery(e.currentTarget.value)}
+                        placeholder="Type article title..."
+                      />
+                      <InputGroupAddon>
+                        <SearchIcon />
+                      </InputGroupAddon>
+                    </InputGroup>
                     <div className="scn-properties-list">
-                      {articleSearchResults.map((item) => (
+                      {articleSearchResults.map((item, idx) => (
                         <button
-                          key={item.id}
+                          key={`${item.url}-${idx}`}
                           type="button"
                           className={cn(
                             'scn-properties-list__item',
-                            specificArticle.id === item.id && 'scn-properties-list__item--active'
+                            specificArticle.title === item.title && specificArticle.url === item.url && 'scn-properties-list__item--active'
                           )}
-                          onClick={() => setSpecificArticle({ id: item.id, title: item.title, url: item.url })}
+                          onClick={() => setSpecificArticle({ id: null, title: item.title, url: item.url })}
                         >
-                          {item.title}
+                          <strong>{item.title}</strong>
+                          {item.preview ? <span className="scn-properties-list__meta">{item.preview}</span> : null}
                         </button>
                       ))}
                     </div>
-                  </div>
-                ) : null}
-
-                {propertiesSourceMode === 'tagged_with' ? (
-                  <div className="scn-field">
-                    <Label>Tags</Label>
+                    <Label>Article URL</Label>
                     <Input
-                      value={tagQuery}
-                      onChange={(e) => setTagQuery(e.currentTarget.value)}
-                      placeholder="Filter tags..."
+                      value={specificArticle.url}
+                      onChange={(e) => setSpecificArticle((prev) => ({ ...prev, url: e.currentTarget.value }))}
+                      placeholder="https://..."
                     />
+                  </div>
+                ) : showTaggedWithControls ? (
+                  <div className="scn-field">
+                    <Label>Tags combobox</Label>
+                    <InputGroup>
+                      <InputGroupInput
+                        value={tagQuery}
+                        onChange={(e) => setTagQuery(e.currentTarget.value)}
+                        placeholder="Search tags..."
+                      />
+                      <InputGroupAddon>
+                        <SearchIcon />
+                      </InputGroupAddon>
+                    </InputGroup>
+                    {selectedTagIds.length > 0 ? (
+                      <div className="scn-dialog-footer">
+                        <span>Selected: {selectedTagIds.length}</span>
+                      </div>
+                    ) : null}
                     <div className="scn-properties-list">
                       {tagResults.map((tag) => {
                         const checked = selectedTagIds.includes(tag.id);
                         return (
-                          <label key={tag.id} className="scn-properties-list__checkbox">
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={() =>
-                                setSelectedTagIds((prev) =>
-                                  checked ? prev.filter((id) => id !== tag.id) : [...prev, tag.id]
-                                )
-                              }
-                            />
-                            <span>{tag.name}</span>
-                          </label>
+                          <Button
+                            key={tag.id}
+                            type="button"
+                            variant={checked ? 'default' : 'outline'}
+                            onClick={() =>
+                              setSelectedTagIds((prev) =>
+                                checked ? prev.filter((id) => id !== tag.id) : [...prev, tag.id]
+                              )
+                            }
+                          >
+                            {tag.name}
+                          </Button>
                         );
                       })}
                     </div>
@@ -1870,6 +2423,7 @@ export function mountShadcnCardLayouts(): void {
       layoutRoots.set(host, root);
     }
     const enableMasterPane = host.dataset['masterPaneEnabled'] === '1';
+    const taxonomySubsectionLayout = host.dataset['taxonomySubsectionLayout'] === '1';
     const sectionTitle = host.dataset['taxonomySectionTitle'] ?? '';
     const taxonomyTermId = host.dataset['taxonomyTermId'] ?? '';
     const canSaveMasterLayout = host.dataset['canSaveMasterLayout'] === '1';
@@ -1878,6 +2432,7 @@ export function mountShadcnCardLayouts(): void {
       <CardLayoutRoot
         payload={parsed}
         enableMasterPane={enableMasterPane}
+        taxonomySubsectionLayout={taxonomySubsectionLayout}
         sectionTitle={sectionTitle}
         taxonomyTermId={taxonomyTermId}
         canSaveMasterLayout={canSaveMasterLayout}

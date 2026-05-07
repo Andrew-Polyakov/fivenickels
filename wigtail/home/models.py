@@ -458,6 +458,8 @@ class HomePage(RoutablePageMixin, Page):
         raw_layout = getattr(active_node, "master_layout_json", None)
         if isinstance(raw_layout, dict) and isinstance(raw_layout.get("rows"), list):
             layout_payload = {"rows": raw_layout["rows"]}
+            if isinstance(raw_layout.get("layoutVersion"), int):
+                layout_payload["layoutVersion"] = raw_layout["layoutVersion"]
 
         return self.render(
             request,

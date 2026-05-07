@@ -17,6 +17,7 @@ from django.utils import timezone
 from django.utils.crypto import get_random_string
 
 from home.blocks import _resolve_section_term, _resolve_universal_tile_state
+from home.card_layout import build_layout_payload
 from home.navigation import normalize_sector_query_param
 from home.query import (
     build_home_page_display_items,
@@ -1046,4 +1047,57 @@ class CardSourcePropertiesTests(WagtailPageTestCase):
         self.assertEqual(r_tags.status_code, 200)
         payload_tags = r_tags.json()
         self.assertTrue(any(x.get("id") == self.tag_alpha.pk for x in payload_tags.get("results", [])))
+
+    def test_inline_search_random_excludes_given_ids_without_auth(self):
+        """Public random hydrate may call search with exclude_ids; must omit excluded pages."""
+        url = reverse("inline_search_articles")
+        r = self.client.get(
+            url,
+            {
+                "random": "1",
+                "section_term_id": str(self.energy.pk),
+                "exclude_ids": f"{self.page_high.pk},{self.page_tagged.pk}",
+            },
+        )
+        self.assertEqual(r.status_code, 200)
+        results = r.json().get("results") or []
+        if results:
+            rid = results[0].get("id")
+            self.assertNotIn(rid, {self.page_high.pk, self.page_tagged.pk})
+
+    def test_card_layout_buffer_random_cards_pick_distinct_pages(self):
+        """Same layout buffer excludes already-used article ids across consecutive cards."""
+
+        class StreamBlockDummy:
+            __slots__ = ("block_type", "value")
+
+            def __init__(self, block_type, value):
+                self.block_type = block_type
+                self.value = value
+
+        dummy_stream = [
+            StreamBlockDummy(
+                "card",
+                {"article": {"mode": "random", "section_term": self.energy}},
+            ),
+            StreamBlockDummy(
+                "card",
+                {"article": {"mode": "random", "section_term": self.energy}},
+            ),
+        ]
+        payload = build_layout_payload(dummy_stream, {"page": self.homepage})
+        rows = payload.get("rows") or []
+        self.assertGreaterEqual(len(rows), 1)
+        first_row = rows[0]
+        self.assertEqual(first_row.get("kind"), "row")
+        cards = [i for i in first_row.get("items", []) if i.get("type") == "card"]
+        self.assertGreaterEqual(len(cards), 2)
+        titles = []
+        for c in cards[:2]:
+            card = c.get("card") or {}
+            self.assertEqual(card.get("sourceConfig", {}).get("mode"), "random")
+            if card.get("kind") == "article":
+                titles.append(card.get("title"))
+        self.assertGreaterEqual(len(titles), 2)
+        self.assertEqual(len(set(titles)), len(titles), msg="Expected distinct articles for two random picks")
 

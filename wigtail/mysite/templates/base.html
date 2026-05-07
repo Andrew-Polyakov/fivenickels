@@ -119,19 +119,22 @@
                                     data-turbo-frame="main"
                                 >
                                     <label class="visually-hidden" for="site-search-query">Search</label>
-                                    <input
-                                        id="site-search-query"
-                                        class="site-search__input"
-                                        type="search"
-                                        name="query"
-                                        placeholder="Search…"
-                                        aria-label="Search"
-                                        aria-autocomplete="list"
-                                        aria-controls="site-search-live-panel"
-                                        aria-expanded="false"
-                                        autocomplete="off"
-                                        value="{{ request.GET.query|default_if_none:'' }}"
-                                    />
+                                    <div class="site-search__group">
+                                        <span class="site-search__icon material-symbols-outlined" aria-hidden="true">search</span>
+                                        <input
+                                            id="site-search-query"
+                                            class="site-search__input"
+                                            type="search"
+                                            name="query"
+                                            placeholder="Search…"
+                                            aria-label="Search"
+                                            aria-autocomplete="list"
+                                            aria-controls="site-search-live-panel"
+                                            aria-expanded="false"
+                                            autocomplete="off"
+                                            value="{{ request.GET.query|default_if_none:'' }}"
+                                        />
+                                    </div>
                                     <button type="submit" class="site-search__submit btn btn--raised">Search</button>
                                 </form>
                                 <div
