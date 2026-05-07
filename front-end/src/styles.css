@@ -414,6 +414,24 @@
   margin-top: 0.15rem;
 }
 
+/* Let the master-pane stack fill height so vertical resize has a real axis */
+.scn-content-outline.taxonomy-drilldown__outline {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 0.65rem;
+}
+
+.scn-content-outline.taxonomy-drilldown__outline .scn-card-layout-host {
+  flex: 0 1 auto;
+  min-height: auto;
+}
+
+.scn-content-outline.taxonomy-drilldown__outline .scn-card-layout-host--master-pane {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 /* Shadcn-style article cards + resizable rows (taxonomy / stream layouts) */
 .scn-card-layout-host {
   width: 100%;
@@ -427,6 +445,21 @@
   flex: 0 0 auto;
 }
 
+/* Stack: layout → 400px tail spacer → Pane bar (menu at bottom of host) */
+.scn-card-layout-host--master-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.scn-card-layout-pane-spacer {
+  flex-shrink: 0;
+  height: 400px;
+  min-height: 400px;
+  pointer-events: auto;
+}
+
 .scn-card-layout {
   display: flex;
   flex-direction: column;
@@ -438,8 +471,8 @@
 
 .scn-card-layout--vertical-stack {
   gap: 0;
-  min-height: clamp(18rem, 52vh, 44rem);
-  flex: 1 1 auto;
+  min-height: 12rem;
+  flex: 0 0 auto;
 }
 
 /* Wagtail mysite.css uses display:grid on .scn-card-layout — Group needs flex + no gap */
@@ -473,7 +506,86 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: auto;
+}
+
+/* Visible bands per subsection (row or horizontal-separator strip) for targeting + context menu */
+.scn-card-layout__subsection {
+  border: 1px solid rgba(148, 163, 184, 0.42);
+  border-radius: 10px;
+  box-sizing: border-box;
+  padding: 6px 8px;
+}
+
+.scn-card-layout__subsection--content {
+  border-color: rgba(92, 255, 138, 0.38);
+  background: rgba(15, 23, 42, 0.28);
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  overflow: visible;
+  align-items: stretch;
+}
+
+.scn-card-layout__subsection--separator {
+  border-color: rgba(148, 163, 184, 0.48);
+  padding: 4px 8px;
+  margin-bottom: 10px;
+  overflow: visible;
+}
+
+.scn-sep-gap-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  padding: 0.5rem 0 0.25rem;
+  flex-shrink: 0;
+}
+
+.scn-sep-gap__add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid rgba(92, 255, 138, 0.55);
+  background: rgba(92, 255, 138, 0.12);
+  color: #bbf7d0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.scn-sep-gap__add:hover {
+  background: rgba(92, 255, 138, 0.22);
+}
+
+.scn-sep-gap__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid rgba(248, 113, 113, 0.65);
+  background: rgba(127, 29, 29, 0.45);
+  color: #fecaca;
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.scn-sep-gap__remove:hover {
+  background: rgba(185, 28, 28, 0.65);
+}
+
+.taxonomy-drilldown__widgets .scn-card-layout__subsection--content,
+.taxonomy-drilldown__master-pane .scn-card-layout__subsection--content {
+  border-color: rgba(92, 255, 138, 0.42);
 }
 
 .scn-card-layout__sep {
@@ -486,21 +598,100 @@
   margin: 0.1rem 0 0.2rem;
 }
 
+.scn-subsection-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 8rem;
+  width: 100%;
+  flex: 1 1 auto;
+  box-sizing: border-box;
+  border: 1px dashed rgba(148, 163, 184, 0.35);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.scn-subsection-empty--placeholder {
+  min-height: 3rem;
+  border: none !important;
+  background: transparent !important;
+}
+
+.scn-subsection-empty__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border-radius: 10px;
+  border: 1px solid rgba(248, 113, 113, 0.7);
+  background: rgba(127, 29, 29, 0.5);
+  color: #fecaca;
+  font-size: 1.75rem;
+  line-height: 1;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.scn-subsection-empty__remove:hover {
+  background: rgba(185, 28, 28, 0.65);
+  border-color: rgba(252, 165, 165, 0.85);
+}
+
 .scn-card-row--single {
   width: 100%;
   box-sizing: border-box;
   padding: 10px;
 }
 
+.scn-card-row--panels-outer {
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.scn-card-layout-vertical-measure {
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  /* Definite height so react-resizable-panels can split rows; grows with --scn-stack-min */
+  min-height: max(var(--scn-stack-min, 420px), 42vh);
+  height: max(var(--scn-stack-min, 420px), 42vh);
+}
+
 .scn-card-row--panels {
   width: 100%;
   flex: 1 1 auto;
-  min-height: 200px;
+  min-height: 0;
+  min-width: 0;
+  align-items: stretch;
 }
 
-.taxonomy-drilldown__widgets .scn-card-row--panels,
-.taxonomy-drilldown__master-pane .scn-card-row--panels {
-  min-height: 180px;
+.scn-card-row--panels-outer .scn-card-row--panels {
+  flex: 1 1 auto;
+  align-self: stretch;
+}
+
+.taxonomy-drilldown__widgets .scn-card-row--panels-outer,
+.taxonomy-drilldown__master-pane .scn-card-row--panels-outer {
+  min-height: 410px;
+  overflow: visible;
+}
+
+.scn-card-layout__subsection--content > .scn-card-row--panels-outer {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .scn-card-row__panel {
@@ -553,6 +744,17 @@
   background: rgba(92, 255, 138, 0.2);
 }
 
+.scn-context-menu__divider {
+  margin: 0.25rem 0;
+  height: 1px;
+  background: rgba(148, 163, 184, 0.35);
+}
+
+.scn-context-menu__item--danger:hover {
+  background: rgba(248, 113, 113, 0.18);
+  color: #fecaca;
+}
+
 .scn-resize-handle {
   flex: 0 0 5px;
   margin: 0 2px;
@@ -574,16 +776,33 @@
   flex: 0 0 8px !important;
   width: 100% !important;
   min-height: 8px;
-  margin: 3px 0;
+  margin: 10px 0 14px;
   align-self: stretch;
   border-radius: 5px;
 }
 
-.scn-resize-handle__sep {
-  height: 60%;
-  margin: auto;
-  align-self: center;
+/* Column drag strip: full row height (was 60% + short line) */
+.scn-resize-handle--between-columns {
+  align-self: stretch !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
+  min-height: 100%;
+}
+
+.scn-resize-handle__sep.scn-separator--vertical {
+  flex: 1 1 auto;
+  align-self: stretch;
+  width: 2px;
+  min-height: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
   background: rgba(148, 163, 184, 0.55);
+}
+
+.scn-resize-handle__sep--emphasis.scn-separator--vertical {
+  background: rgba(92, 255, 138, 0.55);
+  box-shadow: 0 0 8px rgba(92, 255, 138, 0.25);
 }
 
 .scn-card {
@@ -634,7 +853,7 @@
 
 .scn-pane-menubar {
   flex-shrink: 0;
-  margin-top: 0.5rem;
+  margin-top: 0;
   border-radius: 10px;
   border: 1px solid rgba(148, 163, 184, 0.35);
   background: rgba(7, 11, 18, 0.94);

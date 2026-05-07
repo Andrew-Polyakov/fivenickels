@@ -76,6 +76,203 @@ function removeCardFromRowItems(items: RowItem[], itemIndex: number): RowItem[] 
   return next;
 }
 
+/** Target index for adding cards: always a `kind: 'row'` band, never a horizontal separator row. */
+function resolveContentRowIndex(rows: LayoutRow[], preferred: number | null): number {
+  if (rows.length === 0) {
+    return -1;
+  }
+  if (preferred !== null && preferred >= 0 && preferred < rows.length) {
+    if (rows[preferred].kind === 'row') {
+      return preferred;
+    }
+    for (let i = preferred - 1; i >= 0; i--) {
+      if (rows[i].kind === 'row') {
+        return i;
+      }
+    }
+    for (let i = preferred + 1; i < rows.length; i++) {
+      if (rows[i].kind === 'row') {
+        return i;
+      }
+    }
+  }
+  for (let i = rows.length - 1; i >= 0; i--) {
+    if (rows[i].kind === 'row') {
+      return i;
+    }
+  }
+  return -1;
+}
+
+function firstContentRowAtOrAfter(rows: LayoutRow[], fromIdx: number): number {
+  for (let i = Math.max(0, fromIdx); i < rows.length; i++) {
+    if (rows[i].kind === 'row') {
+      return i;
+    }
+  }
+  return -1;
+}
+
+function lastContentRowAtOrBefore(rows: LayoutRow[], fromIdx: number): number {
+  for (let i = Math.min(fromIdx, rows.length - 1); i >= 0; i--) {
+    if (rows[i].kind === 'row') {
+      return i;
+    }
+  }
+  return -1;
+}
+
+type SlotBand = {
+  idx: number;
+  top: number;
+  bottom: number;
+  kind: LayoutRow['kind'];
+};
+
+/** insertCard: append a new content row at end (empty stack / click below last band). */
+const APPEND_NEW_ROW = -2;
+
+function contentGapAfterHorizontalSep(rows: LayoutRow[], sepIdx: number): boolean {
+  if (rows[sepIdx]?.kind !== 'separator') {
+    return false;
+  }
+  const next = rows[sepIdx + 1];
+  return next === undefined || next.kind === 'separator';
+}
+
+function collectSlotBands(host: HTMLElement | null, rows: LayoutRow[]): SlotBand[] {
+  if (!host) {
+    return [];
+  }
+  const slots = Array.from(host.querySelectorAll<HTMLElement>('[data-layout-row-index]'));
+  const out: SlotBand[] = [];
+  for (const el of slots) {
+    const idx = Number.parseInt(el.dataset['layoutRowIndex'] ?? '', 10);
+    if (Number.isNaN(idx) || idx < 0 || idx >= rows.length) {
+      continue;
+    }
+    const r = el.getBoundingClientRect();
+    out.push({
+      idx,
+      top: r.top,
+      bottom: r.bottom,
+      kind: rows[idx].kind,
+    });
+  }
+  out.sort((a, b) => a.top - b.top);
+  return out;
+}
+
+/** Pick content row for Add card from pointer Y (above/below horizontal separator band). */
+function resolveCardTargetRowFromPointer(
+  rows: LayoutRow[],
+  host: HTMLElement | null,
+  clientY: number,
+  fallbackSlotIndex: number | null
+): number {
+  const bands = collectSlotBands(host, rows);
+  if (bands.length === 0) {
+    return resolveContentRowIndex(rows, fallbackSlotIndex);
+  }
+  const lastBottom = Math.max(...bands.map((b) => b.bottom));
+  if (clientY > lastBottom + 8) {
+    return APPEND_NEW_ROW;
+  }
+  const pickNearest = (): number => {
+    let nearest: SlotBand | null = null;
+    let best = Number.POSITIVE_INFINITY;
+    for (const b of bands) {
+      const clamped = Math.min(Math.max(clientY, b.top), b.bottom);
+      const d = Math.abs(clientY - clamped);
+      if (d < best) {
+        best = d;
+        nearest = b;
+      }
+    }
+    if (!nearest) {
+      return resolveContentRowIndex(rows, fallbackSlotIndex);
+    }
+    if (nearest.kind === 'separator') {
+      const mid = (nearest.top + nearest.bottom) / 2;
+      if (clientY < mid) {
+        const up = lastContentRowAtOrBefore(rows, nearest.idx - 1);
+        return up >= 0 ? up : firstContentRowAtOrAfter(rows, nearest.idx + 1);
+      }
+      const down = firstContentRowAtOrAfter(rows, nearest.idx + 1);
+      return down >= 0 ? down : APPEND_NEW_ROW;
+    }
+    return nearest.idx;
+  };
+
+  for (const b of bands) {
+    if (clientY >= b.top && clientY <= b.bottom) {
+      if (b.kind === 'separator') {
+        const mid = (b.top + b.bottom) / 2;
+        if (clientY < mid) {
+          const up = lastContentRowAtOrBefore(rows, b.idx - 1);
+          return up >= 0 ? up : firstContentRowAtOrAfter(rows, b.idx + 1);
+        }
+        const down = firstContentRowAtOrAfter(rows, b.idx + 1);
+        return down >= 0 ? down : APPEND_NEW_ROW;
+      }
+      return b.idx;
+    }
+  }
+  return pickNearest();
+}
+
+/** Insert index (0…length) for a new horizontal separator row from pointer Y. */
+function resolveHorizontalSepInsertIndexFromPointer(
+  rows: LayoutRow[],
+  host: HTMLElement | null,
+  clientY: number,
+  fallbackSlotIndex: number | null
+): number {
+  const bands = collectSlotBands(host, rows);
+  if (bands.length === 0) {
+    const r = resolveContentRowIndex(rows, fallbackSlotIndex);
+    return r >= 0 ? r + 1 : rows.length;
+  }
+  const lastBottom = Math.max(...bands.map((b) => b.bottom));
+  if (clientY > lastBottom + 8) {
+    return rows.length;
+  }
+  const pickNearest = (): number => {
+    let nearest: SlotBand | null = null;
+    let best = Number.POSITIVE_INFINITY;
+    for (const b of bands) {
+      const clamped = Math.min(Math.max(clientY, b.top), b.bottom);
+      const d = Math.abs(clientY - clamped);
+      if (d < best) {
+        best = d;
+        nearest = b;
+      }
+    }
+    if (!nearest) {
+      const r = resolveContentRowIndex(rows, fallbackSlotIndex);
+      return r >= 0 ? r + 1 : rows.length;
+    }
+    if (nearest.kind === 'separator') {
+      const mid = (nearest.top + nearest.bottom) / 2;
+      return clientY < mid ? nearest.idx : nearest.idx + 1;
+    }
+    const mid = (nearest.top + nearest.bottom) / 2;
+    return clientY < mid ? nearest.idx : nearest.idx + 1;
+  };
+
+  for (const b of bands) {
+    if (clientY >= b.top && clientY <= b.bottom) {
+      if (b.kind === 'separator') {
+        const mid = (b.top + b.bottom) / 2;
+        return clientY < mid ? b.idx : b.idx + 1;
+      }
+      const mid = (b.top + b.bottom) / 2;
+      return clientY < mid ? b.idx : b.idx + 1;
+    }
+  }
+  return pickNearest();
+}
+
 type CardPanelEntry = {
   card: ArticleCardPayload;
   itemIndex: number;
@@ -120,11 +317,76 @@ export type CardLayoutPayload = {
   rows: LayoutRow[];
 };
 
+/** Card content min 400px + 10px outer margin (must fit within container or resize breaks). */
+const CARD_MIN_CONTENT_PX = 400;
+const CARD_LAYOUT_MARGIN_PX = 10;
+const MIN_PANEL_OUTER_PX = CARD_MIN_CONTENT_PX + CARD_LAYOUT_MARGIN_PX;
+
+/** Minimum vertical stack height so row bands keep ~card min height; sep rows stay thin via weighted sizes. */
+function verticalStackMinHeightPx(rows: LayoutRow[]): number {
+  let h = 0;
+  for (const r of rows) {
+    if (r.kind === 'separator') {
+      h += 40;
+    } else {
+      h += MIN_PANEL_OUTER_PX;
+    }
+  }
+  return Math.max(h, 192);
+}
+
+function formatFeasibleMinPercent(minPx: number, containerPx: number, panelCount: number): string {
+  if (panelCount <= 0) {
+    return '0%';
+  }
+  if (containerPx <= 0) {
+    return `${(100 / panelCount).toFixed(4)}%`;
+  }
+  if (panelCount * minPx <= containerPx) {
+    const p = (minPx / containerPx) * 100;
+    return `${Math.min(99.99, Math.max(0.05, p)).toFixed(4)}%`;
+  }
+  return `${(100 / panelCount).toFixed(4)}%`;
+}
+
+function useFeasiblePanelMinPercent(
+  containerRef: React.RefObject<HTMLElement | null>,
+  panelCount: number,
+  minPx: number,
+  axis: 'width' | 'height'
+): string {
+  const [dim, setDim] = React.useState(0);
+  React.useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el || panelCount <= 0) {
+      return;
+    }
+    const read = () => {
+      const r = el.getBoundingClientRect();
+      setDim(axis === 'width' ? r.width : r.height);
+    };
+    read();
+    const ro = new ResizeObserver(read);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+    };
+  }, [axis, panelCount]);
+  return React.useMemo(
+    () => formatFeasibleMinPercent(minPx, dim, panelCount),
+    [minPx, dim, panelCount]
+  );
+}
+
 type ContextMenuState = {
   open: boolean;
   x: number;
   y: number;
   rowIndex: number | null;
+  /** Viewport Y when menu opened; used to place adds above/below horizontal separators. */
+  clientY: number;
+  /** Insert first card row immediately after this horizontal separator index (+ button gap). */
+  gapAfterSepIndex: number | null;
 };
 
 function getCookie(name: string): string | null {
@@ -224,16 +486,39 @@ function ResizableCardRow({
   rowIndex,
   enableMasterPane,
   onDeleteCard,
+  onRemoveSubsection,
 }: {
   items: RowItem[];
   panelGroupKey: string;
   rowIndex: number;
   enableMasterPane: boolean;
   onDeleteCard: (rowIndex: number, itemIndex: number) => void;
+  /** Removes this entire row band (empty or not); same as context menu “Remove section”. */
+  onRemoveSubsection?: (rowIndex: number) => void;
 }): React.JSX.Element {
   const panels = collectCardPanels(items);
   if (panels.length === 0) {
-    return <></>;
+    if (enableMasterPane && onRemoveSubsection) {
+      return (
+        <div className="scn-subsection-empty">
+          <button
+            type="button"
+            className="scn-subsection-empty__remove"
+            aria-label="Remove section"
+            title="Remove this section"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onRemoveSubsection(rowIndex);
+            }}
+          >
+            ×
+          </button>
+        </div>
+      );
+    }
+    return <div className="scn-subsection-empty scn-subsection-empty--placeholder" aria-hidden="true" />;
   }
   const onDel = enableMasterPane ? onDeleteCard : undefined;
   if (panels.length === 1) {
@@ -252,7 +537,7 @@ function ResizableCardRow({
       <Panel
         key={`scn-panel-${panelGroupKey}-${entry.itemIndex}`}
         defaultSize={defaultPct}
-        minSize={12}
+        minSize="0%"
         id={`scn-panel-${panelGroupKey}-${entry.itemIndex}`}
         className="scn-card-row__panel"
         style={{ overflow: 'hidden' }}
@@ -269,20 +554,35 @@ function ResizableCardRow({
     return [
       <ResizeSeparator
         key={`scn-hsep-${panelGroupKey}-${entry.itemIndex}`}
-        className={cn('scn-resize-handle', entry.dividerBefore && 'scn-resize-handle--with-separator')}
+        className={cn(
+          'scn-resize-handle',
+          'scn-resize-handle--between-columns',
+          entry.dividerBefore && 'scn-resize-handle--with-separator'
+        )}
         id={`scn-hsep-${panelGroupKey}-${entry.itemIndex}`}
       >
-        {entry.dividerBefore ? (
-          <UiSeparator orientation="vertical" className="scn-resize-handle__sep" decorative />
-        ) : null}
+        <UiSeparator
+          orientation="vertical"
+          decorative
+          className={cn(
+            'scn-resize-handle__sep',
+            entry.dividerBefore && 'scn-resize-handle__sep--emphasis'
+          )}
+        />
       </ResizeSeparator>,
       panel,
     ];
   });
   return (
-    <Group orientation="horizontal" className="scn-card-row scn-card-row--panels">
-      {horizontalChildren}
-    </Group>
+    <div className="scn-card-row--panels-outer">
+      <Group
+        orientation="horizontal"
+        className="scn-card-row scn-card-row--panels"
+        style={{ height: '100%', width: '100%', alignSelf: 'stretch' }}
+      >
+        {horizontalChildren}
+      </Group>
+    </div>
   );
 }
 
@@ -307,21 +607,70 @@ export function CardLayoutRoot({
   const [paneMenuOpen, setPaneMenuOpen] = React.useState(false);
   const [savePending, setSavePending] = React.useState(false);
   const paneMenuRef = React.useRef<HTMLDivElement>(null);
+  const cardLayoutHostRef = React.useRef<HTMLDivElement>(null);
+  const verticalStackMeasureRef = React.useRef<HTMLDivElement>(null);
+  const rowBandPanelCount = Math.max(1, rows.filter((r) => r.kind === 'row').length);
+  const rowBandMinPct = useFeasiblePanelMinPercent(
+    verticalStackMeasureRef,
+    rowBandPanelCount,
+    MIN_PANEL_OUTER_PX,
+    'height'
+  );
   const [menu, setMenu] = React.useState<ContextMenuState>({
     open: false,
     x: 0,
     y: 0,
     rowIndex: null,
+    clientY: 0,
+    gapAfterSepIndex: null,
   });
 
   React.useEffect(() => {
     baselineRowsRef.current = cloneRows(payload.rows);
     setRows(cloneRows(payload.rows));
-    setMenu({ open: false, x: 0, y: 0, rowIndex: null });
+    setMenu({ open: false, x: 0, y: 0, rowIndex: null, clientY: 0, gapAfterSepIndex: null });
     setLayoutDialogOpen(false);
     setPaneMenuOpen(false);
     setSavePending(false);
   }, [payload]);
+
+  const deleteHorizontalSeparator = React.useCallback((sepIdx: number) => {
+    setRows((prev) => {
+      if (sepIdx < 0 || sepIdx >= prev.length || prev[sepIdx].kind !== 'separator') {
+        return prev;
+      }
+      return prev.filter((_, j) => j !== sepIdx);
+    });
+  }, []);
+
+  /** Drop a content row band (subsection), whether it still has cards or not. */
+  const removeSubsectionRow = React.useCallback((rowIndex: number) => {
+    setRows((prev) => {
+      if (rowIndex < 0 || rowIndex >= prev.length || prev[rowIndex].kind !== 'row') {
+        return prev;
+      }
+      return prev.filter((_, j) => j !== rowIndex);
+    });
+  }, []);
+
+  const removeSectionFromMenu = React.useCallback(() => {
+    setRows((prev) => {
+      const host = cardLayoutHostRef.current;
+      const target = resolveCardTargetRowFromPointer(prev, host, menu.clientY, menu.rowIndex);
+      if (target === APPEND_NEW_ROW || target < 0) {
+        return prev;
+      }
+      if (prev[target]?.kind !== 'row') {
+        return prev;
+      }
+      return prev.filter((_, j) => j !== target);
+    });
+    setMenu((m) => ({
+      ...m,
+      open: false,
+      gapAfterSepIndex: null,
+    }));
+  }, [menu]);
 
   const deleteCard = React.useCallback((rowIndex: number, itemIndex: number) => {
     setRows((prev) => {
@@ -389,6 +738,7 @@ export function CardLayoutRoot({
     })();
   }, [canSaveMasterLayout, saveMasterLayoutUrl, taxonomyTermId, rows]);
 
+  /** Restores layout rows only; does not change URL or taxonomy nav selection. */
   const handlePaneReset = React.useCallback(() => {
     setRows(cloneRows(baselineRowsRef.current));
     setPaneMenuOpen(false);
@@ -398,7 +748,8 @@ export function CardLayoutRoot({
     if (!menu.open) {
       return;
     }
-    const close = () => setMenu((prev) => ({ ...prev, open: false }));
+    const close = () =>
+      setMenu((prev) => ({ ...prev, open: false, gapAfterSepIndex: null }));
     window.addEventListener('click', close);
     window.addEventListener('keydown', close);
     return () => {
@@ -438,7 +789,10 @@ export function CardLayoutRoot({
     if (target.closest('.scn-pane-menubar')) {
       return;
     }
-    if (target.closest('.scn-article-card') || target.closest('.scn-resize-handle')) {
+    if (target.closest('.scn-resize-handle')) {
+      return;
+    }
+    if (target.closest('.scn-sep-gap-actions')) {
       return;
     }
     evt.preventDefault();
@@ -458,7 +812,7 @@ export function CardLayoutRoot({
           return;
         }
         const idx = Number.parseInt(idxAttr, 10);
-        if (Number.isNaN(idx)) {
+        if (Number.isNaN(idx) || rows[idx]?.kind !== 'row') {
           return;
         }
         const rect = slot.getBoundingClientRect();
@@ -476,10 +830,13 @@ export function CardLayoutRoot({
       x: evt.clientX,
       y: evt.clientY,
       rowIndex: Number.isNaN(rowIndex ?? NaN) ? null : rowIndex,
+      clientY: evt.clientY,
+      gapAfterSepIndex: null,
     });
   };
 
-  const insertCard = () => {
+  /** Append card with optional vertical rule before it (when row already has items). */
+  const insertCard = (withVerticalSeparator: boolean) => {
     const newCard: RowItem = {
       type: 'card',
       card: { kind: 'stub', message: 'New card' },
@@ -488,56 +845,120 @@ export function CardLayoutRoot({
       if (prev.length === 0) {
         return [{ kind: 'row', items: [newCard] }];
       }
-      const at = menu.rowIndex;
-      if (at !== null && at >= 0 && at < prev.length && prev[at]?.kind === 'row') {
-        const current = prev[at] as Extract<LayoutRow, { kind: 'row' }>;
-        const nextItems = [...current.items];
-        if (nextItems.length > 0) {
-          nextItems.push({ type: 'separator', orientation: 'vertical' });
-        }
-        nextItems.push(newCard);
-        const cloned = [...prev];
-        cloned[at] = { ...current, items: nextItems };
-        return cloned;
+      const gapSep = menu.gapAfterSepIndex;
+      if (
+        gapSep !== null &&
+        gapSep >= 0 &&
+        gapSep < prev.length &&
+        prev[gapSep]?.kind === 'separator'
+      ) {
+        const at = gapSep + 1;
+        const items: RowItem[] = [newCard];
+        return [...prev.slice(0, at), { kind: 'row', items }, ...prev.slice(at)];
       }
-      const insertAt = at !== null && at >= 0 ? Math.min(at + 1, prev.length) : prev.length;
-      return [
-        ...prev.slice(0, insertAt),
-        { kind: 'row', items: [newCard] },
-        ...prev.slice(insertAt),
-      ];
+      const host = cardLayoutHostRef.current;
+      const target = resolveCardTargetRowFromPointer(prev, host, menu.clientY, menu.rowIndex);
+      if (target === APPEND_NEW_ROW || target < 0) {
+        const items: RowItem[] = [newCard];
+        return [...prev, { kind: 'row', items }];
+      }
+      const current = prev[target] as Extract<LayoutRow, { kind: 'row' }>;
+      const nextItems = [...current.items];
+      if (withVerticalSeparator && nextItems.length > 0) {
+        nextItems.push({ type: 'separator', orientation: 'vertical' });
+      }
+      nextItems.push(newCard);
+      const cloned = [...prev];
+      cloned[target] = { ...current, items: nextItems };
+      return cloned;
     });
-    setMenu((prev) => ({ ...prev, open: false }));
+    setMenu((prev) => ({ ...prev, open: false, gapAfterSepIndex: null }));
   };
 
   const insertSeparator = () => {
     setRows((prev) => {
-      const at = menu.rowIndex;
-      const insertAt = at !== null && at >= 0 ? Math.min(at + 1, prev.length) : prev.length;
+      const host = cardLayoutHostRef.current;
+      let insertAt = resolveHorizontalSepInsertIndexFromPointer(
+        prev,
+        host,
+        menu.clientY,
+        menu.rowIndex
+      );
+      insertAt = Math.max(0, Math.min(insertAt, prev.length));
       return [
         ...prev.slice(0, insertAt),
         { kind: 'separator', orientation: 'horizontal' as const },
         ...prev.slice(insertAt),
       ];
     });
-    setMenu((prev) => ({ ...prev, open: false }));
+    setMenu((prev) => ({ ...prev, open: false, gapAfterSepIndex: null }));
   };
 
   /** Vertical rule between columns is stored as `RowItem` separator + card; use “Add column”. */
-  const rowPct = rows.length ? `${100 / rows.length}%` : '100%';
+  const verticalWeights = rows.map((r) => (r.kind === 'separator' ? 3 : 48));
+  const verticalWeightSum = verticalWeights.reduce((a, b) => a + b, 0) || 1;
   const verticalRowChildren = rows.flatMap((row, i) => {
     const panel = (
       <Panel
         key={`scn-vrow-${i}`}
-        defaultSize={rowPct}
-        minSize={10}
+        defaultSize={`${((100 * verticalWeights[i]) / verticalWeightSum).toFixed(4)}%`}
+        minSize={row.kind === 'separator' ? '0.5%' : rowBandMinPct}
         id={`scn-vrow-${i}`}
         className="scn-card-layout__row-panel"
-        style={{ overflow: 'hidden' }}
+        style={{ overflow: row.kind === 'separator' ? 'hidden' : 'visible' }}
       >
-        <div data-layout-row-index={i} className="scn-card-layout__slot">
+        <div
+          data-layout-row-index={i}
+          className={cn(
+            'scn-card-layout__slot',
+            'scn-card-layout__subsection',
+            row.kind === 'row'
+              ? 'scn-card-layout__subsection--content'
+              : 'scn-card-layout__subsection--separator'
+          )}
+        >
           {row.kind === 'separator' ? (
-            <UiSeparator orientation="horizontal" className="scn-card-layout__sep" />
+            <>
+              <UiSeparator orientation="horizontal" className="scn-card-layout__sep" />
+              {enableMasterPane && contentGapAfterHorizontalSep(rows, i) ? (
+                <div className="scn-sep-gap-actions">
+                  <button
+                    type="button"
+                    className="scn-sep-gap__add"
+                    aria-label="Add row (menu)"
+                    title="Add cards / columns"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                      setMenu({
+                        open: true,
+                        x: r.left + r.width / 2,
+                        y: r.bottom + 8,
+                        rowIndex: i,
+                        clientY: r.top + r.height / 2,
+                        gapAfterSepIndex: i,
+                      });
+                    }}
+                  >
+                    +
+                  </button>
+                  <button
+                    type="button"
+                    className="scn-sep-gap__remove"
+                    aria-label="Remove horizontal separator"
+                    title="Remove separator"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      deleteHorizontalSeparator(i);
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ) : null}
+            </>
           ) : (
             <ResizableCardRow
               items={row.items}
@@ -545,6 +966,7 @@ export function CardLayoutRoot({
               rowIndex={i}
               enableMasterPane={enableMasterPane}
               onDeleteCard={deleteCard}
+              onRemoveSubsection={enableMasterPane ? removeSubsectionRow : undefined}
             />
           )}
         </div>
@@ -676,17 +1098,67 @@ export function CardLayoutRoot({
     return (
       <div className="scn-content-outline taxonomy-drilldown__outline">
         {sectionTitle ? <h1 className="taxonomy-drilldown__title">{sectionTitle}</h1> : null}
-        <div className="scn-card-layout-host" onContextMenu={onContextMenu}>
-          <Group orientation="vertical" className={cn('scn-card-layout', 'scn-card-layout--vertical-stack')}>
+        <div
+          ref={cardLayoutHostRef}
+          className="scn-card-layout-host scn-card-layout-host--master-pane"
+          onContextMenu={onContextMenu}
+        >
+        <div
+          ref={verticalStackMeasureRef}
+          className="scn-card-layout-vertical-measure"
+          style={
+            {
+              ['--scn-stack-min' as string]: `${verticalStackMinHeightPx(rows)}px`,
+            } as React.CSSProperties
+          }
+        >
+          <Group
+            orientation="vertical"
+            className={cn('scn-card-layout', 'scn-card-layout--vertical-stack')}
+            style={{
+              flex: '1 1 auto',
+              minHeight: 0,
+              height: '100%',
+              width: '100%',
+              alignSelf: 'stretch',
+            }}
+          >
             {verticalRowChildren}
           </Group>
+        </div>
+        <div
+          className="scn-card-layout-pane-spacer"
+          aria-hidden="true"
+          onContextMenu={(e) => {
+            if (!enableMasterPane || rows.length === 0) {
+              return;
+            }
+            e.preventDefault();
+            e.stopPropagation();
+            setMenu({
+              open: true,
+              x: e.clientX,
+              y: e.clientY,
+              rowIndex: null,
+              clientY: e.clientY,
+              gapAfterSepIndex: null,
+            });
+          }}
+        />
           {menu.open && enableMasterPane ? (
             <div className="scn-context-menu" style={{ left: menu.x, top: menu.y }} role="menu">
-              <button type="button" className="scn-context-menu__item" onClick={insertCard}>
+              <button type="button" className="scn-context-menu__item" onClick={() => insertCard(false)}>
+                Add card
+              </button>
+              <button type="button" className="scn-context-menu__item" onClick={() => insertCard(true)}>
                 Add column (card + vertical rule)
               </button>
               <button type="button" className="scn-context-menu__item" onClick={insertSeparator}>
                 Add horizontal separator (row)
+              </button>
+              <div className="scn-context-menu__divider" role="separator" />
+              <button type="button" className="scn-context-menu__item scn-context-menu__item--danger" onClick={removeSectionFromMenu}>
+                Remove section
               </button>
             </div>
           ) : null}
