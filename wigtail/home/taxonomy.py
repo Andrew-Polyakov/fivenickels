@@ -114,11 +114,18 @@ def taxonomy_roots_for_nav(home_page: HomePage | None):
     return [by_slug[s] for s in TOP_ROW_SLUGS if s in by_slug]
 
 
-def virtual_children_for(term: TaxonomyTerm, *, home_page: HomePage | None):
+def virtual_children_for(
+    term: TaxonomyTerm, *, home_page: HomePage | None, for_nav: bool = False
+):
     """
     Children shown in the nav under ``term``.
     Market News lists GICS sectors (DB siblings) filtered like the old sector row.
     Other terms use real tree children.
+
+    When ``for_nav`` is True the GICS gating is skipped: every visible sector
+    appears in the menu even if no public articles tag it yet (used by site
+    header dropdowns and depth >= 2 trail rows). Featured chip strips on the
+    home page leave the gating in place so empty sectors stay hidden there.
     """
     from home.gics_sectors import GICS_SECTORS, GICS_SECTOR_SLUGS
     from home.models import TaxonomyTerm
@@ -131,6 +138,8 @@ def virtual_children_for(term: TaxonomyTerm, *, home_page: HomePage | None):
         return list(term.get_visible_children())
 
     def gics_shown(t: TaxonomyTerm) -> bool:
+        if for_nav:
+            return True
         if taxonomy_term_has_public_pages(t):
             return True
         return bool(
@@ -224,11 +233,187 @@ def build_nav_rows(
         rows.append(
             {
                 "depth": i + 2,
-                "nodes": virtual_children_for(node, home_page=home_page),
+                "nodes": virtual_children_for(node, home_page=home_page, for_nav=True),
                 "parent_id": node.pk,
             }
         )
     return rows
+
+
+def _nav_path_slugs_for_term(trail: list, row_depth: int, term) -> list[str]:
+    """Slug path for ``term`` as rendered on nav row ``row_depth`` (1-based)."""
+    if row_depth <= 1:
+        return [term.slug]
+    return [t.slug for t in trail[: row_depth - 1]] + [term.slug]
+
+
+def _taxonomy_href(home_page: HomePage, slug_parts: list[str]) -> str:
+    prefix = taxonomy_prefix_path(home_page)
+    return prefix + "/".join(slug_parts) + "/"
+
+
+def term_nav_href(request, home_page: HomePage, trail: list, row_depth: int, term):
+    """Public URL for a taxonomy term row item (link_page or taxonomy path)."""
+    if term.link_page_id and term.link_page:
+        return term.link_page.get_url(request=request)
+    parts = _nav_path_slugs_for_term(trail, row_depth, term)
+    return _taxonomy_href(home_page, parts)
+
+
+def term_child_nav_href(
+    request, home_page: HomePage, trail: list, parent_row_depth: int, parent_term, child_term
+) -> str:
+    if child_term.link_page_id and child_term.link_page:
+        return child_term.link_page.get_url(request=request)
+    base = _nav_path_slugs_for_term(trail, parent_row_depth, parent_term)
+    return _taxonomy_href(home_page, base + [child_term.slug])
+
+
+def term_is_nav_active(term, trail_slugs: list[str], page) -> bool:
+    if term.slug in trail_slugs:
+        return True
+    if page is not None:
+        if term.link_page_id and page.pk == term.link_page_id:
+            return True
+        spec = getattr(page, "specific", page)
+        st = getattr(spec, "section_term", None)
+        if st is not None and st.id == term.id:
+            return True
+    return False
+
+
+def _serialize_menu_child(
+    request,
+    home_page: HomePage,
+    trail: list,
+    trail_slugs: list[str],
+    parent_row_depth: int,
+    parent_term,
+    child_term,
+    page,
+) -> dict:
+    return {
+        "id": str(child_term.pk),
+        "name": child_term.name,
+        "slug": child_term.slug,
+        "href": term_child_nav_href(
+            request,
+            home_page,
+            trail,
+            parent_row_depth,
+            parent_term,
+            child_term,
+        ),
+        "description": "",
+        "active": term_is_nav_active(child_term, trail_slugs, page),
+    }
+
+
+def _serialize_menu_item(
+    request,
+    home_page: HomePage,
+    trail: list,
+    trail_slugs: list[str],
+    row: dict,
+    term,
+    page,
+) -> dict:
+    row_depth = row["depth"]
+    kids = virtual_children_for(term, home_page=home_page, for_nav=True)
+    children = [
+        _serialize_menu_child(
+            request,
+            home_page,
+            trail,
+            trail_slugs,
+            row_depth,
+            term,
+            c,
+            page,
+        )
+        for c in kids
+    ]
+    return {
+        "id": str(term.pk),
+        "name": term.name,
+        "slug": term.slug,
+        "href": term_nav_href(request, home_page, trail, row_depth, term),
+        "active": term_is_nav_active(term, trail_slugs, page),
+        "removable": True,
+        "children": children,
+    }
+
+
+def build_site_nav_menu_payload(
+    request,
+    home_page: HomePage,
+    nav_rows: list[dict],
+    trail_slugs: list[str],
+    trail: list,
+    *,
+    page=None,
+) -> list[dict]:
+    """
+    JSON for React shadcn NavigationMenu.
+
+    Depth 1: items include ``children`` for dropdown panels; ``createRoot`` /
+    ``afterCreateVisit`` drive top-level "Add new".
+
+    Depth >= 2: same item shape (href, active, removable) but ``children`` is
+    always empty — React renders these rows as always-visible strips below
+    the menu.
+    """
+    out: list[dict] = []
+    for row in nav_rows:
+        depth = row["depth"]
+        items = [
+            _serialize_menu_item(
+                request,
+                home_page,
+                trail,
+                trail_slugs,
+                row,
+                term,
+                page,
+            )
+            for term in row["nodes"]
+        ]
+        if depth != 1:
+            items = [{**it, "children": []} for it in items]
+            entry: dict = {
+                "depth": depth,
+                "parentId": row.get("parent_id"),
+                "items": items,
+                "placeholder": "",
+                "createRoot": False,
+                "afterCreateVisit": None,
+            }
+        else:
+            entry = {
+                "depth": 1,
+                "parentId": row.get("parent_id"),
+                "items": items,
+                "placeholder": "Add new",
+                "createRoot": True,
+            }
+            if not trail_slugs:
+                entry["afterCreateVisit"] = wagtail_serve_taxonomy_url(
+                    home_page, MARKET_NEWS_SLUG
+                )
+            else:
+                entry["afterCreateVisit"] = None
+        out.append(entry)
+    return out
+
+
+def resolve_page_for_nav(request):
+    """Best-effort current page for nav-active matching (non-taxonomy URLs)."""
+    try:
+        from wagtail.models import Page
+
+        return Page.find_for_request(request, request.path)
+    except Exception:
+        return None
 
 
 def taxonomy_breadcrumb_items(home_page: HomePage, trail: list) -> list[dict]:
@@ -298,5 +483,15 @@ def render_site_nav_frame(request, home_page: HomePage, slug_parts: list[str]) -
             "trail": [],
             "trail_slugs": [],
         }
+    page = resolve_page_for_nav(request)
+    ctx["page"] = page
+    ctx["site_nav_menu_payload"] = build_site_nav_menu_payload(
+        request,
+        ctx["home_page"],
+        ctx["nav_rows"],
+        ctx.get("trail_slugs") or [],
+        ctx.get("trail") or [],
+        page=page,
+    )
     html = render_to_string("home/taxonomy/site_nav_frame.html", ctx, request=request)
     return HttpResponse(html)

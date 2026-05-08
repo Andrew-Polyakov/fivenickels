@@ -101,29 +101,26 @@ WSGI_APPLICATION = "mysite.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 #
-# Prefer Postgres when POSTGRES_HOST is set (see trades/.env.example and the
-# `postgres` service in docker-compose.yml). SQLite is retained as a fallback
-# so tests and fresh checkouts work without a running database container.
+# Postgres is required for all environments (see trades/.env.example and
+# docker-compose.yml `postgres` service). Fail fast if POSTGRES_HOST is unset.
+POSTGRES_HOST = os.environ.get("POSTGRES_HOST")
+if not POSTGRES_HOST:
+    raise RuntimeError(
+        "POSTGRES_HOST is required. Configure Postgres credentials in trades/.env "
+        "(see .env.example)."
+    )
 
-if os.environ.get("POSTGRES_HOST"):
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "HOST": os.environ["POSTGRES_HOST"],
-            "PORT": os.environ.get("POSTGRES_PORT", "5432"),
-            "NAME": os.environ.get("WAGTAIL_POSTGRES_DB", "wagtail"),
-            "USER": os.environ.get("POSTGRES_USER", "trades"),
-            "PASSWORD": os.environ.get("POSTGRES_PASSWORD", ""),
-            "CONN_MAX_AGE": 60,
-        }
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "HOST": POSTGRES_HOST,
+        "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+        "NAME": os.environ.get("WAGTAIL_POSTGRES_DB", "wagtail"),
+        "USER": os.environ.get("POSTGRES_USER", "trades"),
+        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", ""),
+        "CONN_MAX_AGE": 60,
     }
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
+}
 
 CACHES = {
     "default": {

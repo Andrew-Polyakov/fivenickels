@@ -16,10 +16,14 @@ def _sort_key_gics_then_name(term):
 
 
 def forwards_populate_tree_and_seed(apps, schema_editor):
-    from wagtail.models import Page
-
     from home.gics_sectors import GICS_SECTOR_ORDER, GICS_SECTOR_SLUGS
-    from home.models import HomePage, SubsectionIndexPage, TaxonomyTerm
+    from home.models import (
+        HomePage as RuntimeHomePage,
+        SubsectionIndexPage as RuntimeSubsectionIndexPage,
+    )
+    from home.models import TaxonomyTerm as RuntimeTaxonomyTerm
+    TaxonomyTerm = apps.get_model("home", "TaxonomyTerm")
+    Page = apps.get_model("wagtailcore", "Page")
 
     nodes = sorted(TaxonomyTerm.objects.all(), key=_sort_key_gics_then_name)
     for node in nodes:
@@ -29,66 +33,44 @@ def forwards_populate_tree_and_seed(apps, schema_editor):
 
     nodes = sorted(TaxonomyTerm.objects.all(), key=_sort_key_gics_then_name)
     for i, node in enumerate(nodes, start=1):
-        node.path = TaxonomyTerm._get_path(None, 1, i)
+        node.path = RuntimeTaxonomyTerm._get_path(None, 1, i)
         node.depth = 1
         node.numchild = 0
     TaxonomyTerm.objects.bulk_update(nodes, ["path", "depth", "numchild"])
 
-    TaxonomyTerm.fix_tree()
+    hp = RuntimeHomePage.objects.live().public().first()
 
-    hp = HomePage.objects.live().public().first()
-    # Do not call add_root when other roots already exist — treebeard delegates to add_sibling and
-    # can corrupt manually set paths. Use add_sibling on an existing root, or add_root if empty.
+    def _next_root_path():
+        return RuntimeTaxonomyTerm._get_path(None, 1, TaxonomyTerm.objects.count() + 1)
+
     if hp and not TaxonomyTerm.objects.filter(slug="home").exists():
-        last = TaxonomyTerm.get_last_root_node()
-        if last is not None:
-            last.add_sibling(
-                "sorted-sibling",
-                name="Home",
-                slug="home",
-                sort_order=0,
-                is_visible=True,
-                link_page=Page.objects.filter(pk=hp.pk).first(),
-            )
-        else:
-            TaxonomyTerm.add_root(
-                name="Home",
-                slug="home",
-                sort_order=0,
-                is_visible=True,
-                link_page=Page.objects.filter(pk=hp.pk).first(),
-            )
-        TaxonomyTerm.fix_tree()
+        TaxonomyTerm.objects.create(
+            name="Home",
+            slug="home",
+            sort_order=0,
+            is_visible=True,
+            link_page_id=Page.objects.filter(pk=hp.pk).values_list("pk", flat=True).first(),
+            path=_next_root_path(),
+            depth=1,
+            numchild=0,
+        )
 
     if hp and not TaxonomyTerm.objects.filter(slug="markets-data").exists():
-        link = hp.markets_data_link
-        last = TaxonomyTerm.get_last_root_node()
-        if last is not None:
-            last.add_sibling(
-                "sorted-sibling",
-                name="Markets data",
-                slug="markets-data",
-                sort_order=1,
-                is_visible=True,
-                link_page=link,
-            )
-        else:
-            TaxonomyTerm.add_root(
-                name="Markets data",
-                slug="markets-data",
-                sort_order=1,
-                is_visible=True,
-                link_page=link,
-            )
-        TaxonomyTerm.fix_tree()
+        TaxonomyTerm.objects.create(
+            name="Markets data",
+            slug="markets-data",
+            sort_order=1,
+            is_visible=True,
+            link_page_id=getattr(hp, "markets_data_link_id", None),
+            path=_next_root_path(),
+            depth=1,
+            numchild=0,
+        )
 
-    for idx in SubsectionIndexPage.objects.all():
+    for idx in RuntimeSubsectionIndexPage.objects.all():
         TaxonomyTerm.objects.filter(pk=idx.section_term_id).update(
             link_page_id=idx.page_ptr_id
         )
-
-    # Keep GICS terms visible in the DB; runtime nav filters empty sectors (see taxonomy_roots_for_nav).
-    TaxonomyTerm.fix_tree()
 
 
 def backwards_noop(apps, schema_editor):

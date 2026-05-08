@@ -5,7 +5,8 @@ from django.db import migrations
 
 
 def repair_padded_root_paths(apps, schema_editor):
-    from home.models import TaxonomyTerm
+    from home.models import TaxonomyTerm as RuntimeTaxonomyTerm
+    TaxonomyTerm = apps.get_model("home", "TaxonomyTerm")
 
     terms = list(
         TaxonomyTerm.objects.all().order_by("sort_order", "name", "slug")
@@ -15,17 +16,16 @@ def repair_padded_root_paths(apps, schema_editor):
     offset = len(terms) + 50
     for i, t in enumerate(terms, start=1):
         TaxonomyTerm.objects.filter(pk=t.pk).update(
-            path=TaxonomyTerm._get_path(None, 1, offset + i),
+            path=RuntimeTaxonomyTerm._get_path(None, 1, offset + i),
             depth=1,
             numchild=0,
         )
     for i, t in enumerate(terms, start=1):
         TaxonomyTerm.objects.filter(pk=t.pk).update(
-            path=TaxonomyTerm._get_path(None, 1, i),
+            path=RuntimeTaxonomyTerm._get_path(None, 1, i),
             depth=1,
             numchild=0,
         )
-    TaxonomyTerm.fix_tree()
 
 
 def backwards_noop(apps, schema_editor):

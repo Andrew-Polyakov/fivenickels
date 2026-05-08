@@ -52,7 +52,7 @@ Let **C** = tickers from the **current** `dotnet run` / user request (normalize 
    ```text
    dotnet run --project tools/StockCrawler -- patterns TICKER1 TICKER2
    ```
-   Optional debug (large JSON): add `--with-bars` after `patterns` to include raw bars. The tool requests historical bars with the **IEX** feed (free Alpaca data tier), writes a local SQLite cache at `.cache/trades.sqlite`, and appends only new bars per run for M/W/D slices.
+   Optional debug (large JSON): add `--with-bars` after `patterns` to include raw bars. The tool requests historical bars with the **IEX** feed (free Alpaca data tier), persists bars to the Postgres crawler database, and appends only new bars per run for M/W/D slices.
 3. **Classify** each ticker with the rubric; fill the table; add **Notes** with only auditable numbers (trends, RSI, ADX, ATR, distance to levels in ATRs, wick %).
 4. **Write** `reports/pattern-scan-YYYY-MM-DD.md` (merge if same-day re-run).
 
@@ -67,4 +67,4 @@ Java-influenced: K&R braces, 4 spaces, `camelCase` for non–entry-point methods
 
 ## Session footnote (template)
 
-*Indicators: multi-timeframe Alpaca historical bars via `tools/StockCrawler` (`patterns` mode; IEX feed in the tool, local SQLite cache). Upgrading to SIP in Alpaca’s dashboard may change available history or consolidation vs your broker. Not investment advice.*
+*Indicators: multi-timeframe Alpaca historical bars via `tools/StockCrawler` (`patterns` mode; IEX feed in the tool, Postgres-backed crawler storage). Upgrading to SIP in Alpaca’s dashboard may change available history or consolidation vs your broker. Not investment advice.*

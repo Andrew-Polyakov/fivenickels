@@ -22,7 +22,7 @@
 <details>
 <summary>Article body (excerpt, plain text from Alpaca JSON)</summary>
 
-Nvidia Corp. (NASDAQ: NVDA) CEO Jensen Huang pushed back Thursday against high-profile warnings that artificial intelligence will gut white-collar work, calling the most extreme forecasts counterproductive. He also pointed to potential spillover effects for suppliers such as Taiwan Semiconductor Manufacturing Co. (NYSE: TSM). (Truncated in JSON to 4k chars; full HTML stripped in `tools/StockCrawler` output / `.cache/trades.sqlite`.)
+Nvidia Corp. (NASDAQ: NVDA) CEO Jensen Huang pushed back Thursday against high-profile warnings that artificial intelligence will gut white-collar work, calling the most extreme forecasts counterproductive. He also pointed to potential spillover effects for suppliers such as Taiwan Semiconductor Manufacturing Co. (NYSE: TSM). (Truncated in JSON to 4k chars; full HTML stripped in `tools/StockCrawler` output and persisted in crawler Postgres storage.)
 
 </details>
 
@@ -85,4 +85,4 @@ Debate on exporting older NVDA GPUs to China vs accelerating domestic alternativ
 
 ---
 
-*Percent change and volume: regular US session via [Alpaca](https://alpaca.markets/data) snapshot (`tools/StockCrawler`, news mode with `SendFullContentForItems`). JSON uses stripped/truncated article text; SQLite stores plain body in `news_articles.content`. Not investment advice.*
+*Percent change and volume: regular US session via [Alpaca](https://alpaca.markets/data) snapshot (`tools/StockCrawler`, news mode with `SendFullContentForItems`). JSON uses stripped/truncated article text; crawler Postgres storage keeps plain body in `news_articles.content`. Not investment advice.*

@@ -8,7 +8,9 @@ from home.alpaca_forex_client import get_cached_forex_quote_rows, placeholder_fo
 from home.ticker_utils import chip_context_for_row
 from home.taxonomy import (
     MARKET_NEWS_SLUG,
+    build_site_nav_menu_payload,
     get_site_nav_template_context,
+    resolve_page_for_nav,
     taxonomy_prefix_path,
     taxonomy_roots_for_nav,
 )
@@ -80,7 +82,7 @@ def market_header(request):
             nav_ctx = {
                 "home_page": home,
                 "taxonomy_prefix": taxonomy_prefix_path(home),
-                "nav_rows": [{"depth": 1, "nodes": roots}],
+                "nav_rows": [{"depth": 1, "nodes": roots, "parent_id": None}],
                 "active_node": None,
                 "trail": [],
                 "trail_slugs": [],
@@ -129,6 +131,15 @@ def market_header(request):
         "footer_cookies_page": CookiesPolicyPage.objects.live().public().first(),
     }
     if nav_ctx:
+        page = resolve_page_for_nav(request)
+        site_nav_menu_payload = build_site_nav_menu_payload(
+            request,
+            nav_ctx["home_page"],
+            nav_ctx["nav_rows"],
+            nav_ctx.get("trail_slugs") or [],
+            nav_ctx.get("trail") or [],
+            page=page,
+        )
         out.update(
             {
                 "site_nav_home_page": nav_ctx["home_page"],
@@ -136,6 +147,7 @@ def market_header(request):
                 "site_nav_active_node": nav_ctx.get("active_node"),
                 "site_nav_trail": nav_ctx.get("trail") or [],
                 "site_nav_trail_slugs": nav_ctx.get("trail_slugs") or [],
+                "site_nav_menu_payload": site_nav_menu_payload,
             }
         )
     return out

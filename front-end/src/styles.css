@@ -485,6 +485,390 @@
   cursor: default;
 }
 
+/* Radix NavigationMenu + taxonomy site header */
+.site-nav__menu-host {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.scn-taxonomy-site-nav {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: 0;
+  overflow: visible;
+}
+
+.site-nav__menu-host {
+  overflow: visible;
+}
+
+turbo-frame#site-nav.site-nav {
+  overflow: visible;
+}
+
+.scn-taxonomy-site-nav__unified.site-nav__row {
+  width: 100%;
+}
+
+.scn-navigation-menu {
+  position: relative;
+  z-index: 1500;
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  justify-content: center;
+}
+
+.scn-navigation-menu__list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem 0.35rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.scn-navigation-menu__trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  height: 2.25rem;
+  padding: 0 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  color: var(--neon-white, #f8fafc);
+  background: transparent;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  outline: none;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.scn-navigation-menu__trigger:hover,
+.scn-navigation-menu__trigger:focus-visible,
+.scn-navigation-menu__trigger[data-state='open'] {
+  background: rgba(248, 250, 252, 0.08);
+  color: #f8fafc;
+}
+
+.scn-navigation-menu__trigger:focus-visible {
+  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.45);
+}
+
+.scn-navigation-menu__trigger--active {
+  background: rgba(74, 222, 128, 0.12);
+  color: #d1fae5;
+}
+
+.scn-navigation-menu__trigger--link {
+  text-decoration: none;
+}
+
+.scn-navigation-menu__trigger--with-chevron .scn-navigation-menu__chevron {
+  width: 0.75rem;
+  height: 0.75rem;
+  flex-shrink: 0;
+  opacity: 0.85;
+  transition: transform 0.2s ease;
+}
+
+.scn-navigation-menu__trigger[data-state='open'] .scn-navigation-menu__chevron {
+  transform: rotate(180deg);
+}
+
+.scn-navigation-menu__content {
+  position: relative;
+  left: 0;
+  top: 0;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .scn-navigation-menu__content {
+    position: absolute;
+    width: auto;
+  }
+}
+
+.scn-navigation-menu__viewport-outer {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  perspective: 2000px;
+  z-index: 1500;
+}
+
+.scn-navigation-menu__viewport {
+  position: relative;
+  margin-top: 0.35rem;
+  height: var(--radix-navigation-menu-viewport-height);
+  width: 100%;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid rgba(92, 255, 138, 0.45);
+  background: rgba(10, 15, 24, 0.97);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  z-index: 1501;
+  transition:
+    width 0.2s ease,
+    height 0.2s ease;
+}
+
+@media (min-width: 640px) {
+  .scn-navigation-menu__viewport {
+    width: var(--radix-navigation-menu-viewport-width, min(100vw - 2rem, 24rem));
+  }
+}
+
+.scn-navigation-menu__indicator {
+  display: none;
+}
+
+.scn-navigation-menu__indicator-arrow {
+  display: none;
+}
+
+.scn-navigation-menu__list-item-link {
+  display: block;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  text-decoration: none;
+  outline: none;
+  color: inherit;
+  border: 1px solid transparent;
+  user-select: none;
+}
+
+.scn-navigation-menu__list-item-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+
+.scn-navigation-menu__list-item-link:hover {
+  background: rgba(74, 222, 128, 0.12);
+}
+
+.scn-navigation-menu__list-item-link:focus-visible {
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.95), 0 0 0 4px rgba(74, 222, 128, 0.35);
+}
+
+.scn-navigation-menu__list-item-link--active {
+  border-color: rgba(74, 222, 128, 0.55);
+  background: rgba(74, 222, 128, 0.14);
+}
+
+.scn-navigation-menu__list-item-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1;
+  color: #f8fafc;
+}
+
+.scn-navigation-menu__list-item-desc {
+  margin-top: 0.25rem;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: rgba(248, 250, 252, 0.55);
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* shadcn NavigationMenu docs ListItem: text-sm body, gap-1, muted description */
+.scn-navigation-menu__list-item-body--docs {
+  line-height: 1.25rem;
+}
+
+.scn-navigation-menu__list-item-title--docs {
+  font-weight: 500;
+  line-height: 1;
+}
+
+.scn-navigation-menu__list-item-desc--docs {
+  margin-top: 0;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: rgba(248, 250, 252, 0.55);
+}
+
+.scn-add-root-form {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 0.25rem;
+}
+
+.scn-add-root-dialog-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.scn-add-root-dialog-content.scn-dialog-content {
+  width: min(92vw, 400px);
+}
+
+.scn-taxonomy-site-nav__menu-list {
+  width: 100%;
+}
+
+.scn-taxonomy-site-nav__menu-item {
+  position: relative;
+  list-style: none;
+}
+
+/* Radix NavigationMenuItem must wrap Trigger/Content directly; row layout for chip + inline pen */
+.scn-taxonomy-site-nav__menu-item--branch {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.scn-taxonomy-site-nav__dropdown-grid {
+  list-style: none;
+  margin: 0;
+  display: grid;
+}
+
+.scn-taxonomy-site-nav__dropdown-grid--simple {
+  width: min(100vw - 2rem, 24rem);
+  grid-template-columns: 1fr;
+  gap: 0.35rem;
+  padding: 0.5rem;
+}
+
+.scn-taxonomy-site-nav__dropdown-grid--grid {
+  width: min(100vw - 2rem, 25rem);
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  padding: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .scn-taxonomy-site-nav__dropdown-grid--grid {
+    width: min(100vw - 2rem, 31.25rem);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .scn-taxonomy-site-nav__dropdown-grid--grid {
+    width: min(100vw - 2rem, 37.5rem);
+  }
+}
+
+.scn-taxonomy-site-nav__list-item {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+
+.scn-taxonomy-site-nav__list-item .scn-navigation-menu__list-item-link {
+  flex: 1;
+  min-width: 0;
+}
+
+.scn-taxonomy-site-nav__dropdown-add {
+  list-style: none;
+  display: flex;
+  justify-content: stretch;
+}
+
+.scn-taxonomy-site-nav__dropdown-add-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  border: 1px dashed rgba(92, 255, 138, 0.45);
+  background: rgba(0, 0, 0, 0.45);
+  color: rgba(248, 250, 252, 0.85);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.scn-taxonomy-site-nav__dropdown-add-btn:hover {
+  background: rgba(74, 222, 128, 0.16);
+  color: #d1fae5;
+  border-color: rgba(92, 255, 138, 0.7);
+}
+
+.scn-taxonomy-site-nav__dropdown-empty {
+  list-style: none;
+  padding: 0.65rem 0.75rem;
+  color: rgba(248, 250, 252, 0.55);
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
+.scn-taxonomy-site-nav__rename-inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(248, 250, 252, 0.08);
+  color: rgba(248, 250, 252, 0.78);
+  border-radius: 4px;
+  width: 1.5rem;
+  height: 1.5rem;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.scn-taxonomy-site-nav__rename-inline-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex-shrink: 0;
+}
+
+.scn-taxonomy-site-nav__rename-inline:hover {
+  background: rgba(74, 222, 128, 0.2);
+  color: #f8fafc;
+}
+
+.scn-taxonomy-site-nav__rename-inline:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.45);
+}
+
+.scn-taxonomy-site-nav__rename-inline--top {
+  margin-left: 0.35rem;
+}
+
+.scn-taxonomy-site-nav__rename-inline--dropdown {
+  margin-top: 0.05rem;
+}
+
 /* shadcn-style main content frame (outline + subtle surface) */
 .scn-content-outline {
   border-radius: 12px;

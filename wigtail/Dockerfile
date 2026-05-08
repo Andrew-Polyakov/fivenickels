@@ -35,10 +35,9 @@ RUN pip install -r /requirements.txt
 WORKDIR /app
 
 # Set this directory to be owned by the "wagtail" user. The app talks to
-# Postgres in production (see docker-compose.yml `postgres` service and
-# POSTGRES_HOST env consumed by mysite/settings/base.py); local dev
-# containers may still fall back to /app/db.sqlite3 when POSTGRES_HOST is
-# unset, so the dir needs to be writable by the wagtail user.
+# Postgres in all environments (see docker-compose.yml `postgres` service and
+# POSTGRES_HOST env consumed by mysite/settings/base.py), so runtime
+# connectivity depends on valid POSTGRES_* / WAGTAIL_POSTGRES_DB values.
 RUN chown wagtail:wagtail /app
 
 # Copy the source code of the project into the container.

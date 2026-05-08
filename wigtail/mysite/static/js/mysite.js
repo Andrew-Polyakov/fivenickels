@@ -349,7 +349,10 @@
         });
     }
 
-    function initAngularTaxonomyWidgets() {
+    function initTaxonomySiteNavAndChips() {
+        if (window.mountShadcnTaxonomySiteNav && typeof window.mountShadcnTaxonomySiteNav === "function") {
+            window.mountShadcnTaxonomySiteNav();
+        }
         if (
             window.mountTaxonomyChipWidgets &&
             typeof window.mountTaxonomyChipWidgets === "function"
@@ -535,7 +538,7 @@
         initSectorScroll();
         initCarousels();
         initInlineChipsAdmin();
-        initAngularTaxonomyWidgets();
+        initTaxonomySiteNavAndChips();
         initInlineTileTitleAdmin();
         initTileShareButtons();
         initShadcnCardLayouts();
@@ -548,7 +551,7 @@
         }
         if (e.target.id === "site-nav") {
             initInlineChipsAdmin();
-            initAngularTaxonomyWidgets();
+            initTaxonomySiteNavAndChips();
             return;
         }
         if (e.target.id !== "main") {
@@ -815,7 +818,7 @@
         initSiteSearchLive();
         initAuthModal();
         initInlineChipsAdmin();
-        initAngularTaxonomyWidgets();
+        initTaxonomySiteNavAndChips();
         initInlineTileTitleAdmin();
         initTileShareButtons();
         initShadcnCardLayouts();
@@ -831,7 +834,7 @@
         initSiteSearchLive();
         initAuthModal();
         initInlineChipsAdmin();
-        initAngularTaxonomyWidgets();
+        initTaxonomySiteNavAndChips();
         initInlineTileTitleAdmin();
         initTileShareButtons();
         initShadcnCardLayouts();

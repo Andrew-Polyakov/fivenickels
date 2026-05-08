@@ -102,6 +102,8 @@ body.template-homepage {
 
     margin-bottom: 0.35rem;
 
+    overflow: visible;
+
 }
 
 /* One column: avoid a second narrow measure inside .site-content. */

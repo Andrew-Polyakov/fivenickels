@@ -102,5 +102,4 @@ __pycache__/
 
 # Wagtail tutorial (wigtail/)
 wigtail/env/
-wigtail/db.sqlite3
 wigtail/static/

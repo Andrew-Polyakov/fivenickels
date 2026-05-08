@@ -4,7 +4,8 @@ from django.db import migrations
 
 
 def ensure_personal_finance(apps, schema_editor):
-    from home.models import TaxonomyTerm
+    from home.models import TaxonomyTerm as RuntimeTaxonomyTerm
+    TaxonomyTerm = apps.get_model("home", "TaxonomyTerm")
 
     if TaxonomyTerm.objects.filter(slug="personal-finance").exists():
         TaxonomyTerm.objects.filter(slug="personal-finance").update(
@@ -13,23 +14,15 @@ def ensure_personal_finance(apps, schema_editor):
             is_visible=True,
         )
         return
-    last = TaxonomyTerm.get_last_root_node()
-    if last is not None:
-        last.add_sibling(
-            "sorted-sibling",
-            name="Personal Finance",
-            slug="personal-finance",
-            sort_order=9,
-            is_visible=True,
-        )
-    else:
-        TaxonomyTerm.add_root(
-            name="Personal Finance",
-            slug="personal-finance",
-            sort_order=9,
-            is_visible=True,
-        )
-    TaxonomyTerm.fix_tree()
+    TaxonomyTerm.objects.create(
+        name="Personal Finance",
+        slug="personal-finance",
+        sort_order=9,
+        is_visible=True,
+        path=RuntimeTaxonomyTerm._get_path(None, 1, TaxonomyTerm.objects.count() + 1),
+        depth=1,
+        numchild=0,
+    )
 
 
 def backwards_noop(apps, schema_editor):

@@ -9,6 +9,7 @@ import { appMaterialDialogDefaults } from './app/dialog-defaults';
 import { mountShadcnAuthDialogBridge, type AuthTab } from './app/auth-dialog-shadcn';
 import { mountShadcnBreadcrumbs } from './app/shadcn-breadcrumb';
 import { mountShadcnArticleCards, mountShadcnCardLayouts } from './app/shadcn-card-layout';
+import { mountShadcnTaxonomySiteNav } from './app/shadcn-taxonomy-site-nav';
 import {
   ConfirmDialogComponent,
   MessageDialogComponent,
@@ -26,6 +27,7 @@ declare global {
     mountShadcnCardLayouts?: () => void;
     mountShadcnArticleCards?: () => void;
     mountShadcnBreadcrumbs?: () => void;
+    mountShadcnTaxonomySiteNav?: () => void;
   }
 }
 
@@ -84,6 +86,7 @@ createApplication({
     window.mountShadcnCardLayouts = mountShadcnCardLayouts;
     window.mountShadcnArticleCards = mountShadcnArticleCards;
     window.mountShadcnBreadcrumbs = mountShadcnBreadcrumbs;
+    window.mountShadcnTaxonomySiteNav = mountShadcnTaxonomySiteNav;
     window.showMaterialConfirm = (message: string, title?: string) =>
       new Promise<boolean>((resolve) => {
         dialog
@@ -119,6 +122,7 @@ createApplication({
       authDialogBridge.openAuthDialog(initialTab);
     };
     mountTaxonomyChipWidgets();
+    mountShadcnTaxonomySiteNav();
     mountShadcnCardLayouts();
     mountShadcnArticleCards();
     mountShadcnBreadcrumbs();

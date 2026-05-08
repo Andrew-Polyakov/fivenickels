@@ -12,7 +12,7 @@ internal static class Program
             return Exits.BadArgs;
         }
         // `init-db` creates the Postgres schema without any Alpaca API call —
-        // used by scripts/migrate-crawler-to-postgres.py and first-time setup.
+        // used by first-time setup and schema bootstrap workflows.
         if (args.Length >= 1 && string.Equals(args[0], "init-db", StringComparison.OrdinalIgnoreCase)) {
             using var db = new LocalDatabase(LocalDatabase.getDefaultConnectionString());
             db.initialize();
