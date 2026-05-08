@@ -5601,6 +5601,16 @@ body.template-forex-ratings .site-content {
     color: var(--color-text-muted);
 }
 
+.scn-input:-webkit-autofill,
+.scn-input:-webkit-autofill:hover,
+.scn-input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px var(--color-bg) inset;
+    -webkit-text-fill-color: var(--color-text);
+    caret-color: var(--color-text);
+    border-color: var(--color-border-subtle);
+    transition: background-color 0s 9999s;
+}
+
 .scn-search-wrap {
     position: relative;
     display: flex;
@@ -5848,6 +5858,160 @@ body.template-forex-ratings .site-content {
 /* ── end Broker edit popover ── */
 
 /* ── end Forex Ratings ── */
+
+/* ── Dialog ── */
+
+.scn-dialog-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(2px);
+    animation: scn-overlay-in 0.15s ease;
+}
+
+@keyframes scn-overlay-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.scn-dialog-content {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9999;
+    width: min(400px, calc(100vw - 2rem));
+    background: var(--color-surface);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 12px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--color-border-subtle);
+    padding: 1.5rem;
+    outline: none;
+    animation: scn-dialog-in 0.15s ease;
+}
+
+@keyframes scn-dialog-in {
+    from { opacity: 0; transform: translate(-50%, -48%); }
+    to   { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+.scn-dialog-header {
+    margin-bottom: 1rem;
+}
+
+.scn-dialog-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 0.25rem;
+}
+
+.scn-dialog-description {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    margin: 0;
+}
+
+.scn-dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.scn-dialog-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    font-size: 0.9rem;
+    border-color: transparent;
+    background: transparent;
+    color: var(--color-text-muted);
+}
+
+/* ── Tabs ── */
+
+.scn-tabs-list {
+    display: flex;
+    gap: 0.25rem;
+    border-bottom: 1px solid var(--color-border-subtle);
+    margin-bottom: 1.25rem;
+    padding-bottom: 0;
+}
+
+.scn-tabs-trigger {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.45rem 0.75rem;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s;
+    outline: none;
+}
+
+.scn-tabs-trigger:hover {
+    color: var(--color-text);
+}
+
+.scn-tabs-trigger[data-state="active"] {
+    color: var(--color-slime);
+    border-bottom-color: var(--color-slime);
+}
+
+.scn-tabs-trigger:focus-visible {
+    outline: 2px solid var(--color-slime-soft);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+.scn-tabs-content {
+    outline: none;
+}
+
+/* ── Auth form ── */
+
+.scn-auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+}
+
+.scn-auth-form .scn-button--default,
+.scn-auth-form .btn--raised {
+    align-self: flex-start;
+    height: 36px;
+    padding: 0 1.25rem;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.scn-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.scn-field .scn-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+}
+
+.scn-field .scn-input {
+    width: 100%;
+}
+
+/* ── end Dialog / Tabs / Auth form ── */
 
 [data-shadcn-card-layout]:not([data-master-pane-enabled="1"]) .scn-resize-handle {
 

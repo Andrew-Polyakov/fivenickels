@@ -72,6 +72,14 @@ function AuthDialogShell({ data, onClose }: AuthDialogShellProps): React.JSX.Ele
                 <Label htmlFor="auth-login-password">Password</Label>
                 <Input id="auth-login-password" type="password" name="password" autoComplete="current-password" required />
               </div>
+              <div className="scn-field" aria-hidden="true" style={{ visibility: 'hidden' }}>
+                <Label>&nbsp;</Label>
+                <Input disabled tabIndex={-1} />
+              </div>
+              <div className="scn-field" aria-hidden="true" style={{ visibility: 'hidden' }}>
+                <Label>&nbsp;</Label>
+                <Input disabled tabIndex={-1} />
+              </div>
               <Button type="submit">Sign in</Button>
             </form>
           </TabsContent>
