@@ -56,7 +56,7 @@ type RowItem =
   | { type: 'separator'; orientation: 'horizontal' | 'vertical' };
 
 type LayoutRow =
-  | { kind: 'row'; items: RowItem[] }
+  | { kind: 'row'; items: RowItem[]; columnSizes?: number[] }
   | { kind: 'separator'; orientation: 'horizontal' | 'vertical' };
 
 export type CardLayoutPayload = {
@@ -723,6 +723,8 @@ function TaxonomyStackedCardRow({
   panelGroupKey,
   rowIndex,
   enableMasterPane,
+  columnSizes,
+  onColumnResize,
   onDeleteCard,
   onUpdateCard,
   onRemoveSubsection,
@@ -731,6 +733,8 @@ function TaxonomyStackedCardRow({
   panelGroupKey: string;
   rowIndex: number;
   enableMasterPane: boolean;
+  columnSizes?: number[];
+  onColumnResize?: (rowIndex: number, sizes: number[]) => void;
   onDeleteCard: (rowIndex: number, itemIndex: number) => void;
   onUpdateCard?: (rowIndex: number, itemIndex: number, card: ArticleCardPayload) => void;
   onRemoveSubsection?: (rowIndex: number) => void;
@@ -886,12 +890,24 @@ function TaxonomyStackedCardRow({
     ];
   });
 
+  const taxPanelIds = cols.map((_, colIdx) => `scn-tpanel-${panelGroupKey}-${colIdx}`);
+  const taxDefaultLayout =
+    columnSizes && columnSizes.length === cols.length
+      ? Object.fromEntries(taxPanelIds.map((id, i) => [id, columnSizes[i]]))
+      : undefined;
+
   return (
     <div className="scn-card-row--panels-outer scn-card-row--taxonomy-stack">
       <Group
         orientation="horizontal"
         className="scn-card-row scn-card-row--panels scn-card-row--taxonomy-columns"
         style={{ height: '100%', width: '100%', alignSelf: 'stretch' }}
+        defaultLayout={taxDefaultLayout}
+        onLayoutChanged={(layout) => {
+          if (onColumnResize) {
+            onColumnResize(rowIndex, taxPanelIds.map((id) => layout[id] ?? 100 / cols.length));
+          }
+        }}
       >
         {horizontalChildren}
       </Group>
@@ -904,6 +920,8 @@ function ResizableCardRow({
   panelGroupKey,
   rowIndex,
   enableMasterPane,
+  columnSizes,
+  onColumnResize,
   onDeleteCard,
   onUpdateCard,
   onRemoveSubsection,
@@ -912,6 +930,8 @@ function ResizableCardRow({
   panelGroupKey: string;
   rowIndex: number;
   enableMasterPane: boolean;
+  columnSizes?: number[];
+  onColumnResize?: (rowIndex: number, sizes: number[]) => void;
   onDeleteCard: (rowIndex: number, itemIndex: number) => void;
   onUpdateCard?: (rowIndex: number, itemIndex: number, card: ArticleCardPayload) => void;
   /** Removes this entire row band (empty or not); same as context menu “Remove section”. */
@@ -1053,12 +1073,24 @@ function ResizableCardRow({
     return <div className="scn-card-row--panels-outer">{freeCanvas}</div>;
   }
 
+  const fixedPanelIds = fixedPanels.map((entry) => `scn-panel-${panelGroupKey}-${entry.itemIndex}`);
+  const fixedDefaultLayout =
+    columnSizes && columnSizes.length === fixedPanels.length
+      ? Object.fromEntries(fixedPanelIds.map((id, i) => [id, columnSizes[i]]))
+      : undefined;
+
   return (
     <div className="scn-card-row--panels-outer">
       <Group
         orientation="horizontal"
         className="scn-card-row scn-card-row--panels"
         style={{ height: '100%', width: '100%', alignSelf: 'stretch' }}
+        defaultLayout={fixedDefaultLayout}
+        onLayoutChanged={(layout) => {
+          if (onColumnResize) {
+            onColumnResize(rowIndex, fixedPanelIds.map((id) => layout[id] ?? 100 / fixedPanels.length));
+          }
+        }}
       >
         {horizontalChildren}
       </Group>
@@ -1421,6 +1453,15 @@ export function CardLayoutRoot({
     },
     [canSaveMasterLayout, saveMasterLayoutUrl, taxonomySubsectionLayout, taxonomyTermId]
   );
+
+  const updateColumnSizes = React.useCallback((rowIndex: number, sizes: number[]) => {
+    setRows((prev) =>
+      prev.map((row, i) => {
+        if (i !== rowIndex || row.kind !== 'row') return row;
+        return { ...row, columnSizes: sizes };
+      })
+    );
+  }, []);
 
   const handlePaneSave = React.useCallback(() => {
     if (!canSaveMasterLayout || !saveMasterLayoutUrl.trim() || !taxonomyTermId.trim()) {
@@ -1938,6 +1979,8 @@ export function CardLayoutRoot({
           panelGroupKey={String(i)}
           rowIndex={i}
           enableMasterPane={enableMasterPane}
+          columnSizes={row.columnSizes}
+          onColumnResize={enableMasterPane ? updateColumnSizes : undefined}
           onDeleteCard={deleteCard}
           onUpdateCard={enableMasterPane ? updateCard : undefined}
           onRemoveSubsection={enableMasterPane ? removeSubsectionRow : undefined}
@@ -1950,6 +1993,8 @@ export function CardLayoutRoot({
         panelGroupKey={String(i)}
         rowIndex={i}
         enableMasterPane={enableMasterPane}
+        columnSizes={row.columnSizes}
+        onColumnResize={enableMasterPane ? updateColumnSizes : undefined}
         onDeleteCard={deleteCard}
         onUpdateCard={enableMasterPane ? updateCard : undefined}
         onRemoveSubsection={enableMasterPane ? removeSubsectionRow : undefined}
