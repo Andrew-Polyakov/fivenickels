@@ -10,6 +10,7 @@ import { mountShadcnAuthDialogBridge, type AuthTab } from './app/auth-dialog-sha
 import { mountShadcnBreadcrumbs } from './app/shadcn-breadcrumb';
 import { mountShadcnArticleCards, mountShadcnCardLayouts } from './app/shadcn-card-layout';
 import { mountShadcnTaxonomySiteNav } from './app/shadcn-taxonomy-site-nav';
+import { mountShadcnBrokerTable } from './app/shadcn-broker-data-table';
 import {
   ConfirmDialogComponent,
   MessageDialogComponent,
@@ -28,6 +29,7 @@ declare global {
     mountShadcnArticleCards?: () => void;
     mountShadcnBreadcrumbs?: () => void;
     mountShadcnTaxonomySiteNav?: () => void;
+    mountShadcnBrokerTable?: () => void;
   }
 }
 
@@ -87,6 +89,7 @@ createApplication({
     window.mountShadcnArticleCards = mountShadcnArticleCards;
     window.mountShadcnBreadcrumbs = mountShadcnBreadcrumbs;
     window.mountShadcnTaxonomySiteNav = mountShadcnTaxonomySiteNav;
+    window.mountShadcnBrokerTable = mountShadcnBrokerTable;
     window.showMaterialConfirm = (message: string, title?: string) =>
       new Promise<boolean>((resolve) => {
         dialog
@@ -126,5 +129,6 @@ createApplication({
     mountShadcnCardLayouts();
     mountShadcnArticleCards();
     mountShadcnBreadcrumbs();
+    mountShadcnBrokerTable();
   })
   .catch((err) => console.error(err));

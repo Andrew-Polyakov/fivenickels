@@ -105,6 +105,50 @@ class TaxonomyTerm(MP_Node):
 
 
 @register_snippet
+class BrokerRating(models.Model):
+    STATUS_ACTIVE = "active"
+    STATUS_INACTIVE = "inactive"
+    STATUS_RESTRICTED = "restricted"
+    STATUS_CHOICES = [
+        (STATUS_ACTIVE, "Active"),
+        (STATUS_INACTIVE, "Inactive"),
+        (STATUS_RESTRICTED, "Restricted"),
+    ]
+
+    rank = models.PositiveIntegerField()
+    broker_name = models.CharField(max_length=200)
+    overall_rating = models.DecimalField(max_digits=3, decimal_places=1)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
+    reviews = models.PositiveIntegerField(default=0)
+    broker_type = models.CharField(max_length=100)
+    regulation = models.CharField(max_length=200)
+    min_deposit = models.PositiveIntegerField(help_text="Minimum deposit in USD")
+    leverage = models.CharField(max_length=20, help_text='e.g. "1:500"')
+    favicon_url = models.URLField(max_length=500, blank=True, help_text="Favicon image URL")
+
+    panels = [
+        FieldPanel("rank"),
+        FieldPanel("broker_name"),
+        FieldPanel("favicon_url"),
+        FieldPanel("overall_rating"),
+        FieldPanel("status"),
+        FieldPanel("reviews"),
+        FieldPanel("broker_type"),
+        FieldPanel("regulation"),
+        FieldPanel("min_deposit"),
+        FieldPanel("leverage"),
+    ]
+
+    class Meta:
+        ordering = ["rank"]
+        verbose_name = "broker rating"
+        verbose_name_plural = "broker ratings"
+
+    def __str__(self) -> str:
+        return f"{self.rank}. {self.broker_name}"
+
+
+@register_snippet
 class ContentTag(models.Model):
     name = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, unique=True)

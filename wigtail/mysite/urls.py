@@ -9,6 +9,7 @@ from wagtail import urls as wagtail_urls
 from wagtail.documents import urls as wagtaildocs_urls
 
 from home import auth_views
+from home import broker_views
 from home import inline_edit_views
 from search import views as search_views
 
@@ -68,6 +69,8 @@ urlpatterns = [
         inline_edit_views.list_content_tags,
         name="inline_list_content_tags",
     ),
+    path("rating/forex/", broker_views.forex_ratings, name="forex_ratings"),
+    path("rating/forex/<int:pk>/update/", broker_views.broker_rating_update, name="broker_rating_update"),
     path("search/suggest/", search_views.search_suggest, name="search_suggest"),
     path("search/", search_views.search, name="search"),
     path(

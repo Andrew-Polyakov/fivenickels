@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Forex Broker Ratings{% endblock %}
+
+{% block body_class %}template-forex-ratings{% endblock %}
+
+{% block content %}
+<div class="forex-ratings">
+    <h1 class="forex-ratings__title">Forex Broker Ratings</h1>
+    {{ brokers|json_script:"broker-ratings-data" }}
+    <div
+        class="forex-ratings__table-host"
+        data-shadcn-broker-table
+        data-broker-json-id="broker-ratings-data"
+        {% if is_admin %}data-broker-is-admin="1"{% endif %}
+        data-broker-update-url="{% url 'broker_rating_update' pk=0 %}"
+    ></div>
+</div>
+{% endblock %}

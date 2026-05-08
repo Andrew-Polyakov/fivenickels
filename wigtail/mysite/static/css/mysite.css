@@ -1188,33 +1188,7 @@ body.template-homepage {
 
 .site-header__tools .site-search__input {
 
-    padding: 0.5rem 1.5rem;
-
-    font-size: 1.1rem;
-
-    border-radius: 0.45rem;
-
-    min-height: calc(3.25rem / 2);
-
-    line-height: 1.25;
-
-}
-
-.site-header__tools .site-search__group .site-search__input {
-
-    padding-left: 2.35rem;
-
-}
-
-.site-header__tools .site-search__submit {
-
-    flex-shrink: 0;
-
-    white-space: nowrap;
-
-    padding: 0.45rem 1.2rem;
-
-    font-size: 0.95rem;
+    padding: 0 0.75rem 0 2.1rem;
 
 }
 
@@ -1236,23 +1210,11 @@ body.template-homepage {
 
     .site-header__tools .site-search__input {
 
-        padding: 0.4rem 0.85rem;
-
-        font-size: 0.95rem;
-
-        min-height: 1.25rem;
+        padding: 0 0.75rem 0 2.1rem;
 
     }
 
-    .site-header__tools .site-search__submit {
-
-        padding: 0.4rem 0.85rem;
-
-        font-size: 0.85rem;
-
     }
-
-}
 
 /* --- Taxonomy nav (turbo frame #site-nav): centered slime pills (tile taxonomy style) --- */
 
@@ -1665,179 +1627,160 @@ body.template-taxonomy-drilldown .taxonomy-drilldown {
 }
 
 
-.btn {
+/* ── Shared button foundation ── */
 
+.btn,
+.scn-button {
     display: inline-flex;
-
     align-items: center;
-
     justify-content: center;
-
     margin: 0;
-
     font-family: inherit;
-
     font-weight: 600;
-
     font-size: 0.8rem;
-
     letter-spacing: 0.04em;
-
     text-decoration: none;
-
     border-radius: 0.45rem;
-
     border-style: solid;
-
     border-width: 1px;
-
     color: var(--neon-white);
-
     cursor: pointer;
-
-    transition: filter 0.15s ease, box-shadow 0.15s ease;
-
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
     box-sizing: border-box;
-
+    outline: none;
 }
 
-button.btn {
-
+button.btn,
+button.scn-button {
     appearance: none;
-
 }
 
-.btn--raised {
+/* Green outline on hover and keyboard focus */
+.btn:hover:not(:disabled),
+.scn-button:hover:not(:disabled) {
+    border-color: var(--color-slime);
+    box-shadow: 0 0 0 2px var(--color-slime-soft);
+}
 
-    border-color: rgba(56, 189, 248, 0.35);
+.btn:focus-visible,
+.scn-button:focus-visible {
+    border-color: var(--color-slime);
+    box-shadow: 0 0 0 3px var(--color-slime-soft);
+}
 
-    background: linear-gradient(180deg, rgba(56, 189, 248, 0.22) 0%, rgba(15, 23, 42, 0.95) 100%);
+/* ── btn--raised / md-raised / scn-button--default ── */
 
+.btn--raised,
+.md-raised,
+.scn-button--default {
+    border-color: rgba(92, 255, 138, 0.25);
+    background: linear-gradient(180deg, rgba(92, 255, 138, 0.12) 0%, rgba(15, 23, 42, 0.95) 100%);
     box-shadow:
-
-        inset 0 1px 0 rgba(255, 255, 255, 0.12),
-
+        inset 0 1px 0 rgba(255, 255, 255, 0.10),
         0 4px 14px rgba(0, 0, 0, 0.45),
-
-        0 0 18px rgba(56, 189, 248, 0.25);
-
+        0 0 14px rgba(92, 255, 138, 0.15);
 }
 
-.btn--raised:hover {
-
-    filter: brightness(1.06);
-
+.btn--raised:hover:not(:disabled),
+.md-raised:hover:not(:disabled),
+.scn-button--default:hover:not(:disabled) {
+    border-color: var(--color-slime);
     box-shadow:
-
-        inset 0 1px 0 rgba(255, 255, 255, 0.18),
-
+        inset 0 1px 0 rgba(255, 255, 255, 0.14),
         0 6px 20px rgba(0, 0, 0, 0.5),
-
-        0 0 22px rgba(56, 189, 248, 0.35);
-
+        0 0 20px var(--color-slime-soft);
 }
 
+.btn--raised:focus-visible,
+.md-raised:focus-visible,
+.scn-button--default:focus-visible {
+    border-color: var(--color-slime);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.14),
+        0 0 0 3px var(--color-slime-soft);
+}
+
+/* md-raised layout props (not in .btn base) */
 .md-raised {
-
-    display: inline-flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    font-family: inherit;
-
-    font-weight: 600;
-
-    font-size: 0.8rem;
-
-    letter-spacing: 0.04em;
-
-    text-decoration: none;
-
-    border-radius: 0.45rem;
-
-    border: 1px solid rgba(56, 189, 248, 0.35);
-
-    background: linear-gradient(180deg, rgba(56, 189, 248, 0.22) 0%, rgba(15, 23, 42, 0.95) 100%);
-
-    color: var(--neon-white);
-
-    box-shadow:
-
-        inset 0 1px 0 rgba(255, 255, 255, 0.12),
-
-        0 4px 14px rgba(0, 0, 0, 0.45),
-
-        0 0 18px rgba(56, 189, 248, 0.25);
-
-    transition: filter 0.15s ease, box-shadow 0.15s ease;
-
+    border-style: solid;
+    border-width: 1px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
 }
 
-.md-raised:hover {
-
-    filter: brightness(1.06);
-
-    box-shadow:
-
-        inset 0 1px 0 rgba(255, 255, 255, 0.18),
-
-        0 6px 20px rgba(0, 0, 0, 0.5),
-
-        0 0 22px rgba(56, 189, 248, 0.35);
-
-}
+/* ── btn--icon ── */
 
 .btn--icon {
-
-    width: 2.5rem;
-
-    height: 2.5rem;
-
+    width: 32px;
+    height: 32px;
     padding: 0;
-
     border-radius: 0.45rem;
-
-    border-color: rgba(56, 189, 248, 0.35);
-
-    background: linear-gradient(180deg, rgba(56, 189, 248, 0.18) 0%, rgba(15, 23, 42, 0.96) 100%);
-
+    border-color: rgba(92, 255, 138, 0.20);
+    background: linear-gradient(180deg, rgba(92, 255, 138, 0.08) 0%, rgba(15, 23, 42, 0.96) 100%);
     box-shadow:
-
-        inset 0 1px 0 rgba(255, 255, 255, 0.1),
-
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
         0 4px 12px rgba(0, 0, 0, 0.4),
-
-        0 0 16px rgba(56, 189, 248, 0.22);
-
+        0 0 12px rgba(92, 255, 138, 0.10);
 }
 
-.btn--icon:hover:not(:disabled) {
+/* ── scn-button--ghost ── */
 
-    filter: brightness(1.05);
+.scn-button--ghost {
+    border-color: transparent;
+    background: transparent;
+    color: var(--color-text-muted);
+    box-shadow: none;
+    font-weight: 500;
+}
 
-    box-shadow:
+.scn-button--ghost:hover:not(:disabled) {
+    color: var(--color-text);
+    background: rgba(92, 255, 138, 0.07);
+    border-color: var(--color-slime);
+    box-shadow: 0 0 0 2px var(--color-slime-soft);
+}
 
-        inset 0 1px 0 rgba(255, 255, 255, 0.16),
+.scn-button--ghost:focus-visible {
+    color: var(--color-text);
+    border-color: var(--color-slime);
+    box-shadow: 0 0 0 3px var(--color-slime-soft);
+}
 
-        0 6px 18px rgba(0, 0, 0, 0.48),
+/* ── scn-button--outline ── */
 
-        0 0 20px rgba(56, 189, 248, 0.32);
+.scn-button--outline {
+    border-color: var(--color-border-subtle);
+    background: transparent;
+}
 
+.scn-button--outline:hover:not(:disabled) {
+    border-color: var(--color-slime);
+    box-shadow: 0 0 0 2px var(--color-slime-soft);
+}
+
+.scn-button--outline:focus-visible {
+    border-color: var(--color-slime);
+    box-shadow: 0 0 0 3px var(--color-slime-soft);
 }
 
 .site-header__cta {
 
-    padding: 0.45rem 0.85rem;
+    height: 32px;
+
+    padding: 0 0.875rem;
+
+    font-size: 0.8125rem;
 
 }
 
 .site-header__signin {
 
+    height: 32px;
+
     gap: 0.35rem;
 
-    padding: 0.45rem 0.85rem;
+    padding: 0 0.875rem;
+
+    font-size: 0.8125rem;
 
 }
 
@@ -1887,69 +1830,16 @@ button.btn {
 
     width: 100%;
 
-    box-sizing: border-box;
-
     padding: 0.4rem 0.6rem 0.4rem 2.15rem;
 
     font: inherit;
 
     font-size: 0.9rem;
 
-    color: var(--color-text);
-
-    background: var(--color-surface);
-
-    border: 1px solid var(--color-border-subtle);
-
     border-radius: 0.35rem;
 
 }
 
-.site-search__icon {
-
-    position: absolute;
-
-    left: 0.65rem;
-
-    top: 50%;
-
-    transform: translateY(-50%);
-
-    font-size: 1rem;
-
-    line-height: 1;
-
-    color: rgba(148, 163, 184, 0.75);
-
-    pointer-events: none;
-
-}
-
-.site-search__input::placeholder {
-
-    color: var(--color-text-muted);
-
-}
-
-.site-search__input:focus {
-
-    outline: 2px solid var(--color-slime-soft);
-
-    border-color: var(--color-slime);
-
-}
-
-.site-search__submit {
-
-    flex-shrink: 0;
-
-    padding: 0.45rem 0.85rem;
-
-    font: inherit;
-
-    font-size: 0.8rem;
-
-}
 
 .site-search-live {
 
@@ -5651,6 +5541,313 @@ body.is-auth-modal-open {
     width: 100%;
     margin-top: 0.35rem;
 }
+
+/* ── Forex Ratings page ── */
+
+body.template-forex-ratings .site-content {
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.forex-ratings {
+    padding: 1.5rem 0 3rem;
+}
+
+.forex-ratings__title {
+    margin: 0 0 1.5rem;
+    font-size: clamp(1.4rem, 3vw, 2rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--color-text);
+}
+
+.scn-broker-table {
+    background: var(--color-surface, rgba(255,255,255,0.03));
+    border: 1px solid rgba(148,163,184,0.18);
+    border-radius: 0.6rem;
+    overflow: hidden;
+}
+
+.scn-broker-table__toolbar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid rgba(148,163,184,0.15);
+}
+
+.scn-input {
+    height: 36px;
+    padding: 0 0.75rem;
+    font-size: 0.875rem;
+    font-family: inherit;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 8px;
+    background: var(--color-bg);
+    color: var(--color-text);
+    outline: none;
+    width: 100%;
+    box-sizing: border-box;
+    transition: border-color 0.15s, outline-color 0.15s;
+}
+
+.scn-input:focus {
+    outline: 2px solid var(--color-slime-soft);
+    border-color: var(--color-slime);
+}
+
+.scn-input::placeholder {
+    color: var(--color-text-muted);
+}
+
+.scn-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.scn-search-wrap__icon {
+    position: absolute;
+    left: 0.65rem;
+    color: var(--color-text-muted);
+    pointer-events: none;
+    flex-shrink: 0;
+}
+
+.scn-search-wrap__input {
+    padding-left: 2.1rem;
+}
+
+.scn-broker-table__search {
+    max-width: 22rem;
+}
+
+.scn-broker-table__count {
+    margin-left: auto;
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+}
+
+.scn-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.scn-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.scn-table__head .scn-table__row {
+    border-bottom: 1px solid rgba(148,163,184,0.25);
+}
+
+.scn-table__th {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+}
+
+.scn-table__sort-btn {
+    padding: 0 0.25rem;
+    height: auto;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    gap: 0.3rem;
+}
+
+.scn-table__body .scn-table__row {
+    border-bottom: 1px solid rgba(148,163,184,0.1);
+    transition: background 0.12s;
+}
+
+.scn-table__body .scn-table__row:hover {
+    background: rgba(255,255,255,0.04);
+}
+
+.scn-table__td {
+    padding: 0.65rem 0.75rem;
+    color: var(--color-text);
+    vertical-align: middle;
+}
+
+.scn-table__empty {
+    text-align: center;
+    padding: 2.5rem;
+    color: var(--color-text-muted);
+}
+
+.scn-broker-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.scn-broker-favicon {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    flex-shrink: 0;
+    border-radius: 2px;
+}
+
+.scn-broker-rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.scn-broker-rating__score {
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.scn-broker-rating__stars {
+    color: #f59e0b;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+}
+
+.scn-broker-badge {
+    display: inline-block;
+    padding: 0.2em 0.6em;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.scn-broker-badge--active {
+    background: rgba(34,197,94,0.15);
+    color: #4ade80;
+}
+
+.scn-broker-badge--restricted {
+    background: rgba(234,179,8,0.15);
+    color: #fbbf24;
+}
+
+.scn-broker-badge--inactive {
+    background: rgba(148,163,184,0.15);
+    color: var(--color-text-muted);
+}
+
+/* ── Broker edit popover ── */
+
+.scn-broker-edit-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.scn-broker-edit-trigger:hover {
+    background: var(--color-surface-raised, rgba(0,0,0,0.06));
+    color: var(--color-text);
+}
+
+.scn-popover-content {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.45), 0 0 0 1px var(--color-border-subtle);
+    padding: 0;
+    z-index: 9999;
+    outline: none;
+    animation: scn-popover-in 0.12s ease;
+}
+
+@keyframes scn-popover-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.scn-broker-edit-popover {
+    width: 360px;
+    padding: 1rem;
+}
+
+.scn-broker-edit__title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 0.875rem;
+}
+
+.scn-broker-edit__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.625rem;
+}
+
+.scn-broker-edit__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.scn-broker-edit__field:nth-child(3) {
+    grid-column: 1 / -1;
+}
+
+.scn-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+}
+
+.scn-broker-edit-popover .scn-input {
+    height: 32px;
+    font-size: 0.8125rem;
+    background: var(--color-bg);
+}
+
+.scn-broker-edit__error {
+    margin: 0.5rem 0 0;
+    font-size: 0.75rem;
+    color: #ef4444;
+}
+
+.scn-broker-edit__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 0.875rem;
+}
+
+.scn-broker-edit__save {
+    height: 32px;
+    padding: 0 0.875rem;
+    font-size: 0.8125rem;
+}
+
+.scn-broker-edit__cancel {
+    height: 32px;
+    padding: 0 0.875rem;
+    font-size: 0.8125rem;
+}
+
+/* ── end Broker edit popover ── */
+
+/* ── end Forex Ratings ── */
 
 [data-shadcn-card-layout]:not([data-master-pane-enabled="1"]) .scn-resize-handle {
 
