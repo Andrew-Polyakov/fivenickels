@@ -4,7 +4,6 @@ whitenoise>=6.9,<7
 wagtail-markdown>=0.13,<0.14
 opensearch-py>=2,<3
 requests>=2.31,<3
-bleach>=6,<7
 beautifulsoup4>=4.12,<5
 html2text>=2024.2.26,<2026
 python-dotenv>=1.0,<2

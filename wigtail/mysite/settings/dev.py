@@ -9,6 +9,8 @@ SECRET_KEY = "django-insecure-ud^@3w&465c-ysxihdob1_x*0nq$te(0t7a33ct1do66l3j)i!
 # SECURITY WARNING: define the correct hosts in production!
 ALLOWED_HOSTS = ["*"]
 
+CSRF_TRUSTED_ORIGINS = ["http://127.0.0.1:8000", "http://localhost:8000"]
+
 WAGTAILADMIN_BASE_URL = "http://127.0.0.1:8000"
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

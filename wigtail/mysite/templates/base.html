@@ -58,6 +58,7 @@
         data-auth-next="{{ request.get_full_path|escape }}"
         {% if request.in_preview_panel %}data-turbo-preview="1"{% endif %}
     >
+        {% csrf_token %}
         {% wagtail_site as current_site %}
         {% block site_header %}
         <header
