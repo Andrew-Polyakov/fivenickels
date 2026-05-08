@@ -1,8 +1,7 @@
 import * as React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { Pen } from 'lucide-react';
-
 import { Button } from '../components/ui/button';
+import { PenIcon } from '../components/ui/pen-icon';
 import {
   Dialog,
   DialogContent,
@@ -267,7 +266,7 @@ function CategoryEditPopover({
             onClick={(e) => e.stopPropagation()}
             aria-label="Edit category"
           >
-            <Pen className="scn-taxonomy-site-nav__rename-inline-icon" strokeWidth={2} aria-hidden="true" />
+            <PenIcon className="scn-taxonomy-site-nav__rename-inline-icon" />
           </button>
         </PopoverTrigger>
         <PopoverContent className="scn-taxonomy-site-nav__edit-popover" onOpenAutoFocus={(e) => e.preventDefault()}>
