@@ -874,6 +874,7 @@ function TaxonomyStackedCardRow({
           'scn-resize-handle--with-separator'
         )}
         id={`scn-thsep-${panelGroupKey}-${colIdx}`}
+        disabled={!enableMasterPane}
       >
         <UiSeparator
           orientation="vertical"
@@ -1008,6 +1009,7 @@ function ResizableCardRow({
           entry.dividerBefore && 'scn-resize-handle--with-separator'
         )}
         id={`scn-hsep-${panelGroupKey}-${entry.itemIndex}`}
+        disabled={!enableMasterPane}
       >
         {entry.dividerBefore ? (
           <UiSeparator
@@ -2005,6 +2007,7 @@ export function CardLayoutRoot({
         key={`scn-row-sep-${i}`}
         className={cn('scn-resize-handle', 'scn-resize-handle--between-rows')}
         id={`scn-row-sep-${i}`}
+        disabled={!enableMasterPane}
       />,
       panel,
     ];

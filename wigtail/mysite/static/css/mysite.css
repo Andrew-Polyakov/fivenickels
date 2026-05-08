@@ -5652,3 +5652,11 @@ body.is-auth-modal-open {
     margin-top: 0.35rem;
 }
 
+[data-shadcn-card-layout]:not([data-master-pane-enabled="1"]) .scn-resize-handle {
+
+    pointer-events: none;
+
+    cursor: default;
+
+}
+
