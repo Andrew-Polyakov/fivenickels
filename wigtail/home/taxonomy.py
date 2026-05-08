@@ -182,6 +182,7 @@ def resolve_taxonomy_trail(
     slugs: list[str],
     *,
     home_page: HomePage | None = None,
+    require_content: bool = True,
 ) -> list[TaxonomyTerm] | None:
     from home.gics_sectors import GICS_SECTOR_SLUGS
     from home.models import TaxonomyTerm
@@ -207,7 +208,7 @@ def resolve_taxonomy_trail(
             nxt = TaxonomyTerm.objects.filter(slug=slug, is_visible=True).first()
             if nxt is None:
                 return None
-            if home_page is not None:
+            if require_content and home_page is not None:
                 if not (
                     taxonomy_term_has_public_pages(nxt)
                     or home_stream_includes_taxonomy_term(home_page, nxt)
@@ -432,10 +433,12 @@ def taxonomy_breadcrumb_items(home_page: HomePage, trail: list) -> list[dict]:
 def build_site_nav_context(
     home_page: HomePage,
     slug_parts: list[str],
+    *,
+    require_content: bool = True,
 ) -> dict:
     if not slug_parts:
         raise Http404("Empty taxonomy path")
-    trail = resolve_taxonomy_trail(slug_parts, home_page=home_page)
+    trail = resolve_taxonomy_trail(slug_parts, home_page=home_page, require_content=require_content)
     if trail is None:
         raise Http404("Unknown taxonomy path")
     active = trail[-1] if trail else None

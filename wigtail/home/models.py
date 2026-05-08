@@ -444,7 +444,7 @@ class HomePage(RoutablePageMixin, Page):
             return render_site_nav_frame(request, self, slugs)
 
         try:
-            ctx = build_site_nav_context(self, slugs)
+            ctx = build_site_nav_context(self, slugs, require_content=False)
         except Http404:
             raise Http404("Taxonomy path not found")
 
