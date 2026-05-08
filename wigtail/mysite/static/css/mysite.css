@@ -1448,6 +1448,22 @@ body.template-taxonomy-root {
 
 }
 
+body.template-taxonomy-drilldown .site-content {
+
+    max-width: none;
+
+    margin-left: 0;
+
+    margin-right: 0;
+
+}
+
+body.template-taxonomy-drilldown .taxonomy-drilldown {
+
+    margin-right: calc(-1 * max(1rem, 2%));
+
+}
+
 .taxonomy-drilldown {
 
     max-width: none;
