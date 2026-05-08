@@ -8,6 +8,7 @@
     data-create-url="{% url 'inline_create_taxonomy_term' %}"
     data-delete-url="{% url 'inline_delete_taxonomy_term' %}"
     data-rename-url="{% url 'inline_rename_taxonomy_term' %}"
+    data-set-nav-url="{% url 'inline_set_taxonomy_term_nav' %}"
     data-can-edit="{% if request.user.is_authenticated and request.user.is_staff or request.user.is_authenticated and request.user.is_superuser %}1{% else %}0{% endif %}"
 >
     {{ site_nav_menu_payload|json_script:"site-nav-menu-payload" }}
@@ -19,6 +20,7 @@
         data-create-url="{% url 'inline_create_taxonomy_term' %}"
         data-delete-url="{% url 'inline_delete_taxonomy_term' %}"
         data-rename-url="{% url 'inline_rename_taxonomy_term' %}"
+        data-set-nav-url="{% url 'inline_set_taxonomy_term_nav' %}"
     ></div>
     <div class="taxonomy-site-nav__fallback" hidden>
         {% for row in nav_rows %}

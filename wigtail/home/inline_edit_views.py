@@ -176,6 +176,36 @@ def rename_taxonomy_term(request: HttpRequest) -> JsonResponse:
     )
 
 
+@require_POST
+@user_passes_test(_admin_inline_access)
+def set_taxonomy_term_nav(request: HttpRequest) -> JsonResponse:
+    payload = _json_payload(request)
+    try:
+        term_id = int(payload.get("term_id"))
+    except (TypeError, ValueError):
+        return JsonResponse({"error": "Category id is required."}, status=400)
+
+    raw_is_nav = payload.get("is_nav")
+    if isinstance(raw_is_nav, bool):
+        is_nav = raw_is_nav
+    else:
+        text = str(raw_is_nav or "").strip().lower()
+        if text in ("1", "true", "yes", "on"):
+            is_nav = True
+        elif text in ("0", "false", "no", "off"):
+            is_nav = False
+        else:
+            return JsonResponse({"error": "Navigation flag is required."}, status=400)
+
+    term = TaxonomyTerm.objects.filter(pk=term_id).first()
+    if term is None:
+        return JsonResponse({"error": "Category not found."}, status=404)
+
+    term.is_nav = is_nav
+    term.save(update_fields=["is_nav"])
+    return JsonResponse({"updated": True, "id": term.pk, "is_nav": term.is_nav})
+
+
 def _normalize_master_layout_payload(layout: object) -> dict | None:
     if not isinstance(layout, dict):
         return None

@@ -2,6 +2,16 @@ import * as React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { Pen } from 'lucide-react';
 
+import { Button } from '../components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
+import { Input } from '../components/ui/input';
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -11,15 +21,9 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from '../components/ui/navigation-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
+import { Separator } from '../components/ui/separator';
 import { cn } from '../lib/utils';
-
-type PromptDialogData = {
-  title?: string;
-  label?: string;
-  value?: string;
-  confirmText?: string;
-  cancelText?: string;
-};
 
 type MenuChildPayload = {
   id: string;
@@ -28,6 +32,7 @@ type MenuChildPayload = {
   href: string;
   description: string;
   active: boolean;
+  inNav: boolean;
 };
 
 type MenuItemPayload = {
@@ -37,6 +42,7 @@ type MenuItemPayload = {
   href: string;
   active: boolean;
   removable: boolean;
+  inNav: boolean;
   children: MenuChildPayload[];
 };
 
@@ -49,14 +55,19 @@ type MenuRowPayload = {
   afterCreateVisit: string | null;
 };
 
+type NavTarget = {
+  id: string;
+  name: string;
+  inNav: boolean;
+  removable: boolean;
+};
+
 declare global {
   interface Window {
     Turbo?: {
       visit: (url: string, options?: { action?: string; frame?: string }) => void;
     };
-    showMaterialConfirm?: (message: string, title?: string) => Promise<boolean>;
     showMaterialAlert?: (message: string, title?: string) => Promise<void>;
-    showMaterialPrompt?: (data: PromptDialogData) => Promise<string | undefined>;
   }
 }
 
@@ -135,87 +146,216 @@ function showAlert(message: string): void {
   alert(message);
 }
 
-async function promptName(title: string, label: string, value: string, confirmText: string): Promise<string | undefined> {
-  if (window.showMaterialPrompt && typeof window.showMaterialPrompt === 'function') {
-    return window.showMaterialPrompt({ title, label, value, confirmText });
-  }
-  return window.prompt(label, value) ?? undefined;
-}
-
-function InlineRenameAction({
+function CategoryEditPopover({
+  target,
   className,
-  onRename,
-}: {
-  className?: string;
-  onRename: () => void;
-}): React.JSX.Element {
-  return (
-    <span
-      role="button"
-      tabIndex={0}
-      className={cn('scn-taxonomy-site-nav__rename-inline', className)}
-      onPointerDown={(e) => e.stopPropagation()}
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        onRename();
-      }}
-      onKeyDown={(e) => {
-        if (e.key !== 'Enter' && e.key !== ' ') {
-          return;
-        }
-        e.preventDefault();
-        e.stopPropagation();
-        onRename();
-      }}
-      aria-label="Rename category"
-    >
-      <Pen className="scn-taxonomy-site-nav__rename-inline-icon" strokeWidth={2} aria-hidden="true" />
-    </span>
-  );
-}
-
-/**
- * shadcn NavigationMenuDemo ListItem — li > NavigationMenuLink asChild > a >
- * flex flex-col gap-1 text-sm > leading-none font-medium + line-clamp-2 text-muted-foreground.
- * Extended with taxonomy admin actions beside each child row.
- */
-function ListItem({
-  title,
-  href,
-  active,
   canEdit,
-  onRename,
-  className,
-  children,
-  ...props
-}: React.ComponentPropsWithoutRef<'li'> & {
-  href: string;
-  title: string;
-  active?: boolean;
-  canEdit?: boolean;
-  onRename?: () => void;
+  renameUrl,
+  createUrl,
+  deleteUrl,
+  setNavUrl,
+  onNavChange,
+}: {
+  target: NavTarget;
+  className?: string;
+  canEdit: boolean;
+  renameUrl: string;
+  createUrl: string;
+  deleteUrl: string;
+  setNavUrl: string;
+  onNavChange: (id: string, inNav: boolean) => void;
 }): React.JSX.Element {
+  const [open, setOpen] = React.useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = React.useState(false);
+  const [titleDraft, setTitleDraft] = React.useState(target.name);
+  const [childDraft, setChildDraft] = React.useState('');
+  const [navDraft, setNavDraft] = React.useState(target.inNav);
+  const titleInputId = React.useId();
+  const childInputId = React.useId();
+  const navInputId = React.useId();
+
+  React.useEffect(() => {
+    if (!open) {
+      return;
+    }
+    setTitleDraft(target.name);
+    setChildDraft('');
+    setNavDraft(target.inNav);
+  }, [open, target.inNav, target.name]);
+
+  const saveRename = async () => {
+    if (!canEdit || !renameUrl) {
+      return;
+    }
+    const trimmed = titleDraft.trim();
+    if (!trimmed || trimmed === target.name) {
+      return;
+    }
+    try {
+      await postJson(renameUrl, { term_id: target.id, name: trimmed });
+      setOpen(false);
+      refreshCurrentPage();
+    } catch (err) {
+      showAlert((err as Error).message || 'Could not rename category.');
+    }
+  };
+
+  const addChild = async () => {
+    if (!canEdit || !createUrl) {
+      return;
+    }
+    const trimmed = childDraft.trim();
+    if (!trimmed) {
+      return;
+    }
+    const parsedParent = Number(target.id);
+    try {
+      await postJson(createUrl, {
+        name: trimmed,
+        parent_id: Number.isFinite(parsedParent) ? parsedParent : target.id,
+        create_root: false,
+      });
+      setOpen(false);
+      refreshCurrentPage();
+    } catch (err) {
+      showAlert((err as Error).message || 'Could not create category.');
+    }
+  };
+
+  const toggleNav = async (next: boolean) => {
+    if (!canEdit || !setNavUrl) {
+      return;
+    }
+    const prev = navDraft;
+    setNavDraft(next);
+    onNavChange(target.id, next);
+    try {
+      await postJson(setNavUrl, { term_id: target.id, is_nav: next });
+    } catch (err) {
+      setNavDraft(prev);
+      onNavChange(target.id, prev);
+      showAlert((err as Error).message || 'Could not update navigation setting.');
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!canEdit || !deleteUrl) {
+      return;
+    }
+    try {
+      await postJson(deleteUrl, { term_id: target.id });
+      setConfirmDeleteOpen(false);
+      setOpen(false);
+      refreshCurrentPage();
+    } catch (err) {
+      showAlert((err as Error).message || 'Could not delete category.');
+    }
+  };
+
+  if (!canEdit) {
+    return <></>;
+  }
+
   return (
-    <li className={cn('scn-taxonomy-site-nav__list-item', className)} {...props}>
-      <NavigationMenuLink asChild>
-        <a
-          href={href}
-          data-turbo-frame="main"
-          className={cn('scn-navigation-menu__list-item-link', active && 'scn-navigation-menu__list-item-link--active')}
-        >
-          <div className="scn-navigation-menu__list-item-body scn-navigation-menu__list-item-body--docs">
-            <div className="scn-navigation-menu__list-item-title scn-navigation-menu__list-item-title--docs">{title}</div>
-            {children ? (
-              <div className="scn-navigation-menu__list-item-desc scn-navigation-menu__list-item-desc--docs">{children}</div>
+    <>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className={cn('scn-taxonomy-site-nav__rename-inline', className)}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            aria-label="Edit category"
+          >
+            <Pen className="scn-taxonomy-site-nav__rename-inline-icon" strokeWidth={2} aria-hidden="true" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="scn-taxonomy-site-nav__edit-popover" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="scn-taxonomy-site-nav__edit-popover-body">
+            <label className="scn-label" htmlFor={titleInputId}>
+              Title
+            </label>
+            <Input
+              id={titleInputId}
+              value={titleDraft}
+              onChange={(e) => setTitleDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  void saveRename();
+                }
+              }}
+              autoFocus
+            />
+
+            <Separator className="scn-taxonomy-site-nav__edit-popover-sep" />
+
+            <label className="scn-label" htmlFor={childInputId}>
+              Add sub-category
+            </label>
+            <Input
+              id={childInputId}
+              value={childDraft}
+              onChange={(e) => setChildDraft(e.target.value)}
+              placeholder="Add new"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  void addChild();
+                }
+              }}
+            />
+
+            <Separator className="scn-taxonomy-site-nav__edit-popover-sep" />
+
+            <label className="scn-taxonomy-site-nav__edit-popover-checkbox" htmlFor={navInputId}>
+              <input
+                id={navInputId}
+                type="checkbox"
+                checked={navDraft}
+                onChange={(e) => {
+                  void toggleNav(e.target.checked);
+                }}
+              />
+              <span>Navigation</span>
+            </label>
+
+            {target.removable ? (
+              <>
+                <Separator className="scn-taxonomy-site-nav__edit-popover-sep" />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="scn-taxonomy-site-nav__edit-popover-delete"
+                  onClick={() => setConfirmDeleteOpen(true)}
+                >
+                  Delete category
+                </Button>
+              </>
             ) : null}
           </div>
-        </a>
-      </NavigationMenuLink>
-      {canEdit && onRename ? (
-        <InlineRenameAction className="scn-taxonomy-site-nav__rename-inline--dropdown" onRename={onRename} />
-      ) : null}
-    </li>
+        </PopoverContent>
+      </Popover>
+
+      <Dialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete category</DialogTitle>
+            <DialogDescription>
+              Delete &ldquo;{target.name}&rdquo;? This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setConfirmDeleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={() => void confirmDelete()}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -225,18 +365,30 @@ function RootSectionNavigationMenuContent({
   variant,
   canEdit,
   createUrl,
+  renameUrl,
+  deleteUrl,
+  setNavUrl,
   onAddChild,
-  onRenameChild,
+  onNavChange,
 }: {
   section: MenuItemPayload;
   variant: 'simple' | 'grid';
   canEdit: boolean;
   createUrl: string;
-  onAddChild: (parent: MenuItemPayload) => void | Promise<void>;
-  onRenameChild: (chip: { id: string; name: string }) => void | Promise<void>;
+  renameUrl: string;
+  deleteUrl: string;
+  setNavUrl: string;
+  onAddChild: (parent: MenuItemPayload, name: string, onDone: () => void) => void | Promise<void>;
+  onNavChange: (id: string, inNav: boolean) => void;
 }): React.JSX.Element {
+  const [addDraft, setAddDraft] = React.useState('');
+  const visibleChildren = React.useMemo(() => {
+    return section.children.filter((child) => canEdit || child.inNav);
+  }, [canEdit, section.children]);
+
   const showAddRow = canEdit && Boolean(createUrl);
-  const showEmptyPlaceholder = section.children.length === 0 && !showAddRow;
+  const showEmptyPlaceholder = visibleChildren.length === 0 && !showAddRow;
+
   return (
     <NavigationMenuContent className="scn-taxonomy-site-nav__content">
       <ul
@@ -247,23 +399,58 @@ function RootSectionNavigationMenuContent({
             : 'scn-taxonomy-site-nav__dropdown-grid--simple'
         )}
       >
-        {section.children.map((ch) => (
-          <ListItem
+        {visibleChildren.map((ch) => (
+          <li
             key={ch.id}
-            href={ch.href}
-            title={ch.name}
-            active={ch.active}
-            canEdit={canEdit}
-            onRename={() => void onRenameChild({ id: ch.id, name: ch.name })}
+            className={cn('scn-taxonomy-site-nav__list-item', !ch.inNav && canEdit && 'scn-taxonomy-site-nav__list-item--off-nav')}
           >
-            {ch.description || null}
-          </ListItem>
+            <NavigationMenuLink asChild>
+              <a
+                href={ch.href}
+                data-turbo-frame="main"
+                className={cn('scn-navigation-menu__list-item-link', ch.active && 'scn-navigation-menu__list-item-link--active')}
+              >
+                <div className="scn-navigation-menu__list-item-body scn-navigation-menu__list-item-body--docs">
+                  <div className="scn-navigation-menu__list-item-title scn-navigation-menu__list-item-title--docs">{ch.name}</div>
+                  {ch.description ? (
+                    <div className="scn-navigation-menu__list-item-desc scn-navigation-menu__list-item-desc--docs">{ch.description}</div>
+                  ) : null}
+                </div>
+              </a>
+            </NavigationMenuLink>
+            {canEdit ? (
+              <CategoryEditPopover
+                className="scn-taxonomy-site-nav__rename-inline--dropdown"
+                target={{ id: ch.id, name: ch.name, inNav: ch.inNav, removable: true }}
+                canEdit={canEdit}
+                renameUrl={renameUrl}
+                createUrl={createUrl}
+                deleteUrl={deleteUrl}
+                setNavUrl={setNavUrl}
+                onNavChange={onNavChange}
+              />
+            ) : null}
+          </li>
         ))}
         {showAddRow ? (
           <li className="scn-taxonomy-site-nav__dropdown-add">
-            <button type="button" className="scn-taxonomy-site-nav__dropdown-add-btn" onClick={() => void onAddChild(section)}>
-              + Add
-            </button>
+            <Input
+              value={addDraft}
+              className="scn-taxonomy-site-nav__dropdown-add-input"
+              placeholder="Add new"
+              onChange={(e) => setAddDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter') {
+                  return;
+                }
+                e.preventDefault();
+                const name = addDraft.trim();
+                if (!name) {
+                  return;
+                }
+                void onAddChild(section, name, () => setAddDraft(''));
+              }}
+            />
           </li>
         ) : null}
         {showEmptyPlaceholder ? (
@@ -281,20 +468,48 @@ function TaxonomySiteNavView({
   canEdit,
   createUrl,
   renameUrl,
+  deleteUrl,
+  setNavUrl,
 }: {
   rows: MenuRowPayload[];
   canEdit: boolean;
   createUrl: string;
   renameUrl: string;
+  deleteUrl: string;
+  setNavUrl: string;
 }): React.JSX.Element {
-  const topRow = rows.find((r) => r.depth === 1) ?? rows[0];
+  const [menuRows, setMenuRows] = React.useState(rows);
 
-  const onAddChildOf = async (parent: MenuItemPayload) => {
+  React.useEffect(() => {
+    setMenuRows(rows);
+  }, [rows]);
+
+  const topRow = menuRows.find((r) => r.depth === 1) ?? menuRows[0];
+
+  const updateInNav = (targetId: string, inNav: boolean) => {
+    setMenuRows((prevRows) =>
+      prevRows.map((row) => ({
+        ...row,
+        items: row.items.map((item) => {
+          if (item.id === targetId) {
+            return { ...item, inNav };
+          }
+          return {
+            ...item,
+            children: item.children.map((child) =>
+              child.id === targetId ? { ...child, inNav } : child
+            ),
+          };
+        }),
+      }))
+    );
+  };
+
+  const onAddChildOf = async (parent: MenuItemPayload, name: string, onDone: () => void) => {
     if (!canEdit || !createUrl) {
       return;
     }
-    const name = await promptName(`Add to ${parent.name}`, 'Name', '', 'Create');
-    const trimmed = name?.trim();
+    const trimmed = name.trim();
     if (!trimmed) {
       return;
     }
@@ -305,26 +520,10 @@ function TaxonomySiteNavView({
         parent_id: Number.isFinite(parsedParent) ? parsedParent : parent.id,
         create_root: false,
       });
+      onDone();
       refreshCurrentPage();
     } catch (err) {
       showAlert((err as Error).message || 'Could not create category.');
-    }
-  };
-
-  const onRename = async (chip: { id: string; name: string }) => {
-    if (!canEdit || !renameUrl) {
-      return;
-    }
-    const name = await promptName('Rename category', 'Name', chip.name, 'Save');
-    const trimmed = name?.trim();
-    if (!trimmed || trimmed === chip.name) {
-      return;
-    }
-    try {
-      await postJson(renameUrl, { term_id: chip.id, name: trimmed });
-      refreshCurrentPage();
-    } catch (err) {
-      showAlert((err as Error).message || 'Could not rename category.');
     }
   };
 
@@ -332,22 +531,26 @@ function TaxonomySiteNavView({
     return <div className="scn-taxonomy-site-nav" />;
   }
 
+  const visibleTopItems = topRow.items.filter((item) => canEdit || item.inNav);
+
   return (
     <div className="scn-taxonomy-site-nav">
       <nav className="site-nav__row scn-taxonomy-site-nav__unified" aria-label="Site taxonomy">
         <NavigationMenu>
           <NavigationMenuList className="scn-taxonomy-site-nav__menu-list">
-            {topRow.items.map((item) => {
+            {visibleTopItems.map((item) => {
               const hasChildren = item.children.length > 0;
               const variant: 'simple' | 'grid' =
                 item.children.length >= LARGE_BRANCH_THRESHOLD ? 'grid' : 'simple';
+              const branchClass = cn(
+                'scn-taxonomy-site-nav__menu-item',
+                'scn-taxonomy-site-nav__menu-item--branch',
+                !item.inNav && canEdit && 'scn-taxonomy-site-nav__menu-item--off-nav'
+              );
 
               if (!hasChildren) {
                 return (
-                  <NavigationMenuItem
-                    key={item.id}
-                    className={cn('scn-taxonomy-site-nav__menu-item', 'scn-taxonomy-site-nav__menu-item--branch')}
-                  >
+                  <NavigationMenuItem key={item.id} className={branchClass}>
                     <NavigationMenuLink asChild>
                       <a
                         href={item.href}
@@ -368,10 +571,16 @@ function TaxonomySiteNavView({
                         {item.name}
                       </a>
                     </NavigationMenuLink>
-                    {canEdit && item.removable !== false ? (
-                      <InlineRenameAction
+                    {canEdit ? (
+                      <CategoryEditPopover
                         className="scn-taxonomy-site-nav__rename-inline--top"
-                        onRename={() => void onRename({ id: item.id, name: item.name })}
+                        target={{ id: item.id, name: item.name, inNav: item.inNav, removable: item.removable !== false }}
+                        canEdit={canEdit}
+                        renameUrl={renameUrl}
+                        createUrl={createUrl}
+                        deleteUrl={deleteUrl}
+                        setNavUrl={setNavUrl}
+                        onNavChange={updateInNav}
                       />
                     ) : null}
                   </NavigationMenuItem>
@@ -379,10 +588,7 @@ function TaxonomySiteNavView({
               }
 
               return (
-                <NavigationMenuItem
-                  key={item.id}
-                  className={cn('scn-taxonomy-site-nav__menu-item', 'scn-taxonomy-site-nav__menu-item--branch')}
-                >
+                <NavigationMenuItem key={item.id} className={branchClass}>
                   <NavigationMenuTrigger
                     className={cn(item.active && 'scn-navigation-menu__trigger--active')}
                     onPointerUp={(e) => {
@@ -417,13 +623,22 @@ function TaxonomySiteNavView({
                     variant={variant}
                     canEdit={canEdit}
                     createUrl={createUrl}
+                    renameUrl={renameUrl}
+                    deleteUrl={deleteUrl}
+                    setNavUrl={setNavUrl}
                     onAddChild={onAddChildOf}
-                    onRenameChild={onRename}
+                    onNavChange={updateInNav}
                   />
-                  {canEdit && item.removable !== false ? (
-                    <InlineRenameAction
+                  {canEdit ? (
+                    <CategoryEditPopover
                       className="scn-taxonomy-site-nav__rename-inline--top"
-                      onRename={() => void onRename({ id: item.id, name: item.name })}
+                      target={{ id: item.id, name: item.name, inNav: item.inNav, removable: item.removable !== false }}
+                      canEdit={canEdit}
+                      renameUrl={renameUrl}
+                      createUrl={createUrl}
+                      deleteUrl={deleteUrl}
+                      setNavUrl={setNavUrl}
+                      onNavChange={updateInNav}
                     />
                   ) : null}
                 </NavigationMenuItem>
@@ -454,12 +669,23 @@ export function mountShadcnTaxonomySiteNav(): void {
     const canEdit = host.dataset['canEdit'] === '1';
     const createUrl = host.dataset['createUrl'] ?? '';
     const renameUrl = host.dataset['renameUrl'] ?? '';
+    const deleteUrl = host.dataset['deleteUrl'] ?? '';
+    const setNavUrl = host.dataset['setNavUrl'] ?? '';
     host.dataset['shadcnTaxonomySiteNavBound'] = '1';
     let root = navRoots.get(host);
     if (!root) {
       root = createRoot(host);
       navRoots.set(host, root);
     }
-    root.render(<TaxonomySiteNavView rows={rows} canEdit={canEdit} createUrl={createUrl} renameUrl={renameUrl} />);
+    root.render(
+      <TaxonomySiteNavView
+        rows={rows}
+        canEdit={canEdit}
+        createUrl={createUrl}
+        renameUrl={renameUrl}
+        deleteUrl={deleteUrl}
+        setNavUrl={setNavUrl}
+      />
+    );
   });
 }

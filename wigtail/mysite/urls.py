@@ -44,6 +44,11 @@ urlpatterns = [
         name="inline_rename_taxonomy_term",  # staff JSON rename for taxonomy-chip-widget
     ),
     path(
+        "inline/taxonomy/set-nav/",
+        inline_edit_views.set_taxonomy_term_nav,
+        name="inline_set_taxonomy_term_nav",
+    ),
+    path(
         "inline/taxonomy/save-master-layout/",
         inline_edit_views.save_taxonomy_master_layout,
         name="save_taxonomy_master_layout",

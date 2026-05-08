@@ -46,6 +46,10 @@ class TaxonomyTerm(MP_Node):
         default=True,
         help_text="If unchecked, this term is hidden from site navigation.",
     )
+    is_nav = models.BooleanField(
+        default=True,
+        help_text="If unchecked, this term is hidden from public nav but still visible to editors.",
+    )
     sort_order = models.PositiveSmallIntegerField(default=0)
     parent_for_create = models.ForeignKey(
         "self",
@@ -67,6 +71,7 @@ class TaxonomyTerm(MP_Node):
         ),
         PageChooserPanel("link_page"),
         FieldPanel("is_visible"),
+        FieldPanel("is_nav"),
         FieldPanel("sort_order"),
         FieldPanel("widgets"),
         FieldPanel("master_layout_json"),

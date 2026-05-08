@@ -306,6 +306,7 @@ def _serialize_menu_child(
         ),
         "description": "",
         "active": term_is_nav_active(child_term, trail_slugs, page),
+        "inNav": bool(getattr(child_term, "is_nav", True)),
     }
 
 
@@ -340,6 +341,7 @@ def _serialize_menu_item(
         "href": term_nav_href(request, home_page, trail, row_depth, term),
         "active": term_is_nav_active(term, trail_slugs, page),
         "removable": True,
+        "inNav": bool(getattr(term, "is_nav", True)),
         "children": children,
     }
 
