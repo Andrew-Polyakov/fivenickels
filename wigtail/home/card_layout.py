@@ -69,7 +69,7 @@ def _source_config_from_art_block(art: dict, request: HttpRequest | None) -> dic
         mode = "random"
     tag_ids = _tag_ids_from_art(art)
     cfg: dict[str, Any] = {"mode": mode, "tagIds": tag_ids}
-    specific_page = art.get("specific_page") or art.get("manual_page")
+    specific_page = art.get("specific_page")
     if specific_page is not None:
         sp = specific_page.specific
         href = ""

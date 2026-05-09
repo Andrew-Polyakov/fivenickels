@@ -39,7 +39,7 @@ def _pick_one_tile_page(cell_value, term, exclude_ids):
     if mode in ("top_viewed", "priority_articles_stub"):
         return None
     if mode in ("manual_article", "manual", "specific_article"):
-        specific = cell_value.get("specific_page") or cell_value.get("manual_page")
+        specific = cell_value.get("specific_page")
         if specific:
             return specific.specific
         return None
@@ -182,11 +182,6 @@ class ArticleTileSourceBlock(blocks.StructBlock):
             ("priority_articles", "Priority articles"),
         ],
         default="random",
-    )
-    manual_page = blocks.PageChooserBlock(
-        target_model="home.TaggedContentPage",
-        required=False,
-        label="Specific article (legacy)",
     )
     specific_page = blocks.PageChooserBlock(
         target_model="home.TaggedContentPage",
