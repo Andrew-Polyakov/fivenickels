@@ -103,3 +103,4 @@ __pycache__/
 # Wagtail tutorial (wigtail/)
 wigtail/env/
 wigtail/static/
+wigtail/media
