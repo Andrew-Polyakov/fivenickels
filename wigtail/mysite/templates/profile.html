@@ -23,4 +23,10 @@
         <button type="submit" class="btn btn--raised">Sign out</button>
     </form>
 </section>
+
+{{ articles_data|json_script:"profile-articles-data" }}
+<div
+    data-shadcn-profile-articles
+    data-articles-json-id="profile-articles-data"
+></div>
 {% endblock %}

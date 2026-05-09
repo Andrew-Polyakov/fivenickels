@@ -112,4 +112,24 @@ def popup_logout(request: HttpRequest) -> HttpResponse:
 @require_GET
 @login_required
 def profile(request: HttpRequest) -> HttpResponse:
-    return render(request, "profile.html")
+    from home.models import TaggedContentPage
+
+    articles_qs = (
+        TaggedContentPage.objects.live()
+        .public()
+        .select_related("section_term", "taxonomy_category")
+        .order_by("-first_published_at")[:500]
+    )
+    articles_data = [
+        {
+            "id": p.id,
+            "title": p.title,
+            "url": p.get_url(request) or "",
+            "published": p.first_published_at.strftime("%Y-%m-%d") if p.first_published_at else "",
+            "section_slug": p.section_term.slug,
+            "section_name": p.section_term.name,
+            "category_name": p.taxonomy_category.name if p.taxonomy_category_id else "",
+        }
+        for p in articles_qs
+    ]
+    return render(request, "profile.html", {"articles_data": articles_data})
