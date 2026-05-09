@@ -12,6 +12,7 @@ import { mountShadcnArticleCards, mountShadcnCardLayouts } from './app/shadcn-ca
 import { mountShadcnTaxonomySiteNav } from './app/shadcn-taxonomy-site-nav';
 import { mountShadcnBrokerTable } from './app/shadcn-broker-data-table';
 import { mountShadcnProfileArticlesTable } from './app/shadcn-profile-articles-table';
+import { mountShadcnArticleEditor } from './app/shadcn-article-editor';
 import {
   ConfirmDialogComponent,
   MessageDialogComponent,
@@ -32,6 +33,7 @@ declare global {
     mountShadcnTaxonomySiteNav?: () => void;
     mountShadcnBrokerTable?: () => void;
     mountShadcnProfileArticlesTable?: () => void;
+    mountShadcnArticleEditor?: () => void;
   }
 }
 
@@ -93,6 +95,7 @@ createApplication({
     window.mountShadcnTaxonomySiteNav = mountShadcnTaxonomySiteNav;
     window.mountShadcnBrokerTable = mountShadcnBrokerTable;
     window.mountShadcnProfileArticlesTable = mountShadcnProfileArticlesTable;
+    window.mountShadcnArticleEditor = mountShadcnArticleEditor;
     window.showMaterialConfirm = (message: string, title?: string) =>
       new Promise<boolean>((resolve) => {
         dialog
@@ -134,5 +137,6 @@ createApplication({
     mountShadcnBreadcrumbs();
     mountShadcnBrokerTable();
     mountShadcnProfileArticlesTable();
+    mountShadcnArticleEditor();
   })
   .catch((err) => console.error(err));

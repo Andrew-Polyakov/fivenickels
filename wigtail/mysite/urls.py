@@ -11,6 +11,8 @@ from wagtail.documents import urls as wagtaildocs_urls
 from home import auth_views
 from home import broker_views
 from home import inline_edit_views
+from home import editor_views
+from home import api_urls
 from search import views as search_views
 
 from home.ticker_serve import render_ticker_page
@@ -22,6 +24,7 @@ def favicon_view(request):
 
 urlpatterns = [
     path("favicon.ico", favicon_view, name="favicon"),
+    path("", include(api_urls)),
     path("django-admin/", admin.site.urls),
     path("admin/", include(wagtailadmin_urls)),
     path("documents/", include(wagtaildocs_urls)),
@@ -29,6 +32,7 @@ urlpatterns = [
     path("auth/signup/", auth_views.popup_signup, name="popup_signup"),
     path("auth/logout/", auth_views.popup_logout, name="popup_logout"),
     path("profile/", auth_views.profile, name="profile"),
+    path("profile/article/<int:article_id>/edit/", editor_views.article_editor, name="article_editor"),
     path(
         "inline/taxonomy/create/",
         inline_edit_views.create_taxonomy_term,
