@@ -5916,6 +5916,16 @@ body.is-auth-modal-open {
     border-color: var(--color-slime);
     box-shadow: 0 0 0 2px var(--color-slime-soft);
 }
+.scn-editor-tile-preview--warn { border-color: #f59e0b; }
+
+/* SEO card */
+.scn-editor-seo__field { display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.75rem; }
+.scn-editor-seo__field:last-child { margin-bottom: 0; }
+.scn-editor-seo__counter {
+    font-size: 0.75rem; color: var(--color-text-muted, #888);
+    text-align: right; line-height: 1;
+}
+.scn-editor-seo__counter--warn { color: #f59e0b; }
 
 /* Inline image node inside Tiptap paragraph editor */
 .scn-rte-image { margin: 0.75em 0; }

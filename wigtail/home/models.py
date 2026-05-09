@@ -10,6 +10,7 @@ from wagtail.contrib.routable_page.models import RoutablePageMixin, route
 from wagtail.fields import StreamField
 from wagtail.images import get_image_model_string
 from wagtail.models import Page
+from wagtailseo.models import SeoMetaFields
 from wagtail.search import index
 from wagtail.snippets.models import register_snippet
 from wagtailmarkdown.fields import MarkdownField
@@ -281,7 +282,7 @@ class SubsectionIndexPage(Page):
         return context
 
 
-class TaggedContentPage(Page):
+class TaggedContentPage(SeoMetaFields, Page):
     search_fields = Page.search_fields + [
         index.SearchField("tile_preview"),
         index.SearchField("body"),

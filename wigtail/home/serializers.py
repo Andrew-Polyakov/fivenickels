@@ -107,6 +107,7 @@ class ArticleEditorSerializer(serializers.ModelSerializer):
     tags = ContentTagSerializer(many=True, read_only=True)
     body = StreamBlockSerializer(many=True, read_only=True)
     hero_image_url = serializers.SerializerMethodField()
+    og_image_url = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
 
     class Meta:
@@ -117,6 +118,8 @@ class ArticleEditorSerializer(serializers.ModelSerializer):
             'tags', 'hero_image', 'hero_image_url',
             'tile_preview', 'tile_priority', 'article_priority',
             'priority_expires_at', 'body',
+            'seo_title', 'search_description', 'canonical_url',
+            'og_image', 'og_image_url',
         ]
         read_only_fields = ['id', 'slug']
 
@@ -124,6 +127,14 @@ class ArticleEditorSerializer(serializers.ModelSerializer):
         if obj.hero_image:
             try:
                 return obj.hero_image.get_rendition('original').url
+            except Exception:
+                return None
+        return None
+
+    def get_og_image_url(self, obj):
+        if obj.og_image:
+            try:
+                return obj.og_image.get_rendition('original').url
             except Exception:
                 return None
         return None
@@ -137,6 +148,7 @@ class ArticleUpdateSerializer(serializers.ModelSerializer):
     taxonomy_category_id = serializers.IntegerField(required=False, allow_null=True)
     tag_ids = serializers.ListField(child=serializers.IntegerField(), required=False, write_only=True)
     hero_image_id = serializers.IntegerField(required=False, allow_null=True)
+    og_image_id = serializers.IntegerField(required=False, allow_null=True, write_only=True)
     body_json = serializers.JSONField(required=False, write_only=True)
 
     class Meta:
@@ -145,6 +157,8 @@ class ArticleUpdateSerializer(serializers.ModelSerializer):
             'title', 'tile_preview', 'tile_priority', 'article_priority',
             'priority_expires_at', 'section_term_id', 'taxonomy_category_id',
             'tag_ids', 'hero_image_id', 'body_json',
+            'seo_title', 'search_description', 'canonical_url',
+            'og_image_id',
         ]
 
     def update(self, instance, validated_data):
@@ -161,6 +175,10 @@ class ArticleUpdateSerializer(serializers.ModelSerializer):
         hero_image_id = validated_data.pop('hero_image_id', None)
         if hero_image_id is not None:
             instance.hero_image_id = hero_image_id
+
+        og_image_id = validated_data.pop('og_image_id', None)
+        if 'og_image_id' in self.initial_data:
+            instance.og_image_id = og_image_id
 
         section_term_id = validated_data.pop('section_term_id', None)
         if section_term_id is not None:

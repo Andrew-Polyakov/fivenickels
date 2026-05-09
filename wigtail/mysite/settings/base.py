@@ -39,7 +39,9 @@ except ImportError:
 INSTALLED_APPS = [
     "home",
     "search",
+    "wagtail.contrib.settings",
     "wagtail.contrib.routable_page",
+    "wagtailseo",
     "wagtail.contrib.forms",
     "wagtail.contrib.redirects",
     "wagtail.embeds",

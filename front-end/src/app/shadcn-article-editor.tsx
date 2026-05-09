@@ -41,6 +41,11 @@ type ArticleApiData = {
   article_priority: number | null;
   priority_expires_at: string | null;
   body: Array<{ id: string; type: string; value: unknown }>;
+  seo_title: string | null;
+  search_description: string | null;
+  canonical_url: string | null;
+  og_image: number | null;
+  og_image_url: string | null;
 };
 
 type ArticleAction = 'publish' | 'unpublish' | 'submit_moderation' | 'save_draft' | 'delete';
@@ -682,6 +687,92 @@ function AddBlockMenu({ onAdd }: { onAdd: (type: BodyBlock['type']) => void }) {
   );
 }
 
+// ─── SEO Card ─────────────────────────────────────────────────────────────────
+
+function SeoCard({
+  seoTitle, metaDesc, canonicalUrl, ogImageUrl,
+  articleId, apiBase,
+  onSeoTitleChange, onMetaDescChange, onCanonicalChange, onOgImageUploaded,
+}: {
+  seoTitle: string; metaDesc: string; canonicalUrl: string; ogImageUrl: string | null;
+  articleId: number; apiBase: string;
+  onSeoTitleChange: (v: string) => void;
+  onMetaDescChange: (v: string) => void;
+  onCanonicalChange: (v: string) => void;
+  onOgImageUploaded: (url: string, id: number) => void;
+}) {
+  const [uploading, setUploading] = React.useState(false);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const descLen = metaDesc.length;
+  const descOk  = descLen >= 50 && descLen <= 160;
+  const descWarn = descLen > 0 && !descOk;
+
+  async function uploadOg(file: File) {
+    setUploading(true);
+    const fd = new FormData();
+    fd.append('image', file);
+    try {
+      const res = await api(`${apiBase}/articles/${articleId}/upload-image/`, { method: 'POST', body: fd });
+      const json = await res.json();
+      if (res.ok) onOgImageUploaded(json.image_url, json.image_id);
+    } catch { /* silent */ }
+    finally { setUploading(false); }
+  }
+
+  return (
+    <div className="scn-editor-card">
+      <h3 className="scn-editor-card__title">SEO</h3>
+
+      <div className="scn-editor-seo__field">
+        <Label className="scn-editor-field-label">SEO title</Label>
+        <Input
+          placeholder="Overrides browser tab title for search engines"
+          value={seoTitle}
+          onChange={e => onSeoTitleChange(e.target.value)}
+        />
+        <span className={`scn-editor-seo__counter${seoTitle.length > 60 ? ' scn-editor-seo__counter--warn' : ''}`}>
+          {seoTitle.length}/60
+        </span>
+      </div>
+
+      <div className="scn-editor-seo__field">
+        <Label className="scn-editor-field-label">Meta description</Label>
+        <textarea
+          className={`scn-editor-tile-preview${descWarn ? ' scn-editor-tile-preview--warn' : ''}`}
+          placeholder="50–160 chars · shown in search results"
+          rows={3}
+          value={metaDesc}
+          onChange={e => onMetaDescChange(e.target.value)}
+        />
+        <span className={`scn-editor-seo__counter${descWarn ? ' scn-editor-seo__counter--warn' : ''}`}>
+          {descLen}/160{descOk ? ' ✓' : ''}
+        </span>
+      </div>
+
+      <div className="scn-editor-seo__field">
+        <Label className="scn-editor-field-label">Canonical URL</Label>
+        <Input
+          type="url"
+          placeholder="Leave blank to use page URL"
+          value={canonicalUrl}
+          onChange={e => onCanonicalChange(e.target.value)}
+        />
+      </div>
+
+      <div className="scn-editor-seo__field">
+        <Label className="scn-editor-field-label">Social (OG) image</Label>
+        {ogImageUrl && <img src={ogImageUrl} alt="" className="scn-editor-image-preview" />}
+        <Button variant="ghost" className="scn-editor-block__upload-btn" disabled={uploading}
+          onClick={() => inputRef.current?.click()}>
+          {uploading ? 'Uploading…' : ogImageUrl ? 'Replace OG image' : 'Upload OG image'}
+        </Button>
+        <input ref={inputRef} type="file" accept="image/*" className="scn-sr-only"
+          onChange={e => { const f = e.target.files?.[0]; if (f) uploadOg(f); e.target.value = ''; }} />
+      </div>
+    </div>
+  );
+}
+
 // ─── Actions Popover ──────────────────────────────────────────────────────────
 
 function ActionsPopover({ status, onAction, disabled }: {
@@ -751,6 +842,11 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
   const [artPrio, setArtPrio]         = React.useState<number | null>(null);
   const [expiresAt, setExpiresAt]     = React.useState('');
   const [tilePreview, setTilePreview]  = React.useState('');
+  const [seoTitle, setSeoTitle]        = React.useState('');
+  const [metaDesc, setMetaDesc]        = React.useState('');
+  const [canonicalUrl, setCanonical]   = React.useState('');
+  const [ogImageUrl, setOgImageUrl]    = React.useState<string | null>(null);
+  const [ogImageId, setOgImageId]      = React.useState<number | null>(null);
   const [tags, setTags]               = React.useState<Tag[]>([]);
   const [blocks, setBlocks]           = React.useState<BodyBlock[]>([]);
   const [status, setStatus]           = React.useState<'published' | 'draft'>('draft');
@@ -784,6 +880,11 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
         setArtPrio(article.article_priority);
         setExpiresAt(article.priority_expires_at ? article.priority_expires_at.slice(0, 16) : '');
         setTilePreview(article.tile_preview ?? '');
+        setSeoTitle(article.seo_title ?? '');
+        setMetaDesc(article.search_description ?? '');
+        setCanonical(article.canonical_url ?? '');
+        setOgImageUrl(article.og_image_url);
+        setOgImageId(article.og_image);
         setTags(article.tags);
         setBlocks(apiToEditor(article.body));
         setStatus(article.status);
@@ -809,6 +910,10 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
         priority_expires_at: expiresAt || null,
         tag_ids: tags.map(t => t.id),
         body_json: editorToApi(blocks),
+        seo_title: seoTitle,
+        search_description: metaDesc,
+        canonical_url: canonicalUrl,
+        og_image_id: ogImageId,
       };
       if (heroId !== null) payload['hero_image_id'] = heroId;
 
@@ -954,6 +1059,19 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
               onChange={e => setTilePreview(e.target.value)}
             />
           </div>
+
+          <SeoCard
+            seoTitle={seoTitle}
+            metaDesc={metaDesc}
+            canonicalUrl={canonicalUrl}
+            ogImageUrl={ogImageUrl}
+            articleId={articleId}
+            apiBase={apiBase}
+            onSeoTitleChange={setSeoTitle}
+            onMetaDescChange={setMetaDesc}
+            onCanonicalChange={setCanonical}
+            onOgImageUploaded={(url, id) => { setOgImageUrl(url); setOgImageId(id); }}
+          />
         </aside>
       </div>
 
