@@ -7,6 +7,7 @@ from modelcluster.fields import ParentalManyToManyField
 from treebeard.mp_tree import MP_Node
 from wagtail.admin.panels import FieldPanel, MultiFieldPanel, PageChooserPanel
 from wagtail.contrib.routable_page.models import RoutablePageMixin, route
+from wagtail.contrib.settings.models import BaseSiteSetting, register_setting
 from wagtail.fields import StreamField
 from wagtail.images import get_image_model_string
 from wagtail.models import Page
@@ -106,38 +107,47 @@ class TaxonomyTerm(MP_Node):
 
 
 @register_snippet
-class BrokerRating(models.Model):
-    STATUS_ACTIVE = "active"
-    STATUS_INACTIVE = "inactive"
-    STATUS_RESTRICTED = "restricted"
-    STATUS_CHOICES = [
-        (STATUS_ACTIVE, "Active"),
-        (STATUS_INACTIVE, "Inactive"),
-        (STATUS_RESTRICTED, "Restricted"),
-    ]
+class Country(models.Model):
+    code = models.CharField(max_length=2, unique=True)
+    name = models.CharField(max_length=100)
 
+    panels = [FieldPanel("code"), FieldPanel("name")]
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "country"
+        verbose_name_plural = "countries"
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.code})"
+
+
+@register_snippet
+class BrokerRating(models.Model):
     rank = models.PositiveIntegerField()
     broker_name = models.CharField(max_length=200)
     overall_rating = models.DecimalField(max_digits=3, decimal_places=1)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
     reviews = models.PositiveIntegerField(default=0)
     broker_type = models.CharField(max_length=100)
     regulation = models.CharField(max_length=200)
     min_deposit = models.PositiveIntegerField(help_text="Minimum deposit in USD")
     leverage = models.CharField(max_length=20, help_text='e.g. "1:500"')
     favicon_url = models.URLField(max_length=500, blank=True, help_text="Favicon image URL")
+    page_url = models.URLField(max_length=500, blank=True, help_text="Review page URL")
+    best_for = models.TextField(blank=True, help_text="HTML rich text describing who this broker is best for")
 
     panels = [
         FieldPanel("rank"),
         FieldPanel("broker_name"),
         FieldPanel("favicon_url"),
         FieldPanel("overall_rating"),
-        FieldPanel("status"),
         FieldPanel("reviews"),
         FieldPanel("broker_type"),
         FieldPanel("regulation"),
         FieldPanel("min_deposit"),
         FieldPanel("leverage"),
+        FieldPanel("page_url"),
+        FieldPanel("best_for"),
     ]
 
     class Meta:
@@ -147,6 +157,57 @@ class BrokerRating(models.Model):
 
     def __str__(self) -> str:
         return f"{self.rank}. {self.broker_name}"
+
+
+@register_snippet
+class BrokerCountryRating(models.Model):
+    """Country-specific override for a broker's rating and rank."""
+
+    broker = models.ForeignKey(BrokerRating, on_delete=models.CASCADE, related_name="country_ratings")
+    country = models.ForeignKey(Country, on_delete=models.CASCADE, related_name="broker_ratings")
+    overall_rating = models.DecimalField(max_digits=3, decimal_places=1)
+    rank = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text="Override global rank for this country. Leave blank to keep global rank.",
+    )
+
+    panels = [
+        FieldPanel("broker"),
+        FieldPanel("country"),
+        FieldPanel("overall_rating"),
+        FieldPanel("rank"),
+    ]
+
+    class Meta:
+        unique_together = [("broker", "country")]
+        ordering = ["country__name", "rank", "broker__rank"]
+        verbose_name = "broker country rating"
+        verbose_name_plural = "broker country ratings"
+
+    def __str__(self) -> str:
+        return f"{self.broker.broker_name} – {self.country.code}: {self.overall_rating}"
+
+
+@register_setting
+class BrokerTableSettings(BaseSiteSetting):
+    cta_label = models.CharField(max_length=100, blank=True, default="")
+    cta_button_text = models.CharField(max_length=100, blank=True, default="")
+    cta_page = models.ForeignKey(
+        "wagtailcore.Page",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
+
+    panels = [
+        FieldPanel("cta_label"),
+        FieldPanel("cta_button_text"),
+        PageChooserPanel("cta_page"),
+    ]
+
+    class Meta:
+        verbose_name = "Broker table settings"
 
 
 @register_snippet

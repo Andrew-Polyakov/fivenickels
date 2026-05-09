@@ -9,12 +9,18 @@
 <div class="forex-ratings">
     <h1 class="forex-ratings__title">Forex Broker Ratings</h1>
     {{ brokers|json_script:"broker-ratings-data" }}
+    {{ countries|json_script:"broker-countries-data" }}
     <div
         class="forex-ratings__table-host"
         data-shadcn-broker-table
         data-broker-json-id="broker-ratings-data"
+        data-countries-json-id="broker-countries-data"
+        data-current-country="{{ current_country }}"
         {% if is_admin %}data-broker-is-admin="1"{% endif %}
         data-broker-update-url="{% url 'broker_rating_update' pk=0 %}"
+        data-cta-label="{{ cta_label }}"
+        data-cta-button-text="{{ cta_button_text }}"
+        data-cta-url="{{ cta_url }}"
     ></div>
 </div>
 {% endblock %}

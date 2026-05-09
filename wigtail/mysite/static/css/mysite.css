@@ -6202,7 +6202,18 @@ body.template-forex-ratings .site-content {
     gap: 1rem;
     padding: 0.85rem 1rem;
     border-bottom: 1px solid rgba(148,163,184,0.15);
+    flex-wrap: wrap;
 }
+
+.scn-broker-country-select {
+    height: 36px; padding: 0 2rem 0 0.75rem;
+    font-size: 0.875rem; font-family: inherit;
+    border: 1px solid var(--color-border-subtle); border-radius: 8px;
+    background: var(--color-bg-elevated) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 0.6rem center;
+    color: var(--color-text); cursor: pointer; appearance: none; outline: none;
+    min-width: 180px;
+}
+.scn-broker-country-select:focus { border-color: var(--color-slime); box-shadow: 0 0 0 2px var(--color-slime-soft); }
 
 .scn-input {
     height: 36px;
@@ -6328,7 +6339,87 @@ body.template-forex-ratings .site-content {
     gap: 0.5rem;
     font-weight: 600;
     color: var(--color-text);
+    flex-wrap: wrap;
 }
+
+.scn-broker-name__text { white-space: nowrap; }
+
+/* "Best for" accordion toggle */
+.scn-broker-expand {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 0.75rem; font-weight: 500;
+    color: var(--color-slime); background: none; border: none;
+    cursor: pointer; padding: 1px 4px; border-radius: 4px;
+    transition: background 0.15s;
+}
+.scn-broker-expand:hover { background: var(--color-slime-soft); }
+.scn-broker-expand svg { transition: transform 0.2s; }
+.scn-broker-expand--open svg { transform: rotate(180deg); }
+
+/* Expanded "Best for" detail row */
+.scn-broker-detail-row td { padding: 0 !important; border-top: none; }
+.scn-broker-detail-cell { padding: 0 !important; }
+.scn-broker-best-for {
+    padding: 1rem 1.25rem 1.25rem;
+    background: var(--color-bg-elevated);
+    border-top: 1px solid var(--color-border-subtle);
+    font-size: 0.9375rem; line-height: 1.7; color: var(--color-text);
+}
+.scn-broker-best-for p  { margin: 0 0 0.6em; }
+.scn-broker-best-for p:last-child { margin-bottom: 0; }
+.scn-broker-best-for ul, .scn-broker-best-for ol { margin: 0.25em 0 0.6em 1.25em; }
+.scn-broker-best-for li { margin-bottom: 0.2em; }
+.scn-broker-best-for strong { font-weight: 700; }
+.scn-broker-best-for a { color: var(--color-slime); text-decoration: underline; }
+
+.scn-broker-review-btn {
+    display: inline-block;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--color-text);
+    background: transparent;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 6px;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: border-color 0.15s, color 0.15s;
+}
+
+.scn-broker-review-btn:hover {
+    border-color: var(--color-slime);
+    color: var(--color-slime);
+}
+
+.scn-broker-cta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+    white-space: nowrap;
+}
+
+.scn-broker-cta__label {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    line-height: 1.2;
+}
+
+.scn-broker-cta__btn {
+    display: inline-block;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--color-bg);
+    background: var(--color-slime);
+    border-radius: 6px;
+    text-decoration: none;
+    transition: opacity 0.15s;
+}
+
+.scn-broker-cta__btn:hover { opacity: 0.85; }
 
 .scn-broker-favicon {
     width: 16px;
@@ -6417,16 +6508,8 @@ body.template-forex-ratings .site-content {
     to   { opacity: 1; transform: translateY(0); }
 }
 
-.scn-broker-edit-popover {
-    width: 360px;
-    padding: 1rem;
-}
-
-.scn-broker-edit__title {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--color-text);
-    margin: 0 0 0.875rem;
+.scn-broker-edit-dialog {
+    width: min(520px, calc(100vw - 2rem));
 }
 
 .scn-broker-edit__grid {
@@ -6441,9 +6524,16 @@ body.template-forex-ratings .site-content {
     gap: 0.25rem;
 }
 
-.scn-broker-edit__field:nth-child(3) {
-    grid-column: 1 / -1;
+.scn-broker-edit__field:nth-child(3),
+.scn-broker-edit__field--full { grid-column: 1 / -1; }
+
+.scn-broker-edit__textarea {
+    padding: 0.4rem 0.65rem; resize: vertical;
+    border: 1px solid var(--color-border-subtle); border-radius: 0.375rem;
+    background: var(--color-bg); color: var(--color-text);
+    font-size: 0.8125rem; line-height: 1.5; outline: none; font-family: inherit;
 }
+.scn-broker-edit__textarea:focus { border-color: var(--color-slime); }
 
 .scn-label {
     font-size: 0.75rem;
