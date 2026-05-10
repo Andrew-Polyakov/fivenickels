@@ -256,7 +256,7 @@ function BrokerDataTable({
   ctaUrl: string;
 }) {
   const [data, setData] = React.useState<BrokerRow[]>(initialData);
-  const [sorting, setSorting] = React.useState<SortingState>([{ id: 'overall_rating', desc: true }]);
+  const [sorting, setSorting] = React.useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = React.useState('');
   const [expandedId, setExpandedId] = React.useState<number | null>(null);
 

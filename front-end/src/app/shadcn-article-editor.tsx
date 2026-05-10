@@ -13,7 +13,7 @@ import { Label } from '../components/ui/label';
 import { Select } from '../components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '../components/ui/toggle-group';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
-import { ToolbarBtn, RteToolbar } from '../components/ui/rte-editor';
+import { RteToolbar, TABLE_EXTENSIONS } from '../components/ui/rte-editor';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -402,6 +402,7 @@ function ParagraphEditor({ block, apiBase, onChange }: {
       TiptapLink.configure({ openOnClick: false }),
       Placeholder.configure({ placeholder: 'Write paragraph content…' }),
       WagtailImage,
+      ...TABLE_EXTENSIONS,
     ],
     content: block.html || '',
     onUpdate: ({ editor: e }) => onChange({ ...block, html: e.getHTML() }),
