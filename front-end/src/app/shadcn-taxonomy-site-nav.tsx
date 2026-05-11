@@ -652,6 +652,14 @@ function TaxonomySiteNavView({
 
 const navRoots = new WeakMap<HTMLElement, Root>();
 
+function hideTaxonomyNavFallback(host: HTMLElement): void {
+  const frame = host.closest('turbo-frame#site-nav') ?? host.parentElement;
+  const fallback = frame?.querySelector<HTMLElement>('.taxonomy-site-nav__fallback');
+  if (fallback) {
+    fallback.hidden = true;
+  }
+}
+
 export function mountShadcnTaxonomySiteNav(): void {
   document.querySelectorAll<HTMLElement>('[data-shadcn-taxonomy-site-nav]').forEach((host) => {
     if (host.dataset['shadcnTaxonomySiteNavBound'] === '1') {
@@ -686,5 +694,6 @@ export function mountShadcnTaxonomySiteNav(): void {
         setNavUrl={setNavUrl}
       />
     );
+    hideTaxonomyNavFallback(host);
   });
 }

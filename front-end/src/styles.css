@@ -374,6 +374,23 @@
   font-size: 0.88rem;
 }
 
+.scn-dialog-content.scn-card-properties-dialog {
+  padding-inline: 1.35rem;
+}
+
+.scn-card-properties-dialog .scn-dialog-header {
+  padding-inline: 0.35rem;
+}
+
+.scn-card-properties-form {
+  padding-inline: 0.35rem;
+}
+
+.scn-card-properties-form .scn-field,
+.scn-card-properties-form .scn-dialog-footer {
+  padding-inline: 0.15rem;
+}
+
 /* shadcn-style Empty */
 .scn-empty {
   display: flex;
@@ -1742,6 +1759,38 @@ turbo-frame#site-nav.site-nav {
 .scn-carousel-subcards {
   display: grid;
   gap: 0.5rem;
+}
+
+.scn-carousel-subcards__track {
+  display: contents;
+}
+
+.scn-carousel-subcards--infinite {
+  display: block;
+  overflow: hidden;
+}
+
+.scn-carousel-subcards--infinite .scn-carousel-subcards__track {
+  display: flex;
+  gap: 0.5rem;
+  width: max-content;
+  animation: scn-carousel-infinite-scroll 28s linear infinite;
+}
+
+@keyframes scn-carousel-infinite-scroll {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scn-carousel-subcards--infinite .scn-carousel-subcards__track {
+    animation: none;
+  }
 }
 
 .scn-carousel-subcard {

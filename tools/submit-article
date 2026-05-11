@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import sys
 import urllib.error
@@ -18,27 +17,11 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+_TOOLS_DIR = Path(__file__).resolve().parent
+if str(_TOOLS_DIR) not in sys.path:
+    sys.path.insert(0, str(_TOOLS_DIR))
 
-def _repo_root() -> Path:
-    return Path(__file__).resolve().parent.parent
-
-
-def _load_dotenv(path: Path) -> None:
-    if not path.is_file():
-        return
-    for raw in path.read_text(encoding="utf-8").splitlines():
-        line = raw.strip()
-        if not line or line.startswith("#"):
-            continue
-        if line.startswith("#"):
-            line = line[1:].strip()
-        if "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        value = value.strip().strip('"').strip("'")
-        if key and key not in os.environ:
-            os.environ[key] = value
+import article_submit_lib as lib
 
 
 def _preview_from_news(news: dict[str, Any], max_len: int = 500) -> str:
@@ -134,20 +117,17 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--endpoint",
-        default=os.environ.get(
-            "WIGTAIL_ARTICLE_SUBMIT_URL",
-            "http://127.0.0.1:8000/api/articles/auto-submit/",
-        ),
+        default=None,
         help="Wigtail auto-submit endpoint URL.",
     )
     parser.add_argument(
         "--token",
-        default=os.environ.get("ARTICLE_SUBMIT_BEARER_TOKEN", ""),
+        default=None,
         help="Bearer token (default: ARTICLE_SUBMIT_BEARER_TOKEN env).",
     )
     parser.add_argument(
         "--section-slug",
-        default=os.environ.get("ARTICLE_SUBMIT_DEFAULT_SECTION_SLUG", ""),
+        default=None,
         help="Taxonomy section slug for created articles.",
     )
     parser.add_argument(
@@ -163,7 +143,19 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    _load_dotenv(_repo_root() / ".env")
+    lib.load_repo_env()
+    config = lib.resolve_submit_config(
+        {
+            "endpoint": args.endpoint,
+            "token": args.token,
+            "section_slug": args.section_slug,
+            "timeout": args.timeout,
+        }
+    )
+    config_error = lib.ensure_submit_config(config, dry_run=args.dry_run)
+    if config_error:
+        print(config_error, file=sys.stderr)
+        return 2
 
     input_path = Path(args.input_file)
     if not input_path.is_file():
@@ -180,8 +172,7 @@ def main(argv: list[str] | None = None) -> int:
         print("StockCrawler JSON root must be an object.", file=sys.stderr)
         return 2
 
-    section_slug = (args.section_slug or "").strip() or None
-    articles = _iter_payloads(root, section_slug=section_slug)
+    articles = _iter_payloads(root, section_slug=config.section_slug)
     if not articles:
         print(json.dumps({"created": 0, "skipped": 0, "failed": 0, "results": []}))
         return 0
@@ -191,7 +182,7 @@ def main(argv: list[str] | None = None) -> int:
             json.dumps(
                 {
                     "dry_run": True,
-                    "endpoint": args.endpoint,
+                    "endpoint": config.endpoint,
                     "count": len(articles),
                     "articles": articles,
                 },
@@ -200,24 +191,12 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 0
 
-    token = (args.token or "").strip()
-    if not token:
-        print(
-            "Missing bearer token. Set ARTICLE_SUBMIT_BEARER_TOKEN or pass --token.",
-            file=sys.stderr,
-        )
-        return 2
-
-    endpoint = args.endpoint
-    if not endpoint.endswith("/"):
-        endpoint = f"{endpoint}/"
-
     try:
         summary = _post_batch(
-            endpoint=endpoint,
-            token=token,
+            endpoint=config.endpoint,
+            token=config.token,
             articles=articles,
-            timeout=args.timeout,
+            timeout=config.timeout,
         )
     except RuntimeError as exc:
         print(str(exc), file=sys.stderr)

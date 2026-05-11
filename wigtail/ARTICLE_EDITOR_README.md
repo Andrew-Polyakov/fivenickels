@@ -333,16 +333,23 @@ StockCrawler `news` JSON can be submitted to Wagtail as draft pages queued for m
 From the repository root (with Wigtail running and token configured in `trades/.env`):
 
 ```bash
+# Production pipeline: crawl required tickers, then submit (JSON summary on stdout)
+python tools/pipeline.py NVDA TSM
+python tools/pipeline.py --dry-run NVDA TSM
+python tools/pipeline.py --keep-json reports/news-run.json NVDA TSM
+
 # Map StockCrawler JSON without calling the API
 python tools/submit-article --input-file /path/to/news.json --dry-run
 
 # Submit mapped articles
 python tools/submit-article --input-file /path/to/news.json
 
-# Crawl tickers then submit (Bash / Windows)
-tools/crawler-submit.sh news NVDA TSM
-tools\crawler-submit.bat news NVDA TSM
+# Thin wrappers around pipeline.py (Bash / Windows)
+tools/crawler-submit.sh NVDA TSM
+tools\crawler-submit.bat NVDA TSM
 ```
+
+`tools/pipeline.py` requires at least one ticker on the command line. It loads `trades/.env`, propagates `ARTICLE_SUBMIT_BEARER_TOKEN` to child processes, runs StockCrawler `news`, then calls `submit-article`. Exit codes: `0` success, `1` submit failure (or crawl failure when submit is skipped), `2` usage/config error.
 
 Environment variables (see `trades/.env.example`):
 

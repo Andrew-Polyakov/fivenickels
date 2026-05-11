@@ -22,7 +22,7 @@
         data-rename-url="{% url 'inline_rename_taxonomy_term' %}"
         data-set-nav-url="{% url 'inline_set_taxonomy_term_nav' %}"
     ></div>
-    <div class="taxonomy-site-nav__fallback" hidden>
+    <div class="taxonomy-site-nav__fallback">
         {% for row in nav_rows %}
             <nav class="site-nav__row site-nav__row--depth-{{ row.depth }}" aria-label="{% if row.depth == 1 %}Site sections{% else %}Subsections{% endif %}">
                 {% for term in row.nodes %}

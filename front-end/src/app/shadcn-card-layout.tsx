@@ -54,6 +54,7 @@ export type ArticleCardPayload =
       avatarUrl?: string;
       carouselHeader?: string;
       subcards?: string[];
+      infiniteScroll?: boolean;
       widthPx?: number;
       heightPx?: number;
       freeX?: number;
@@ -336,6 +337,12 @@ function isFreeLayoutCard(card: ArticleCardPayload): boolean {
   return card.kind === 'layout' && card.variant === 'free';
 }
 
+type CarouselLayoutCard = Extract<ArticleCardPayload, { kind: 'layout' }> & { variant: 'carousel' };
+
+function isCarouselLayoutCard(card: ArticleCardPayload): card is CarouselLayoutCard {
+  return card.kind === 'layout' && card.variant === 'carousel';
+}
+
 function defaultCardForVariant(variant: 'biggies' | 'feature' | 'headline' | 'carousel' | 'free'): ArticleCardPayload {
   return {
     kind: 'layout',
@@ -348,6 +355,7 @@ function defaultCardForVariant(variant: 'biggies' | 'feature' | 'headline' | 'ca
         : undefined,
     carouselHeader: variant === 'carousel' ? 'Subsection header' : undefined,
     subcards: variant === 'carousel' ? ['Card 1', 'Card 2', 'Card 3', 'Card 4', 'Card 5'] : undefined,
+    infiniteScroll: variant === 'carousel' ? false : undefined,
     widthPx: variant === 'free' ? 800 : undefined,
     heightPx: variant === 'free' ? 500 : undefined,
     freeX: variant === 'free' ? 0 : undefined,
@@ -651,6 +659,9 @@ function ArticleCardView({
   if (data.kind === 'layout') {
     const cls = `scn-card-variant scn-card-variant--${data.variant}`;
     if (data.variant === 'carousel') {
+      const subcards = (data.subcards ?? ['Card 1', 'Card 2', 'Card 3', 'Card 4', 'Card 5']).slice(0, 5);
+      const infiniteScroll = Boolean(data.infiniteScroll);
+      const loopSubcards = infiniteScroll ? [...subcards, ...subcards] : subcards;
       return (
         <Card className={cn('scn-article-card', cls)}>
           <CardContent>
@@ -663,12 +674,18 @@ function ArticleCardView({
             ) : (
               <h3 className="scn-carousel-header">{data.carouselHeader ?? 'Subsection header'}</h3>
             )}
-            <div className="scn-carousel-subcards">
-              {(data.subcards ?? ['Card 1', 'Card 2', 'Card 3', 'Card 4', 'Card 5']).slice(0, 5).map((s, idx) => (
-                <article key={idx} className="scn-carousel-subcard">
-                  {s}
-                </article>
-              ))}
+            <div className={cn('scn-carousel-subcards', infiniteScroll && 'scn-carousel-subcards--infinite')}>
+              <div className="scn-carousel-subcards__track">
+                {loopSubcards.map((s, idx) => (
+                  <article
+                    key={`${s}-${idx}`}
+                    className="scn-carousel-subcard"
+                    aria-hidden={infiniteScroll && idx >= subcards.length ? true : undefined}
+                  >
+                    {s}
+                  </article>
+                ))}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -1188,6 +1205,7 @@ export function CardLayoutRoot({
   const [tagQuery, setTagQuery] = React.useState('');
   const [tagResults, setTagResults] = React.useState<Array<{ id: number; name: string; slug: string }>>([]);
   const [selectedTagIds, setSelectedTagIds] = React.useState<number[]>([]);
+  const [propertiesInfiniteScroll, setPropertiesInfiniteScroll] = React.useState(false);
   const showSpecificArticleControls = propertiesSourceMode === 'specific_article';
   const showTaggedWithControls = propertiesSourceMode === 'tagged_with';
   const plainText = React.useCallback((value: string): string => {
@@ -1247,6 +1265,7 @@ export function CardLayoutRoot({
     }
     return { rowIndex: menu.rowIndex, itemIndex: menu.itemIndex, card: item.card };
   }, [menu.rowIndex, menu.itemIndex, rows]);
+  const showCarouselLayoutControls = activeCardTarget ? isCarouselLayoutCard(activeCardTarget.card) : false;
 
   React.useEffect(() => {
     const ingested = ingestEditorRowsFromPayload(payload, taxonomySubsectionLayout);
@@ -1583,7 +1602,9 @@ export function CardLayoutRoot({
       specificArticleUrl: propertiesSourceMode === 'specific_article' ? specificArticle.url : '',
       tagIds: propertiesSourceMode === 'tagged_with' ? selectedTagIds : [],
     };
-    let nextCard: ArticleCardPayload = { ...activeCardTarget.card, sourceConfig: nextSource };
+    let nextCard: ArticleCardPayload = isCarouselLayoutCard(activeCardTarget.card)
+      ? { ...activeCardTarget.card, sourceConfig: nextSource, infiniteScroll: propertiesInfiniteScroll }
+      : { ...activeCardTarget.card, sourceConfig: nextSource };
     if (propertiesSourceMode === 'specific_article' && specificArticle.id && specificArticle.title) {
       nextCard = {
         kind: 'article',
@@ -1642,6 +1663,7 @@ export function CardLayoutRoot({
     saveLayoutRowsToServer,
     selectedTagIds,
     specificArticle,
+    propertiesInfiniteScroll,
   ]);
 
   React.useEffect(() => {
@@ -1678,6 +1700,9 @@ export function CardLayoutRoot({
     setArticleSearchQuery('');
     setArticleSearchResults([]);
     setTagQuery('');
+    setPropertiesInfiniteScroll(
+      isCarouselLayoutCard(activeCardTarget.card) ? Boolean(activeCardTarget.card.infiniteScroll) : false
+    );
   }, [propertiesOpen, activeCardTarget]);
 
   React.useEffect(() => {
@@ -2368,12 +2393,24 @@ export function CardLayoutRoot({
             </div>
           ) : null}
           <Dialog open={propertiesOpen} onOpenChange={setPropertiesOpen}>
-            <DialogContent>
+            <DialogContent className="scn-card-properties-dialog">
               <DialogHeader>
                 <DialogTitle>Card properties</DialogTitle>
                 <DialogDescription>Configure content source for this card.</DialogDescription>
               </DialogHeader>
-              <div className="scn-auth-form">
+              <div className="scn-auth-form scn-card-properties-form">
+                {showCarouselLayoutControls ? (
+                  <div className="scn-field">
+                    <label className="scn-properties-list__checkbox">
+                      <input
+                        type="checkbox"
+                        checked={propertiesInfiniteScroll}
+                        onChange={(e) => setPropertiesInfiniteScroll(e.currentTarget.checked)}
+                      />
+                      Infinite scroll
+                    </label>
+                  </div>
+                ) : null}
                 <div className="scn-field">
                   <Label>Content</Label>
                   <Select
