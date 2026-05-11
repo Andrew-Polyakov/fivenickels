@@ -1657,6 +1657,42 @@ turbo-frame#site-nav.site-nav {
   min-height: 0;
 }
 
+.carousel-article-card--imageless .carousel-article-card__body {
+  padding-top: 0.85rem;
+}
+
+.carousel-slides__stack {
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: 0.65rem;
+  width: 100%;
+  height: auto;
+  min-height: fit-content;
+  align-content: start;
+}
+
+.carousel-slides__stack .carousel-article-card {
+  flex: 0 0 auto;
+  min-height: fit-content;
+  height: auto;
+}
+
+.carousel-slides__stack .carousel-article-card__anchor,
+.carousel-slides__stack .carousel-article-card__body {
+  height: auto;
+  flex: 0 0 auto;
+}
+
+.tile-carousel__stack {
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: 0.65rem;
+  width: 100%;
+  min-height: fit-content;
+  height: auto;
+  align-content: start;
+}
+
 .carousel-article-card__tags {
   display: flex;
   flex-wrap: wrap;

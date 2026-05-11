@@ -20,6 +20,10 @@ import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from '
 import { Separator as UiSeparator } from '../components/ui/separator';
 import { cn } from '../lib/utils';
 import { Toaster, toast } from 'sonner';
+import {
+  packCarouselSlides,
+  type CarouselCardViewModel,
+} from './carousel-slide-packing';
 
 type ContentSourceMode = 'random' | 'specific_article' | 'tagged_with' | 'priority_articles';
 type ContentSourceConfig = {
@@ -2534,6 +2538,120 @@ function readPayloadScript(jsonId: string): CardLayoutPayload | ArticleCardPaylo
 
 const layoutRoots = new WeakMap<HTMLElement, Root>();
 
+type TileCarouselPackedSlide =
+  | { kind: 'single'; key: string; payload: ArticleCardPayload }
+  | { kind: 'stack'; key: string; payloads: [ArticleCardPayload, ArticleCardPayload] };
+
+function articlePayloadToCarouselViewModel(card: ArticleCardPayload, index: number): CarouselCardViewModel | null {
+  if (card.kind !== 'article') {
+    return null;
+  }
+  return {
+    key: `tile-article-${index}`,
+    imageUrl: card.imageUrl || null,
+    tags: card.tags ?? [],
+    title: card.title,
+    excerpt: card.excerpt,
+    url: card.href,
+    authorName: card.authorName,
+    publishedAt: card.publishedAt,
+  };
+}
+
+function packArticleCardSlides(cards: ArticleCardPayload[]): TileCarouselPackedSlide[] {
+  const entries = cards
+    .map((card, index) => ({
+      payload: card,
+      view: articlePayloadToCarouselViewModel(card, index),
+    }))
+    .filter((entry): entry is { payload: ArticleCardPayload; view: CarouselCardViewModel } => entry.view !== null);
+  const packed = packCarouselSlides(entries.map((entry) => entry.view));
+
+  return packed.map((slide) => {
+    if (slide.kind === 'single') {
+      const index = entries.findIndex((entry) => entry.view.key === slide.card.key);
+      return {
+        kind: 'single',
+        key: slide.key,
+        payload: entries[index]?.payload ?? cards[index] ?? cards[0],
+      };
+    }
+    const first = entries.find((entry) => entry.view.key === slide.cards[0].key);
+    const second = entries.find((entry) => entry.view.key === slide.cards[1].key);
+    return {
+      kind: 'stack',
+      key: slide.key,
+      payloads: [
+        first?.payload ?? cards[0],
+        second?.payload ?? cards[1],
+      ] as [ArticleCardPayload, ArticleCardPayload],
+    };
+  });
+}
+
+function readTileCarouselPayloads(track: HTMLElement): ArticleCardPayload[] {
+  const payloads: ArticleCardPayload[] = [];
+  track.querySelectorAll<HTMLElement>('[data-shadcn-article-card]').forEach((host) => {
+    const jsonId = host.dataset['layoutJsonId'];
+    if (!jsonId) {
+      return;
+    }
+    const parsed = readPayloadScript(jsonId);
+    if (parsed && 'kind' in parsed) {
+      payloads.push(parsed);
+    }
+  });
+  return payloads;
+}
+
+function TileCarouselSlides({ cards }: { cards: ArticleCardPayload[] }): React.JSX.Element {
+  const packedSlides = React.useMemo(() => packArticleCardSlides(cards), [cards]);
+
+  return (
+    <>
+      {packedSlides.map((slide) => (
+        slide.kind === 'single' ? (
+          <div key={slide.key} className="tile-carousel__cell">
+            <div className="tile-carousel__cell-inner">
+              <ArticleCardView data={slide.payload} />
+            </div>
+          </div>
+        ) : (
+          <div key={slide.key} className="tile-carousel__cell tile-carousel__cell--stack">
+            <div className="tile-carousel__stack">
+              {slide.payloads.map((payload, stackIndex) => (
+                <div key={`${slide.key}-${stackIndex}`} className="tile-carousel__cell-inner">
+                  <ArticleCardView data={payload} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      ))}
+    </>
+  );
+}
+
+export function mountSimilarArticleCarousels(): void {
+  document.querySelectorAll<HTMLElement>('.tile-carousel[data-carousel]').forEach((carousel) => {
+    const track = carousel.querySelector<HTMLElement>('[data-carousel-track]');
+    if (!track || track.dataset['shadcnTileCarouselBound'] === '1') {
+      return;
+    }
+    const payloads = readTileCarouselPayloads(track);
+    if (payloads.length === 0) {
+      return;
+    }
+    track.dataset['shadcnTileCarouselBound'] = '1';
+    let root = layoutRoots.get(track);
+    if (!root) {
+      root = createRoot(track);
+      layoutRoots.set(track, root);
+    }
+    root.render(<TileCarouselSlides cards={payloads} />);
+  });
+}
+
 export function mountShadcnCardLayouts(): void {
   document.querySelectorAll<HTMLElement>('[data-shadcn-card-layout]').forEach((host) => {
     if (host.dataset['shadcnCardLayoutBound'] === '1') {
@@ -2575,6 +2693,9 @@ export function mountShadcnCardLayouts(): void {
 
 export function mountShadcnArticleCards(): void {
   document.querySelectorAll<HTMLElement>('[data-shadcn-article-card]').forEach((host) => {
+    if (host.closest('[data-shadcn-tile-carousel-bound="1"]')) {
+      return;
+    }
     if (host.dataset['shadcnArticleCardBound'] === '1') {
       return;
     }

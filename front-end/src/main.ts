@@ -8,7 +8,7 @@ import { TaxonomyChipWidgetComponent } from './app/taxonomy-chip-widget.componen
 import { appMaterialDialogDefaults } from './app/dialog-defaults';
 import { mountShadcnAuthDialogBridge, type AuthTab } from './app/auth-dialog-shadcn';
 import { mountShadcnBreadcrumbs } from './app/shadcn-breadcrumb';
-import { mountShadcnArticleCards, mountShadcnCardLayouts } from './app/shadcn-card-layout';
+import { mountShadcnArticleCards, mountShadcnCardLayouts, mountSimilarArticleCarousels } from './app/shadcn-card-layout';
 import { mountShadcnTaxonomySiteNav } from './app/shadcn-taxonomy-site-nav';
 import { mountShadcnBrokerTable } from './app/shadcn-broker-data-table';
 import { mountShadcnProfileArticlesTable } from './app/shadcn-profile-articles-table';
@@ -30,6 +30,7 @@ declare global {
     showMaterialAuthDialog?: (initialTab: 'login' | 'signup') => void;
     mountShadcnCardLayouts?: () => void;
     mountShadcnArticleCards?: () => void;
+    mountSimilarArticleCarousels?: () => void;
     mountShadcnBreadcrumbs?: () => void;
     mountShadcnTaxonomySiteNav?: () => void;
     mountShadcnBrokerTable?: () => void;
@@ -93,6 +94,7 @@ createApplication({
     window.mountTaxonomyChipWidgets = mountTaxonomyChipWidgets;
     window.mountShadcnCardLayouts = mountShadcnCardLayouts;
     window.mountShadcnArticleCards = mountShadcnArticleCards;
+    window.mountSimilarArticleCarousels = mountSimilarArticleCarousels;
     window.mountShadcnBreadcrumbs = mountShadcnBreadcrumbs;
     window.mountShadcnTaxonomySiteNav = mountShadcnTaxonomySiteNav;
     window.mountShadcnBrokerTable = mountShadcnBrokerTable;
@@ -136,6 +138,7 @@ createApplication({
     mountTaxonomyChipWidgets();
     mountShadcnTaxonomySiteNav();
     mountShadcnCardLayouts();
+    mountSimilarArticleCarousels();
     mountShadcnArticleCards();
     mountShadcnBreadcrumbs();
     mountShadcnBrokerTable();

@@ -365,6 +365,9 @@
         if (window.mountShadcnCardLayouts && typeof window.mountShadcnCardLayouts === "function") {
             window.mountShadcnCardLayouts();
         }
+        if (window.mountSimilarArticleCarousels && typeof window.mountSimilarArticleCarousels === "function") {
+            window.mountSimilarArticleCarousels();
+        }
         if (window.mountShadcnArticleCards && typeof window.mountShadcnArticleCards === "function") {
             window.mountShadcnArticleCards();
         }

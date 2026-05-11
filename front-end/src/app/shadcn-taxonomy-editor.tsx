@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { motion } from 'framer-motion';
 import Autoplay from 'embla-carousel-autoplay';
 
 import { useEditor, EditorContent, ReactNodeViewRenderer, NodeViewWrapper, type Editor, type ReactNodeViewProps } from '@tiptap/react';
@@ -20,6 +19,12 @@ import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popove
 import { RteToolbar, TABLE_EXTENSIONS } from '../components/ui/rte-editor';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '../components/ui/carousel';
 import { FlexibleBentoGrid, bentoColSpanMap, bentoRowSpanMap, type BentoFeature } from '../components/ui/bento-grid';
+import {
+  hasCarouselCardImage,
+  packCarouselSlides,
+  type CarouselCardViewModel,
+  type CarouselPackedSlide,
+} from './carousel-slide-packing';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -241,24 +246,20 @@ function ArticleSearchInput({ value, onChange, searchUrl, placeholder = 'Search 
 
 // ─── Carousel Article Card ────────────────────────────────────────────────────
 
-function CarouselCard({ imageUrl, tags, title, excerpt, url, authorName, publishedAt }: {
-  imageUrl?: string | null;
-  tags?: string[] | null;
-  title: string;
-  excerpt?: string | null;
-  url?: string | null;
-  authorName?: string | null;
-  publishedAt?: string | null;
-}) {
+function CarouselCard({ imageUrl, tags, title, excerpt, url, authorName, publishedAt }: CarouselCardViewModel) {
   const publishedLabel = publishedAt?.trim() || '';
+  const imageless = !hasCarouselCardImage({ imageUrl });
   const inner = (
-    <Card className={cn('carousel-article-card', url && 'carousel-article-card--link')}>
-      <div className="carousel-article-card__media">
-        {imageUrl
-          ? <img src={imageUrl} alt={title} className="carousel-article-card__img" />
-          : <div className="carousel-article-card__img-placeholder" aria-hidden="true" />
-        }
-      </div>
+    <Card className={cn(
+      'carousel-article-card',
+      imageless && 'carousel-article-card--imageless',
+      url && 'carousel-article-card--link',
+    )}>
+      {!imageless ? (
+        <div className="carousel-article-card__media">
+          <img src={imageUrl ?? ''} alt={title} className="carousel-article-card__img" />
+        </div>
+      ) : null}
       <CardContent className="carousel-article-card__body">
         {(tags ?? []).length > 0 ? (
           <div className="carousel-article-card__tags">
@@ -285,6 +286,71 @@ function CarouselCard({ imageUrl, tags, title, excerpt, url, authorName, publish
   return url
     ? <a href={url} className="carousel-article-card__anchor">{inner}</a>
     : inner;
+}
+
+function resolveCarouselSlotViewModel(
+  slot: CarouselSlot,
+  index: number,
+  resolvedRandom: Record<string, ArticleResult | null>,
+  context: 'editor' | 'readonly',
+): CarouselCardViewModel | null {
+  const preview = resolvedRandom[slot.id];
+  if (context === 'readonly' && slot.mode !== 'specific' && !preview) {
+    return null;
+  }
+  const fallbackTitle = context === 'editor'
+    ? `Slot ${index + 1}`
+    : `Article ${index + 1}`;
+  const title = slot.mode === 'specific'
+    ? (slot.articleTitle ?? preview?.title ?? fallbackTitle)
+    : preview?.title ?? (slot.mode === 'priority'
+      ? (context === 'editor' ? 'Priority article' : `Priority article ${index + 1}`)
+      : (context === 'editor' ? 'Random article' : fallbackTitle));
+
+  return {
+    key: slot.id,
+    imageUrl: slot.mode === 'specific'
+      ? slot.articleImageUrl ?? preview?.imageUrl ?? null
+      : preview?.imageUrl ?? null,
+    tags: slot.mode === 'specific'
+      ? slot.articleTags ?? preview?.tags ?? []
+      : preview?.tags ?? [],
+    title,
+    excerpt: slot.mode === 'specific'
+      ? slot.articleExcerpt ?? preview?.excerpt
+      : preview?.excerpt,
+    url: slot.mode === 'specific'
+      ? slot.articleUrl ?? preview?.url
+      : preview?.url,
+    authorName: slot.mode === 'specific'
+      ? slot.authorName ?? preview?.authorName
+      : preview?.authorName,
+    publishedAt: slot.mode === 'specific'
+      ? slot.publishedAt ?? preview?.publishedAt
+      : preview?.publishedAt,
+  };
+}
+
+function renderPackedTaxonomyCarouselSlide(
+  slide: CarouselPackedSlide,
+  itemClassName: string,
+): React.ReactNode {
+  if (slide.kind === 'single') {
+    return (
+      <CarouselItem key={slide.key} className={cn(itemClassName, 'carousel-slides__item')}>
+        <CarouselCard {...slide.card} />
+      </CarouselItem>
+    );
+  }
+
+  return (
+    <CarouselItem key={slide.key} className={cn(itemClassName, 'carousel-slides__item', 'carousel-slides__item--stack')}>
+      <div className="carousel-slides__stack">
+        <CarouselCard {...slide.cards[0]} />
+        <CarouselCard {...slide.cards[1]} />
+      </div>
+    </CarouselItem>
+  );
 }
 
 // ─── Wagtail inline image node (Tiptap) ──────────────────────────────────────
@@ -632,6 +698,14 @@ function CarouselEditor({ block, searchUrl, termId, onChange }: {
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const resolvedRandom = useResolvedCarouselPreviews(block.cards, termId);
   const infiniteScroll = Boolean(block.infiniteScroll);
+  const packedSlides = React.useMemo(
+    () => packCarouselSlides(
+      block.cards
+        .map((slot, index) => resolveCarouselSlotViewModel(slot, index, resolvedRandom, 'editor'))
+        .filter((card): card is CarouselCardViewModel => card !== null),
+    ),
+    [block.cards, resolvedRandom],
+  );
 
   function addSlot() {
     onChange({ ...block, cards: [...block.cards, { id: uid(), mode: 'random', articleId: null, articleTitle: null }] });
@@ -722,47 +796,7 @@ function CarouselEditor({ block, searchUrl, termId, onChange }: {
           plugins={carouselAutoplayPlugins(infiniteScroll)}
         >
           <CarouselContent>
-            {block.cards.map((slot, i) => (
-              <CarouselItem key={slot.id} className="scn-carousel-editor__preview-item">
-                <CarouselCard
-                  imageUrl={
-                    slot.mode === 'specific'
-                      ? slot.articleImageUrl ?? resolvedRandom[slot.id]?.imageUrl ?? null
-                      : resolvedRandom[slot.id]?.imageUrl ?? null
-                  }
-                  tags={
-                    slot.mode === 'specific'
-                      ? slot.articleTags ?? resolvedRandom[slot.id]?.tags ?? []
-                      : resolvedRandom[slot.id]?.tags ?? []
-                  }
-                  title={
-                    slot.mode === 'specific'
-                      ? (slot.articleTitle ?? resolvedRandom[slot.id]?.title ?? `Slot ${i + 1}`)
-                      : resolvedRandom[slot.id]?.title ?? (slot.mode === 'priority' ? 'Priority article' : 'Random article')
-                  }
-                  excerpt={
-                    slot.mode === 'specific'
-                      ? slot.articleExcerpt ?? resolvedRandom[slot.id]?.excerpt
-                      : resolvedRandom[slot.id]?.excerpt
-                  }
-                  url={
-                    slot.mode === 'specific'
-                      ? slot.articleUrl ?? resolvedRandom[slot.id]?.url
-                      : resolvedRandom[slot.id]?.url
-                  }
-                  authorName={
-                    slot.mode === 'specific'
-                      ? slot.authorName ?? resolvedRandom[slot.id]?.authorName
-                      : resolvedRandom[slot.id]?.authorName
-                  }
-                  publishedAt={
-                    slot.mode === 'specific'
-                      ? slot.publishedAt ?? resolvedRandom[slot.id]?.publishedAt
-                      : resolvedRandom[slot.id]?.publishedAt
-                  }
-                />
-              </CarouselItem>
-            ))}
+            {packedSlides.map((slide) => renderPackedTaxonomyCarouselSlide(slide, 'scn-carousel-editor__preview-item'))}
           </CarouselContent>
           <CarouselPrevious />
           <CarouselNext />
@@ -897,6 +931,14 @@ function ReadOnlyBlock({ block, termId }: { block: TaxonomyBlock; termId: number
 
   if (block.type === 'carousel') {
     const infiniteScroll = Boolean(block.infiniteScroll);
+    const packedSlides = packCarouselSlides(
+      block.cards
+        .map((slot, index) => resolveCarouselSlotViewModel(slot, index, resolvedRandom, 'readonly'))
+        .filter((card): card is CarouselCardViewModel => card !== null),
+    );
+    if (packedSlides.length === 0) {
+      return null;
+    }
     return (
       <div className="scn-taxonomy-content__carousel-wrap">
         <Carousel
@@ -904,47 +946,7 @@ function ReadOnlyBlock({ block, termId }: { block: TaxonomyBlock; termId: number
           plugins={carouselAutoplayPlugins(infiniteScroll)}
         >
           <CarouselContent>
-            {block.cards.map((slot, i) => (
-              <CarouselItem key={slot.id} className="scn-taxonomy-content__carousel-item">
-                <CarouselCard
-                  imageUrl={
-                    slot.mode === 'specific'
-                      ? slot.articleImageUrl ?? resolvedRandom[slot.id]?.imageUrl ?? null
-                      : resolvedRandom[slot.id]?.imageUrl ?? null
-                  }
-                  tags={
-                    slot.mode === 'specific'
-                      ? slot.articleTags ?? resolvedRandom[slot.id]?.tags ?? []
-                      : resolvedRandom[slot.id]?.tags ?? []
-                  }
-                  title={
-                    slot.mode === 'specific'
-                      ? (slot.articleTitle ?? resolvedRandom[slot.id]?.title ?? `Article ${i + 1}`)
-                      : resolvedRandom[slot.id]?.title ?? (slot.mode === 'priority' ? `Priority article ${i + 1}` : `Article ${i + 1}`)
-                  }
-                  excerpt={
-                    slot.mode === 'specific'
-                      ? slot.articleExcerpt ?? resolvedRandom[slot.id]?.excerpt
-                      : resolvedRandom[slot.id]?.excerpt
-                  }
-                  url={
-                    slot.mode === 'specific'
-                      ? slot.articleUrl ?? resolvedRandom[slot.id]?.url
-                      : resolvedRandom[slot.id]?.url
-                  }
-                  authorName={
-                    slot.mode === 'specific'
-                      ? slot.authorName ?? resolvedRandom[slot.id]?.authorName
-                      : resolvedRandom[slot.id]?.authorName
-                  }
-                  publishedAt={
-                    slot.mode === 'specific'
-                      ? slot.publishedAt ?? resolvedRandom[slot.id]?.publishedAt
-                      : resolvedRandom[slot.id]?.publishedAt
-                  }
-                />
-              </CarouselItem>
-            ))}
+            {packedSlides.map((slide) => renderPackedTaxonomyCarouselSlide(slide, 'scn-taxonomy-content__carousel-item'))}
           </CarouselContent>
           <CarouselPrevious />
           <CarouselNext />
