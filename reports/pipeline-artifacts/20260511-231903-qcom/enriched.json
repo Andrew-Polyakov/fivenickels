@@ -1,0 +1,81 @@
+{
+  "asOfUtc": "2026-05-11T19:19:05.0739325Z",
+  "mode": "news",
+  "tickers": [
+    {
+      "symbol": "QCOM",
+      "lastPrice": 236.455,
+      "previousClose": 219.195,
+      "dayVolume": 1143565,
+      "percentChange": 7.874267205000114,
+      "alpacNews": [
+        {
+          "headline": "Elon Musk and Tim Cook Join Trump's China Trip, Nvidia CEO Left Out",
+          "createdAtUtc": "2026-05-11T18:34:51Z",
+          "summary": "Reuters reports that Elon Musk and Tim Cook will join President Trump on his trip to China, while Nvidia CEO Jensen Huang is not invited.",
+          "content": "The US-China tech rivalry takes center stage as several top corporate leaders, including Elon Musk and Tim Cook, are set to join President Donald Trump on his upcoming trip to China. Notably absent from the list of invitees is Nvidia's Jensen Huang, whose company has been at the forefront of AI chip exports to China.",
+          "source": "benzinga",
+          "url": "https://www.benzinga.com/news/politics/26/05/52463767/elon-musk-joins-trumps-china-trip-nvidia-ceo-jensen-huang-not-invited",
+          "symbols": [
+            "AAPL",
+            "BA",
+            "BLK",
+            "BX",
+            "CSCO",
+            "GE",
+            "MA",
+            "MU",
+            "NVDA",
+            "QCOM",
+            "TSLA",
+            "V"
+          ],
+          "tags": [
+            "trump",
+            "china",
+            "nvidia",
+            "elon-musk"
+          ],
+          "section_slug": "market-news",
+          "seo_title": "Trump's China Trip: Elon Musk and Tim Cook Attend, Nvidia CEO Left Out",
+          "seo_description": "President Trump's upcoming trip to China has sparked interest among corporate leaders, with several top executives set to join him. However, Nvidia's Jensen Huang is not on the list of invitees."
+        },
+        {
+          "headline": "SanDisk's AI Storage Boom Ignites ETF Frenzy",
+          "createdAtUtc": "2026-05-11T18:26:51Z",
+          "summary": "Leveraged ETFs tied to SanDisk's explosive rally are soaring, driven by growing investor appetite for AI storage exposure.",
+          "content": "The rapid rise in SanDisk Corp's stock is spilling over into the ETF market, with leveraged funds linked to the AI storage play experiencing significant gains. The standout performer has been Tradr 2X Long SNDK Daily ETF (BATS: SNXX), which has surged nearly 640% since its debut, outperforming the already blistering rise in SanDisk shares.",
+          "source": "benzinga",
+          "url": "https://www.benzinga.com/etfs/specialty-etfs/26/05/52463441/sandisks-breakout-turned-this-etf-640-rocket-just-over-3-months",
+          "symbols": [
+            "MU",
+            "QCOM",
+            "SNDK",
+            "SNDU",
+            "SNXX",
+            "STX",
+            "WDC"
+          ],
+          "tags": [
+            "ai",
+            "storage",
+            "leveraged-etfs"
+          ],
+          "section_slug": "market-news",
+          "seo_title": "SanDisk's AI Storage Boom Fuels ETF Frenzy",
+          "seo_description": "Leveraged ETFs tied to SanDisk's explosive rally are soaring, driven by growing investor appetite for AI storage exposure.",
+          "catalyst": "Bullish"
+        }
+      ],
+      "webHints": [],
+      "note": "Add web search lines in webHints; aggregate catalyst in the .md report."
+    }
+  ],
+  "ollama_enrichment": {
+    "model": "llama3.1:latest",
+    "base_url": "http://127.0.0.1:11434",
+    "total_articles": 2,
+    "enriched": 2,
+    "failed": 0
+  }
+}

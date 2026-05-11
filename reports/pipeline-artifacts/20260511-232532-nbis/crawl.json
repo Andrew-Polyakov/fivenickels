@@ -1,0 +1,45 @@
+{
+  "asOfUtc": "2026-05-11T19:25:33.8638597Z",
+  "mode": "news",
+  "tickers": [
+    {
+      "symbol": "NBIS",
+      "lastPrice": 186.89,
+      "previousClose": 176.94,
+      "dayVolume": 488447,
+      "percentChange": 5.623375155419916355826833955,
+      "alpacNews": [
+        {
+          "headline": "Nebius Stock Is Jumping: What\u0027s Behind the Surge?",
+          "createdAtUtc": "2026-05-11T18:17:34Z",
+          "summary": "Nebius Group shares are moving higher Monday after BofA Securities reiterated its Buy rating and raised its price target from $175 to $205.",
+          "content": "Nebius Group NV (NASDAQ: NBIS ) shares are moving higher on Monday after BofA Securities reiterated its Buy rating and raised its price target from $175 to $205. Here\u2019s what you should know . Nebius Group stock is surging to new heights today. Why are NBIS shares rallying The Catalyst Is Simple: A Bigger Target And A Friendly Tape B of A Securities analyst Tal Liani reiterated a Buy rating and raised its price target to $205 in a note published Monday morning. The rating acts as reinforcement. When a high-momentum name is already acting well, a bullish revision can become the match that keeps the trend crowd engaged. The broader market backdrop helped, too. Nebius outperformed a green screen with the Nasdaq (QQQ) up 0.44% and the Technology sector (XLK) up 1.45%, while breadth was only slightly positive. In other words, this wasn\u0027t a universal melt-up. Tech leadership was doing the heavy lifting, and Nebius has been trading like the kind of stock that thrives when leadership is concentrated. NBIS Versus The Tape: Extended, Not Broken Technically, the setup is stretched but still constructive. NBIS is trading 18.1% above its 20-day SMA ($160.27) and 46.1% above its 50-day SMA ($129.59), with the 20-day SMA above the 50-day SMA and the 50-day SMA above the 200-day SMA ($102.07). That\u0027s the market\u0027s way of saying the trend is intact across timeframes, even if the stock isn\u0027t exactly cheap in \u0022distance from support\u0022 terms. With the current price near the top of its 52-week range ($27.20 low to $197.89 high), the message has been consistent: dips are being treated as entries, not warnings. Momentum indicators back that up: MACD is above its signal line and the histogram is positive, suggesting upside pressure is improving versus the prior downswing even if price chops around near the highs. Key levels remain straightforward: Key Resistance : $197.89 \u2014 the 52-week high zone that can act as an overhead supply level Key Support : $160.27 \u2014 aligns with the 20-day SMA, a common \u0022first support\u0022 in strong uptrends May 13, 2026 Is The Next Reality Check The next hard catalyst is earnings on May 13, 2026. Expectations are doing what momentum stories usually demand: they\u0027re stretching. The EPS estimate calls for a loss of 73 cents, down from a loss of 39 cents year over year. Revenue is projected at $374.23 million, up from $55.30 million year over year. That combination of deepening losses alongside explosive top-line growth keeps the debate centered on scaling and future operating leverage, not current profitability. Valuation underscores the market\u0027s posture. A P/E of 4426.3x doesn\u0027t whisper \u0022margin of safety\u0022; it shouts \u0022execution required.\u0022 That\u0027s fine when the tape is rewarding AI capacity stories, but it also means any wobble, especially around earnings, can get amplified. Benzinga Edge Scorecard: Momentum Wins, Value Loses On the Benzinga Edge scorecard, the factor picture matches the narrative traders are already living. Momentum is Bullish with a score of 98.76, reflecting strong outperformance and repeated pushes toward new highs. Value is Bearish with a score of 1.83, a reminder that the market is paying up for growth and AI/HPC exposure, and leaving little room for disappointment if expectations cool. As long as Nebius holds trend support, momentum can keep doing the heavy lifting. But when \u0022value\u0022 looks like this, the stock doesn\u0027t need bad news to fall, it just needs less-good news. NBIS Shares Are On The Rise NBIS Price Action: Nebius shares were up 6.92% at $189.31 at the time of publication on Monday. The stock is approaching its 52-week high of $197.89, according to Benzinga Pro . Read Also: Dow Edges Higher; Mosaic Shares Fall After Q1 Results Image: Shutterstock",
+          "source": "benzinga",
+          "url": "https://www.benzinga.com/trading-ideas/movers/26/05/52463046/nebius-stock-is-jumping-whats-behind-the-surge",
+          "symbols": [
+            "NBIS"
+          ],
+          "tags": [
+            "NBIS",
+            "benzinga"
+          ]
+        },
+        {
+          "headline": "B of A Securities Maintains Buy on Nebius Group, Raises Price Target to $205",
+          "createdAtUtc": "2026-05-11T11:37:07Z",
+          "source": "benzinga",
+          "url": "https://www.benzinga.com/news/26/05/52443676/b-of-a-securities-maintains-buy-on-nebius-group-raises-price-target-to-205",
+          "symbols": [
+            "NBIS"
+          ],
+          "tags": [
+            "NBIS",
+            "benzinga"
+          ]
+        }
+      ],
+      "webHints": [],
+      "note": "Add web search lines in webHints; aggregate catalyst in the .md report."
+    }
+  ]
+}

@@ -21,6 +21,7 @@ from wagtail.models import Site
 
 from home.alpaca_to_streamfield import truncate_title
 from home.models import ContentTag, HomePage, TaggedContentPage, TaxonomyTerm
+from home.taxonomy import ensure_taxonomy_term, resolve_import_section_slug
 
 
 def _safe_http_url(url: str | None) -> str | None:
@@ -139,13 +140,12 @@ def build_markdown_body(
 
 
 def _resolve_section_term(section_slug: str | None) -> TaxonomyTerm:
-    slug = (section_slug or settings.ARTICLE_SUBMIT_DEFAULT_SECTION_SLUG or "").strip()
+    slug = resolve_import_section_slug(
+        section_slug or settings.ARTICLE_SUBMIT_DEFAULT_SECTION_SLUG
+    )
     if not slug:
         raise ValueError("section_slug is required and no default is configured.")
-    term = TaxonomyTerm.objects.filter(slug=slug).first()
-    if term is None:
-        raise ValueError(f"No TaxonomyTerm with slug={slug!r}.")
-    return term
+    return ensure_taxonomy_term(slug)
 
 
 def _resolve_submit_user():

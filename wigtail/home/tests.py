@@ -1274,9 +1274,14 @@ class CardSourcePropertiesTests(WagtailPageTestCase):
     def test_serialized_article_card_contains_metadata(self):
         self.page_high.author_name = "Custom Desk"
         self.page_high.save_revision().publish()
+        TaggedContentPage.objects.filter(pk=self.page_high.pk).update(
+            catalyst=TaggedContentPage.CATALYST_BULLISH,
+        )
+        self.page_high.refresh_from_db()
         payload = serialize_article_card_for_related(self.page_high, None)
         self.assertEqual(payload.get("kind"), "article")
         self.assertEqual(payload.get("authorName"), "Custom Desk")
+        self.assertEqual(payload.get("catalyst"), "Bullish")
         self.assertIsInstance(payload.get("tags"), list)
         self.assertLessEqual(len(payload.get("tags") or []), 3)
         self.assertTrue(payload.get("publishedAt"))

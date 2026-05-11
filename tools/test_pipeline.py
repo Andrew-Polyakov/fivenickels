@@ -1,3 +1,4 @@
+
 """Tests for tools/pipeline.py and article_submit_lib.py."""
 
 from __future__ import annotations
@@ -26,7 +27,33 @@ def _load_pipeline_module():
     return module
 
 
+def _load_rewrite_news_module():
+    spec = importlib.util.spec_from_file_location("rewriteNews", _TOOLS_DIR / "rewriteNews.py")
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
 class ArticleSubmitLibTests(unittest.TestCase):
+    def test_bootstrap_submit_env_exports_token(self):
+        with mock.patch.object(lib, "load_repo_env", return_value=None), mock.patch.dict(
+            os.environ,
+            {
+                "ARTICLE_SUBMIT_BEARER_TOKEN": "secret-token",
+                "WIGTAIL_ARTICLE_SUBMIT_URL": "http://127.0.0.1:8000/api/articles/auto-submit/",
+                "ARTICLE_SUBMIT_DEFAULT_SECTION_SLUG": "information-technology",
+            },
+            clear=True,
+        ):
+            config = lib.bootstrap_submit_env()
+        self.assertEqual(config.token, "secret-token")
+        self.assertEqual(
+            config.endpoint,
+            "http://127.0.0.1:8000/api/articles/auto-submit/",
+        )
+        self.assertEqual(config.section_slug, "information-technology")
+
     def test_normalize_symbols_dedupes_and_splits(self):
         self.assertEqual(lib.normalize_symbols(["nvda", "NVDA", "tsm,spy"]), ["NVDA", "TSM", "SPY"])
 
@@ -152,6 +179,7 @@ class PipelineMainTests(unittest.TestCase):
             ollama_retries=2,
             ollama_retry_delay=1.5,
             section_slug="information-technology",
+            prompts_file=None,
         )
         self.assertIn("enrich-articles-ollama.py", command[1])
         self.assertIn("--ollama-model", command)
@@ -160,6 +188,20 @@ class PipelineMainTests(unittest.TestCase):
         self.assertIn("1.5", command)
         self.assertIn("--section-slug", command)
         self.assertIn("information-technology", command)
+
+        prompts_command = pipeline._enrich_command(
+            input_path=Path("in.json"),
+            output_path=Path("out.json"),
+            ollama_base_url=None,
+            ollama_model=None,
+            ollama_timeout=120.0,
+            ollama_retries=1,
+            ollama_retry_delay=1.0,
+            section_slug=None,
+            prompts_file="config/ollama-enrichment-prompts.json",
+        )
+        self.assertIn("--prompts-file", prompts_command)
+        self.assertIn("config/ollama-enrichment-prompts.json", prompts_command)
 
     def test_main_passes_retry_delay_to_enrich(self):
         with mock.patch.object(self.pipeline, "_run_crawl", return_value=0), mock.patch.object(
@@ -190,6 +232,20 @@ class PipelineMainTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         mock_enrich.assert_called_once()
         self.assertEqual(mock_enrich.call_args.kwargs["ollama_retry_delay"], 2.75)
+
+
+class RewriteNewsTests(unittest.TestCase):
+    def test_main_enables_ollama_enrichment(self):
+        rewrite_news = _load_rewrite_news_module()
+        with mock.patch.object(rewrite_news.lib, "bootstrap_submit_env", return_value=lib.SubmitConfig(
+            endpoint="http://127.0.0.1:8000/api/articles/auto-submit/",
+            token="secret-token",
+            section_slug=None,
+            timeout=60.0,
+        )), mock.patch.object(rewrite_news.pipeline, "main", return_value=0) as mock_main:
+            exit_code = rewrite_news.main(["--dry-run", "NVDA"])
+        self.assertEqual(exit_code, 0)
+        mock_main.assert_called_once_with(["--enrich-ollama", "--dry-run", "NVDA"])
 
 
 class SubmitArticleCliTests(unittest.TestCase):

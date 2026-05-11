@@ -1,0 +1,81 @@
+{
+  "asOfUtc": "2026-05-11T19:19:05.0739325Z",
+  "mode": "news",
+  "tickers": [
+    {
+      "symbol": "QCOM",
+      "lastPrice": 236.455,
+      "previousClose": 219.195,
+      "dayVolume": 1143565,
+      "percentChange": 7.8742672050001140536964803029,
+      "alpacNews": [
+        {
+          "headline": "Elon Musk Joins Trump\u0027s China Trip \u2014 Nvidia CEO Jensen Huang Not Invited",
+          "createdAtUtc": "2026-05-11T18:34:51Z",
+          "summary": "Reuters reports Elon Musk and Tim Cook will join Trump on his China trip, while Nvidia\u0026#39;s Jensen Huang was not invited.",
+          "content": "SpaceX and Tesla Inc. (NASDAQ: TSLA ) CEO Elon Musk will join President Donald Trump on his trip to China this week, while NVIDIA Corp. (NASDAQ: NVDA ) CEO Jensen Huang was not invited, according to a Reuters report citing a White House official. TSLA stock is moving. See the chart and price action here. Reuters reported the delegation includes a long list of corporate heavyweights, including: Apple Inc. (NASDAQ: AAPL ) CEO Tim Cook GE Aerospace (NYSE: GE ) CEO Larry Culp Boeing Co. (NYSE: BA ) CEO Kelly Ortberg BlackRock Inc. (NYSE: BLK ) CEO Larry Fink Blackstone Inc. (NYSE: BX ) CEO Stephen Schwarzman Cisco Systems Inc. (NASDAQ: CSCO ) CEO Chuck Robbins Micron Technology (NASDAQ: MU ) CEO Sanjay Mehrotra Mastercard Inc. (NYSE: MA ) CEO Michael Miebach Qualcomm Inc. (NASDAQ: QCOM ) CEO Cristiano Amon Visa Inc. (NYSE: V ) CEO Ryan McInerney Huang\u0027s absence stands out given Nvidia\u0027s central role in the U.S.-China technology fight. Trump has developed a strong relationship with the Nvidia chief and previously agreed to allow the company\u0027s H200 artificial intelligence chips to be exported to China. However, Commerce Secretary Howard Lutnick said in April that the chips had not yet been sold due to difficulties with Chinese companies receiving approval from Beijing. Boeing in Focus A source told Reuters the White House was focusing more on agriculture and commercial aviation for the current trip, including potential Boeing aircraft orders. Ortberg told Reuters in April that Boeing was counting on the Trump administration to help secure a long-awaited major aircraft order from China. China and Boeing have reportedly been in talks over a deal that could include 500 737 MAX jets and dozens of widebody aircraft powered by GE engines. Such an agreement would mark China\u0027s first major Boeing order since 2017 and could become the largest airplane order in history. Trump\u0027s Trips Can Create Winners and Losers Trump\u0027s May 2025 trip to the United Arab Emirates showed why corporate leaders may be reluctant to sit out high-profile presidential visits. Several executives, including Huang, joined Trump on that trip, which resulted in roughly $200 billion in deals announced between the two countries. Nvidia was viewed as one of the potential winners after the United Arab Emirates requested 500,000 advanced AI chips from the company annually. Apple\u0027s CEO was invited to the UAE trip, but Cook declined. According to 9to5Mac, that decision may have strained his relationship with Trump. \u0022Tim Cook isn\u0027t here, but you are,\u0022 Trump said during a speech, praising Huang for attending. Shortly after Cook skipped the trip, Trump threatened a 25% tariff on Apple iPhones not made in the U.S., a move viewed as potentially retaliatory. The episode underscored the risks for executives who pass on presidential trade trips, especially when policy decisions, tariffs and major international deals are on the table. For Nvidia, the lack of an invite could raise questions about where AI chip exports stand in the broader U.S.-China negotiations, even as Musk, Cook and other executives get a seat at the table. Read Also: Why Silver, Power And Chemicals Will Be The Next Micron Trade, Top AI Expert Says Photo: Rawpixel .com / Shutterstock",
+          "source": "benzinga",
+          "url": "https://www.benzinga.com/news/politics/26/05/52463767/elon-musk-joins-trumps-china-trip-nvidia-ceo-jensen-huang-not-invited",
+          "symbols": [
+            "AAPL",
+            "BA",
+            "BLK",
+            "BX",
+            "CSCO",
+            "GE",
+            "MA",
+            "MU",
+            "NVDA",
+            "QCOM",
+            "TSLA",
+            "V"
+          ],
+          "tags": [
+            "AAPL",
+            "BA",
+            "BLK",
+            "BX",
+            "CSCO",
+            "GE",
+            "MA",
+            "MU",
+            "NVDA",
+            "QCOM",
+            "TSLA",
+            "V",
+            "benzinga"
+          ]
+        },
+        {
+          "headline": "SanDisk\u0027s Breakout Turned This ETF Into A 640% Rocket In Just Over 3 Months",
+          "createdAtUtc": "2026-05-11T18:26:51Z",
+          "summary": "SanDisk-linked ETFs are soaring amid the AI storage boom, with leveraged fund SNXX up more than 640% since launch.",
+          "content": "The explosive rally in SanDisk Corp (NASDAQ: SNDK ) is rapidly spilling over into the ETF market , where leveraged funds tied to the AI storage play are turning into some of Wall Street\u0027s most volatile momentum trades. The standout has been Tradr 2X Long SNDK Daily ETF (BATS: SNXX ) , which has surged nearly 640% since its late-January debut. The fund climbed dramatically outperforming the already blistering rise in SanDisk shares. Meanwhile, T-REX 2X Long SNDK Daily Target ETF (BATS: SNDU ) , launched in March, has gained roughly 370% in just a few months, underscoring growing investor appetite for leveraged exposure to one of the market\u0027s hottest AI infrastructure trades. AI Storage Boom Powers SanDisk Frenzy The gains come as SanDisk continues to dominate the narrative on AI memory and storage. The stock has soared more than 4,000% since its February 2025 spin-off from Western Digital Corp (NASDAQ: WDC ) , making it one of the most dramatic winners of the AI era. The rally is increasingly drawing comparisons to prior speculative technology booms. Investor Michael Burry recently warned on X that the move appears \u0022more extreme\u0022 than the late-1990s dot-com bubble, noting that SanDisk\u0027s gains have eclipsed even the historic run in Qualcomm Inc (NASDAQ: QCOM ) during the internet frenzy. Read Also: Chip Frenzy Hits Dot-Com Extremes As Record ETF Flows Shrug Off Michael Burry\u0027s Short Bets At the same time, short interest in SanDisk has climbed from 8.06 million shares to 9.75 million shares, representing more than 10% of the public float, suggesting some traders are betting the rally may be overheating. Tight NAND Supply Adds Fuel To The Trade Bullish sentiment around AI infrastructure remains powerful, particularly in the storage segment. SanDisk recently reported third-quarter revenue of $5.95 billion, up 251% year over year, while Evercore ISI analyst Amit Daryanani highlighted the company\u0027s roughly 80% gross margins and ongoing tightness in NAND supply that could persist through 2028. CNBC\u0027s Jim Cramer also recently pointed to favorable industry dynamics benefiting storage firms including Micron Technology (NASDAQ: MU ) , SanDisk, Western Digital and Seagate Technology Holdings (NASDAQ: STX ) . According to Cramer, years of weak profitability discouraged aggressive capacity expansion before the AI boom arrived, leaving the industry with constrained supply just as hyperscaler demand accelerated. Leveraged ETFs Become The New AI Momentum Trade The SanDisk-linked rally is also highlighting a broader shift in ETF trading behavior, where investors are increasingly seeking amplified exposure to niche AI winners rather than relying solely on diversified semiconductor funds. The phenomenon mirrors earlier waves of speculative enthusiasm seen in leveraged ETFs tied to mega-cap AI and crypto-related stocks. However, SanDisk-linked products may represent one of the clearest examples yet of single-stock ETF momentum feeding off an already parabolic equity rally. For now, the AI storage trade remains one of Wall Street\u0027s most crowded bullish bets, and leveraged ETF traders appear focused on riding the momentum higher. Read Also: Bitcoin ETFs Just Had Their Biggest Buying Wave Of 2026 Image: Shutterstock",
+          "source": "benzinga",
+          "url": "https://www.benzinga.com/etfs/specialty-etfs/26/05/52463441/sandisks-breakout-turned-this-etf-640-rocket-just-over-3-months",
+          "symbols": [
+            "MU",
+            "QCOM",
+            "SNDK",
+            "SNDU",
+            "SNXX",
+            "STX",
+            "WDC"
+          ],
+          "tags": [
+            "MU",
+            "QCOM",
+            "SNDK",
+            "SNDU",
+            "SNXX",
+            "STX",
+            "WDC",
+            "benzinga"
+          ]
+        }
+      ],
+      "webHints": [],
+      "note": "Add web search lines in webHints; aggregate catalyst in the .md report."
+    }
+  ]
+}

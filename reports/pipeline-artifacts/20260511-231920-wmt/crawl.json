@@ -1,0 +1,16 @@
+{
+  "asOfUtc": "2026-05-11T19:19:22.7133161Z",
+  "mode": "news",
+  "tickers": [
+    {
+      "symbol": "WMT",
+      "lastPrice": 126.85,
+      "previousClose": 130.4,
+      "dayVolume": 591380,
+      "percentChange": -2.7223926380368098159509202454,
+      "alpacNews": [],
+      "webHints": [],
+      "note": "Add web search lines in webHints; aggregate catalyst in the .md report."
+    }
+  ]
+}

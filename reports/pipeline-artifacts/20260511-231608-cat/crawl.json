@@ -1,0 +1,70 @@
+{
+  "asOfUtc": "2026-05-11T19:16:10.2444322Z",
+  "mode": "news",
+  "tickers": [
+    {
+      "symbol": "CAT",
+      "lastPrice": 923.56,
+      "previousClose": 897.035,
+      "dayVolume": 136501,
+      "percentChange": 2.9569637751035355365175271868,
+      "alpacNews": [
+        {
+          "headline": "Why Silver, Power And Chemicals Will Be The Next Micron Trade, Top AI Expert Says",
+          "createdAtUtc": "2026-05-11T16:09:24Z",
+          "summary": "Wall Street has rarely been louder with bubble warnings on the AI trade after the parabolic moves we\u2019ve recently seen in semiconductors like Micron Technologies Inc. (NASDAQ:MU",
+          "content": "Wall Street has rarely been louder with bubble warnings on the AI trade after the parabolic moves we\u2019ve recently seen in semiconductors like Micron Technologies Inc. (NASDAQ: MU ) or Sandisk Corp. (NASDAQ: SNDK ) But Jordi Visser , head of AI Macro Nexus Research at 22V Research, believes investors obsessing over speculative excess may be misreading the cycle entirely. Now he is telling them which part of the AI trade is about to take the baton. The AI buildout is moving into a new phase, one where the early-cycle semiconductor winners hand off to the late-cycle physical bottlenecks: power, chemicals, and silver. Visser is putting his own portfolio behind that view. \u201CI\u2019ve now sold out of two-thirds of my Micron,\u201D Visser said in a video posted on Sunday. \u201CI still think it\u2019s going higher, but I think there\u2019s other bubbles and parabolas I\u2019d rather be involved in.\u201D The AI Cycle Has A New Map Visser\u0027s framework breaks the AI economy into five layers, with applications and models at the top. Below that sit data infrastructure and chips, and at the base, energy, hardware, and commodities. He calls it the \u0022five-layer AI cake,\u0022 a structure he has used to build thematic portfolios since the agentic phase of AI took off in late November. The opening leg of that cycle, in his telling, belonged to memory, advanced packaging, optical fiber, and racks \u2014 the layers companies hoarded first as compute demand exploded. That phase has now matured. \u201CRight now, my focus has been on the companies in the first three themes because they are early and mid-cycle,\u201D Visser told Benzinga in an email. \u201CHowever, now I believe the bottlenecks for power are going to dominate while inflation picks up, so I am more interested in commodities and chemicals due to being more late cycle in the AI cycle,\u201D he added. Why Silver Could Be The Next Micron Visser has been bullish on silver as a structural input to the AI buildout for months. The metal \u2014 tracked by the iShares Silver Trust (NYSE: SLV ) \u2014 sits near $80 per ounce, down roughly 14% from its peak ahead of Gulf War III in late February but still up more than 140% year-over-year. The recent pullback, in his view, looks like the same setup that preceded the memory rally. \u201CSilver is very attractive to me for the reason I just mentioned from the last cycle,\u201D Visser said in the interview. \u201CSilver has lagged behind this recent run up in DRAM due to its overshoot last year. I think now that we are moving into the late cycle in my work of the AI cycles, I look for it to play catch upm,\u201D he added. The inflation backdrop is the second leg of the thesis. April Consumer Price Index (CPI) lands Tuesday with consensus near 3.7% year-over-year. The 3-month Treasury bill yielded 3.69% on May 8. \u201CThis week we are likely to see CPI YoY be higher than 3m bill yields for the first time since 2023,\u201D Visser said. \u201CI think we see a regime shift towards more inflation investments for the second half of the year.\u201D Negative real rates on cash, in his model, force the rotation. That regime favors silver, gold, and Bitcoin (CRYPTO: BTC ) as core holdings rather than satellites. According to Visser, a Warsh-led Fed will refrain from hiking interest rates. \u201CI do not think it is likely the Fed will raise rates although I do expect the pressure will grow at a time that the Fed is very polarized and dissention in views seems to be very high,\u201D he told Benzinga. Why Power, Why Chemicals Now? Caterpillar Inc . (NYSE: CAT ) closed its most recent quarter with a record $62 billion backlog and guided to power-generation equipment sales tripling by 2030. Sterling Infrastructure Inc. (NASDAQ: STRL ) , Fluence Energy Inc. (NASDAQ: FLNC ) , Vistra Corp. (NYSE: VST ) and Eaton Corp. (NYSE: ETN ) sit in the same trade, along with the broader utilities and transmission grid complex. Chemicals is the layer Visser believes is most underappreciated \u2014 specialty inputs for advanced packaging, optical fiber tubing, batteries and the AI upgrade cycle across autos\u2026",
+          "source": "benzinga",
+          "url": "https://www.benzinga.com/markets/commodities/26/05/52457472/jordi-visser-analysis-aisilver-power-chemicals-next-micron-trade",
+          "symbols": [
+            "AMZN",
+            "BTCUSD",
+            "CAT",
+            "CC",
+            "CDNS",
+            "ETN",
+            "FLNC",
+            "GOOGL",
+            "IGV",
+            "META",
+            "MSFT",
+            "MU",
+            "NVDA",
+            "ORCL",
+            "PLTR",
+            "SLV",
+            "SNDK",
+            "SNPS",
+            "STRL",
+            "VST"
+          ],
+          "tags": [
+            "AMZN",
+            "BTCUSD",
+            "CAT",
+            "CC",
+            "CDNS",
+            "ETN",
+            "FLNC",
+            "GOOGL",
+            "IGV",
+            "META",
+            "MSFT",
+            "MU",
+            "NVDA",
+            "ORCL",
+            "PLTR",
+            "SLV",
+            "SNDK",
+            "SNPS",
+            "STRL",
+            "VST",
+            "benzinga"
+          ]
+        }
+      ],
+      "webHints": [],
+      "note": "Add web search lines in webHints; aggregate catalyst in the .md report."
+    }
+  ]
+}

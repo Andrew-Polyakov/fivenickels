@@ -24,6 +24,8 @@ if str(_TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(_TOOLS_DIR))
 
 import article_submit_lib as lib
+import ollama_enrichment_config as prompt_config
+import taxonomy_catalog as taxonomy
 
 DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434"
 DEFAULT_OLLAMA_MODEL = "vanilj/palmyra-fin-70b-32k:latest"
@@ -51,10 +53,7 @@ def _normalize_tags(value: Any) -> list[str]:
 
 
 def _normalize_slug(value: Any) -> str:
-    slug = _clean_text(value).lower()
-    slug = re.sub(r"[^a-z0-9-]+", "-", slug)
-    slug = re.sub(r"-{2,}", "-", slug).strip("-")
-    return slug[:255]
+    return taxonomy.normalize_section_slug(_clean_text(value))
 
 
 def _normalize_catalyst(value: Any) -> str:
@@ -86,7 +85,12 @@ def _parse_llm_json(raw: str) -> dict[str, Any]:
     return parsed
 
 
-def _article_prompt(news: dict[str, Any], symbol: str) -> tuple[str, str]:
+def _article_prompt(
+    news: dict[str, Any],
+    symbol: str,
+    *,
+    prompts: prompt_config.OllamaEnrichmentPrompts,
+) -> tuple[str, str]:
     source_payload = {
         "symbol": symbol,
         "headline": _clean_text(news.get("headline")),
@@ -97,23 +101,10 @@ def _article_prompt(news: dict[str, Any], symbol: str) -> tuple[str, str]:
         "tags": _normalize_tags(news.get("tags")),
         "symbols": _normalize_tags(news.get("symbols")),
     }
-    system = (
-        "You are a finance news enrichment assistant.\n"
-        "Return strict JSON only with keys:\n"
-        "reworded_title, reworded_summary, reworded_content, tags, "
-        "section_slug, seo_title, seo_description, catalyst_sentiment.\n"
-        "Rules:\n"
-        "1) Rewrite title/summary/content in original meaning but different wording.\n"
-        "2) tags must be a short array (3-8) of lowercase or title-case topic tags.\n"
-        "3) section_slug should be one slug suitable for taxonomy section.\n"
-        "4) seo_title should be concise, max ~60 chars.\n"
-        "5) seo_description should be concise, max ~160 chars.\n"
-        "6) catalyst_sentiment must be exactly one of: bullish, bearish, neutral.\n"
-        "7) Do not include markdown fences or extra keys."
-    )
-    user = (
-        "Enrich this finance article JSON:\n"
-        f"{json.dumps(source_payload, ensure_ascii=True)}"
+    taxonomy_rules = "\n".join(taxonomy.section_prompt_lines())
+    system = prompts.render_system(taxonomy_rules=taxonomy_rules)
+    user = prompts.render_user(
+        article_json=json.dumps(source_payload, ensure_ascii=True),
     )
     return system, user
 
@@ -170,7 +161,7 @@ def _apply_enrichment(
     summary = _clean_text(generated.get("reworded_summary")) or _clean_text(news.get("summary"))
     content = _clean_text(generated.get("reworded_content")) or _clean_text(news.get("content"))
     tags = _normalize_tags(generated.get("tags")) or _normalize_tags(news.get("tags"))
-    section_slug = (
+    section_slug = taxonomy.resolve_section_slug(
         _normalize_slug(generated.get("section_slug"))
         or _normalize_slug(section_override)
         or _normalize_slug(news.get("section_slug"))
@@ -202,6 +193,7 @@ def _enrich_root(
     retries: int,
     retry_delay: float,
     section_override: str | None,
+    prompts: prompt_config.OllamaEnrichmentPrompts,
 ) -> dict[str, Any]:
     total = enriched = failed = 0
     for block in root.get("tickers") or []:
@@ -212,7 +204,7 @@ def _enrich_root(
             if not isinstance(news, dict):
                 continue
             total += 1
-            system_prompt, user_prompt = _article_prompt(news, symbol)
+            system_prompt, user_prompt = _article_prompt(news, symbol, prompts=prompts)
             last_error = ""
             for attempt in range(retries + 1):
                 try:
@@ -289,9 +281,20 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Optional section slug override applied when LLM section is missing.",
     )
+    parser.add_argument(
+        "--prompts-file",
+        default=None,
+        help=(
+            "JSON prompt config (default: OLLAMA_ENRICHMENT_PROMPTS_FILE env or "
+            "config/ollama-enrichment-prompts.json)."
+        ),
+    )
     args = parser.parse_args(argv)
 
     lib.load_repo_env()
+    prompts = prompt_config.resolve_ollama_prompts(
+        prompts_file=(args.prompts_file or "").strip() or None,
+    )
 
     input_path = Path(args.input_file)
     output_path = Path(args.output_file)
@@ -316,6 +319,7 @@ def main(argv: list[str] | None = None) -> int:
         retries=max(0, int(args.retries)),
         retry_delay=max(0.0, float(args.retry_delay)),
         section_override=(args.section_slug or "").strip() or None,
+        prompts=prompts,
     )
 
     output_path.parent.mkdir(parents=True, exist_ok=True)

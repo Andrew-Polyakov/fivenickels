@@ -11,7 +11,7 @@ import logging
 import os
 import subprocess
 import sys
-import tempfile
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +22,32 @@ if str(_TOOLS_DIR) not in sys.path:
 import article_submit_lib as lib
 
 LOGGER = logging.getLogger("article_pipeline")
+
+
+def _artifact_dir(symbols: list[str]) -> Path:
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    label = "-".join(symbol.lower() for symbol in symbols[:5]) or "news"
+    path = lib.repo_root() / "reports" / "pipeline-artifacts" / f"{stamp}-{label}"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _artifact_paths(
+    *,
+    symbols: list[str],
+    keep_json: str | None,
+    enrich_ollama: bool,
+) -> tuple[Path, Path | None]:
+    if keep_json:
+        crawl_path = Path(keep_json)
+        crawl_path.parent.mkdir(parents=True, exist_ok=True)
+        enrich_path = crawl_path.with_name(f"{crawl_path.stem}.enriched.json")
+        return crawl_path, enrich_path if enrich_ollama else None
+
+    artifact_dir = _artifact_dir(symbols)
+    crawl_path = artifact_dir / "crawl.json"
+    enrich_path = artifact_dir / "enriched.json" if enrich_ollama else None
+    return crawl_path, enrich_path
 
 
 def _configure_logging() -> None:
@@ -75,6 +101,7 @@ def _enrich_command(
     ollama_retries: int,
     ollama_retry_delay: float,
     section_slug: str | None,
+    prompts_file: str | None,
 ) -> list[str]:
     command = [
         sys.executable,
@@ -96,6 +123,8 @@ def _enrich_command(
         command.extend(["--ollama-model", ollama_model])
     if section_slug:
         command.extend(["--section-slug", section_slug])
+    if prompts_file:
+        command.extend(["--prompts-file", prompts_file])
     return command
 
 
@@ -131,6 +160,7 @@ def _run_enrich(
     ollama_retries: int,
     ollama_retry_delay: float,
     section_slug: str | None,
+    prompts_file: str | None,
 ) -> int:
     command = _enrich_command(
         input_path=input_path,
@@ -141,6 +171,7 @@ def _run_enrich(
         ollama_retries=ollama_retries,
         ollama_retry_delay=ollama_retry_delay,
         section_slug=section_slug,
+        prompts_file=prompts_file,
     )
     LOGGER.info("enrich start model=%s", ollama_model or "(default)")
     completed = subprocess.run(
@@ -212,6 +243,7 @@ def _submit_exit_code(summary: dict[str, Any] | None) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     _configure_logging()
+    lib.bootstrap_submit_env()
 
     parser = argparse.ArgumentParser(
         description="Crawl StockCrawler news for tickers and submit articles for moderation.",
@@ -282,6 +314,14 @@ def main(argv: list[str] | None = None) -> int:
         default=1.0,
         help="Delay in seconds between retry attempts for --enrich-ollama.",
     )
+    parser.add_argument(
+        "--ollama-prompts-file",
+        default=None,
+        help=(
+            "JSON prompt config for --enrich-ollama "
+            "(default: OLLAMA_ENRICHMENT_PROMPTS_FILE env or repo config file)."
+        ),
+    )
     args = parser.parse_args(argv)
 
     lib.load_repo_env()
@@ -308,103 +348,92 @@ def main(argv: list[str] | None = None) -> int:
 
     lib.apply_submit_config_to_env(config)
 
-    keep_json = (args.keep_json or "").strip()
-    temp_path: Path | None = None
-    if keep_json:
-        json_path = Path(keep_json)
-        json_path.parent.mkdir(parents=True, exist_ok=True)
-    else:
-        handle = tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
-            suffix=".json",
-            delete=False,
-        )
-        temp_path = Path(handle.name)
-        handle.close()
-        json_path = temp_path
+    ollama_prompts_file = (args.ollama_prompts_file or "").strip() or None
+    if not ollama_prompts_file:
+        ollama_prompts_file = (os.environ.get("OLLAMA_ENRICHMENT_PROMPTS_FILE") or "").strip() or None
+
+    keep_json = (args.keep_json or "").strip() or None
+    json_path, enrich_path = _artifact_paths(
+        symbols=symbols,
+        keep_json=keep_json,
+        enrich_ollama=args.enrich_ollama,
+    )
+    submit_input_path = enrich_path or json_path
+    artifacts = {
+        "crawl_json": str(json_path),
+        "enriched_json": str(enrich_path) if enrich_path is not None else None,
+    }
 
     crawl_exit = 0
     enrich_exit = 0
     submit_exit = 0
     submit_summary: dict[str, Any] | None = None
-    submit_input_path = json_path
-    enrich_temp_path: Path | None = None
+
+    crawl_exit = _run_crawl(symbols, output_path=json_path)
+    if crawl_exit != 0:
+        result = {
+            "symbols": symbols,
+            "artifacts": artifacts,
+            "crawl_exit": crawl_exit,
+            "enrich_exit": None,
+            "submit_summary": None,
+            "dry_run": args.dry_run,
+        }
+        print(json.dumps(result, indent=2))
+        return crawl_exit
+
     if args.enrich_ollama:
-        handle = tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
-            suffix=".json",
-            delete=False,
+        assert enrich_path is not None
+        enrich_exit = _run_enrich(
+            input_path=json_path,
+            output_path=enrich_path,
+            ollama_base_url=(args.ollama_base_url or "").strip() or None,
+            ollama_model=(args.ollama_model or "").strip() or None,
+            ollama_timeout=max(1.0, args.ollama_timeout),
+            ollama_retries=max(0, args.ollama_retries),
+            ollama_retry_delay=max(0.0, args.ollama_retry_delay),
+            section_slug=config.section_slug,
+            prompts_file=ollama_prompts_file,
         )
-        enrich_temp_path = Path(handle.name)
-        handle.close()
-        submit_input_path = enrich_temp_path
-    try:
-        crawl_exit = _run_crawl(symbols, output_path=json_path)
-        if crawl_exit != 0:
+        if enrich_exit != 0:
             result = {
                 "symbols": symbols,
+                "artifacts": artifacts,
                 "crawl_exit": crawl_exit,
-                "enrich_exit": None,
+                "enrich_exit": enrich_exit,
                 "submit_summary": None,
                 "dry_run": args.dry_run,
             }
             print(json.dumps(result, indent=2))
-            return crawl_exit
+            return enrich_exit
 
-        if args.enrich_ollama:
-            enrich_exit = _run_enrich(
-                input_path=json_path,
-                output_path=submit_input_path,
-                ollama_base_url=(args.ollama_base_url or "").strip() or None,
-                ollama_model=(args.ollama_model or "").strip() or None,
-                ollama_timeout=max(1.0, args.ollama_timeout),
-                ollama_retries=max(0, args.ollama_retries),
-                ollama_retry_delay=max(0.0, args.ollama_retry_delay),
-                section_slug=config.section_slug,
-            )
-            if enrich_exit != 0:
-                result = {
-                    "symbols": symbols,
-                    "crawl_exit": crawl_exit,
-                    "enrich_exit": enrich_exit,
-                    "submit_summary": None,
-                    "dry_run": args.dry_run,
-                }
-                print(json.dumps(result, indent=2))
-                return enrich_exit
-
-        submit_exit, submit_summary = _run_submit(
-            json_path=submit_input_path,
-            config=config,
-            dry_run=args.dry_run,
-        )
-        if submit_exit != 0:
-            result = {
-                "symbols": symbols,
-                "crawl_exit": crawl_exit,
-                "enrich_exit": enrich_exit if args.enrich_ollama else None,
-                "submit_summary": submit_summary,
-                "dry_run": args.dry_run,
-            }
-            print(json.dumps(result, indent=2))
-            return submit_exit
-
+    submit_exit, submit_summary = _run_submit(
+        json_path=submit_input_path,
+        config=config,
+        dry_run=args.dry_run,
+    )
+    if submit_exit != 0:
         result = {
             "symbols": symbols,
+            "artifacts": artifacts,
             "crawl_exit": crawl_exit,
             "enrich_exit": enrich_exit if args.enrich_ollama else None,
             "submit_summary": submit_summary,
             "dry_run": args.dry_run,
         }
         print(json.dumps(result, indent=2))
-        return _submit_exit_code(submit_summary)
-    finally:
-        if temp_path is not None and temp_path.exists():
-            temp_path.unlink(missing_ok=True)
-        if enrich_temp_path is not None and enrich_temp_path.exists():
-            enrich_temp_path.unlink(missing_ok=True)
+        return submit_exit
+
+    result = {
+        "symbols": symbols,
+        "artifacts": artifacts,
+        "crawl_exit": crawl_exit,
+        "enrich_exit": enrich_exit if args.enrich_ollama else None,
+        "submit_summary": submit_summary,
+        "dry_run": args.dry_run,
+    }
+    print(json.dumps(result, indent=2))
+    return _submit_exit_code(submit_summary)
 
 
 if __name__ == "__main__":

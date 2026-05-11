@@ -40,6 +40,7 @@ def _article_card_dict(page: Page | None, request) -> dict[str, Any]:
             image_url = rend.url
         except Exception:
             image_url = ""
+    catalyst = (spec.catalyst or "").strip()
     return {
         "kind": "article",
         "title": title,
@@ -49,6 +50,7 @@ def _article_card_dict(page: Page | None, request) -> dict[str, Any]:
         "tags": list(spec.tags.values_list("name", flat=True)[:3]),
         "authorName": spec.card_author_name(),
         "publishedAt": date_format(spec.first_published_at, "F j, Y") if spec.first_published_at else "",
+        "catalyst": catalyst,
     }
 
 

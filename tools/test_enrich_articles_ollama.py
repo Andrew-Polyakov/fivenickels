@@ -56,6 +56,27 @@ class EnrichArticlesOllamaTests(unittest.TestCase):
         self.assertEqual(news["seo_description"], "SEO desc")
         self.assertEqual(news["catalyst"], "Bullish")
 
+    def test_apply_enrichment_maps_near_section_slug_to_gics(self):
+        news = {
+            "headline": "Original title",
+            "summary": "Original summary",
+            "content": "Original body",
+        }
+        generated = {
+            "reworded_title": "Reworded title",
+            "reworded_summary": "Reworded summary",
+            "reworded_content": "Reworded body",
+            "tags": ["ai"],
+            "section_slug": "ai-and-technology",
+            "seo_title": "SEO title",
+            "seo_description": "SEO desc",
+            "catalyst_sentiment": "neutral",
+        }
+
+        self.mod._apply_enrichment(news=news, generated=generated, section_override=None)
+
+        self.assertEqual(news["section_slug"], "information-technology")
+
     def test_apply_enrichment_drops_catalyst_for_neutral(self):
         news = {
             "headline": "Original title",

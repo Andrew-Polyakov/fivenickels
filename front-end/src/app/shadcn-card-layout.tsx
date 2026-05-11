@@ -44,6 +44,7 @@ export type ArticleCardPayload =
       tags?: string[];
       authorName?: string;
       publishedAt?: string;
+      catalyst?: 'Bullish' | 'Bearish' | '';
       sourceConfig?: ContentSourceConfig;
     }
   | { kind: 'empty'; sourceConfig?: ContentSourceConfig }
@@ -626,6 +627,12 @@ function getCsrfToken(): string | null {
   return getCookie('csrftoken');
 }
 
+function catalystCardClass(catalyst?: string): string | null {
+  if (catalyst === 'Bullish') return 'scn-article-card--bullish';
+  if (catalyst === 'Bearish') return 'scn-article-card--bearish';
+  return null;
+}
+
 function ArticleCardView({
   data,
   onDelete,
@@ -748,9 +755,10 @@ function ArticleCardView({
       </div>
     </>
   );
+  const catalystClass = catalystCardClass(data.catalyst);
   if (data.href) {
     return (
-      <Card className="scn-article-card scn-article-card--linked">
+      <Card className={cn('scn-article-card', 'scn-article-card--linked', catalystClass)}>
         <a className="scn-article-card__shell" href={data.href}>
           {body}
         </a>
@@ -758,7 +766,7 @@ function ArticleCardView({
     );
   }
   return (
-    <Card className="scn-article-card">
+    <Card className={cn('scn-article-card', catalystClass)}>
       {body}
     </Card>
   );

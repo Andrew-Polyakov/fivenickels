@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+import unittest
 from pathlib import Path
 
 from django.test import override_settings
@@ -17,7 +18,9 @@ from home.article_auto_submit import (
     build_paragraph_stream_body,
     submit_articles_batch,
 )
+from home.taxonomy import ensure_taxonomy_term
 from home.models import HomePage, TaggedContentPage, TaxonomyTerm
+from home.serializers import _normalize_catalyst_value
 
 
 @override_settings(ARTICLE_SUBMIT_BEARER_TOKEN="test-token-secret")
@@ -111,6 +114,59 @@ class ArticleAutoSubmitAPITests(WagtailPageTestCase):
         self.assertNotIn("markdown", block_types)
         self.assertIn("Body text.", str(page.body[0].value))
 
+    def test_import_maps_near_section_slug_to_existing_gics(self):
+        source_url = "https://example.com/news/auto-submit-missing-taxonomy"
+        section_slug = "ai-and-technology"
+        self.assertFalse(TaxonomyTerm.objects.filter(slug=section_slug).exists())
+        response = self._post(
+            {
+                "articles": [
+                    {
+                        "title": "Auto headline",
+                        "summary": "Summary line.",
+                        "content": "Body text.",
+                        "canonical_url": source_url,
+                        "section_slug": section_slug,
+                    }
+                ]
+            }
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["created"], 1)
+        self.assertEqual(body["failed"], 0)
+
+        page = TaggedContentPage.objects.get(pk=body["results"][0]["id"])
+        self.assertEqual(page.section_term_id, self.section.pk)
+        self.assertFalse(TaxonomyTerm.objects.filter(slug=section_slug).exists())
+
+    def test_creates_missing_section_taxonomy_on_import(self):
+        source_url = "https://example.com/news/auto-submit-new-taxonomy"
+        section_slug = "quantum-computing"
+        self.assertFalse(TaxonomyTerm.objects.filter(slug=section_slug).exists())
+        response = self._post(
+            {
+                "articles": [
+                    {
+                        "title": "Auto headline",
+                        "summary": "Summary line.",
+                        "content": "Body text.",
+                        "canonical_url": source_url,
+                        "section_slug": section_slug,
+                    }
+                ]
+            }
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["created"], 1)
+        self.assertEqual(body["failed"], 0)
+
+        term = TaxonomyTerm.objects.get(slug=section_slug)
+        self.assertEqual(term.name, "Quantum Computing")
+        page = TaggedContentPage.objects.get(pk=body["results"][0]["id"])
+        self.assertEqual(page.section_term_id, term.pk)
+
     def test_skips_duplicate_canonical_url(self):
         source_url = "https://example.com/news/auto-submit-dup"
         first = self._post(
@@ -145,7 +201,22 @@ class ArticleAutoSubmitAPITests(WagtailPageTestCase):
         self.assertEqual(TaggedContentPage.objects.count(), 1)
 
 
+class CatalystSerializerTests(unittest.TestCase):
+    def test_blank_catalyst_is_allowed(self):
+        self.assertEqual(_normalize_catalyst_value(""), "")
+        self.assertEqual(_normalize_catalyst_value(None), "")
+
+    def test_invalid_catalyst_rejected(self):
+        with self.assertRaises(Exception):
+            _normalize_catalyst_value("Neutral")
+
+
 class ArticleAutoSubmitHelperTests(WagtailPageTestCase):
+    def test_ensure_taxonomy_term_uses_gics_display_name(self):
+        term = ensure_taxonomy_term("information-technology")
+        self.assertEqual(term.slug, "information-technology")
+        self.assertEqual(term.name, "Information Technology")
+
     def test_build_paragraph_stream_body_uses_paragraph_blocks(self):
         blocks = build_paragraph_stream_body(
             content="Main body",

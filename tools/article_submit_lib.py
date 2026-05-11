@@ -114,3 +114,11 @@ def apply_submit_config_to_env(config: SubmitConfig) -> None:
         os.environ["ARTICLE_SUBMIT_BEARER_TOKEN"] = config.token
     if config.section_slug:
         os.environ["ARTICLE_SUBMIT_DEFAULT_SECTION_SLUG"] = config.section_slug
+
+
+def bootstrap_submit_env() -> SubmitConfig:
+    """Load repo .env submit settings into the process environment."""
+    load_repo_env()
+    config = resolve_submit_config({})
+    apply_submit_config_to_env(config)
+    return config

@@ -58,7 +58,7 @@
         <h2 id="ticker-related-heading" class="ticker-related__heading">Related news</h2>
         <div class="ticker-related__grid">
             {% for page in related_pages %}
-            <article class="ticker-related__tile">
+            <article class="ticker-related__tile{% if page.catalyst == 'Bullish' %} ticker-related__tile--bullish{% elif page.catalyst == 'Bearish' %} ticker-related__tile--bearish{% endif %}">
                 <a href="{% pageurl page %}" class="ticker-related__link">
                     <h3 class="ticker-related__title">{{ page.title }}</h3>
                     {% if page.first_published_at %}

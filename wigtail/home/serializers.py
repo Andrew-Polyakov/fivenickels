@@ -157,6 +157,15 @@ class ArticleEditorSerializer(serializers.ModelSerializer):
         return user.get_username() if hasattr(user, "get_username") else ""
 
 
+def _normalize_catalyst_value(value: str | None) -> str:
+    normalized = (value or "").strip()
+    if not normalized:
+        return ""
+    if normalized not in (TaggedContentPage.CATALYST_BULLISH, TaggedContentPage.CATALYST_BEARISH):
+        raise serializers.ValidationError("Catalyst must be Bullish or Bearish.")
+    return normalized
+
+
 class ArticleUpdateSerializer(serializers.ModelSerializer):
     section_term_id = serializers.IntegerField(required=False, allow_null=True)
     taxonomy_category_id = serializers.IntegerField(required=False, allow_null=True)
@@ -198,6 +207,9 @@ class ArticleUpdateSerializer(serializers.ModelSerializer):
         if current_ct_id and current_ct_id != expected_ct.pk:
             Page.objects.filter(pk=instance.pk).update(content_type_id=expected_ct.pk)
             instance.content_type_id = expected_ct.pk
+
+    def validate_catalyst(self, value):
+        return _normalize_catalyst_value(value)
 
     def update(self, instance, validated_data):
         import json
@@ -293,6 +305,9 @@ class AutoSubmitArticleSerializer(serializers.Serializer):
         child=serializers.CharField(allow_blank=True),
         required=False,
     )
+
+    def validate_catalyst(self, value):
+        return _normalize_catalyst_value(value)
 
 
 class AutoSubmitBatchSerializer(serializers.Serializer):

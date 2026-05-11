@@ -153,6 +153,7 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Print mapped payload without calling the API.",
     )
+    lib.bootstrap_submit_env()
     args = parser.parse_args(argv)
 
     lib.load_repo_env()

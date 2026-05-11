@@ -1617,6 +1617,16 @@ turbo-frame#site-nav.site-nav {
   min-height: 0;
 }
 
+.scn-article-card--bullish {
+  border-color: rgba(34, 197, 94, 0.65);
+  background: rgba(20, 83, 45, 0.28);
+}
+
+.scn-article-card--bearish {
+  border-color: rgba(239, 68, 68, 0.65);
+  background: rgba(127, 29, 29, 0.28);
+}
+
 .scn-article-card .scn-card__content {
   flex: 1 1 auto;
   min-height: 0;

@@ -133,6 +133,7 @@ def profile(request: HttpRequest) -> HttpResponse:
             "section_slug": p.section_term.slug,
             "section_name": p.section_term.name,
             "category_name": p.taxonomy_category.name if p.taxonomy_category_id else "",
+            "catalyst": p.catalyst or "",
             "edit_url": reverse("article_editor", kwargs={"article_id": p.id}),
         }
         for p in articles_qs
@@ -155,6 +156,7 @@ def profile(request: HttpRequest) -> HttpResponse:
             ),
             "author_name": p.card_author_name(),
             "preview": p.listing_preview_markdown()[:200],
+            "catalyst": p.catalyst or "",
             "edit_url": reverse("article_editor", kwargs={"article_id": p.id}),
             "approve_url": reverse("article-article-action", args=[p.id]),
         }

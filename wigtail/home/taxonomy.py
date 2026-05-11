@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from difflib import get_close_matches
 from typing import TYPE_CHECKING
 
 from django.http import Http404, HttpResponse
@@ -25,6 +26,91 @@ TOP_ROW_SEED: tuple[tuple[str, str, int], ...] = (
     ("opinions", "Opinions", 8),
     ("personal-finance", "Personal Finance", 9),
 )
+
+
+def taxonomy_display_name_for_slug(slug: str) -> str:
+    from home.gics_sectors import GICS_SECTORS
+
+    for name, sector_slug in GICS_SECTORS:
+        if sector_slug == slug:
+            return name
+    cleaned = (slug or "").replace("-", " ").strip()
+    return cleaned.title() or slug
+
+
+def resolve_import_section_slug(raw_slug: str | None) -> str:
+    """Map an import slug to an existing taxonomy slug or a normalized new slug."""
+    from django.utils.text import slugify
+
+    from home.gics_sectors import GICS_SECTOR_SLUGS
+    from home.models import TaxonomyTerm
+
+    normalized = slugify((raw_slug or "").strip())[:255]
+    if not normalized:
+        return ""
+
+    known = set(GICS_SECTOR_SLUGS) | TOP_ROW_SLUGS_SET
+    if normalized in known:
+        return normalized
+
+    existing = TaxonomyTerm.objects.filter(slug=normalized).values_list("slug", flat=True).first()
+    if existing:
+        return existing
+
+    pool = sorted(known | set(TaxonomyTerm.objects.values_list("slug", flat=True)))
+    matches = get_close_matches(normalized, pool, n=1, cutoff=0.74)
+    if matches:
+        return matches[0]
+
+    tokens = {
+        token
+        for token in normalized.split("-")
+        if token and token not in {"and", "the", "of", "for", "a", "an"}
+    }
+    if tokens:
+        best_slug = ""
+        best_score = 0
+        for known_slug in pool:
+            known_tokens = {
+                token
+                for token in known_slug.split("-")
+                if token and token not in {"and", "the", "of", "for", "a", "an"}
+            }
+            overlap = len(tokens & known_tokens)
+            if overlap > best_score:
+                best_score = overlap
+                best_slug = known_slug
+        if best_slug and best_score >= 1:
+            return best_slug
+
+    return normalized
+
+
+def ensure_taxonomy_term(slug: str) -> TaxonomyTerm:
+    """Return an existing taxonomy term or create a visible root term for imports."""
+    from django.utils.text import slugify
+
+    from home.gics_sectors import GICS_SECTOR_ORDER
+    from home.models import TaxonomyTerm
+
+    normalized = resolve_import_section_slug(slug)
+    if not normalized:
+        raise ValueError("section_slug must not be empty.")
+
+    existing = TaxonomyTerm.objects.filter(slug=normalized).first()
+    if existing is not None:
+        return existing
+
+    term = TaxonomyTerm(
+        name=taxonomy_display_name_for_slug(normalized)[:255],
+        slug=normalized,
+        is_visible=True,
+        is_nav=True,
+        sort_order=GICS_SECTOR_ORDER.get(normalized, 0),
+    )
+    term.save()
+    TaxonomyTerm.fix_tree()
+    return term
 
 
 def ensure_top_row_taxonomy_terms() -> None:

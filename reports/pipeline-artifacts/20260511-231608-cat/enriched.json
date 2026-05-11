@@ -1,0 +1,64 @@
+{
+  "asOfUtc": "2026-05-11T19:16:10.2444322Z",
+  "mode": "news",
+  "tickers": [
+    {
+      "symbol": "CAT",
+      "lastPrice": 923.56,
+      "previousClose": 897.035,
+      "dayVolume": 136501,
+      "percentChange": 2.9569637751035356,
+      "alpacNews": [
+        {
+          "headline": "AI Cycle Shifts to Late-Stage Bottlenecks",
+          "createdAtUtc": "2026-05-11T16:09:24Z",
+          "summary": "Renowned AI expert Jordi Visser foresees a significant shift in the AI cycle, where early-stage semiconductor winners give way to late-stage physical bottlenecks.",
+          "content": "Jordi Visser, head of AI Macro Nexus Research at 22V Research, believes that the current AI trade is ripe for a correction. He suggests that investors are misreading the cycle entirely and that the next phase will focus on power, chemicals, and silver. According to Visser's framework, the AI economy has five layers: applications and models, data infrastructure and chips, energy, hardware, and commodities. The current leg of the cycle belongs to memory, advanced packaging, optical fiber, and racks, which have matured. Visser is now more interested in commodities and chemicals due to their late-cycle nature.",
+          "source": "benzinga",
+          "url": "https://www.benzinga.com/markets/commodities/26/05/52457472/jordi-visser-analysis-aisilver-power-chemicals-next-micron-trade",
+          "symbols": [
+            "AMZN",
+            "BTCUSD",
+            "CAT",
+            "CC",
+            "CDNS",
+            "ETN",
+            "FLNC",
+            "GOOGL",
+            "IGV",
+            "META",
+            "MSFT",
+            "MU",
+            "NVDA",
+            "ORCL",
+            "PLTR",
+            "SLV",
+            "SNDK",
+            "SNPS",
+            "STRL",
+            "VST"
+          ],
+          "tags": [
+            "ai",
+            "silver",
+            "power",
+            "chemicals"
+          ],
+          "section_slug": "market-news",
+          "seo_title": "AI Cycle Shift: Power, Chemicals, Silver Next?",
+          "seo_description": "Jordi Visser's AI cycle shift prediction: power, chemicals, and silver will be the next big trade.",
+          "catalyst": "Bullish"
+        }
+      ],
+      "webHints": [],
+      "note": "Add web search lines in webHints; aggregate catalyst in the .md report."
+    }
+  ],
+  "ollama_enrichment": {
+    "model": "llama3.1:latest",
+    "base_url": "http://127.0.0.1:11434",
+    "total_articles": 1,
+    "enriched": 1,
+    "failed": 0
+  }
+}

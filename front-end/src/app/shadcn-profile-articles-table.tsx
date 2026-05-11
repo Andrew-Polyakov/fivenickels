@@ -23,6 +23,7 @@ import {
 } from '../components/ui/pagination';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { cn } from '../lib/utils';
 
 type ArticleRow = {
   id: number;
@@ -32,6 +33,7 @@ type ArticleRow = {
   section_slug: string;
   section_name: string;
   category_name: string;
+  catalyst?: 'Bullish' | 'Bearish' | '';
   edit_url: string | null;
 };
 
@@ -43,11 +45,18 @@ type ModerationRow = {
   submitted: string;
   author_name: string;
   preview: string;
+  catalyst?: 'Bullish' | 'Bearish' | '';
   edit_url: string;
   approve_url: string;
 };
 
 const DEFAULT_PAGE_SIZE = 25;
+
+function catalystSurfaceClass(catalyst?: string): string | null {
+  if (catalyst === 'Bullish') return 'scn-profile-article-row--bullish';
+  if (catalyst === 'Bearish') return 'scn-profile-article-row--bearish';
+  return null;
+}
 
 function getCsrfToken(explicitToken: string): string {
   if (explicitToken) return explicitToken;
@@ -367,7 +376,7 @@ function ProfileArticlesTable({
         <TableBody>
           {pagedRows.length > 0 ? (
             pagedRows.map((row) => (
-              <TableRow key={row.id}>
+              <TableRow key={row.id} className={cn(catalystSurfaceClass(row.original.catalyst))}>
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -460,7 +469,10 @@ function ProfileModerationGrid({
       ) : (
         <div className="scn-profile-moderation__grid">
           {pagedRows.map((item) => (
-            <article key={item.id} className="scn-profile-moderation-card">
+            <article
+              key={item.id}
+              className={cn('scn-profile-moderation-card', catalystSurfaceClass(item.catalyst))}
+            >
               <div className="scn-profile-moderation-card__meta">
                 <span>{item.section_name}</span>
                 {item.category_name ? <span>{item.category_name}</span> : null}

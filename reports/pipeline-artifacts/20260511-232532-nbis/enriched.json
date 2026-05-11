@@ -1,0 +1,64 @@
+{
+  "asOfUtc": "2026-05-11T19:25:33.8638597Z",
+  "mode": "news",
+  "tickers": [
+    {
+      "symbol": "NBIS",
+      "lastPrice": 186.89,
+      "previousClose": 176.94,
+      "dayVolume": 488447,
+      "percentChange": 5.623375155419916,
+      "alpacNews": [
+        {
+          "headline": "Nebius Stock Sees Surge Amid BofA's Optimism",
+          "createdAtUtc": "2026-05-11T18:17:34Z",
+          "summary": "Nebius Group shares are rising after BofA Securities reiterated its Buy rating and increased the price target to $205.",
+          "content": "Nebius Group NV (NASDAQ: NBIS) is experiencing a significant increase in share value, attributed to BofA Securities' decision to maintain a Buy rating and raise the price target from $175 to $205. The surge can be attributed to several factors, including the broader market backdrop and tech leadership.",
+          "source": "benzinga",
+          "url": "https://www.benzinga.com/trading-ideas/movers/26/05/52463046/nebius-stock-is-jumping-whats-behind-the-surge",
+          "symbols": [
+            "NBIS"
+          ],
+          "tags": [
+            "nebius",
+            "bofa-securities",
+            "stock-surge"
+          ],
+          "section_slug": "market-news",
+          "seo_title": "Nebius Stock Sees Surge Amid BofA's Optimism",
+          "seo_description": "Nebius Group shares are rising after BofA Securities reiterated its Buy rating and increased the price target to $205. The surge is attributed to several factors, including the broader market backdrop.",
+          "catalyst": "Bullish"
+        },
+        {
+          "headline": "Nebius Group Gets Boost from Analysts at B of A Securities",
+          "createdAtUtc": "2026-05-11T11:37:07Z",
+          "source": "benzinga",
+          "url": "https://www.benzinga.com/news/26/05/52443676/b-of-a-securities-maintains-buy-on-nebius-group-raises-price-target-to-205",
+          "symbols": [
+            "NBIS"
+          ],
+          "tags": [
+            "nebius group",
+            "nbis",
+            "analyst upgrade"
+          ],
+          "summary": "B of A Securities has reaffirmed their 'Buy' rating on Nebius Group and raised the price target to $205.",
+          "content": "",
+          "section_slug": "market-news",
+          "seo_title": "Nebius Group Stock Upgraded by B of A Securities",
+          "seo_description": "B of A Securities maintains 'Buy' rating on Nebius Group, raises price target to $205.",
+          "catalyst": "Bullish"
+        }
+      ],
+      "webHints": [],
+      "note": "Add web search lines in webHints; aggregate catalyst in the .md report."
+    }
+  ],
+  "ollama_enrichment": {
+    "model": "llama3.1:latest",
+    "base_url": "http://127.0.0.1:11434",
+    "total_articles": 2,
+    "enriched": 2,
+    "failed": 0
+  }
+}

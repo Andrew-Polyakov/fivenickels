@@ -39,12 +39,16 @@ type EmbedBlock     = { id: string; type: 'embed';     url: string };
 type SeparatorBlock = { id: string; type: 'separator'; orientation: 'horizontal' | 'vertical' };
 type BodyBlock = HeadingBlock | ParagraphBlock | MarkdownBlock | ImageBlock | EmbedBlock | SeparatorBlock;
 
+type CatalystUi = 'bear' | 'neutral' | 'bull';
+type CatalystValue = '' | 'Bearish' | 'Bullish';
+
 type ArticleApiData = {
   id: number;
   title: string;
   status: 'published' | 'draft';
   section_term:      { id: number; name: string; slug: string } | null;
   taxonomy_category: { id: number; name: string; slug: string } | null;
+  catalyst: CatalystValue | null;
   tags: Tag[];
   hero_image_url: string | null;
   hero_image: number | null;
@@ -113,6 +117,18 @@ function apiToEditor(apiBlocks: ArticleApiData['body']): BodyBlock[] {
   return out;
 }
 
+function catalystFromApi(value: string | null | undefined): CatalystUi {
+  if (value === 'Bearish') return 'bear';
+  if (value === 'Bullish') return 'bull';
+  return 'neutral';
+}
+
+function catalystToApi(value: CatalystUi): CatalystValue {
+  if (value === 'bear') return 'Bearish';
+  if (value === 'bull') return 'Bullish';
+  return '';
+}
+
 function editorToApi(blocks: BodyBlock[]): unknown[] {
   return blocks.map(b => {
     if (b.type === 'heading')   return { id: b.id, type: 'heading',   value: { level: b.level, text: b.text } };
@@ -122,6 +138,92 @@ function editorToApi(blocks: BodyBlock[]): unknown[] {
     if (b.type === 'embed')     return { id: b.id, type: 'embed',     value: { url: b.url } };
     return { id: b.id, type: 'separator', value: { orientation: (b as SeparatorBlock).orientation } };
   });
+}
+
+function CatalystBullIcon() {
+  return (
+    <svg
+      className="scn-catalyst-toggle__icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M8.5 17.5V10.5c0-2.5 1.6-4.5 3.5-4.5s3.5 2 3.5 4.5v7" />
+      <path d="M6.5 8.5 8 6.5l2 1.5" />
+      <path d="M17.5 8.5 16 6.5l-2 1.5" />
+      <path d="M6.5 17.5h11" />
+    </svg>
+  );
+}
+
+function CatalystBearIcon() {
+  return (
+    <svg
+      className="scn-catalyst-toggle__icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M8.5 16.5V11c0-2.2 1.6-4 3.5-4s3.5 1.8 3.5 4v5.5" />
+      <path d="M7 9.5 8.5 7.5 10.5 9" />
+      <path d="M17 9.5 15.5 7.5 13.5 9" />
+      <path d="M9.5 13h5" />
+      <path d="M7.5 16.5h9" />
+    </svg>
+  );
+}
+
+function CatalystSection({
+  value,
+  onChange,
+}: {
+  value: CatalystUi;
+  onChange: (value: CatalystUi) => void;
+}) {
+  return (
+    <div className="scn-editor-card scn-editor-card--catalyst">
+      <h3 className="scn-editor-card__title">Catalyst</h3>
+      <ToggleGroup
+        className="scn-catalyst-toggle"
+        value={value}
+        onValueChange={nextValue => {
+          if (nextValue) {
+            onChange(nextValue as CatalystUi);
+          }
+        }}
+      >
+        <ToggleGroupItem
+          value="bull"
+          className="scn-catalyst-toggle__item scn-catalyst-toggle__item--bull"
+          aria-label="Bullish catalyst"
+        >
+          <CatalystBullIcon />
+        </ToggleGroupItem>
+        <ToggleGroupItem
+          value="neutral"
+          className="scn-catalyst-toggle__item scn-catalyst-toggle__item--neutral"
+          aria-label="Neutral catalyst"
+        >
+          Neutral
+        </ToggleGroupItem>
+        <ToggleGroupItem
+          value="bear"
+          className="scn-catalyst-toggle__item scn-catalyst-toggle__item--bear"
+          aria-label="Bearish catalyst"
+        >
+          <CatalystBearIcon />
+        </ToggleGroupItem>
+      </ToggleGroup>
+    </div>
+  );
 }
 
 // ─── Taxonomy Breadcrumb ─────────────────────────────────────────────────────
@@ -888,6 +990,7 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
   const [title, setTitle]             = React.useState('');
   const [sectionTermId, setSection]   = React.useState<number | null>(null);
   const [categoryId, setCategory]     = React.useState<number | null>(null);
+  const [catalyst, setCatalyst]       = React.useState<CatalystUi>('neutral');
   const [heroUrl, setHeroUrl]         = React.useState<string | null>(null);
   const [heroId, setHeroId]           = React.useState<number | null>(null);
   const [authorName, setAuthorName]   = React.useState('');
@@ -929,6 +1032,7 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
         setTitle(article.title);
         setSection(article.section_term?.id ?? null);
         setCategory(article.taxonomy_category?.id ?? null);
+        setCatalyst(catalystFromApi(article.catalyst));
         setHeroUrl(article.hero_image_url);
         setHeroId(article.hero_image);
         setAuthorName(article.author_name ?? '');
@@ -962,6 +1066,7 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
         title,
         section_term_id: sectionTermId,
         taxonomy_category_id: categoryId,
+        catalyst: catalystToApi(catalyst),
         tile_preview: tilePreview,
         author_name: authorName,
         author_user_lookup: authorUser,
@@ -1069,6 +1174,17 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
         />
       </div>
 
+      <div className="scn-editor-meta-strip">
+        <CatalystSection value={catalyst} onChange={setCatalyst} />
+        <TaxonomyBreadcrumb
+          rootTerms={rootTerms}
+          sectionTermId={sectionTermId}
+          categoryId={categoryId}
+          onSectionChange={id => { setSection(id); setCategory(null); }}
+          onCategoryChange={setCategory}
+        />
+      </div>
+
       <div className="scn-editor-layout">
         {/* Body */}
         <div className="scn-editor-body">
@@ -1090,14 +1206,6 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
 
         {/* Sidebar */}
         <aside className="scn-editor-sidebar">
-          <TaxonomyBreadcrumb
-            rootTerms={rootTerms}
-            sectionTermId={sectionTermId}
-            categoryId={categoryId}
-            onSectionChange={id => { setSection(id); setCategory(null); }}
-            onCategoryChange={setCategory}
-          />
-
           <HeroImageUpload
             imageUrl={heroUrl}
             articleId={articleId}
