@@ -119,7 +119,7 @@ class ArticleEditorSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'slug', 'status',
             'section_term', 'taxonomy_category',
-            'tags', 'hero_image', 'hero_image_url',
+            'catalyst', 'tags', 'hero_image', 'hero_image_url',
             'tile_preview', 'author_name', 'author_user', 'author_user_display',
             'tile_priority', 'article_priority',
             'priority_expires_at', 'body',
@@ -172,7 +172,7 @@ class ArticleUpdateSerializer(serializers.ModelSerializer):
             'title', 'tile_preview', 'tile_priority', 'article_priority',
             'author_name', 'author_user_lookup',
             'priority_expires_at', 'section_term_id', 'taxonomy_category_id',
-            'tag_ids', 'hero_image_id', 'body_json',
+            'catalyst', 'tag_ids', 'hero_image_id', 'body_json',
             'seo_title', 'search_description', 'canonical_url',
             'og_image_id',
         ]
@@ -277,6 +277,13 @@ class AutoSubmitArticleSerializer(serializers.Serializer):
     canonical_url = serializers.URLField(required=False, allow_blank=True)
     url = serializers.URLField(required=False, allow_blank=True)
     section_slug = serializers.CharField(required=False, allow_blank=True)
+    seo_title = serializers.CharField(required=False, allow_blank=True)
+    search_description = serializers.CharField(required=False, allow_blank=True)
+    catalyst = serializers.ChoiceField(
+        required=False,
+        allow_blank=True,
+        choices=["Bullish", "Bearish"],
+    )
     author_name = serializers.CharField(required=False, allow_blank=True)
     tags = serializers.ListField(
         child=serializers.CharField(allow_blank=True),

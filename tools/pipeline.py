@@ -65,6 +65,40 @@ def _submit_command(
     return command
 
 
+def _enrich_command(
+    *,
+    input_path: Path,
+    output_path: Path,
+    ollama_base_url: str | None,
+    ollama_model: str | None,
+    ollama_timeout: float,
+    ollama_retries: int,
+    ollama_retry_delay: float,
+    section_slug: str | None,
+) -> list[str]:
+    command = [
+        sys.executable,
+        str(_TOOLS_DIR / "enrich-articles-ollama.py"),
+        "--input-file",
+        str(input_path),
+        "--output-file",
+        str(output_path),
+        "--timeout",
+        str(ollama_timeout),
+        "--retries",
+        str(ollama_retries),
+        "--retry-delay",
+        str(ollama_retry_delay),
+    ]
+    if ollama_base_url:
+        command.extend(["--ollama-base-url", ollama_base_url])
+    if ollama_model:
+        command.extend(["--ollama-model", ollama_model])
+    if section_slug:
+        command.extend(["--section-slug", section_slug])
+    return command
+
+
 def _run_crawl(symbols: list[str], *, output_path: Path) -> int:
     command = _crawler_command(symbols)
     LOGGER.info("crawl start symbols=%s", ",".join(symbols))
@@ -84,6 +118,46 @@ def _run_crawl(symbols: list[str], *, output_path: Path) -> int:
         return completed.returncode
     output_path.write_text(completed.stdout, encoding="utf-8")
     LOGGER.info("crawl complete output=%s", output_path)
+    return 0
+
+
+def _run_enrich(
+    *,
+    input_path: Path,
+    output_path: Path,
+    ollama_base_url: str | None,
+    ollama_model: str | None,
+    ollama_timeout: float,
+    ollama_retries: int,
+    ollama_retry_delay: float,
+    section_slug: str | None,
+) -> int:
+    command = _enrich_command(
+        input_path=input_path,
+        output_path=output_path,
+        ollama_base_url=ollama_base_url,
+        ollama_model=ollama_model,
+        ollama_timeout=ollama_timeout,
+        ollama_retries=ollama_retries,
+        ollama_retry_delay=ollama_retry_delay,
+        section_slug=section_slug,
+    )
+    LOGGER.info("enrich start model=%s", ollama_model or "(default)")
+    completed = subprocess.run(
+        command,
+        cwd=str(lib.repo_root()),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if completed.stderr:
+        for line in completed.stderr.splitlines():
+            if line.strip():
+                LOGGER.info("enrich stderr: %s", line)
+    if completed.returncode != 0:
+        LOGGER.error("enrich failed exit=%s", completed.returncode)
+        return completed.returncode
+    LOGGER.info("enrich complete output=%s", output_path)
     return 0
 
 
@@ -175,6 +249,39 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Keep StockCrawler JSON at this path instead of a temporary file.",
     )
+    parser.add_argument(
+        "--enrich-ollama",
+        action="store_true",
+        help="Run enrich-articles-ollama.py between crawl and submit.",
+    )
+    parser.add_argument(
+        "--ollama-base-url",
+        default=None,
+        help="Optional Ollama base URL for --enrich-ollama.",
+    )
+    parser.add_argument(
+        "--ollama-model",
+        default=None,
+        help="Optional Ollama model for --enrich-ollama.",
+    )
+    parser.add_argument(
+        "--ollama-timeout",
+        type=float,
+        default=120.0,
+        help="Per-request timeout in seconds for --enrich-ollama.",
+    )
+    parser.add_argument(
+        "--ollama-retries",
+        type=int,
+        default=1,
+        help="Per-article retries for --enrich-ollama.",
+    )
+    parser.add_argument(
+        "--ollama-retry-delay",
+        type=float,
+        default=1.0,
+        help="Delay in seconds between retry attempts for --enrich-ollama.",
+    )
     args = parser.parse_args(argv)
 
     lib.load_repo_env()
@@ -218,22 +325,58 @@ def main(argv: list[str] | None = None) -> int:
         json_path = temp_path
 
     crawl_exit = 0
+    enrich_exit = 0
     submit_exit = 0
     submit_summary: dict[str, Any] | None = None
+    submit_input_path = json_path
+    enrich_temp_path: Path | None = None
+    if args.enrich_ollama:
+        handle = tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            suffix=".json",
+            delete=False,
+        )
+        enrich_temp_path = Path(handle.name)
+        handle.close()
+        submit_input_path = enrich_temp_path
     try:
         crawl_exit = _run_crawl(symbols, output_path=json_path)
         if crawl_exit != 0:
             result = {
                 "symbols": symbols,
                 "crawl_exit": crawl_exit,
+                "enrich_exit": None,
                 "submit_summary": None,
                 "dry_run": args.dry_run,
             }
             print(json.dumps(result, indent=2))
             return crawl_exit
 
+        if args.enrich_ollama:
+            enrich_exit = _run_enrich(
+                input_path=json_path,
+                output_path=submit_input_path,
+                ollama_base_url=(args.ollama_base_url or "").strip() or None,
+                ollama_model=(args.ollama_model or "").strip() or None,
+                ollama_timeout=max(1.0, args.ollama_timeout),
+                ollama_retries=max(0, args.ollama_retries),
+                ollama_retry_delay=max(0.0, args.ollama_retry_delay),
+                section_slug=config.section_slug,
+            )
+            if enrich_exit != 0:
+                result = {
+                    "symbols": symbols,
+                    "crawl_exit": crawl_exit,
+                    "enrich_exit": enrich_exit,
+                    "submit_summary": None,
+                    "dry_run": args.dry_run,
+                }
+                print(json.dumps(result, indent=2))
+                return enrich_exit
+
         submit_exit, submit_summary = _run_submit(
-            json_path=json_path,
+            json_path=submit_input_path,
             config=config,
             dry_run=args.dry_run,
         )
@@ -241,6 +384,7 @@ def main(argv: list[str] | None = None) -> int:
             result = {
                 "symbols": symbols,
                 "crawl_exit": crawl_exit,
+                "enrich_exit": enrich_exit if args.enrich_ollama else None,
                 "submit_summary": submit_summary,
                 "dry_run": args.dry_run,
             }
@@ -250,6 +394,7 @@ def main(argv: list[str] | None = None) -> int:
         result = {
             "symbols": symbols,
             "crawl_exit": crawl_exit,
+            "enrich_exit": enrich_exit if args.enrich_ollama else None,
             "submit_summary": submit_summary,
             "dry_run": args.dry_run,
         }
@@ -258,6 +403,8 @@ def main(argv: list[str] | None = None) -> int:
     finally:
         if temp_path is not None and temp_path.exists():
             temp_path.unlink(missing_ok=True)
+        if enrich_temp_path is not None and enrich_temp_path.exists():
+            enrich_temp_path.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

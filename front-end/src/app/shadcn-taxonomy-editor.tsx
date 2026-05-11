@@ -14,6 +14,7 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Select } from '../components/ui/select';
+import { ScrollArea } from '../components/ui/scroll-area';
 import { ToggleGroup, ToggleGroupItem } from '../components/ui/toggle-group';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { RteToolbar, TABLE_EXTENSIONS } from '../components/ui/rte-editor';
@@ -735,56 +736,61 @@ function CarouselEditor({ block, searchUrl, termId, onChange }: {
             <div className="scn-carousel-editor__popover-settings">
               <Button
                 type="button"
-                variant={infiniteScroll ? 'default' : 'outline'}
-                className="scn-carousel-editor__infinite-btn"
+                variant="outline"
+                className={cn(
+                  'scn-carousel-editor__infinite-btn',
+                  infiniteScroll && 'scn-carousel-editor__infinite-btn--active'
+                )}
                 onClick={() => onChange({ ...block, infiniteScroll: !infiniteScroll })}
                 aria-pressed={infiniteScroll}
               >
                 <InfinityIcon size={14} />
                 Infinite scroll
               </Button>
-            </div>
-            <div className="scn-carousel-editor__slots">
-              {block.cards.map((slot, i) => (
-                <div key={slot.id} className="scn-carousel-editor__slot">
-                  <div className="scn-carousel-editor__slot-header">
-                    <span className="scn-carousel-editor__slot-num">Slot {i + 1}</span>
-                    <button className="scn-editor-block__ctrl-btn scn-editor-block__ctrl-btn--danger"
-                      onClick={() => removeSlot(slot.id)} title="Remove">×</button>
-                  </div>
-                  <ToggleGroup
-                    value={slot.mode}
-                    onValueChange={v => {
-                      if (v) patchSlot(slot.id, { mode: v as CarouselSlot['mode'], articleId: null, articleTitle: null });
-                    }}
-                  >
-                    <ToggleGroupItem value="random">Random</ToggleGroupItem>
-                    <ToggleGroupItem value="priority">Priority</ToggleGroupItem>
-                    <ToggleGroupItem value="specific">Specific</ToggleGroupItem>
-                  </ToggleGroup>
-                  {slot.mode === 'specific' && (
-                    <ArticleSearchInput
-                      value={{ id: slot.articleId, title: slot.articleTitle }}
-                      onChange={v => patchSlot(slot.id, {
-                        articleId:       v.id,
-                        articleTitle:    v.title,
-                        articleImageUrl: v.id ? (v as ArticleResult).imageUrl ?? null : null,
-                        articleTags:     v.id ? ((v as ArticleResult).tags ?? []) : [],
-                        articleExcerpt:  v.id ? (v as ArticleResult).excerpt  ?? null : null,
-                        articleUrl:      v.id ? (v as ArticleResult).url      ?? null : null,
-                        authorName:      v.id ? (v as ArticleResult).authorName ?? null : null,
-                        publishedAt:     v.id ? (v as ArticleResult).publishedAt ?? null : null,
-                      })}
-                      searchUrl={searchUrl}
-                      placeholder="Search article…"
-                    />
-                  )}
-                </div>
-              ))}
-              <Button variant="ghost" className="scn-bento-editor__add-card" onClick={addSlot}>
+              <Button variant="ghost" className="scn-bento-editor__add-card scn-carousel-editor__add-slot-btn" onClick={addSlot}>
                 + Add slot
               </Button>
             </div>
+            <ScrollArea className="scn-carousel-editor__scroll-area">
+              <div className="scn-carousel-editor__slots">
+                {block.cards.map((slot, i) => (
+                  <div key={slot.id} className="scn-carousel-editor__slot">
+                    <div className="scn-carousel-editor__slot-header">
+                      <span className="scn-carousel-editor__slot-num">Slot {i + 1}</span>
+                      <button className="scn-editor-block__ctrl-btn scn-editor-block__ctrl-btn--danger"
+                        onClick={() => removeSlot(slot.id)} title="Remove">×</button>
+                    </div>
+                    <ToggleGroup
+                      value={slot.mode}
+                      onValueChange={v => {
+                        if (v) patchSlot(slot.id, { mode: v as CarouselSlot['mode'], articleId: null, articleTitle: null });
+                      }}
+                    >
+                      <ToggleGroupItem value="random">Random</ToggleGroupItem>
+                      <ToggleGroupItem value="priority">Priority</ToggleGroupItem>
+                      <ToggleGroupItem value="specific">Specific</ToggleGroupItem>
+                    </ToggleGroup>
+                    {slot.mode === 'specific' && (
+                      <ArticleSearchInput
+                        value={{ id: slot.articleId, title: slot.articleTitle }}
+                        onChange={v => patchSlot(slot.id, {
+                          articleId:       v.id,
+                          articleTitle:    v.title,
+                          articleImageUrl: v.id ? (v as ArticleResult).imageUrl ?? null : null,
+                          articleTags:     v.id ? ((v as ArticleResult).tags ?? []) : [],
+                          articleExcerpt:  v.id ? (v as ArticleResult).excerpt  ?? null : null,
+                          articleUrl:      v.id ? (v as ArticleResult).url      ?? null : null,
+                          authorName:      v.id ? (v as ArticleResult).authorName ?? null : null,
+                          publishedAt:     v.id ? (v as ArticleResult).publishedAt ?? null : null,
+                        })}
+                        searchUrl={searchUrl}
+                        placeholder="Search article…"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
           </PopoverContent>
         </Popover>
       </div>

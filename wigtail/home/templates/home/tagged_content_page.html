@@ -12,14 +12,17 @@
 
         {% if request.user.is_authenticated and request.user.is_staff or request.user.is_authenticated and request.user.is_superuser %}
             <div class="tagged-content__title-row">
-                <h1 class="tagged-content__title" id="tagged-content-title">{{ page.title }}</h1>
                 <a
                     href="{% url 'article_editor' article_id=page.id %}"
                     class="scn-profile-article-edit"
                     aria-label="Open article editor"
                 >
-                    <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 20h9"></path>
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19H4v-3L16.5 3.5z"></path>
+                    </svg>
                 </a>
+                <h1 class="tagged-content__title" id="tagged-content-title">{{ page.title }}</h1>
             </div>
         {% else %}
             <h1 class="tagged-content__title">{{ page.title }}</h1>

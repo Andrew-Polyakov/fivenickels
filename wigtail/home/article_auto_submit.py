@@ -259,6 +259,11 @@ def submit_article_payload(payload: dict[str, Any]) -> AutoSubmitItemResult:
 
     slug = _slug_for_article(title, source_url)
     author_name = (payload.get("author_name") or settings.ARTICLE_SUBMIT_DEFAULT_AUTHOR_NAME or "").strip()
+    seo_title = (payload.get("seo_title") or "").strip()
+    search_description = (payload.get("search_description") or "").strip()
+    catalyst = (payload.get("catalyst") or "").strip()
+    if catalyst not in {"Bullish", "Bearish"}:
+        catalyst = ""
 
     page = TaggedContentPage(
         title=title,
@@ -268,6 +273,9 @@ def submit_article_payload(payload: dict[str, Any]) -> AutoSubmitItemResult:
         body=body_blocks,
         canonical_url=source_url,
         author_name=author_name,
+        seo_title=seo_title,
+        search_description=search_description,
+        catalyst=catalyst,
         live=False,
     )
     home.add_child(instance=page)

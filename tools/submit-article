@@ -68,8 +68,20 @@ def _iter_payloads(
                 "tags": tags,
                 "symbols": symbols,
             }
-            if section_slug:
+            item_section_slug = (news.get("section_slug") or "").strip()
+            if item_section_slug:
+                payload["section_slug"] = item_section_slug
+            elif section_slug:
                 payload["section_slug"] = section_slug
+            seo_title = (news.get("seo_title") or "").strip()
+            if seo_title:
+                payload["seo_title"] = seo_title
+            seo_description = (news.get("seo_description") or "").strip()
+            if seo_description:
+                payload["search_description"] = seo_description
+            catalyst = (news.get("catalyst") or "").strip()
+            if catalyst:
+                payload["catalyst"] = catalyst
             articles.append(payload)
     return articles
 

@@ -82,6 +82,9 @@ class ArticleAutoSubmitAPITests(WagtailPageTestCase):
                         "canonical_url": source_url,
                         "section_slug": self.section.slug,
                         "tags": ["NVDA"],
+                        "seo_title": "Auto SEO title",
+                        "search_description": "Auto SEO description.",
+                        "catalyst": "Bullish",
                     }
                 ]
             }
@@ -95,6 +98,9 @@ class ArticleAutoSubmitAPITests(WagtailPageTestCase):
         self.assertFalse(page.live)
         self.assertTrue(page.awaiting_moderation)
         self.assertEqual(page.section_term_id, self.section.pk)
+        self.assertEqual(page.seo_title, "Auto SEO title")
+        self.assertEqual(page.search_description, "Auto SEO description.")
+        self.assertEqual(page.catalyst, "Bullish")
         self.assertIsNotNone(page.get_latest_revision())
         self.assertTrue(
             page.canonical_url.startswith("http://testserver/")

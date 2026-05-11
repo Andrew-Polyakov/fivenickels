@@ -355,6 +355,13 @@ class SubsectionIndexPage(Page):
 
 
 class TaggedContentPage(SeoMetaFields, Page):
+    CATALYST_BULLISH = "Bullish"
+    CATALYST_BEARISH = "Bearish"
+    CATALYST_CHOICES = (
+        (CATALYST_BULLISH, "Bullish"),
+        (CATALYST_BEARISH, "Bearish"),
+    )
+
     search_fields = Page.search_fields + [
         index.SearchField("tile_preview"),
         index.SearchField("body"),
@@ -422,6 +429,13 @@ class TaggedContentPage(SeoMetaFields, Page):
             "Used for Featured chips on the sector hub."
         ),
     )
+    catalyst = models.CharField(
+        max_length=16,
+        choices=CATALYST_CHOICES,
+        blank=True,
+        default="",
+        help_text="Optional catalyst sentiment label for automated news (Bullish/Bearish).",
+    )
     body = StreamField(
         MAIN_SITE_STREAMBLOCK,
         blank=True,
@@ -433,6 +447,7 @@ class TaggedContentPage(SeoMetaFields, Page):
             [
                 FieldPanel("section_term"),
                 FieldPanel("taxonomy_category"),
+                FieldPanel("catalyst"),
                 FieldPanel("tags"),
                 FieldPanel("hero_image"),
                 FieldPanel("tile_preview"),

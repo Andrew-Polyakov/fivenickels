@@ -19,9 +19,11 @@ import {
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select } from '../components/ui/select';
+import { ScrollArea } from '../components/ui/scroll-area';
 import { ToggleGroup, ToggleGroupItem } from '../components/ui/toggle-group';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { RteToolbar, TABLE_EXTENSIONS } from '../components/ui/rte-editor';
+import { cn } from '../lib/utils';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -130,37 +132,144 @@ function TaxonomyBreadcrumb({
   rootTerms: TaxonomyRoot[];
   sectionTermId: number | null;
   categoryId: number | null;
-  onSectionChange: (id: number) => void;
+  onSectionChange: (id: number | null) => void;
   onCategoryChange: (id: number | null) => void;
 }) {
   const selected = rootTerms.find(t => t.id === sectionTermId) ?? null;
   const children = selected?.children ?? [];
+  const sectionOptions = rootTerms.map(term => ({ value: String(term.id), label: term.name }));
+  const categoryOptions = children.map(term => ({ value: String(term.id), label: term.name }));
 
   return (
     <div className="scn-editor-card">
       <h3 className="scn-editor-card__title">Taxonomy</h3>
       <div className="scn-editor-taxonomy__breadcrumb">
-        <Select
+        <TaxonomyCombobox
           value={sectionTermId?.toString() ?? ''}
-          onChange={e => { onSectionChange(parseInt(e.target.value)); onCategoryChange(null); }}
-        >
-          <option value="">— Section —</option>
-          {rootTerms.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-        </Select>
+          options={sectionOptions}
+          placeholder="Select section"
+          searchPlaceholder="Search sections..."
+          emptyMessage="No sections found."
+          onChange={nextValue => {
+            onSectionChange(nextValue ? parseInt(nextValue, 10) : null);
+            onCategoryChange(null);
+          }}
+        />
         {children.length > 0 && (
           <>
             <span className="scn-editor-taxonomy__sep">›</span>
-            <Select
+            <TaxonomyCombobox
               value={categoryId?.toString() ?? ''}
-              onChange={e => onCategoryChange(e.target.value ? parseInt(e.target.value) : null)}
-            >
-              <option value="">— Category —</option>
-              {children.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </Select>
+              options={[{ value: '', label: 'No category' }, ...categoryOptions]}
+              placeholder="Select category"
+              searchPlaceholder="Search categories..."
+              emptyMessage="No categories found."
+              onChange={nextValue => onCategoryChange(nextValue ? parseInt(nextValue, 10) : null)}
+            />
           </>
         )}
       </div>
     </div>
+  );
+}
+
+function TaxonomyCombobox({
+  value,
+  options,
+  placeholder,
+  searchPlaceholder,
+  emptyMessage,
+  onChange,
+}: {
+  value: string;
+  options: Array<{ value: string; label: string }>;
+  placeholder: string;
+  searchPlaceholder: string;
+  emptyMessage: string;
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [query, setQuery] = React.useState('');
+  const selectedOption = options.find(option => option.value === value) ?? null;
+  const filteredOptions = options.filter((option) =>
+    option.label.toLowerCase().includes(query.trim().toLowerCase())
+  );
+
+  React.useEffect(() => {
+    if (!open) {
+      setQuery('');
+    }
+  }, [open]);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="outline" className="scn-editor-taxonomy__combo-trigger" aria-expanded={open}>
+          <span
+            className={cn(
+              'scn-editor-taxonomy__combo-value',
+              !selectedOption && 'scn-editor-taxonomy__combo-value--placeholder'
+            )}
+          >
+            {selectedOption?.label ?? placeholder}
+          </span>
+          <span className="scn-editor-taxonomy__combo-caret" aria-hidden="true">▾</span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="scn-popover-content scn-editor-taxonomy__combo-popover" align="start">
+        <div className="scn-search-wrap scn-editor-taxonomy__combo-search">
+          <svg
+            className="scn-search-wrap__icon"
+            xmlns="http://www.w3.org/2000/svg"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <Input
+            className="scn-search-wrap__input"
+            value={query}
+            placeholder={searchPlaceholder}
+            onChange={event => setQuery(event.target.value)}
+          />
+        </div>
+        <ScrollArea className="scn-editor-taxonomy__combo-scroll">
+          <div className="scn-editor-taxonomy__combo-options">
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((option) => (
+              <button
+                key={`${option.value || 'none'}-${option.label}`}
+                type="button"
+                className={cn(
+                  'scn-editor-taxonomy__combo-option',
+                  option.value === value && 'scn-editor-taxonomy__combo-option--active'
+                )}
+                onClick={() => {
+                  onChange(option.value);
+                  setOpen(false);
+                }}
+              >
+                <span>{option.label}</span>
+                {option.value === value ? (
+                  <span className="scn-editor-taxonomy__combo-check" aria-hidden="true">✓</span>
+                ) : null}
+              </button>
+            ))
+          ) : (
+            <p className="scn-editor-taxonomy__combo-empty">{emptyMessage}</p>
+          )}
+          </div>
+        </ScrollArea>
+      </PopoverContent>
+    </Popover>
   );
 }
 

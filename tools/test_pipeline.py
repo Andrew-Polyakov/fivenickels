@@ -141,6 +141,56 @@ class PipelineMainTests(unittest.TestCase):
         self.assertIn("--section-slug", command)
         self.assertIn("information-technology", command)
 
+    def test_enrich_command_includes_model_and_urls(self):
+        pipeline = _load_pipeline_module()
+        command = pipeline._enrich_command(
+            input_path=Path("in.json"),
+            output_path=Path("out.json"),
+            ollama_base_url="http://127.0.0.1:11434",
+            ollama_model="vanilj/palmyra-fin-70b-32k:latest",
+            ollama_timeout=120.0,
+            ollama_retries=2,
+            ollama_retry_delay=1.5,
+            section_slug="information-technology",
+        )
+        self.assertIn("enrich-articles-ollama.py", command[1])
+        self.assertIn("--ollama-model", command)
+        self.assertIn("vanilj/palmyra-fin-70b-32k:latest", command)
+        self.assertIn("--retry-delay", command)
+        self.assertIn("1.5", command)
+        self.assertIn("--section-slug", command)
+        self.assertIn("information-technology", command)
+
+    def test_main_passes_retry_delay_to_enrich(self):
+        with mock.patch.object(self.pipeline, "_run_crawl", return_value=0), mock.patch.object(
+            self.pipeline,
+            "_run_enrich",
+            return_value=0,
+        ) as mock_enrich, mock.patch.object(
+            self.pipeline,
+            "_run_submit",
+            return_value=(0, {"created": 0, "skipped": 0, "failed": 0, "results": []}),
+        ), mock.patch.object(self.pipeline, "lib") as mock_lib:
+            mock_lib.repo_root.return_value = _TOOLS_DIR.parent
+            mock_lib.load_repo_env.return_value = None
+            mock_lib.normalize_symbols.return_value = ["NVDA"]
+            mock_lib.resolve_submit_config.return_value = lib.SubmitConfig(
+                endpoint="http://127.0.0.1:8000/api/articles/auto-submit/",
+                token="secret-token",
+                section_slug="information-technology",
+                timeout=60.0,
+            )
+            mock_lib.ensure_submit_config.return_value = None
+            mock_lib.apply_submit_config_to_env.return_value = None
+
+            exit_code = self.pipeline.main(
+                ["--enrich-ollama", "--ollama-retry-delay", "2.75", "--dry-run", "NVDA"]
+            )
+
+        self.assertEqual(exit_code, 0)
+        mock_enrich.assert_called_once()
+        self.assertEqual(mock_enrich.call_args.kwargs["ollama_retry_delay"], 2.75)
+
 
 class SubmitArticleCliTests(unittest.TestCase):
     def test_dry_run_maps_stock_crawler_json(self):
@@ -159,6 +209,10 @@ class SubmitArticleCliTests(unittest.TestCase):
                             "url": "https://example.com/nvda-1",
                             "symbols": ["NVDA"],
                             "tags": ["semiconductor"],
+                            "seo_title": "NVDA chip rally",
+                            "seo_description": "A short search description.",
+                            "catalyst": "Bullish",
+                            "section_slug": "information-technology",
                         }
                     ],
                 }
@@ -181,6 +235,11 @@ class SubmitArticleCliTests(unittest.TestCase):
         data = json.loads(proc.stdout)
         self.assertTrue(data.get("dry_run"))
         self.assertEqual(data.get("count"), 1)
+        article = data["articles"][0]
+        self.assertEqual(article["seo_title"], "NVDA chip rally")
+        self.assertEqual(article["search_description"], "A short search description.")
+        self.assertEqual(article["catalyst"], "Bullish")
+        self.assertEqual(article["section_slug"], "information-technology")
 
 
 if __name__ == "__main__":
