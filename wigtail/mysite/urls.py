@@ -32,6 +32,7 @@ urlpatterns = [
     path("auth/signup/", auth_views.popup_signup, name="popup_signup"),
     path("auth/logout/", auth_views.popup_logout, name="popup_logout"),
     path("profile/", auth_views.profile, name="profile"),
+    path("profile/article/create/", editor_views.create_article, name="article_create"),
     path("profile/article/<int:article_id>/edit/", editor_views.article_editor, name="article_editor"),
     path(
         "inline/taxonomy/create/",

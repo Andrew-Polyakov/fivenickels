@@ -121,8 +121,6 @@ def profile(request: HttpRequest) -> HttpResponse:
         .select_related("section_term", "taxonomy_category")
         .order_by("-first_published_at")[:500]
     )
-    is_staff = request.user and (request.user.is_staff or request.user.is_superuser)
-    
     articles_data = [
         {
             "id": p.id,
@@ -132,8 +130,15 @@ def profile(request: HttpRequest) -> HttpResponse:
             "section_slug": p.section_term.slug,
             "section_name": p.section_term.name,
             "category_name": p.taxonomy_category.name if p.taxonomy_category_id else "",
-            "edit_url": reverse("article_editor", kwargs={"article_id": p.id}) if is_staff else None,
+            "edit_url": reverse("article_editor", kwargs={"article_id": p.id}),
         }
         for p in articles_qs
     ]
-    return render(request, "profile.html", {"articles_data": articles_data, "is_staff": is_staff})
+    return render(
+        request,
+        "profile.html",
+        {
+            "articles_data": articles_data,
+            "create_article_url": reverse("article_create"),
+        },
+    )

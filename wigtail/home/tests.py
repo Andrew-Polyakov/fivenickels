@@ -884,6 +884,24 @@ class InlineEditingApiTests(WagtailPageTestCase):
         self.assertEqual(page_b.title, "Alpha Story")
         self.assertEqual(page_b.slug, "alpha-story-2")
 
+    def test_profile_staff_exposes_article_create_url(self):
+        self.client.force_login(self.admin_user)
+        response = self.client.get(reverse("profile"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'data-create-article-url="{reverse("article_create")}"')
+
+    def test_create_article_creates_draft_and_redirects_to_editor(self):
+        self.client.force_login(self.admin_user)
+        existing_ids = set(TaggedContentPage.objects.values_list("id", flat=True))
+
+        response = self.client.post(reverse("article_create"))
+
+        self.assertEqual(response.status_code, 302)
+        created = TaggedContentPage.objects.exclude(id__in=existing_ids).get()
+        self.assertRedirects(response, reverse("article_editor", kwargs={"article_id": created.pk}))
+        self.assertEqual(created.get_parent().pk, self.homepage.pk)
+        self.assertFalse(created.live)
+
     def test_staff_homepage_renders_inline_chip_delete_controls(self):
         self.client.force_login(self.admin_user)
         response = self.client.get(self.homepage.url)

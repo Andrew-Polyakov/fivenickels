@@ -17,15 +17,15 @@ from home.serializers import (
 )
 
 
-class IsStaffUser(permissions.BasePermission):
+class IsAuthenticatedUser(permissions.BasePermission):
     def has_permission(self, request, view):
-        return bool(request.user and (request.user.is_staff or request.user.is_superuser))
+        return bool(request.user and request.user.is_authenticated)
 
 
 class ArticleEditorViewSet(viewsets.ModelViewSet):
     queryset = TaggedContentPage.objects.all()
     serializer_class = ArticleEditorSerializer
-    permission_classes = [IsStaffUser]
+    permission_classes = [IsAuthenticatedUser]
     parser_classes = (JSONParser, MultiPartParser, FormParser)
     http_method_names = ['get', 'post', 'patch', 'delete', 'options']
 

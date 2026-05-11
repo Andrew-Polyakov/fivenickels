@@ -1,21 +1,18 @@
 """
 Views for article editing from profile page.
 """
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
 from django.http import Http404
-from django.shortcuts import render, get_object_or_404
-from django.views.decorators.http import require_GET
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.utils.text import slugify
+from django.views.decorators.http import require_GET, require_POST
+from wagtail.models import Site
 
-from home.models import TaggedContentPage
-
-
-def _is_staff(user):
-    """Check if user is staff or superuser."""
-    return user and (user.is_staff or user.is_superuser)
+from home.models import HomePage, TaggedContentPage, TaxonomyTerm
 
 
 @login_required
-@user_passes_test(_is_staff)
 @require_GET
 def article_editor(request, article_id):
     """
@@ -32,3 +29,48 @@ def article_editor(request, article_id):
     }
 
     return render(request, 'home/article_editor.html', context)
+
+
+def _get_profile_article_parent(request):
+    site = Site.find_for_request(request)
+    if site is not None:
+        root_page = site.root_page.specific
+        if isinstance(root_page, HomePage):
+            return root_page
+    return HomePage.objects.live().first() or HomePage.objects.first()
+
+
+def _get_default_article_section():
+    return (
+        TaxonomyTerm.objects.filter(depth=1, is_visible=True)
+        .order_by("sort_order", "name")
+        .first()
+        or TaxonomyTerm.objects.filter(depth=1).order_by("sort_order", "name").first()
+    )
+
+
+@login_required
+@require_POST
+def create_article(request):
+    """
+    Create a blank draft article and open it in the profile editor.
+    """
+    parent = _get_profile_article_parent(request)
+    if parent is None:
+        raise Http404("Home page not found")
+
+    section = _get_default_article_section()
+    if section is None:
+        raise Http404("Article section not found")
+
+    title = "Untitled article"
+    timestamp = timezone.now().strftime("%Y%m%d%H%M%S%f")
+    page = TaggedContentPage(
+        title=title,
+        slug=f"{slugify(title) or 'article'}-{timestamp}",
+        section_term=section,
+    )
+    parent.add_child(instance=page)
+    page.save_revision(user=request.user)
+
+    return redirect("article_editor", article_id=page.id)

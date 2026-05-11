@@ -22,56 +22,85 @@ type ArticleRow = {
   section_slug: string;
   section_name: string;
   category_name: string;
+  edit_url: string | null;
 };
 
-const columns: ColumnDef<ArticleRow>[] = [
-  {
-    accessorKey: 'title',
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        className="scn-table__sort-btn"
-        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-      >
-        Title {column.getIsSorted() === 'asc' ? '↑' : column.getIsSorted() === 'desc' ? '↓' : '↕'}
-      </Button>
-    ),
-    cell: ({ row }) => (
-      <a href={row.original.url} className="scn-profile-article-link">
-        {row.getValue('title')}
-      </a>
-    ),
-  },
-  {
-    accessorKey: 'section_name',
-    header: 'Section',
-  },
-  {
-    accessorKey: 'category_name',
-    header: 'Category',
-    cell: ({ row }) => {
-      const v = row.getValue('category_name') as string;
-      return v || <span className="scn-text-muted">—</span>;
-    },
-  },
-  {
-    accessorKey: 'published',
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        className="scn-table__sort-btn"
-        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-      >
-        Published {column.getIsSorted() === 'asc' ? '↑' : column.getIsSorted() === 'desc' ? '↓' : '↕'}
-      </Button>
-    ),
-  },
-];
-
-function ProfileArticlesTable({ articles }: { articles: ArticleRow[] }) {
+function ProfileArticlesTable({
+  articles,
+  createArticleUrl,
+  csrfToken,
+}: {
+  articles: ArticleRow[];
+  createArticleUrl: string;
+  csrfToken: string;
+}) {
+  const createUrl = createArticleUrl || '/profile/article/create/';
   const [selectedSlug, setSelectedSlug] = React.useState<string | null>(null);
   const [globalFilter, setGlobalFilter] = React.useState('');
   const [sorting, setSorting] = React.useState<SortingState>([{ id: 'published', desc: true }]);
+
+  const columns = React.useMemo<ColumnDef<ArticleRow>[]>(
+    () => [
+      {
+        accessorKey: 'title',
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            className="scn-table__sort-btn"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Title {column.getIsSorted() === 'asc' ? '↑' : column.getIsSorted() === 'desc' ? '↓' : '↕'}
+          </Button>
+        ),
+        cell: ({ row }) => (
+          <a href={row.original.url} className="scn-profile-article-link">
+            {row.getValue('title')}
+          </a>
+        ),
+      },
+      {
+        accessorKey: 'section_name',
+        header: 'Section',
+      },
+      {
+        accessorKey: 'category_name',
+        header: 'Category',
+        cell: ({ row }) => {
+          const v = row.getValue('category_name') as string;
+          return v || <span className="scn-text-muted">—</span>;
+        },
+      },
+      {
+        accessorKey: 'published',
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            className="scn-table__sort-btn"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Published {column.getIsSorted() === 'asc' ? '↑' : column.getIsSorted() === 'desc' ? '↓' : '↕'}
+          </Button>
+        ),
+      },
+      {
+        id: 'actions',
+        header: () => null,
+        cell: ({ row }) => {
+          const url = row.original.edit_url;
+          if (!url) return null;
+          return (
+            <a href={url} className="scn-profile-article-edit" aria-label={`Edit ${row.original.title}`} title={`Edit ${row.original.title}`}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19H4v-3L16.5 3.5z" />
+              </svg>
+            </a>
+          );
+        },
+      },
+    ],
+    [createUrl, csrfToken],
+  );
 
   const sections = React.useMemo(() => {
     const seen = new Map<string, string>();
@@ -119,6 +148,17 @@ function ProfileArticlesTable({ articles }: { articles: ArticleRow[] }) {
         ))}
       </div>
       <div className="scn-broker-table__toolbar">
+        <form action={createUrl} method="post" className="scn-profile-articles__create-form">
+          <input type="hidden" name="csrfmiddlewaretoken" value={csrfToken} />
+          <button
+            type="submit"
+            className="scn-profile-articles__create-btn"
+            aria-label="New article"
+            title="New article"
+          >
+            +
+          </button>
+        </form>
         <div className="scn-search-wrap scn-broker-table__search">
           <svg
             className="scn-search-wrap__icon"
@@ -173,7 +213,7 @@ function ProfileArticlesTable({ articles }: { articles: ArticleRow[] }) {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={columns.length} className="scn-table__empty">
+              <TableCell colSpan={table.getAllColumns().length} className="scn-table__empty">
                 No articles found.
               </TableCell>
             </TableRow>
@@ -190,6 +230,8 @@ export function mountShadcnProfileArticlesTable(): void {
   document.querySelectorAll<HTMLElement>('[data-shadcn-profile-articles]').forEach((host) => {
     if (host.dataset['shadcnProfileArticlesBound'] === '1') return;
     const jsonId = host.dataset['articlesJsonId'];
+    const createArticleUrl = host.dataset['createArticleUrl'] ?? '';
+    const csrfToken = host.dataset['csrfToken'] ?? '';
     if (!jsonId) return;
     const el = document.getElementById(jsonId);
     if (!el?.textContent?.trim()) return;
@@ -205,6 +247,8 @@ export function mountShadcnProfileArticlesTable(): void {
       root = createRoot(host);
       profileArticleRoots.set(host, root);
     }
-    root.render(<ProfileArticlesTable articles={data} />);
+    root.render(
+      <ProfileArticlesTable articles={data} createArticleUrl={createArticleUrl} csrfToken={csrfToken} />
+    );
   });
 }

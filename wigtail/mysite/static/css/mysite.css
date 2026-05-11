@@ -5415,6 +5415,21 @@ body.is-auth-modal-open {
     padding: 0 1rem;
 }
 
+.page-profile .site-content {
+    max-width: none;
+    margin: 0;
+}
+
+.page-profile .profile-card {
+    margin: 1.2rem 0;
+}
+
+.page-profile .scn-profile-articles {
+    max-width: none;
+    margin: 1.5rem 0 0;
+    padding: 0;
+}
+
 .scn-profile-articles__filter {
     display: flex;
     flex-wrap: wrap;
@@ -5457,6 +5472,58 @@ body.is-auth-modal-open {
 .scn-profile-article-link:hover {
     color: var(--color-slime);
     text-decoration: underline;
+}
+
+.scn-profile-articles__create-form {
+    display: flex;
+    justify-content: center;
+}
+
+/* "+" button that lives inside the actions column <th> */
+.scn-profile-articles__create-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    font-size: 1rem;
+    line-height: 1;
+    border-radius: 0.375rem;
+    border: 1px solid var(--color-border-subtle);
+    background: transparent;
+    color: #d1fae5;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.scn-profile-articles__create-btn:hover,
+.scn-profile-articles__create-btn:focus-visible {
+    background: var(--color-slime-soft);
+    border-color: var(--color-slime);
+    outline: none;
+}
+
+/* pencil edit link inside each row cell of the actions column */
+.scn-profile-article-edit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 0.375rem;
+    border: 1px solid transparent;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+}
+
+.scn-profile-article-edit:hover,
+.scn-profile-article-edit:focus-visible {
+    color: var(--color-slime);
+    border-color: var(--color-border-subtle);
+    background: var(--color-slime-soft);
+    outline: none;
 }
 
 .scn-text-muted {
