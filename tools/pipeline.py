@@ -34,8 +34,8 @@ def _configure_logging() -> None:
 
 def _crawler_command(symbols: list[str]) -> list[str]:
     if os.name == "nt":
-        crawler = _TOOLS_DIR / "crawler.bat"
-        return ["cmd", "/c", str(crawler), "news", *symbols]
+        project = _TOOLS_DIR / "StockCrawler" / "StockCrawler.csproj"
+        return ["dotnet", "run", "--project", str(project), "--", "news", *symbols]
     crawler = _TOOLS_DIR / "stock-crawler"
     return [str(crawler), "news", *symbols]
 

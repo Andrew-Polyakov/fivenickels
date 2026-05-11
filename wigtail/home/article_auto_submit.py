@@ -13,7 +13,11 @@ from urllib.parse import urlparse
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.utils.html import escape
 from django.utils.text import slugify
+from wagtail.rich_text import RichText
+
+from wagtail.models import Site
 
 from home.alpaca_to_streamfield import truncate_title
 from home.models import ContentTag, HomePage, TaggedContentPage, TaxonomyTerm
@@ -37,14 +41,74 @@ def _slugify_token(raw: str) -> str:
     return s.strip("-")[:255] or "tag"
 
 
-def _slug_for_article(title: str, canonical_url: str) -> str:
+def _source_digest(source_url: str) -> str:
+    return hashlib.sha256(source_url.encode("utf-8")).hexdigest()[:10]
+
+
+def _slug_for_article(title: str, source_url: str) -> str:
     base = slugify((title or "article").strip())[:50] or "article"
-    digest = hashlib.sha256(canonical_url.encode("utf-8")).hexdigest()[:10]
+    digest = _source_digest(source_url)
     return f"{base}-{digest}"
+
+
+def _page_canonical_url(page: TaggedContentPage, *, fallback: str) -> str:
+    def _is_preferred_host(url: str) -> bool:
+        parsed = urlparse(url)
+        host = (parsed.hostname or "").lower()
+        if not host:
+            return False
+        if host == "localhost":
+            return True
+        if "." in host:
+            return True
+        return False
+
+    parts = page.get_url_parts()
+    if parts:
+        _, root_url, page_path = parts
+        candidate = f"{root_url.rstrip('/')}{page_path}"
+        if _is_preferred_host(candidate):
+            return candidate
+    default_site = Site.objects.filter(is_default_site=True).first()
+    if default_site:
+        candidate = f"{default_site.root_url.rstrip('/')}/{page.slug}/"
+        if _is_preferred_host(candidate):
+            return candidate
+    return fallback
 
 
 def _md_escape_link_label(text: str) -> str:
     return text.replace("]", "\\]")
+
+
+def build_paragraph_stream_body(
+    *,
+    content: str | None,
+    summary: str | None,
+    source: str | None,
+    url: str | None,
+) -> list[tuple[str, RichText]]:
+    blocks: list[tuple[str, RichText]] = []
+    main = (content or "").strip() or (summary or "").strip()
+    if main:
+        for para in re.split(r"\n\s*\n", main):
+            text = para.strip()
+            if text:
+                blocks.append(("paragraph", RichText(f"<p>{escape(text)}</p>")))
+
+    src_name = (source or "News").strip() or "News"
+    link = _safe_http_url(url)
+    tail = "Syndicated via Alpaca Markets news feed. Not investment advice."
+    if link:
+        attribution = RichText(
+            "<p>"
+            f'Source: <a href="{escape(link)}">{escape(src_name)}</a>. {escape(tail)}'
+            "</p>"
+        )
+    else:
+        attribution = RichText(f"<p>Source: {escape(src_name)}. {escape(tail)}</p>")
+    blocks.append(("paragraph", attribution))
+    return blocks
 
 
 def build_markdown_body(
@@ -145,18 +209,22 @@ class AutoSubmitItemResult:
 
 
 def submit_article_payload(payload: dict[str, Any]) -> AutoSubmitItemResult:
-    canonical_url = _safe_http_url(payload.get("canonical_url") or payload.get("url"))
-    if not canonical_url:
+    source_url = _safe_http_url(payload.get("canonical_url") or payload.get("url"))
+    if not source_url:
         return AutoSubmitItemResult(
             status="failed",
             error="canonical_url (or url) must be a valid http(s) URL.",
         )
 
-    existing = TaggedContentPage.objects.filter(canonical_url=canonical_url).first()
+    source_digest = _source_digest(source_url)
+    existing = (
+        TaggedContentPage.objects.filter(canonical_url=source_url).first()
+        or TaggedContentPage.objects.filter(slug__endswith=f"-{source_digest}").first()
+    )
     if existing is not None:
         return AutoSubmitItemResult(
             status="skipped",
-            canonical_url=canonical_url,
+            canonical_url=existing.canonical_url or source_url,
             page_id=existing.pk,
             slug=existing.slug,
             reason="duplicate",
@@ -164,21 +232,19 @@ def submit_article_payload(payload: dict[str, Any]) -> AutoSubmitItemResult:
 
     title = truncate_title((payload.get("title") or payload.get("headline") or "").strip())
     tile_preview = (payload.get("tile_preview") or payload.get("summary") or "").strip()
-    body_markdown = (payload.get("body_markdown") or "").strip()
-    if not body_markdown:
-        body_markdown = build_markdown_body(
-            content=payload.get("content"),
-            summary=payload.get("summary"),
-            source=payload.get("source"),
-            url=canonical_url,
-        )
+    body_blocks = build_paragraph_stream_body(
+        content=payload.get("content"),
+        summary=payload.get("summary"),
+        source=payload.get("source"),
+        url=source_url,
+    )
 
     try:
         section_term = _resolve_section_term(payload.get("section_slug"))
     except ValueError as exc:
         return AutoSubmitItemResult(
             status="failed",
-            canonical_url=canonical_url,
+            canonical_url=source_url,
             error=str(exc),
         )
 
@@ -191,7 +257,7 @@ def submit_article_payload(payload: dict[str, Any]) -> AutoSubmitItemResult:
     if isinstance(symbols, list):
         tag_names = [*tag_names, *symbols]
 
-    slug = _slug_for_article(title, canonical_url)
+    slug = _slug_for_article(title, source_url)
     author_name = (payload.get("author_name") or settings.ARTICLE_SUBMIT_DEFAULT_AUTHOR_NAME or "").strip()
 
     page = TaggedContentPage(
@@ -199,12 +265,14 @@ def submit_article_payload(payload: dict[str, Any]) -> AutoSubmitItemResult:
         slug=slug,
         section_term=section_term,
         tile_preview=tile_preview,
-        body=[("markdown", body_markdown)],
-        canonical_url=canonical_url,
+        body=body_blocks,
+        canonical_url=source_url,
         author_name=author_name,
         live=False,
     )
     home.add_child(instance=page)
+    page.canonical_url = _page_canonical_url(page, fallback=source_url)
+    page.save(update_fields=["canonical_url"])
     if page.live:
         page.live = False
         page.save(update_fields=["live"])
@@ -221,7 +289,7 @@ def submit_article_payload(payload: dict[str, Any]) -> AutoSubmitItemResult:
 
     return AutoSubmitItemResult(
         status="created",
-        canonical_url=canonical_url,
+        canonical_url=page.canonical_url,
         page_id=page.pk,
         slug=page.slug,
     )

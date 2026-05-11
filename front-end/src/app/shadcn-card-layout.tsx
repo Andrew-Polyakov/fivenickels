@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { SearchIcon } from 'lucide-react';
+import { Infinity as InfinityIcon, SearchIcon } from 'lucide-react';
 import { Group, Panel, Separator as ResizeSeparator } from 'react-resizable-panels';
 
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -2401,14 +2401,16 @@ export function CardLayoutRoot({
               <div className="scn-auth-form scn-card-properties-form">
                 {showCarouselLayoutControls ? (
                   <div className="scn-field">
-                    <label className="scn-properties-list__checkbox">
-                      <input
-                        type="checkbox"
-                        checked={propertiesInfiniteScroll}
-                        onChange={(e) => setPropertiesInfiniteScroll(e.currentTarget.checked)}
-                      />
+                    <Button
+                      type="button"
+                      variant={propertiesInfiniteScroll ? 'default' : 'outline'}
+                      className="scn-infinite-toggle-btn"
+                      onClick={() => setPropertiesInfiniteScroll((v) => !v)}
+                      aria-pressed={propertiesInfiniteScroll}
+                    >
+                      <InfinityIcon size={14} />
                       Infinite scroll
-                    </label>
+                    </Button>
                   </div>
                 ) : null}
                 <div className="scn-field">

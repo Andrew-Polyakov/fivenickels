@@ -229,12 +229,14 @@ function ProfileArticlesTable({
           const url = row.original.edit_url;
           if (!url) return null;
           return (
-            <a href={url} className="scn-profile-article-edit" aria-label={`Edit ${row.original.title}`} title={`Edit ${row.original.title}`}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M12 20h9" />
-                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19H4v-3L16.5 3.5z" />
-              </svg>
-            </a>
+            <Button asChild className="scn-profile-action-edit scn-profile-article-edit">
+              <a href={url} aria-label={`Edit ${row.original.title}`} title={`Edit ${row.original.title}`}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19H4v-3L16.5 3.5z" />
+                </svg>
+              </a>
+            </Button>
           );
         },
       },
@@ -468,12 +470,12 @@ function ProfileModerationGrid({
               <p className="scn-profile-moderation-card__author">{item.author_name}</p>
               {item.preview ? <p className="scn-profile-moderation-card__preview">{item.preview}</p> : null}
               <div className="scn-profile-moderation-card__actions">
-                <a href={item.edit_url} className="scn-profile-moderation-card__edit">
-                  Edit
-                </a>
+                <Button asChild className="scn-profile-action-edit scn-profile-moderation-card__edit">
+                  <a href={item.edit_url}>Edit</a>
+                </Button>
                 <Button
                   type="button"
-                  className="scn-profile-moderation-card__approve"
+                  className="scn-profile-action-approve scn-profile-moderation-card__approve"
                   disabled={pendingId === item.id}
                   onClick={() => approveItem(item)}
                 >

@@ -8,6 +8,14 @@ import TiptapLink from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 
 import { Button } from '../components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select } from '../components/ui/select';
@@ -23,10 +31,11 @@ type Tag = { id: number; name: string };
 
 type HeadingBlock   = { id: string; type: 'heading';   level: 'h1' | 'h2'; text: string };
 type ParagraphBlock = { id: string; type: 'paragraph'; html: string };
+type MarkdownBlock  = { id: string; type: 'markdown'; markdown: string };
 type ImageBlock     = { id: string; type: 'image';     imageId: number | null; imageUrl: string | null };
 type EmbedBlock     = { id: string; type: 'embed';     url: string };
 type SeparatorBlock = { id: string; type: 'separator'; orientation: 'horizontal' | 'vertical' };
-type BodyBlock = HeadingBlock | ParagraphBlock | ImageBlock | EmbedBlock | SeparatorBlock;
+type BodyBlock = HeadingBlock | ParagraphBlock | MarkdownBlock | ImageBlock | EmbedBlock | SeparatorBlock;
 
 type ArticleApiData = {
   id: number;
@@ -85,6 +94,8 @@ function apiToEditor(apiBlocks: ArticleApiData['body']): BodyBlock[] {
       out.push({ id, type: 'heading', level: (v?.level as 'h1' | 'h2') || 'h2', text: v?.text || '' });
     } else if (b.type === 'paragraph') {
       out.push({ id, type: 'paragraph', html: (b.value as string) || '' });
+    } else if (b.type === 'markdown') {
+      out.push({ id, type: 'markdown', markdown: (b.value as string) || '' });
     } else if (b.type === 'image') {
       const v = b.value as { id?: number; url?: string } | null;
       out.push({ id, type: 'image', imageId: v?.id ?? null, imageUrl: v?.url ?? null });
@@ -95,7 +106,7 @@ function apiToEditor(apiBlocks: ArticleApiData['body']): BodyBlock[] {
       const v = b.value as { orientation?: string } | null;
       out.push({ id, type: 'separator', orientation: (v?.orientation as 'horizontal' | 'vertical') || 'horizontal' });
     }
-    // skip markdown, card, unknown
+    // skip card, unknown
   }
   return out;
 }
@@ -104,6 +115,7 @@ function editorToApi(blocks: BodyBlock[]): unknown[] {
   return blocks.map(b => {
     if (b.type === 'heading')   return { id: b.id, type: 'heading',   value: { level: b.level, text: b.text } };
     if (b.type === 'paragraph') return { id: b.id, type: 'paragraph', value: b.html || '' };
+    if (b.type === 'markdown')  return { id: b.id, type: 'markdown',  value: b.markdown || '' };
     if (b.type === 'image')     return { id: b.id, type: 'image',     value: b.imageId };
     if (b.type === 'embed')     return { id: b.id, type: 'embed',     value: { url: b.url } };
     return { id: b.id, type: 'separator', value: { orientation: (b as SeparatorBlock).orientation } };
@@ -511,8 +523,22 @@ function SeparatorEditor({ block, onChange }: { block: SeparatorBlock; onChange:
   );
 }
 
+function MarkdownEditor({ block, onChange }: { block: MarkdownBlock; onChange: (b: MarkdownBlock) => void }) {
+  return (
+    <div className="scn-editor-block__fields">
+      <textarea
+        className="scn-editor-tile-preview scn-editor-markdown"
+        placeholder="Markdown body content…"
+        rows={12}
+        value={block.markdown}
+        onChange={e => onChange({ ...block, markdown: e.target.value })}
+      />
+    </div>
+  );
+}
+
 const BLOCK_LABEL: Record<string, string> = {
-  heading: 'Heading', paragraph: 'Paragraph', image: 'Image', embed: 'Embed', separator: 'Separator',
+  heading: 'Heading', paragraph: 'Paragraph', markdown: 'Markdown', image: 'Image', embed: 'Embed', separator: 'Separator',
 };
 
 function BlockEditor({ block, index, total, articleId, apiBase, onChange, onRemove, onMove }: {
@@ -535,6 +561,7 @@ function BlockEditor({ block, index, total, articleId, apiBase, onChange, onRemo
       <div className="scn-editor-block__body">
         {block.type === 'heading'   && <HeadingEditor   block={block} onChange={onChange as (b: HeadingBlock) => void} />}
         {block.type === 'paragraph' && <ParagraphEditor block={block} apiBase={apiBase} onChange={onChange as (b: ParagraphBlock) => void} />}
+        {block.type === 'markdown'  && <MarkdownEditor  block={block} onChange={onChange as (b: MarkdownBlock) => void} />}
         {block.type === 'image'     && <ImageEditor     block={block} articleId={articleId} apiBase={apiBase} onChange={onChange as (b: ImageBlock) => void} />}
         {block.type === 'embed'     && <EmbedEditor     block={block} onChange={onChange as (b: EmbedBlock) => void} />}
         {block.type === 'separator' && <SeparatorEditor block={block} onChange={onChange as (b: SeparatorBlock) => void} />}
@@ -548,6 +575,7 @@ function AddBlockMenu({ onAdd }: { onAdd: (type: BodyBlock['type']) => void }) {
   const types: Array<{ type: BodyBlock['type']; desc: string }> = [
     { type: 'heading',   desc: 'H2 or H3 section title' },
     { type: 'paragraph', desc: 'Rich text block' },
+    { type: 'markdown',  desc: 'Markdown body text' },
     { type: 'image',     desc: 'Uploaded image' },
     { type: 'embed',     desc: 'YouTube, Twitter…' },
     { type: 'separator', desc: 'Horizontal or vertical rule' },
@@ -662,37 +690,69 @@ function ActionsPopover({ status, onAction, disabled }: {
   status: 'published' | 'draft'; onAction: (a: ArticleAction) => void; disabled: boolean;
 }) {
   const [open, setOpen] = React.useState(false);
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
   function go(a: ArticleAction) { onAction(a); setOpen(false); }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button variant="outline" disabled={disabled}>More ▾</Button>
-      </PopoverTrigger>
-      <PopoverContent className="scn-popover-content scn-editor-actions-menu" align="end">
-        {status === 'draft' && (
-          <button className="scn-editor-action-item" onClick={() => go('publish')}>
-            <span className="scn-editor-action-item__icon">◉</span> Publish
+    <>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" disabled={disabled}>More ▾</Button>
+        </PopoverTrigger>
+        <PopoverContent className="scn-popover-content scn-editor-actions-menu" align="end">
+          {status === 'draft' && (
+            <button className="scn-editor-action-item" onClick={() => go('publish')}>
+              <span className="scn-editor-action-item__icon">◉</span> Publish
+            </button>
+          )}
+          {status === 'published' && (
+            <button className="scn-editor-action-item" onClick={() => go('unpublish')}>
+              <span className="scn-editor-action-item__icon">○</span> Unpublish
+            </button>
+          )}
+          <button className="scn-editor-action-item" onClick={() => go('submit_moderation')}>
+            <span className="scn-editor-action-item__icon">⊙</span> Submit for moderation
           </button>
-        )}
-        {status === 'published' && (
-          <button className="scn-editor-action-item" onClick={() => go('unpublish')}>
-            <span className="scn-editor-action-item__icon">○</span> Unpublish
+          <button className="scn-editor-action-item" onClick={() => go('save_draft')}>
+            <span className="scn-editor-action-item__icon">◫</span> Save draft
           </button>
-        )}
-        <button className="scn-editor-action-item" onClick={() => go('submit_moderation')}>
-          <span className="scn-editor-action-item__icon">⊙</span> Submit for moderation
-        </button>
-        <button className="scn-editor-action-item" onClick={() => go('save_draft')}>
-          <span className="scn-editor-action-item__icon">◫</span> Save draft
-        </button>
-        <div className="scn-editor-actions-menu__sep" />
-        <button className="scn-editor-action-item scn-editor-action-item--danger"
-          onClick={() => { if (window.confirm('Delete this article? This cannot be undone.')) go('delete'); }}>
-          <span className="scn-editor-action-item__icon">⊗</span> Delete
-        </button>
-      </PopoverContent>
-    </Popover>
+          <div className="scn-editor-actions-menu__sep" />
+          <button
+            className="scn-editor-action-item scn-editor-action-item--danger"
+            onClick={() => {
+              setOpen(false);
+              setDeleteOpen(true);
+            }}
+          >
+            <span className="scn-editor-action-item__icon">⊗</span> Delete
+          </button>
+        </PopoverContent>
+      </Popover>
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete article</DialogTitle>
+            <DialogDescription>
+              Delete this article? This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setDeleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                setDeleteOpen(false);
+                go('delete');
+              }}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -849,6 +909,7 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
       switch (type) {
         case 'heading':   return { id, type: 'heading',   level: 'h2', text: '' };
         case 'paragraph': return { id, type: 'paragraph', html: '' };
+        case 'markdown':  return { id, type: 'markdown',  markdown: '' };
         case 'image':     return { id, type: 'image',     imageId: null, imageUrl: null };
         case 'embed':     return { id, type: 'embed',     url: '' };
         case 'separator': return { id, type: 'separator', orientation: 'horizontal' };

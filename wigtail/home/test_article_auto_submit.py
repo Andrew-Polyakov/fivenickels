@@ -12,7 +12,11 @@ from django.urls import reverse
 from wagtail.models import Page, Site
 from wagtail.test.utils import WagtailPageTestCase
 
-from home.article_auto_submit import build_markdown_body, submit_articles_batch
+from home.article_auto_submit import (
+    build_markdown_body,
+    build_paragraph_stream_body,
+    submit_articles_batch,
+)
 from home.models import HomePage, TaggedContentPage, TaxonomyTerm
 
 
@@ -67,7 +71,7 @@ class ArticleAutoSubmitAPITests(WagtailPageTestCase):
         self.assertEqual(response.status_code, 403)
 
     def test_creates_draft_submitted_for_moderation(self):
-        canonical = "https://example.com/news/auto-submit-1"
+        source_url = "https://example.com/news/auto-submit-1"
         response = self._post(
             {
                 "articles": [
@@ -75,7 +79,7 @@ class ArticleAutoSubmitAPITests(WagtailPageTestCase):
                         "title": "Auto headline",
                         "summary": "Summary line.",
                         "content": "Body text.",
-                        "canonical_url": canonical,
+                        "canonical_url": source_url,
                         "section_slug": self.section.slug,
                         "tags": ["NVDA"],
                     }
@@ -87,21 +91,29 @@ class ArticleAutoSubmitAPITests(WagtailPageTestCase):
         self.assertEqual(body["created"], 1)
         self.assertEqual(body["failed"], 0)
 
-        page = TaggedContentPage.objects.get(canonical_url=canonical)
+        page = TaggedContentPage.objects.get(pk=body["results"][0]["id"])
         self.assertFalse(page.live)
         self.assertTrue(page.awaiting_moderation)
         self.assertEqual(page.section_term_id, self.section.pk)
         self.assertIsNotNone(page.get_latest_revision())
+        self.assertTrue(
+            page.canonical_url.startswith("http://testserver/")
+            or page.canonical_url == source_url
+        )
+        block_types = [block.block_type for block in page.body]
+        self.assertIn("paragraph", block_types)
+        self.assertNotIn("markdown", block_types)
+        self.assertIn("Body text.", str(page.body[0].value))
 
     def test_skips_duplicate_canonical_url(self):
-        canonical = "https://example.com/news/auto-submit-dup"
+        source_url = "https://example.com/news/auto-submit-dup"
         first = self._post(
             {
                 "articles": [
                     {
                         "title": "First",
                         "summary": "One",
-                        "canonical_url": canonical,
+                        "canonical_url": source_url,
                         "section_slug": self.section.slug,
                     }
                 ]
@@ -114,7 +126,7 @@ class ArticleAutoSubmitAPITests(WagtailPageTestCase):
                     {
                         "title": "Second",
                         "summary": "Two",
-                        "canonical_url": canonical,
+                        "canonical_url": source_url,
                         "section_slug": self.section.slug,
                     }
                 ]
@@ -124,13 +136,22 @@ class ArticleAutoSubmitAPITests(WagtailPageTestCase):
         body = second.json()
         self.assertEqual(body["created"], 0)
         self.assertEqual(body["skipped"], 1)
-        self.assertEqual(
-            TaggedContentPage.objects.filter(canonical_url=canonical).count(),
-            1,
-        )
+        self.assertEqual(TaggedContentPage.objects.count(), 1)
 
 
 class ArticleAutoSubmitHelperTests(WagtailPageTestCase):
+    def test_build_paragraph_stream_body_uses_paragraph_blocks(self):
+        blocks = build_paragraph_stream_body(
+            content="Main body",
+            summary="",
+            source="Example Wire",
+            url="https://example.com/story",
+        )
+        self.assertGreaterEqual(len(blocks), 2)
+        self.assertTrue(all(block_type == "paragraph" for block_type, _ in blocks))
+        self.assertIn("Main body", str(blocks[0][1]))
+        self.assertIn("Example Wire", str(blocks[-1][1]))
+
     def test_build_markdown_body_includes_attribution(self):
         md = build_markdown_body(
             content="Main body",

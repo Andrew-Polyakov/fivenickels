@@ -113,6 +113,16 @@ class PipelineMainTests(unittest.TestCase):
         mock_crawl.assert_called_once()
         mock_submit.assert_not_called()
 
+    @unittest.skipUnless(os.name == "nt", "Windows only")
+    def test_crawler_command_uses_dotnet_on_windows(self):
+        tools_dir = Path(r"C:\Users\me\My Drive\tools")
+        with mock.patch.object(self.pipeline, "_TOOLS_DIR", tools_dir):
+            command = self.pipeline._crawler_command(["COST"])
+        self.assertEqual(command[0], "dotnet")
+        self.assertIn("My Drive", command[3])
+        self.assertIn("StockCrawler.csproj", command[3])
+        self.assertEqual(command[-2:], ["news", "COST"])
+
     def test_submit_command_includes_token(self):
         pipeline = _load_pipeline_module()
         config = lib.SubmitConfig(

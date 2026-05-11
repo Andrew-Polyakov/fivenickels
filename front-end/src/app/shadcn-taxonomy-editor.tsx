@@ -9,7 +9,7 @@ import StarterKit from '@tiptap/starter-kit';
 import TiptapLink from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 
-import { Settings2 } from 'lucide-react';
+import { Infinity as InfinityIcon, Settings2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardTitle } from '../components/ui/card';
@@ -45,7 +45,7 @@ type CarouselSlot  = {
   authorName?: string | null;
   publishedAt?: string | null;
 };
-type CarouselBlock = { id: string; type: 'carousel'; cards: CarouselSlot[] };
+type CarouselBlock = { id: string; type: 'carousel'; cards: CarouselSlot[]; infiniteScroll?: boolean };
 
 type TaxonomyBlock = HeadingBlock | ParagraphBlock | ImageBlock | EmbedBlock | SeparatorBlock | BentoBlock | CarouselBlock;
 type TaxonomyContentJson = { version: number; blocks: TaxonomyBlock[] };
@@ -610,11 +610,28 @@ function BentoEditor({ block, searchUrl, onChange }: {
 
 // ─── Carousel Editor ──────────────────────────────────────────────────────────
 
+const CAROUSEL_AUTOPLAY_DELAY_MS = 3500;
+
+function carouselAutoplayPlugins(infiniteScroll: boolean) {
+  if (!infiniteScroll) {
+    return undefined;
+  }
+  return [Autoplay({ delay: CAROUSEL_AUTOPLAY_DELAY_MS, stopOnInteraction: true })];
+}
+
+function carouselAutoplayOpts(infiniteScroll: boolean) {
+  if (!infiniteScroll) {
+    return undefined;
+  }
+  return { loop: true };
+}
+
 function CarouselEditor({ block, searchUrl, termId, onChange }: {
   block: CarouselBlock; searchUrl: string; termId: number; onChange: (b: CarouselBlock) => void;
 }) {
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const resolvedRandom = useResolvedCarouselPreviews(block.cards, termId);
+  const infiniteScroll = Boolean(block.infiniteScroll);
 
   function addSlot() {
     onChange({ ...block, cards: [...block.cards, { id: uid(), mode: 'random', articleId: null, articleTitle: null }] });
@@ -641,6 +658,18 @@ function CarouselEditor({ block, searchUrl, termId, onChange }: {
             </Button>
           </PopoverTrigger>
           <PopoverContent className="scn-popover-content scn-carousel-editor__popover" align="end">
+            <div className="scn-carousel-editor__popover-settings">
+              <Button
+                type="button"
+                variant={infiniteScroll ? 'default' : 'outline'}
+                className="scn-carousel-editor__infinite-btn"
+                onClick={() => onChange({ ...block, infiniteScroll: !infiniteScroll })}
+                aria-pressed={infiniteScroll}
+              >
+                <InfinityIcon size={14} />
+                Infinite scroll
+              </Button>
+            </div>
             <div className="scn-carousel-editor__slots">
               {block.cards.map((slot, i) => (
                 <div key={slot.id} className="scn-carousel-editor__slot">
@@ -687,7 +716,11 @@ function CarouselEditor({ block, searchUrl, termId, onChange }: {
       </div>
 
       {block.cards.length > 0 && (
-        <Carousel className="scn-carousel-editor__preview">
+        <Carousel
+          className="scn-carousel-editor__preview"
+          opts={carouselAutoplayOpts(infiniteScroll)}
+          plugins={carouselAutoplayPlugins(infiniteScroll)}
+        >
           <CarouselContent>
             {block.cards.map((slot, i) => (
               <CarouselItem key={slot.id} className="scn-carousel-editor__preview-item">
@@ -812,10 +845,6 @@ function AddBlockMenu({ onAdd }: { onAdd: (type: TaxonomyBlock['type']) => void 
 // ─── Read-only renderer ───────────────────────────────────────────────────────
 
 function ReadOnlyBlock({ block, termId }: { block: TaxonomyBlock; termId: number }) {
-  const autoplay = React.useMemo(
-    () => Autoplay({ delay: 3500, stopOnInteraction: true }),
-    []
-  );
   const resolvedRandom = useResolvedCarouselPreviews(block.type === 'carousel' ? block.cards : [], termId);
 
   if (block.type === 'heading') {
@@ -867,9 +896,13 @@ function ReadOnlyBlock({ block, termId }: { block: TaxonomyBlock; termId: number
   }
 
   if (block.type === 'carousel') {
+    const infiniteScroll = Boolean(block.infiniteScroll);
     return (
       <div className="scn-taxonomy-content__carousel-wrap">
-        <Carousel plugins={[autoplay]}>
+        <Carousel
+          opts={carouselAutoplayOpts(infiniteScroll)}
+          plugins={carouselAutoplayPlugins(infiniteScroll)}
+        >
           <CarouselContent>
             {block.cards.map((slot, i) => (
               <CarouselItem key={slot.id} className="scn-taxonomy-content__carousel-item">
@@ -980,7 +1013,7 @@ function TaxonomyEditor({ termId, initialJson, canEdit, saveUrl, uploadUrl, arti
         case 'embed':     return { id, type: 'embed',     url: '' };
         case 'separator': return { id, type: 'separator', orientation: 'horizontal' };
         case 'bento':     return { id, type: 'bento',     columns: [] };
-        case 'carousel':  return { id, type: 'carousel',  cards: [{ id: uid(), mode: 'random', articleId: null, articleTitle: null }] };
+        case 'carousel':  return { id, type: 'carousel',  cards: [{ id: uid(), mode: 'random', articleId: null, articleTitle: null }], infiniteScroll: false };
       }
     })();
     setBlocks(prev => [...prev, newBlock]);
