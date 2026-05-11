@@ -6148,6 +6148,27 @@ body.is-auth-modal-open {
 .scn-editor-priority-expiry .scn-input { width: 100%; }
 
 /* Tags */
+.scn-editor-tags__controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.scn-editor-tags__combo-trigger {
+    flex: 1;
+}
+
+.scn-editor-tags__add-btn {
+    width: 2.25rem;
+    min-width: 2.25rem;
+    padding-inline: 0;
+}
+
+.scn-editor-tags__new-tag-form {
+    display: grid;
+    gap: 0.75rem;
+}
+
 .scn-editor-tags__suggestions,
 .scn-editor-tags__chips {
     display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem;

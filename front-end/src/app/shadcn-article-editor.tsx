@@ -140,6 +140,16 @@ function editorToApi(blocks: BodyBlock[]): unknown[] {
   });
 }
 
+function mergeUniqueTags(...collections: Tag[][]): Tag[] {
+  const byId = new Map<number, Tag>();
+  for (const tags of collections) {
+    for (const tag of tags) {
+      byId.set(tag.id, tag);
+    }
+  }
+  return Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name));
+}
+
 function CatalystBullIcon() {
   return (
     <svg
@@ -467,48 +477,166 @@ function PrioritySlider({ label, value, onChange }: {
 
 // ─── Tags Section ─────────────────────────────────────────────────────────────
 
-function TagsSection({ selectedTags, apiBase, onTagsChange }: {
-  selectedTags: Tag[]; apiBase: string; onTagsChange: (t: Tag[]) => void;
+function TagsSection({ selectedTags, allTags, apiBase, onTagsChange, onTagCreated }: {
+  selectedTags: Tag[];
+  allTags: Tag[];
+  apiBase: string;
+  onTagsChange: (t: Tag[]) => void;
+  onTagCreated: (tag: Tag) => void;
 }) {
+  const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState('');
-  const [suggestions, setSuggestions] = React.useState<Tag[]>([]);
-  const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [createOpen, setCreateOpen] = React.useState(false);
+  const [newTagName, setNewTagName] = React.useState('');
+  const [createError, setCreateError] = React.useState('');
+  const [creating, setCreating] = React.useState(false);
+  const newTagInputId = React.useId();
 
-  function search(q: string) {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    if (!q.trim()) { setSuggestions([]); return; }
-    timerRef.current = setTimeout(async () => {
+  const selectedIds = React.useMemo(() => new Set(selectedTags.map(tag => tag.id)), [selectedTags]);
+
+  const filteredTags = React.useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    return allTags.filter(tag => {
+      if (selectedIds.has(tag.id)) return false;
+      if (!normalizedQuery) return true;
+      return tag.name.toLowerCase().includes(normalizedQuery);
+    });
+  }, [allTags, query, selectedIds]);
+
+  React.useEffect(() => {
+    if (!open) {
+      setQuery('');
+    }
+  }, [open]);
+
+  React.useEffect(() => {
+    if (!createOpen) {
+      setNewTagName('');
+      setCreateError('');
+      setCreating(false);
+    }
+  }, [createOpen]);
+
+  function addTag(tag: Tag) {
+    if (selectedIds.has(tag.id)) return;
+    onTagsChange([...selectedTags, tag]);
+    setOpen(false);
+    setQuery('');
+  }
+
+  async function handleCreateTag() {
+    const name = newTagName.trim();
+    if (!name) {
+      setCreateError('Tag name is required.');
+      return;
+    }
+
+    setCreating(true);
+    setCreateError('');
+    try {
+      const response = await api(`${apiBase}/articles/tags/`, {
+        method: 'POST',
+        body: JSON.stringify({ name }),
+      });
+      let payload: unknown = null;
       try {
-        const res = await api(`${apiBase}/articles/tags/?q=${encodeURIComponent(q)}`);
-        const data = await res.json() as Tag[];
-        const ids = new Set(selectedTags.map(t => t.id));
-        setSuggestions(data.filter(t => !ids.has(t.id)));
-      } catch { setSuggestions([]); }
-    }, 280);
+        payload = await response.json();
+      } catch {
+        payload = null;
+      }
+
+      const createdTag = payload as Partial<Tag> | null;
+      if (!response.ok || typeof createdTag?.id !== 'number' || typeof createdTag?.name !== 'string') {
+        const maybeError = payload as { detail?: string; error?: string } | null;
+        setCreateError(maybeError?.detail || maybeError?.error || 'Failed to create tag.');
+        return;
+      }
+
+      onTagCreated(createdTag as Tag);
+      addTag(createdTag as Tag);
+      setCreateOpen(false);
+    } catch {
+      setCreateError('Failed to create tag.');
+    } finally {
+      setCreating(false);
+    }
   }
 
   return (
     <div className="scn-editor-card">
       <h3 className="scn-editor-card__title">Tags</h3>
-      <div className="scn-search-wrap">
-        <svg className="scn-search-wrap__icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-          strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-        <Input className="scn-search-wrap__input" placeholder="Search tags…" value={query}
-          onChange={e => { setQuery(e.target.value); search(e.target.value); }} />
+      <div className="scn-editor-tags__controls">
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              className="scn-editor-taxonomy__combo-trigger scn-editor-tags__combo-trigger"
+              aria-expanded={open}
+            >
+              <span className={cn('scn-editor-taxonomy__combo-value', selectedTags.length === 0 && 'scn-editor-taxonomy__combo-value--placeholder')}>
+                {selectedTags.length > 0 ? `${selectedTags.length} selected` : 'Search or browse tags'}
+              </span>
+              <span className="scn-editor-taxonomy__combo-caret" aria-hidden="true">▾</span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="scn-popover-content scn-editor-taxonomy__combo-popover" align="start">
+            <div className="scn-search-wrap scn-editor-taxonomy__combo-search">
+              <svg
+                className="scn-search-wrap__icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <Input
+                className="scn-search-wrap__input"
+                placeholder="Search tags..."
+                value={query}
+                onChange={event => setQuery(event.target.value)}
+              />
+            </div>
+            <ScrollArea className="scn-editor-taxonomy__combo-scroll">
+              <div className="scn-editor-taxonomy__combo-options">
+                {filteredTags.length > 0 ? (
+                  filteredTags.map((tag) => (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      className="scn-editor-taxonomy__combo-option"
+                      onClick={() => addTag(tag)}
+                    >
+                      <span>{tag.name}</span>
+                    </button>
+                  ))
+                ) : (
+                  <p className="scn-editor-taxonomy__combo-empty">
+                    {query.trim() ? 'No matching tags found.' : 'No available tags.'}
+                  </p>
+                )}
+              </div>
+            </ScrollArea>
+          </PopoverContent>
+        </Popover>
+        <Button
+          type="button"
+          variant="outline"
+          className="scn-editor-tags__add-btn"
+          onClick={() => setCreateOpen(true)}
+          aria-label="Create new tag"
+        >
+          +
+        </Button>
       </div>
-      {suggestions.length > 0 && (
-        <div className="scn-editor-tags__suggestions">
-          {suggestions.map(t => (
-            <button key={t.id} className="scn-profile-chip"
-              onClick={() => { onTagsChange([...selectedTags, t]); setQuery(''); setSuggestions([]); }}>
-              + {t.name}
-            </button>
-          ))}
-        </div>
-      )}
       {selectedTags.length > 0 && (
         <div className="scn-editor-tags__chips">
           {selectedTags.map(t => (
@@ -519,6 +647,41 @@ function TagsSection({ selectedTags, apiBase, onTagsChange }: {
           ))}
         </div>
       )}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create tag</DialogTitle>
+            <DialogDescription>
+              Add a new tag, then it will be selected on this article.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            className="scn-editor-tags__new-tag-form"
+            onSubmit={event => {
+              event.preventDefault();
+              void handleCreateTag();
+            }}
+          >
+            <Label htmlFor={newTagInputId} className="scn-editor-field-label">Tag name</Label>
+            <Input
+              id={newTagInputId}
+              placeholder="e.g. AI, Earnings, Semiconductors"
+              value={newTagName}
+              onChange={event => setNewTagName(event.target.value)}
+              disabled={creating}
+            />
+            {createError ? <p className="scn-editor-error">{createError}</p> : null}
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setCreateOpen(false)} disabled={creating}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={creating || !newTagName.trim()}>
+                {creating ? 'Creating…' : 'Create tag'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -1006,6 +1169,7 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
   const [ogImageUrl, setOgImageUrl]    = React.useState<string | null>(null);
   const [ogImageId, setOgImageId]      = React.useState<number | null>(null);
   const [tags, setTags]               = React.useState<Tag[]>([]);
+  const [allTags, setAllTags]         = React.useState<Tag[]>([]);
   const [blocks, setBlocks]           = React.useState<BodyBlock[]>([]);
   const [status, setStatus]           = React.useState<'published' | 'draft'>('draft');
   const [rootTerms, setRootTerms]     = React.useState<TaxonomyRoot[]>([]);
@@ -1021,13 +1185,14 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
   React.useEffect(() => {
     async function load() {
       try {
-        const [ar, tr] = await Promise.all([
+        const [ar, tr, tgr] = await Promise.all([
           api(`${apiBase}/articles/${articleId}/`),
           api(`${apiBase}/articles/taxonomy/`),
+          api(`${apiBase}/articles/tags/`),
         ]);
-        if (!ar.ok || !tr.ok) { notify('Failed to load article', 'error'); return; }
-        const [article, taxonomy]: [ArticleApiData, { root_terms: TaxonomyRoot[] }] = await Promise.all([
-          ar.json(), tr.json(),
+        if (!ar.ok || !tr.ok || !tgr.ok) { notify('Failed to load article', 'error'); return; }
+        const [article, taxonomy, tagCatalog]: [ArticleApiData, { root_terms: TaxonomyRoot[] }, Tag[]] = await Promise.all([
+          ar.json(), tr.json(), tgr.json(),
         ]);
         setTitle(article.title);
         setSection(article.section_term?.id ?? null);
@@ -1048,6 +1213,7 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
         setOgImageUrl(article.og_image_url);
         setOgImageId(article.og_image);
         setTags(article.tags);
+        setAllTags(mergeUniqueTags(tagCatalog, article.tags));
         setBlocks(apiToEditor(article.body));
         setStatus(article.status);
         setRootTerms(taxonomy.root_terms);
@@ -1223,7 +1389,13 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
             </div>
           </div>
 
-          <TagsSection selectedTags={tags} apiBase={apiBase} onTagsChange={setTags} />
+          <TagsSection
+            selectedTags={tags}
+            allTags={allTags}
+            apiBase={apiBase}
+            onTagsChange={setTags}
+            onTagCreated={tag => setAllTags(prev => mergeUniqueTags(prev, [tag]))}
+          />
 
           <div className="scn-editor-card">
             <h3 className="scn-editor-card__title">Author</h3>

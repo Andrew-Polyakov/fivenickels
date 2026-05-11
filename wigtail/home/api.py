@@ -172,13 +172,29 @@ class ArticleEditorViewSet(viewsets.ModelViewSet):
 
         return Response({'root_terms': result})
 
-    @action(detail=False, methods=['get'], url_path='tags', url_name='tags-list')
+    @action(detail=False, methods=['get', 'post'], url_path='tags', url_name='tags-list')
     def tags_list(self, request):
+        if request.method == 'POST':
+            name = str(request.data.get('name') or '').strip()
+            if not name:
+                return Response(
+                    {'error': 'Tag name is required.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            existing = ContentTag.objects.filter(name__iexact=name).first()
+            if existing:
+                return Response({'id': existing.id, 'name': existing.name, 'created': False})
+            created = ContentTag.objects.create(name=name)
+            return Response(
+                {'id': created.id, 'name': created.name, 'created': True},
+                status=status.HTTP_201_CREATED,
+            )
+
         query = request.query_params.get('q', '').strip()
-        qs = ContentTag.objects.all()
+        qs = ContentTag.objects.all().order_by('name')
         if query:
             qs = qs.filter(name__icontains=query)
-        return Response(list(qs.values('id', 'name')[:20]))
+        return Response(list(qs.values('id', 'name')))
 
     @action(detail=True, methods=['post'], url_path='upload-image', url_name='upload-image')
     def upload_image(self, request, pk=None):
