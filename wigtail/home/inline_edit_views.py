@@ -221,6 +221,17 @@ def _normalize_master_layout_payload(layout: object) -> dict | None:
     return out
 
 
+def _article_result_image_url(row: TaggedContentPage) -> str | None:
+    for img in (row.hero_image, row.og_image):
+        if img is None:
+            continue
+        try:
+            return img.get_rendition("fill-400x250").url
+        except Exception:
+            continue
+    return None
+
+
 def _article_result_payload(row: TaggedContentPage, request: HttpRequest) -> dict[str, Any]:
     return {
         "id": row.pk,
@@ -228,6 +239,7 @@ def _article_result_payload(row: TaggedContentPage, request: HttpRequest) -> dic
         "excerpt": row.listing_preview_markdown(),
         "section": row.section_term.name if row.section_term_id else "",
         "url": row.get_url(request=request) or row.url or "",
+        "imageUrl": _article_result_image_url(row),
         "tags": list(row.tags.values_list("name", flat=True)[:3]),
         "authorName": row.card_author_name(),
         "publishedAt": date_format(row.first_published_at, "F j, Y") if row.first_published_at else "",
@@ -337,7 +349,8 @@ def search_articles(request: HttpRequest) -> JsonResponse:
         for token in [t for t in query.split() if t]:
             qs = qs.filter(title__icontains=token)
     limit = 1 if random_mode else 20
-    rows = list(qs.select_related("section_term", "author_user").prefetch_related("tags")[:limit])
+    qs = qs.select_related("section_term", "author_user", "hero_image", "og_image").prefetch_related("tags")
+    rows = list(qs[:limit])
     results = [_article_result_payload(row, request) for row in rows]
     return JsonResponse({"results": results})
 

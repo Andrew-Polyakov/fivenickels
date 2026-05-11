@@ -190,8 +190,8 @@ def get_related_pages_for_ticker(tag_slug: str, *, limit: int = 24):
 
 def _section_term_ids_for_taxonomy_scope(sector) -> list[int]:
     """
-    ``TaggedContentPage.section_term`` points at sector nodes (e.g. GICS ``energy``),
-    never at the Market News container. For that root, include all GICS sector ids.
+    ``TaggedContentPage.section_term`` usually points at sector nodes (e.g. GICS ``energy``).
+    For the Market News root, include the container term plus all visible GICS sector ids.
     For other nodes, include the term and its descendants in the MP tree.
     """
     from home.gics_sectors import GICS_SECTOR_SLUGS
@@ -199,12 +199,12 @@ def _section_term_ids_for_taxonomy_scope(sector) -> list[int]:
     from home.taxonomy import MARKET_NEWS_SLUG
 
     if sector.slug == MARKET_NEWS_SLUG:
-        ids: list[int] = []
+        ids: list[int] = [sector.pk]
         for slug in GICS_SECTOR_SLUGS:
             t = TaxonomyTerm.objects.filter(slug=slug, is_visible=True).first()
             if t is not None:
                 ids.append(t.pk)
-        return ids
+        return list(dict.fromkeys(ids))
     ids = [sector.pk]
     ids.extend(sector.get_descendants().values_list("pk", flat=True))
     return ids

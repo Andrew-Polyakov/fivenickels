@@ -20,6 +20,7 @@ from home.blocks import _resolve_section_term, _resolve_universal_tile_state
 from home.card_layout import build_layout_payload, serialize_article_card_for_related
 from home.navigation import normalize_sector_query_param
 from home.query import (
+    _section_term_ids_for_taxonomy_scope,
     build_home_page_display_items,
     featured_quad_pages_for_sector,
     get_random_pages_for_section,
@@ -1082,6 +1083,60 @@ class CardSourcePropertiesTests(WagtailPageTestCase):
         if results:
             rid = results[0].get("id")
             self.assertNotIn(rid, {self.page_high.pk, self.page_tagged.pk})
+
+    def test_market_news_featured_includes_direct_container_articles(self):
+        from home.taxonomy import MARKET_NEWS_SLUG
+
+        mnews = TaxonomyTerm.objects.get(slug=MARKET_NEWS_SLUG)
+        direct = TaggedContentPage(
+            title="Market News direct fixture",
+            slug=f"market-news-direct-{get_random_string(5)}",
+            section_term=mnews,
+            tile_preview="Direct hub story",
+        )
+        self.homepage.add_child(instance=direct)
+        direct.save_revision().publish()
+        pages, _ = featured_quad_pages_for_sector(
+            mnews, None, home_page=self.homepage
+        )
+        self.assertTrue(
+            any(p is not None and p.pk == direct.pk for p in pages),
+        )
+
+    def test_inline_search_random_market_news_includes_direct_container_articles(self):
+        from home.taxonomy import MARKET_NEWS_SLUG
+
+        mnews = TaxonomyTerm.objects.get(slug=MARKET_NEWS_SLUG)
+        direct = TaggedContentPage(
+            title="Market News random fixture",
+            slug=f"market-news-random-{get_random_string(5)}",
+            section_term=mnews,
+            tile_preview="Random hydrate story",
+        )
+        self.homepage.add_child(instance=direct)
+        direct.save_revision().publish()
+        scoped_ids = _section_term_ids_for_taxonomy_scope(mnews)
+        self.assertIn(mnews.pk, scoped_ids)
+        exclude_ids = list(
+            TaggedContentPage.objects.live()
+            .public()
+            .filter(section_term_id__in=scoped_ids)
+            .exclude(pk=direct.pk)
+            .values_list("pk", flat=True)
+        )
+        response = self.client.get(
+            reverse("inline_search_articles"),
+            {
+                "random": "1",
+                "section_term_id": str(mnews.pk),
+                "exclude_ids": ",".join(str(pk) for pk in exclude_ids),
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        results = response.json().get("results") or []
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].get("id"), direct.pk)
+        self.assertIn("imageUrl", results[0])
 
     def test_card_layout_buffer_random_cards_pick_distinct_pages(self):
         """Same layout buffer excludes already-used article ids across consecutive cards."""
