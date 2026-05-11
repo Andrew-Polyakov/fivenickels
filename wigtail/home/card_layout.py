@@ -9,6 +9,7 @@ from typing import Any
 from wagtail.models import Page
 
 from django.http import HttpRequest
+from django.utils.formats import date_format
 
 from home.blocks import _resolve_universal_tile_state
 from home.models import TaggedContentPage
@@ -45,6 +46,9 @@ def _article_card_dict(page: Page | None, request) -> dict[str, Any]:
         "href": href or "",
         "excerpt": excerpt or "",
         "imageUrl": image_url,
+        "tags": list(spec.tags.values_list("name", flat=True)[:3]),
+        "authorName": spec.card_author_name(),
+        "publishedAt": date_format(spec.first_published_at, "F j, Y") if spec.first_published_at else "",
     }
 
 

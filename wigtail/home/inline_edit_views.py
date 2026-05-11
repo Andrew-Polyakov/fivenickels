@@ -6,6 +6,7 @@ from typing import Any
 
 from django.contrib.auth.decorators import user_passes_test
 from django.http import HttpRequest, JsonResponse
+from django.utils.formats import date_format
 from django.utils.text import slugify
 from django.views.decorators.http import require_GET, require_POST
 
@@ -220,6 +221,19 @@ def _normalize_master_layout_payload(layout: object) -> dict | None:
     return out
 
 
+def _article_result_payload(row: TaggedContentPage, request: HttpRequest) -> dict[str, Any]:
+    return {
+        "id": row.pk,
+        "title": row.title,
+        "excerpt": row.listing_preview_markdown(),
+        "section": row.section_term.name if row.section_term_id else "",
+        "url": row.get_url(request=request) or row.url or "",
+        "tags": list(row.tags.values_list("name", flat=True)[:3]),
+        "authorName": row.card_author_name(),
+        "publishedAt": date_format(row.first_published_at, "F j, Y") if row.first_published_at else "",
+    }
+
+
 @require_POST
 @user_passes_test(_admin_inline_access)
 def save_taxonomy_master_layout(request: HttpRequest) -> JsonResponse:
@@ -323,17 +337,8 @@ def search_articles(request: HttpRequest) -> JsonResponse:
         for token in [t for t in query.split() if t]:
             qs = qs.filter(title__icontains=token)
     limit = 1 if random_mode else 20
-    rows = list(qs.select_related("section_term")[:limit])
-    results = [
-        {
-            "id": row.pk,
-            "title": row.title,
-            "excerpt": row.listing_preview_markdown(),
-            "section": row.section_term.name if row.section_term_id else "",
-            "url": row.get_url(request=request) or row.url or "",
-        }
-        for row in rows
-    ]
+    rows = list(qs.select_related("section_term", "author_user").prefetch_related("tags")[:limit])
+    results = [_article_result_payload(row, request) for row in rows]
     return JsonResponse({"results": results})
 
 
@@ -385,7 +390,7 @@ def search_taxonomy_articles(request: HttpRequest) -> JsonResponse:
         TaggedContentPage.objects
         .live().public()
         .prefetch_related("tags")
-        .select_related("hero_image", "og_image")
+        .select_related("hero_image", "og_image", "author_user")
         .order_by("-first_published_at")
     )
     if query:
@@ -403,7 +408,6 @@ def search_taxonomy_articles(request: HttpRequest) -> JsonResponse:
                 break
             except Exception:
                 continue
-        first_tag = row.tags.first()
         raw_preview = (row.tile_preview or "").strip()
         excerpt = re.sub(r"[*#`_~\[\]()]+", "", raw_preview)[:200].strip() or None
         results.append({
@@ -411,8 +415,11 @@ def search_taxonomy_articles(request: HttpRequest) -> JsonResponse:
             "title": row.title,
             "url": row.url or "",
             "imageUrl": image_url,
-            "tag": first_tag.name if first_tag else None,
+            "tag": (row.tags.values_list("name", flat=True).first() or None),
+            "tags": list(row.tags.values_list("name", flat=True)[:3]),
             "excerpt": excerpt,
+            "authorName": row.card_author_name(),
+            "publishedAt": date_format(row.first_published_at, "F j, Y") if row.first_published_at else "",
         })
     return JsonResponse({"results": results})
 

@@ -4,6 +4,7 @@ REST API Serializers for article editing.
 import uuid as _uuid
 
 from rest_framework import serializers
+from django.contrib.auth import get_user_model
 from home.models import TaggedContentPage, TaxonomyTerm, ContentTag
 
 
@@ -109,6 +110,7 @@ class ArticleEditorSerializer(serializers.ModelSerializer):
     hero_image_url = serializers.SerializerMethodField()
     og_image_url = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
+    author_user_display = serializers.SerializerMethodField()
 
     class Meta:
         model = TaggedContentPage
@@ -116,7 +118,8 @@ class ArticleEditorSerializer(serializers.ModelSerializer):
             'id', 'title', 'slug', 'status',
             'section_term', 'taxonomy_category',
             'tags', 'hero_image', 'hero_image_url',
-            'tile_preview', 'tile_priority', 'article_priority',
+            'tile_preview', 'author_name', 'author_user', 'author_user_display',
+            'tile_priority', 'article_priority',
             'priority_expires_at', 'body',
             'seo_title', 'search_description', 'canonical_url',
             'og_image', 'og_image_url',
@@ -142,6 +145,15 @@ class ArticleEditorSerializer(serializers.ModelSerializer):
     def get_status(self, obj):
         return 'published' if obj.live else 'draft'
 
+    def get_author_user_display(self, obj):
+        user = getattr(obj, "author_user", None)
+        if not user:
+            return ""
+        full = user.get_full_name().strip() if hasattr(user, "get_full_name") else ""
+        if full:
+            return full
+        return user.get_username() if hasattr(user, "get_username") else ""
+
 
 class ArticleUpdateSerializer(serializers.ModelSerializer):
     section_term_id = serializers.IntegerField(required=False, allow_null=True)
@@ -150,11 +162,13 @@ class ArticleUpdateSerializer(serializers.ModelSerializer):
     hero_image_id = serializers.IntegerField(required=False, allow_null=True)
     og_image_id = serializers.IntegerField(required=False, allow_null=True, write_only=True)
     body_json = serializers.JSONField(required=False, write_only=True)
+    author_user_lookup = serializers.CharField(required=False, allow_blank=True, write_only=True)
 
     class Meta:
         model = TaggedContentPage
         fields = [
             'title', 'tile_preview', 'tile_priority', 'article_priority',
+            'author_name', 'author_user_lookup',
             'priority_expires_at', 'section_term_id', 'taxonomy_category_id',
             'tag_ids', 'hero_image_id', 'body_json',
             'seo_title', 'search_description', 'canonical_url',
@@ -188,6 +202,23 @@ class ArticleUpdateSerializer(serializers.ModelSerializer):
         # allow explicit null to clear category
         if 'taxonomy_category_id' in self.initial_data:
             instance.taxonomy_category_id = taxonomy_category_id
+
+        author_lookup = validated_data.pop("author_user_lookup", None)
+        if "author_user_lookup" in self.initial_data:
+            lookup = (author_lookup or "").strip()
+            if not lookup:
+                instance.author_user = None
+            else:
+                user_model = get_user_model()
+                user = (
+                    user_model.objects.filter(username__iexact=lookup).first()
+                    or user_model.objects.filter(email__iexact=lookup).first()
+                )
+                if user is None:
+                    raise serializers.ValidationError(
+                        {"author_user_lookup": "No user found for that username/email."}
+                    )
+                instance.author_user = user
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)

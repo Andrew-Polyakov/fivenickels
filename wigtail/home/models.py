@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -373,6 +374,20 @@ class TaggedContentPage(SeoMetaFields, Page):
         related_name="+",
     )
     tile_preview = MarkdownField(blank=True)
+    author_name = models.CharField(
+        max_length=200,
+        blank=True,
+        default="",
+        help_text="Optional display author name for article cards.",
+    )
+    author_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        help_text="Optional user profile used as author fallback.",
+    )
     tile_priority = models.PositiveSmallIntegerField(
         null=True,
         blank=True,
@@ -416,6 +431,8 @@ class TaggedContentPage(SeoMetaFields, Page):
                 FieldPanel("tags"),
                 FieldPanel("hero_image"),
                 FieldPanel("tile_preview"),
+                FieldPanel("author_name"),
+                FieldPanel("author_user"),
                 FieldPanel("tile_priority"),
                 FieldPanel("article_priority"),
                 FieldPanel("priority_expires_at"),
@@ -463,6 +480,23 @@ class TaggedContentPage(SeoMetaFields, Page):
                         return one[: cap - 1].rstrip() + "…"
                     return one
         return ""
+
+    def card_author_name(self) -> str:
+        custom = (self.author_name or "").strip()
+        if custom:
+            return custom
+        if self.author_user_id:
+            full = (
+                self.author_user.get_full_name().strip()
+                if hasattr(self.author_user, "get_full_name")
+                else ""
+            )
+            if full:
+                return full
+            username = getattr(self.author_user, "get_username", lambda: "")()
+            if username:
+                return username
+        return "Fivenickels Editorial"
 
     def get_context(self, request, *args, **kwargs):
         from home.query import get_similar_pages

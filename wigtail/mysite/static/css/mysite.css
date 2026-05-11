@@ -6454,6 +6454,42 @@ body.is-auth-modal-open {
 .scn-card__title  { margin: 0; font-size: 1rem; font-weight: 600; line-height: 1.3; color: var(--color-text); }
 .scn-card__content { padding: 0.75rem 1.15rem 1rem; flex: 1; display: flex; flex-direction: column; gap: 0.4rem; }
 
+.scn-article-card__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-bottom: 0.5rem;
+}
+
+.scn-article-card__tag {
+    border: 1px solid rgba(125, 211, 252, 0.45);
+    background: rgba(14, 116, 144, 0.18);
+    color: rgba(186, 230, 253, 0.95);
+    border-radius: 999px;
+    padding: 0.16rem 0.5rem;
+    font-size: 0.68rem;
+    line-height: 1.2;
+}
+
+.scn-article-card__footer-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.7rem 1.15rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.22);
+    background: rgba(15, 23, 42, 0.9);
+    color: rgba(203, 213, 225, 0.95);
+    font-size: 0.8rem;
+}
+
+.scn-article-card__footer-meta span:first-child {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 /* Carousel article card */
 .carousel-article-card { height: 100%; }
 
@@ -6496,6 +6532,23 @@ body.is-auth-modal-open {
 
 .carousel-article-card__body { gap: 0.35rem; }
 
+.carousel-article-card__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-bottom: 0.5rem;
+}
+
+.carousel-article-card__tag {
+    border: 1px solid rgba(125, 211, 252, 0.45);
+    background: rgba(14, 116, 144, 0.18);
+    color: rgba(186, 230, 253, 0.95);
+    border-radius: 999px;
+    padding: 0.16rem 0.5rem;
+    font-size: 0.68rem;
+    line-height: 1.2;
+}
+
 .carousel-article-card__title {
     font-size: 0.9375rem;
     display: -webkit-box;
@@ -6514,6 +6567,25 @@ body.is-auth-modal-open {
     -webkit-box-orient: vertical;
     overflow: hidden;
     margin-bottom: 0;
+}
+
+.carousel-article-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.7rem 1.15rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.22);
+    background: rgba(15, 23, 42, 0.9);
+    color: rgba(203, 213, 225, 0.95);
+    font-size: 0.8rem;
+}
+
+.carousel-article-card__footer span:first-child {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* Carousel (public) */

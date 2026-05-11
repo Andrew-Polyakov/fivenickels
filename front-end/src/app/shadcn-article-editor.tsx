@@ -38,6 +38,9 @@ type ArticleApiData = {
   hero_image_url: string | null;
   hero_image: number | null;
   tile_preview: string | null;
+  author_name: string | null;
+  author_user: number | null;
+  author_user_display: string | null;
   tile_priority: number | null;
   article_priority: number | null;
   priority_expires_at: string | null;
@@ -718,6 +721,9 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
   const [categoryId, setCategory]     = React.useState<number | null>(null);
   const [heroUrl, setHeroUrl]         = React.useState<string | null>(null);
   const [heroId, setHeroId]           = React.useState<number | null>(null);
+  const [authorName, setAuthorName]   = React.useState('');
+  const [authorUser, setAuthorUser]   = React.useState<string>('');
+  const [authorUserDisplay, setAuthorUserDisplay] = React.useState('');
   const [tilePrio, setTilePrio]       = React.useState<number | null>(null);
   const [artPrio, setArtPrio]         = React.useState<number | null>(null);
   const [expiresAt, setExpiresAt]     = React.useState('');
@@ -756,6 +762,9 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
         setCategory(article.taxonomy_category?.id ?? null);
         setHeroUrl(article.hero_image_url);
         setHeroId(article.hero_image);
+        setAuthorName(article.author_name ?? '');
+        setAuthorUser('');
+        setAuthorUserDisplay(article.author_user_display ?? '');
         setTilePrio(article.tile_priority);
         setArtPrio(article.article_priority);
         setExpiresAt(article.priority_expires_at ? article.priority_expires_at.slice(0, 16) : '');
@@ -785,6 +794,8 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
         section_term_id: sectionTermId,
         taxonomy_category_id: categoryId,
         tile_preview: tilePreview,
+        author_name: authorName,
+        author_user_lookup: authorUser,
         tile_priority: tilePrio,
         article_priority: artPrio,
         priority_expires_at: expiresAt || null,
@@ -801,7 +812,14 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
         method: 'PATCH', body: JSON.stringify(payload),
       });
       const json = await res.json();
-      if (res.ok) { setStatus(json.status); notify('Saved'); }
+      if (res.ok) {
+        setStatus(json.status);
+        if (typeof json.author_user_display === 'string') {
+          setAuthorUserDisplay(json.author_user_display);
+        }
+        setAuthorUser('');
+        notify('Saved');
+      }
       else notify(json.detail || JSON.stringify(json), 'error');
     } catch { notify('Save failed', 'error'); }
     finally { setSaving(false); }
@@ -928,6 +946,25 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
           </div>
 
           <TagsSection selectedTags={tags} apiBase={apiBase} onTagsChange={setTags} />
+
+          <div className="scn-editor-card">
+            <h3 className="scn-editor-card__title">Author</h3>
+            <Label className="scn-editor-field-label">Custom author name</Label>
+            <Input
+              placeholder="e.g. Jules Winfield"
+              value={authorName}
+              onChange={e => setAuthorName(e.target.value)}
+            />
+            <Label className="scn-editor-field-label">Author account (username or email)</Label>
+            <Input
+              placeholder="Leave blank to unlink account"
+              value={authorUser}
+              onChange={e => setAuthorUser(e.target.value)}
+            />
+            {authorUserDisplay ? (
+              <p className="scn-text-muted">Linked account: {authorUserDisplay}</p>
+            ) : null}
+          </div>
 
           <div className="scn-editor-card">
             <h3 className="scn-editor-card__title">Tile preview</h3>

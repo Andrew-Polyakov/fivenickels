@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+project="${repo_root}/tools/StockCrawler/StockCrawler.csproj"
+
+cd "${repo_root}"
+exec dotnet run --project "${project}" -- "$@"

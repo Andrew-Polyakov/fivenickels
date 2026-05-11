@@ -31,7 +31,17 @@ type ContentSourceConfig = {
 };
 
 export type ArticleCardPayload =
-  | { kind: 'article'; title: string; href: string; excerpt: string; imageUrl: string; sourceConfig?: ContentSourceConfig }
+  | {
+      kind: 'article';
+      title: string;
+      href: string;
+      excerpt: string;
+      imageUrl: string;
+      tags?: string[];
+      authorName?: string;
+      publishedAt?: string;
+      sourceConfig?: ContentSourceConfig;
+    }
   | { kind: 'empty'; sourceConfig?: ContentSourceConfig }
   | { kind: 'stub'; message: string; sourceConfig?: ContentSourceConfig }
   | {
@@ -693,12 +703,24 @@ function ArticleCardView({
         </div>
       ) : null}
       <CardHeader>
+        {(data.tags ?? []).length > 0 ? (
+          <div className="scn-article-card__tags">
+            {(data.tags ?? []).slice(0, 3).map((tag) => (
+              <span key={tag} className="scn-article-card__tag">
+                {tag}
+              </span>
+            ))}
+          </div>
+        ) : null}
         <CardTitle>{data.title}</CardTitle>
       </CardHeader>
       <CardContent>
         {data.excerpt ? <p className="scn-article-card__excerpt">{data.excerpt}</p> : null}
-        {data.href ? <span className="scn-article-card__cta">Read more</span> : null}
       </CardContent>
+      <div className="scn-article-card__footer-meta">
+        <span>{data.authorName || 'Fivenickels Editorial'}</span>
+        <span>{data.publishedAt || ''}</span>
+      </div>
     </>
   );
   if (data.href) {
@@ -1189,7 +1211,16 @@ export function CardLayoutRoot({
         throw new Error('Random article lookup failed');
       }
       const data = (await res.json()) as {
-        results?: Array<{ id: number; title: string; excerpt?: string; section: string; url: string }>;
+        results?: Array<{
+          id: number;
+          title: string;
+          excerpt?: string;
+          section: string;
+          url: string;
+          tags?: string[];
+          authorName?: string;
+          publishedAt?: string;
+        }>;
       };
       return data.results?.[0] ?? null;
     },
@@ -1317,6 +1348,9 @@ export function CardLayoutRoot({
                 href: article.url || '',
                 excerpt: article.excerpt || '',
                 imageUrl: '',
+                tags: article.tags ?? [],
+                authorName: article.authorName || '',
+                publishedAt: article.publishedAt || '',
                 sourceConfig: rowItem.card.sourceConfig,
               },
             };
@@ -1553,6 +1587,9 @@ export function CardLayoutRoot({
         href: specificArticle.url || '',
         excerpt: '',
         imageUrl: '',
+                tags: [],
+                authorName: '',
+                publishedAt: '',
         sourceConfig: nextSource,
       };
     }
@@ -1569,6 +1606,9 @@ export function CardLayoutRoot({
               href: randomArticle.url || '',
               excerpt: randomArticle.excerpt || '',
               imageUrl: '',
+              tags: randomArticle.tags ?? [],
+              authorName: randomArticle.authorName || '',
+              publishedAt: randomArticle.publishedAt || '',
               sourceConfig: nextSource,
             };
           }

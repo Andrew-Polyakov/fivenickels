@@ -17,7 +17,7 @@ from django.utils import timezone
 from django.utils.crypto import get_random_string
 
 from home.blocks import _resolve_section_term, _resolve_universal_tile_state
-from home.card_layout import build_layout_payload
+from home.card_layout import build_layout_payload, serialize_article_card_for_related
 from home.navigation import normalize_sector_query_param
 from home.query import (
     build_home_page_display_items,
@@ -1118,4 +1118,30 @@ class CardSourcePropertiesTests(WagtailPageTestCase):
                 titles.append(card.get("title"))
         self.assertGreaterEqual(len(titles), 2)
         self.assertEqual(len(set(titles)), len(titles), msg="Expected distinct articles for two random picks")
+
+    def test_serialized_article_card_contains_metadata(self):
+        self.page_high.author_name = "Custom Desk"
+        self.page_high.save_revision().publish()
+        payload = serialize_article_card_for_related(self.page_high, None)
+        self.assertEqual(payload.get("kind"), "article")
+        self.assertEqual(payload.get("authorName"), "Custom Desk")
+        self.assertIsInstance(payload.get("tags"), list)
+        self.assertLessEqual(len(payload.get("tags") or []), 3)
+        self.assertTrue(payload.get("publishedAt"))
+
+    def test_card_author_name_fallback_to_editorial(self):
+        self.page_tagged.author_name = ""
+        self.page_tagged.author_user = None
+        self.assertEqual(self.page_tagged.card_author_name(), "Fivenickels Editorial")
+
+    def test_inline_search_payload_includes_metadata_fields(self):
+        self.client.force_login(self.staff)
+        response = self.client.get(reverse("inline_search_articles"), {"q": "Priority High"})
+        self.assertEqual(response.status_code, 200)
+        rows = response.json().get("results") or []
+        self.assertTrue(rows)
+        match = next((x for x in rows if x.get("id") == self.page_high.pk), rows[0])
+        self.assertIn("tags", match)
+        self.assertIn("authorName", match)
+        self.assertIn("publishedAt", match)
 

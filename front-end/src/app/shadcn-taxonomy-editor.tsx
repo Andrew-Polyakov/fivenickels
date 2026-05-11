@@ -33,7 +33,18 @@ type BentoCard   = { id: string; mode: 'random' | 'specific' | 'priority'; artic
 type BentoColumn = { id: string; colSpan: number; cards: BentoCard[] };
 type BentoBlock  = { id: string; type: 'bento'; columns: BentoColumn[] };
 
-type CarouselSlot  = { id: string; mode: 'random' | 'priority' | 'specific'; articleId: number | null; articleTitle: string | null; articleImageUrl?: string | null; articleTag?: string | null; articleExcerpt?: string | null; articleUrl?: string | null };
+type CarouselSlot  = {
+  id: string;
+  mode: 'random' | 'priority' | 'specific';
+  articleId: number | null;
+  articleTitle: string | null;
+  articleImageUrl?: string | null;
+  articleTags?: string[] | null;
+  articleExcerpt?: string | null;
+  articleUrl?: string | null;
+  authorName?: string | null;
+  publishedAt?: string | null;
+};
 type CarouselBlock = { id: string; type: 'carousel'; cards: CarouselSlot[] };
 
 type TaxonomyBlock = HeadingBlock | ParagraphBlock | ImageBlock | EmbedBlock | SeparatorBlock | BentoBlock | CarouselBlock;
@@ -61,6 +72,65 @@ function uid(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
+function useResolvedCarouselPreviews(cards: CarouselSlot[], termId: number): Record<string, ArticleResult | null> {
+  const [resolved, setResolved] = React.useState<Record<string, ArticleResult | null>>({});
+  const signature = React.useMemo(
+    () => cards.map((slot) => `${slot.id}:${slot.mode}:${slot.articleId ?? ''}:${slot.articleTitle ?? ''}`).join('|'),
+    [cards]
+  );
+
+  React.useEffect(() => {
+    const randomSlots = cards.filter((slot) => slot.mode === 'random');
+    if (randomSlots.length === 0) {
+      setResolved({});
+      return;
+    }
+    const sectionTermId = Number.isFinite(termId) && termId > 0 ? termId : null;
+    const usedIds = new Set<number>(
+      cards
+        .filter((slot) => slot.mode === 'specific' && typeof slot.articleId === 'number' && slot.articleId > 0)
+        .map((slot) => slot.articleId as number)
+    );
+    let cancelled = false;
+    void (async () => {
+      const next: Record<string, ArticleResult | null> = {};
+      for (const slot of randomSlots) {
+        const q = new URLSearchParams();
+        q.set('random', '1');
+        if (sectionTermId) {
+          q.set('section_term_id', String(sectionTermId));
+        }
+        if (usedIds.size > 0) {
+          q.set('exclude_ids', Array.from(usedIds).join(','));
+        }
+        try {
+          const res = await fetch(`/inline/article/search/?${q.toString()}`, { credentials: 'same-origin' });
+          if (!res.ok) {
+            next[slot.id] = null;
+            continue;
+          }
+          const data = (await res.json()) as { results?: ArticleResult[] };
+          const article = data.results?.[0] ?? null;
+          next[slot.id] = article;
+          if (article?.id) {
+            usedIds.add(article.id);
+          }
+        } catch {
+          next[slot.id] = null;
+        }
+      }
+      if (!cancelled) {
+        setResolved(next);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [cards, signature, termId]);
+
+  return resolved;
+}
+
 function jsonToBlocks(json: object | null): TaxonomyBlock[] {
   if (!json || typeof json !== 'object') return [];
   const j = json as TaxonomyContentJson;
@@ -76,7 +146,17 @@ function blocksToJson(blocks: TaxonomyBlock[]): TaxonomyContentJson {
 
 // ─── Article Search Input ─────────────────────────────────────────────────────
 
-type ArticleResult = { id: number; title: string; url?: string; imageUrl?: string | null; tag?: string | null; excerpt?: string | null };
+type ArticleResult = {
+  id: number;
+  title: string;
+  url?: string;
+  imageUrl?: string | null;
+  tag?: string | null;
+  tags?: string[];
+  excerpt?: string | null;
+  authorName?: string | null;
+  publishedAt?: string | null;
+};
 
 function ArticleSearchInput({ value, onChange, searchUrl, placeholder = 'Search articles…' }: {
   value: { id: number | null; title: string | null };
@@ -145,12 +225,14 @@ function ArticleSearchInput({ value, onChange, searchUrl, placeholder = 'Search 
 
 // ─── Carousel Article Card ────────────────────────────────────────────────────
 
-function CarouselCard({ imageUrl, tag, title, excerpt, url }: {
+function CarouselCard({ imageUrl, tags, title, excerpt, url, authorName, publishedAt }: {
   imageUrl?: string | null;
-  tag?: string | null;
+  tags?: string[] | null;
   title: string;
   excerpt?: string | null;
   url?: string | null;
+  authorName?: string | null;
+  publishedAt?: string | null;
 }) {
   const inner = (
     <Card className={cn('carousel-article-card', url && 'carousel-article-card--link')}>
@@ -159,10 +241,22 @@ function CarouselCard({ imageUrl, tag, title, excerpt, url }: {
         : <div className="carousel-article-card__img-placeholder" aria-hidden="true" />
       }
       <CardContent className="carousel-article-card__body">
-        {tag && <span className="markdown-tile__taxonomy">{tag}</span>}
+        {(tags ?? []).length > 0 ? (
+          <div className="carousel-article-card__tags">
+            {(tags ?? []).slice(0, 3).map((tag) => (
+              <span key={tag} className="carousel-article-card__tag">
+                {tag}
+              </span>
+            ))}
+          </div>
+        ) : null}
         <CardTitle className="carousel-article-card__title">{title}</CardTitle>
         {excerpt && <p className="carousel-article-card__excerpt">{excerpt}</p>}
       </CardContent>
+      <div className="carousel-article-card__footer">
+        <span>{authorName || 'Fivenickels Editorial'}</span>
+        <span>{publishedAt || ''}</span>
+      </div>
     </Card>
   );
   return url
@@ -493,10 +587,11 @@ function BentoEditor({ block, searchUrl, onChange }: {
 
 // ─── Carousel Editor ──────────────────────────────────────────────────────────
 
-function CarouselEditor({ block, searchUrl, onChange }: {
-  block: CarouselBlock; searchUrl: string; onChange: (b: CarouselBlock) => void;
+function CarouselEditor({ block, searchUrl, termId, onChange }: {
+  block: CarouselBlock; searchUrl: string; termId: number; onChange: (b: CarouselBlock) => void;
 }) {
   const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const resolvedRandom = useResolvedCarouselPreviews(block.cards, termId);
 
   function addSlot() {
     onChange({ ...block, cards: [...block.cards, { id: uid(), mode: 'random', articleId: null, articleTitle: null }] });
@@ -548,9 +643,11 @@ function CarouselEditor({ block, searchUrl, onChange }: {
                         articleId:       v.id,
                         articleTitle:    v.title,
                         articleImageUrl: v.id ? (v as ArticleResult).imageUrl ?? null : null,
-                        articleTag:      v.id ? (v as ArticleResult).tag      ?? null : null,
+                        articleTags:     v.id ? ((v as ArticleResult).tags ?? []) : [],
                         articleExcerpt:  v.id ? (v as ArticleResult).excerpt  ?? null : null,
                         articleUrl:      v.id ? (v as ArticleResult).url      ?? null : null,
+                        authorName:      v.id ? (v as ArticleResult).authorName ?? null : null,
+                        publishedAt:     v.id ? (v as ArticleResult).publishedAt ?? null : null,
                       })}
                       searchUrl={searchUrl}
                       placeholder="Search article…"
@@ -572,15 +669,55 @@ function CarouselEditor({ block, searchUrl, onChange }: {
             {block.cards.map((slot, i) => (
               <CarouselItem key={slot.id} className="scn-carousel-editor__preview-item">
                 <CarouselCard
-                  imageUrl={slot.mode === 'specific' ? slot.articleImageUrl : null}
-                  tag={slot.mode === 'specific' ? slot.articleTag : undefined}
+                  imageUrl={
+                    slot.mode === 'specific'
+                      ? slot.articleImageUrl
+                      : slot.mode === 'random'
+                        ? resolvedRandom[slot.id]?.imageUrl ?? null
+                        : null
+                  }
+                  tags={
+                    slot.mode === 'specific'
+                      ? slot.articleTags
+                      : slot.mode === 'random'
+                        ? resolvedRandom[slot.id]?.tags ?? []
+                        : undefined
+                  }
                   title={
                     slot.mode === 'specific'
                       ? (slot.articleTitle ?? `Slot ${i + 1}`)
-                      : slot.mode === 'priority' ? 'Priority article' : 'Random article'
+                      : slot.mode === 'priority'
+                        ? 'Priority article'
+                        : resolvedRandom[slot.id]?.title ?? 'Random article'
                   }
-                  excerpt={slot.mode === 'specific' ? slot.articleExcerpt : undefined}
-                  url={slot.mode === 'specific' ? slot.articleUrl : undefined}
+                  excerpt={
+                    slot.mode === 'specific'
+                      ? slot.articleExcerpt
+                      : slot.mode === 'random'
+                        ? resolvedRandom[slot.id]?.excerpt
+                        : undefined
+                  }
+                  url={
+                    slot.mode === 'specific'
+                      ? slot.articleUrl
+                      : slot.mode === 'random'
+                        ? resolvedRandom[slot.id]?.url
+                        : undefined
+                  }
+                  authorName={
+                    slot.mode === 'specific'
+                      ? slot.authorName
+                      : slot.mode === 'random'
+                        ? resolvedRandom[slot.id]?.authorName
+                        : undefined
+                  }
+                  publishedAt={
+                    slot.mode === 'specific'
+                      ? slot.publishedAt
+                      : slot.mode === 'random'
+                        ? resolvedRandom[slot.id]?.publishedAt
+                        : undefined
+                  }
                 />
               </CarouselItem>
             ))}
@@ -600,8 +737,9 @@ const BLOCK_LABEL: Record<string, string> = {
   separator: 'Separator', bento: 'Bento Layout', carousel: 'Carousel',
 };
 
-function BlockEditor({ block, index, total, uploadUrl, articleSearchUrl, onChange, onRemove, onMove }: {
+function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl, onChange, onRemove, onMove }: {
   block: TaxonomyBlock; index: number; total: number;
+  termId: number;
   uploadUrl: string; articleSearchUrl: string;
   onChange: (b: TaxonomyBlock) => void; onRemove: () => void; onMove: (dir: -1 | 1) => void;
 }) {
@@ -625,7 +763,7 @@ function BlockEditor({ block, index, total, uploadUrl, articleSearchUrl, onChang
         {block.type === 'embed'     && <EmbedEditor     block={block} onChange={onChange as (b: EmbedBlock) => void} />}
         {block.type === 'separator' && <SeparatorEditor block={block} onChange={onChange as (b: SeparatorBlock) => void} />}
         {block.type === 'bento'     && <BentoEditor     block={block} searchUrl={articleSearchUrl} onChange={onChange as (b: BentoBlock) => void} />}
-        {block.type === 'carousel'  && <CarouselEditor  block={block} searchUrl={articleSearchUrl} onChange={onChange as (b: CarouselBlock) => void} />}
+        {block.type === 'carousel'  && <CarouselEditor  block={block} searchUrl={articleSearchUrl} termId={termId} onChange={onChange as (b: CarouselBlock) => void} />}
       </div>
     </div>
   );
@@ -664,11 +802,12 @@ function AddBlockMenu({ onAdd }: { onAdd: (type: TaxonomyBlock['type']) => void 
 
 // ─── Read-only renderer ───────────────────────────────────────────────────────
 
-function ReadOnlyBlock({ block }: { block: TaxonomyBlock }) {
+function ReadOnlyBlock({ block, termId }: { block: TaxonomyBlock; termId: number }) {
   const autoplay = React.useMemo(
     () => Autoplay({ delay: 3500, stopOnInteraction: true }),
     []
   );
+  const resolvedRandom = useResolvedCarouselPreviews(block.type === 'carousel' ? block.cards : [], termId);
 
   if (block.type === 'heading') {
     const Tag = block.level as 'h1' | 'h2';
@@ -726,15 +865,55 @@ function ReadOnlyBlock({ block }: { block: TaxonomyBlock }) {
             {block.cards.map((slot, i) => (
               <CarouselItem key={slot.id} className="scn-taxonomy-content__carousel-item">
                 <CarouselCard
-                  imageUrl={slot.mode === 'specific' ? slot.articleImageUrl : null}
-                  tag={slot.mode === 'specific' ? slot.articleTag : undefined}
+                  imageUrl={
+                    slot.mode === 'specific'
+                      ? slot.articleImageUrl
+                      : slot.mode === 'random'
+                        ? resolvedRandom[slot.id]?.imageUrl ?? null
+                        : null
+                  }
+                  tags={
+                    slot.mode === 'specific'
+                      ? slot.articleTags
+                      : slot.mode === 'random'
+                        ? resolvedRandom[slot.id]?.tags ?? []
+                        : undefined
+                  }
                   title={
                     slot.mode === 'specific'
                       ? (slot.articleTitle ?? `Article ${i + 1}`)
-                      : slot.mode === 'priority' ? `Priority article ${i + 1}` : `Article ${i + 1}`
+                      : slot.mode === 'priority'
+                        ? `Priority article ${i + 1}`
+                        : resolvedRandom[slot.id]?.title ?? `Article ${i + 1}`
                   }
-                  excerpt={slot.mode === 'specific' ? slot.articleExcerpt : undefined}
-                  url={slot.mode === 'specific' ? slot.articleUrl : undefined}
+                  excerpt={
+                    slot.mode === 'specific'
+                      ? slot.articleExcerpt
+                      : slot.mode === 'random'
+                        ? resolvedRandom[slot.id]?.excerpt
+                        : undefined
+                  }
+                  url={
+                    slot.mode === 'specific'
+                      ? slot.articleUrl
+                      : slot.mode === 'random'
+                        ? resolvedRandom[slot.id]?.url
+                        : undefined
+                  }
+                  authorName={
+                    slot.mode === 'specific'
+                      ? slot.authorName
+                      : slot.mode === 'random'
+                        ? resolvedRandom[slot.id]?.authorName
+                        : undefined
+                  }
+                  publishedAt={
+                    slot.mode === 'specific'
+                      ? slot.publishedAt
+                      : slot.mode === 'random'
+                        ? resolvedRandom[slot.id]?.publishedAt
+                        : undefined
+                  }
                 />
               </CarouselItem>
             ))}
@@ -825,7 +1004,7 @@ function TaxonomyEditor({ termId, initialJson, canEdit, saveUrl, uploadUrl, arti
   if (!canEdit) {
     return (
       <div className="scn-taxonomy-content">
-        {blocks.map(block => <ReadOnlyBlock key={block.id} block={block} />)}
+        {blocks.map(block => <ReadOnlyBlock key={block.id} block={block} termId={termId} />)}
       </div>
     );
   }
@@ -848,6 +1027,7 @@ function TaxonomyEditor({ termId, initialJson, canEdit, saveUrl, uploadUrl, arti
             block={block}
             index={i}
             total={blocks.length}
+            termId={termId}
             uploadUrl={uploadUrl}
             articleSearchUrl={articleSearchUrl}
             onChange={updated => setBlocks(prev => prev.map((b, j) => j === i ? updated : b))}
