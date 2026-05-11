@@ -246,3 +246,15 @@ WAGTAILADMIN_BASE_URL = "http://example.com"
 # if untrusted users are allowed to upload files -
 # see https://docs.wagtail.org/en/stable/advanced_topics/deploying.html#user-uploaded-files
 WAGTAILDOCS_EXTENSIONS = ['csv', 'docx', 'key', 'odt', 'pdf', 'pptx', 'rtf', 'txt', 'xlsx', 'zip']
+
+# Automated article submission (POST /api/articles/auto-submit/)
+ARTICLE_SUBMIT_BEARER_TOKEN = os.environ.get("ARTICLE_SUBMIT_BEARER_TOKEN", "").strip()
+ARTICLE_SUBMIT_DEFAULT_SECTION_SLUG = os.environ.get(
+    "ARTICLE_SUBMIT_DEFAULT_SECTION_SLUG",
+    "information-technology",
+).strip()
+ARTICLE_SUBMIT_DEFAULT_AUTHOR_NAME = os.environ.get(
+    "ARTICLE_SUBMIT_DEFAULT_AUTHOR_NAME",
+    "Fivenickels Editorial",
+).strip()
+ARTICLE_SUBMIT_USER = os.environ.get("ARTICLE_SUBMIT_USER", "").strip()

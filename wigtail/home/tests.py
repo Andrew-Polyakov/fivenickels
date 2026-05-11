@@ -885,6 +885,40 @@ class InlineEditingApiTests(WagtailPageTestCase):
         self.assertEqual(page_b.title, "Alpha Story")
         self.assertEqual(page_b.slug, "alpha-story-2")
 
+    def test_staff_tagged_page_shows_title_edit_pen_button(self):
+        self.client.force_login(self.admin_user)
+        page = TaggedContentPage(
+            title="Editable Title",
+            slug="editable-title",
+            section_term=self.energy,
+            tile_preview="preview",
+        )
+        self.homepage.add_child(instance=page)
+        page.save_revision().publish()
+
+        response = self.client.get(page.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "scn-profile-article-edit")
+        self.assertContains(
+            response,
+            reverse("article_editor", kwargs={"article_id": page.pk}),
+        )
+
+    def test_non_staff_tagged_page_hides_title_edit_pen_button(self):
+        self.client.force_login(self.non_admin)
+        page = TaggedContentPage(
+            title="Read Only Title",
+            slug="read-only-title",
+            section_term=self.energy,
+            tile_preview="preview",
+        )
+        self.homepage.add_child(instance=page)
+        page.save_revision().publish()
+
+        response = self.client.get(page.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "scn-profile-article-edit")
+
     def test_profile_staff_exposes_article_create_url(self):
         self.client.force_login(self.admin_user)
         response = self.client.get(reverse("profile"))

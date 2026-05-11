@@ -10,7 +10,20 @@
 
     <header class="tagged-content__header">
 
-        <h1 class="tagged-content__title">{{ page.title }}</h1>
+        {% if request.user.is_authenticated and request.user.is_staff or request.user.is_authenticated and request.user.is_superuser %}
+            <div class="tagged-content__title-row">
+                <h1 class="tagged-content__title" id="tagged-content-title">{{ page.title }}</h1>
+                <a
+                    href="{% url 'article_editor' article_id=page.id %}"
+                    class="scn-profile-article-edit"
+                    aria-label="Open article editor"
+                >
+                    <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+                </a>
+            </div>
+        {% else %}
+            <h1 class="tagged-content__title">{{ page.title }}</h1>
+        {% endif %}
 
         {% if page.section_term %}
 

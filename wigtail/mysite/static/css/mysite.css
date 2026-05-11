@@ -3067,7 +3067,17 @@ taxonomy-chip-widget {
 
 }
 
+.tagged-content__title-row {
 
+    display: flex;
+
+    align-items: flex-start;
+
+    justify-content: space-between;
+
+    gap: 0.75rem;
+
+}
 
 .tagged-content__taxonomy {
 

@@ -1,0 +1,235 @@
+#!/usr/bin/env python3
+"""
+Submit StockCrawler news JSON to Wigtail for moderation.
+
+Reads a StockCrawler ``news`` JSON file (RootDto) and POSTs normalized articles to
+``/api/articles/auto-submit/``.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import sys
+import urllib.error
+import urllib.request
+from pathlib import Path
+from typing import Any
+
+
+def _repo_root() -> Path:
+    return Path(__file__).resolve().parent.parent
+
+
+def _load_dotenv(path: Path) -> None:
+    if not path.is_file():
+        return
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("#"):
+            line = line[1:].strip()
+        if "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
+def _preview_from_news(news: dict[str, Any], max_len: int = 500) -> str:
+    for key in ("summary", "content"):
+        value = (news.get(key) or "").strip()
+        if value:
+            text = re.sub(r"\s+", " ", value).strip()
+            if len(text) > max_len:
+                return text[: max_len - 1].rstrip() + "…"
+            return text
+    headline = (news.get("headline") or "").strip()
+    return headline
+
+
+def _iter_payloads(
+    root: dict[str, Any],
+    *,
+    section_slug: str | None,
+) -> list[dict[str, Any]]:
+    articles: list[dict[str, Any]] = []
+    seen_urls: set[str] = set()
+    for block in root.get("tickers") or []:
+        if not isinstance(block, dict):
+            continue
+        symbol = (block.get("symbol") or "").strip().upper()
+        for news in block.get("alpacNews") or []:
+            if not isinstance(news, dict):
+                continue
+            url = (news.get("url") or "").strip()
+            if not url or url in seen_urls:
+                continue
+            seen_urls.add(url)
+            tags = [str(t) for t in (news.get("tags") or []) if str(t).strip()]
+            symbols = [str(s) for s in (news.get("symbols") or []) if str(s).strip()]
+            if symbol and symbol not in symbols:
+                symbols.append(symbol)
+            payload: dict[str, Any] = {
+                "title": news.get("headline") or "",
+                "summary": news.get("summary") or "",
+                "content": news.get("content") or "",
+                "source": news.get("source") or "",
+                "canonical_url": url,
+                "tile_preview": _preview_from_news(news),
+                "tags": tags,
+                "symbols": symbols,
+            }
+            if section_slug:
+                payload["section_slug"] = section_slug
+            articles.append(payload)
+    return articles
+
+
+def _post_batch(
+    *,
+    endpoint: str,
+    token: str,
+    articles: list[dict[str, Any]],
+    timeout: float,
+) -> dict[str, Any]:
+    body = json.dumps({"articles": articles}).encode("utf-8")
+    request = urllib.request.Request(
+        endpoint,
+        data=body,
+        method="POST",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            raw = response.read().decode("utf-8")
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"HTTP {exc.code}: {detail}") from exc
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"Request failed: {exc}") from exc
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"Invalid JSON response: {raw[:500]}") from exc
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Submit StockCrawler news JSON to Wigtail moderation queue.",
+    )
+    parser.add_argument(
+        "--input-file",
+        required=True,
+        help="Path to StockCrawler news JSON output.",
+    )
+    parser.add_argument(
+        "--endpoint",
+        default=os.environ.get(
+            "WIGTAIL_ARTICLE_SUBMIT_URL",
+            "http://127.0.0.1:8000/api/articles/auto-submit/",
+        ),
+        help="Wigtail auto-submit endpoint URL.",
+    )
+    parser.add_argument(
+        "--token",
+        default=os.environ.get("ARTICLE_SUBMIT_BEARER_TOKEN", ""),
+        help="Bearer token (default: ARTICLE_SUBMIT_BEARER_TOKEN env).",
+    )
+    parser.add_argument(
+        "--section-slug",
+        default=os.environ.get("ARTICLE_SUBMIT_DEFAULT_SECTION_SLUG", ""),
+        help="Taxonomy section slug for created articles.",
+    )
+    parser.add_argument(
+        "--timeout",
+        type=float,
+        default=60.0,
+        help="HTTP timeout in seconds.",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print mapped payload without calling the API.",
+    )
+    args = parser.parse_args(argv)
+
+    _load_dotenv(_repo_root() / ".env")
+
+    input_path = Path(args.input_file)
+    if not input_path.is_file():
+        print(f"Input file not found: {input_path}", file=sys.stderr)
+        return 2
+
+    try:
+        root = json.loads(input_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        print(f"Invalid JSON in {input_path}: {exc}", file=sys.stderr)
+        return 2
+
+    if not isinstance(root, dict):
+        print("StockCrawler JSON root must be an object.", file=sys.stderr)
+        return 2
+
+    section_slug = (args.section_slug or "").strip() or None
+    articles = _iter_payloads(root, section_slug=section_slug)
+    if not articles:
+        print(json.dumps({"created": 0, "skipped": 0, "failed": 0, "results": []}))
+        return 0
+
+    if args.dry_run:
+        print(
+            json.dumps(
+                {
+                    "dry_run": True,
+                    "endpoint": args.endpoint,
+                    "count": len(articles),
+                    "articles": articles,
+                },
+                indent=2,
+            )
+        )
+        return 0
+
+    token = (args.token or "").strip()
+    if not token:
+        print(
+            "Missing bearer token. Set ARTICLE_SUBMIT_BEARER_TOKEN or pass --token.",
+            file=sys.stderr,
+        )
+        return 2
+
+    endpoint = args.endpoint
+    if not endpoint.endswith("/"):
+        endpoint = f"{endpoint}/"
+
+    try:
+        summary = _post_batch(
+            endpoint=endpoint,
+            token=token,
+            articles=articles,
+            timeout=args.timeout,
+        )
+    except RuntimeError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+
+    print(json.dumps(summary, indent=2))
+    failed = int(summary.get("failed") or 0)
+    created = int(summary.get("created") or 0)
+    if failed and not created:
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

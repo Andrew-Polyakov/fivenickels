@@ -437,13 +437,25 @@
                 if (!updateUrl || !pageId) {
                     return;
                 }
-                var startTitle = (btn.textContent || "").trim();
+                var titleTargetSelector = btn.getAttribute("data-inline-title-target");
+                var titleTarget = null;
+                if (titleTargetSelector) {
+                    titleTarget = document.querySelector(titleTargetSelector);
+                }
+                var startTitle = titleTarget
+                    ? (titleTarget.textContent || "").trim()
+                    : (btn.textContent || "").trim();
                 var input = document.createElement("input");
                 input.type = "text";
                 input.className = "markdown-tile__title-input";
                 input.value = startTitle;
-                btn.hidden = true;
-                btn.insertAdjacentElement("afterend", input);
+                if (titleTarget) {
+                    titleTarget.hidden = true;
+                    titleTarget.insertAdjacentElement("afterend", input);
+                } else {
+                    btn.hidden = true;
+                    btn.insertAdjacentElement("afterend", input);
+                }
                 input.focus();
                 input.select();
 
@@ -454,7 +466,11 @@
                     }
                     done = true;
                     input.remove();
-                    btn.hidden = false;
+                    if (titleTarget) {
+                        titleTarget.hidden = false;
+                    } else {
+                        btn.hidden = false;
+                    }
                 }
 
                 input.addEventListener("keydown", function (keyEvt) {
@@ -479,9 +495,17 @@
                     })
                         .then(function () {
                             done = true;
-                            btn.textContent = nextTitle;
+                            if (titleTarget) {
+                                titleTarget.textContent = nextTitle;
+                            } else {
+                                btn.textContent = nextTitle;
+                            }
                             input.remove();
-                            btn.hidden = false;
+                            if (titleTarget) {
+                                titleTarget.hidden = false;
+                            } else {
+                                btn.hidden = false;
+                            }
                             refreshCurrentPage();
                         })
                         .catch(function (err) {

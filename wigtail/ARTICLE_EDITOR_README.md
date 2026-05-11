@@ -316,6 +316,42 @@ pip install djangorestframework
 6. **Scheduling**: Schedule articles to publish at future dates
 7. **Analytics**: Track article performance metrics
 
+## Automated article submission
+
+StockCrawler `news` JSON can be submitted to Wagtail as draft pages queued for moderation.
+
+### REST endpoint
+
+- `POST /api/articles/auto-submit/`
+- Header: `Authorization: Bearer <ARTICLE_SUBMIT_BEARER_TOKEN>`
+- Body: `{ "articles": [ { "title", "summary", "content", "canonical_url", "section_slug", "tags", "symbols" } ] }`
+- Duplicate `canonical_url` values are skipped (no update).
+- Created pages are **not** published; a draft revision is saved for editorial review in Wagtail.
+
+### CLI and chain scripts
+
+From the repository root (with Wigtail running and token configured in `trades/.env`):
+
+```bash
+# Map StockCrawler JSON without calling the API
+python tools/submit-article --input-file /path/to/news.json --dry-run
+
+# Submit mapped articles
+python tools/submit-article --input-file /path/to/news.json
+
+# Crawl tickers then submit (Bash / Windows)
+tools/crawler-submit.sh news NVDA TSM
+tools\crawler-submit.bat news NVDA TSM
+```
+
+Environment variables (see `trades/.env.example`):
+
+- `ARTICLE_SUBMIT_BEARER_TOKEN` — required for API calls
+- `WIGTAIL_ARTICLE_SUBMIT_URL` — default `http://127.0.0.1:8000/api/articles/auto-submit/`
+- `ARTICLE_SUBMIT_DEFAULT_SECTION_SLUG` — default taxonomy section slug
+- `ARTICLE_SUBMIT_DEFAULT_AUTHOR_NAME` — card author fallback
+- `ARTICLE_SUBMIT_USER` — optional Wagtail user for revision attribution
+
 ## Testing
 
 ### Test Article Editor

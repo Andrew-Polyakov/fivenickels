@@ -5,6 +5,8 @@ import uuid as _uuid
 
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from django.contrib.contenttypes.models import ContentType
+from wagtail.models import Page
 from home.models import TaggedContentPage, TaxonomyTerm, ContentTag
 
 
@@ -175,6 +177,28 @@ class ArticleUpdateSerializer(serializers.ModelSerializer):
             'og_image_id',
         ]
 
+    @staticmethod
+    def _repair_page_content_type(instance):
+        """
+        Heal corrupted wagtailcore_page.content_type rows for this instance.
+
+        Some environments can end up with mismatched content_type ids after
+        partial DB restores; Wagtail save() then crashes while resolving
+        old_record.specific.
+        """
+        expected_ct = ContentType.objects.get_for_model(
+            instance.__class__,
+            for_concrete_model=False,
+        )
+        current_ct_id = (
+            Page.objects.filter(pk=instance.pk)
+            .values_list("content_type_id", flat=True)
+            .first()
+        )
+        if current_ct_id and current_ct_id != expected_ct.pk:
+            Page.objects.filter(pk=instance.pk).update(content_type_id=expected_ct.pk)
+            instance.content_type_id = expected_ct.pk
+
     def update(self, instance, validated_data):
         import json
 
@@ -223,6 +247,7 @@ class ArticleUpdateSerializer(serializers.ModelSerializer):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
+        self._repair_page_content_type(instance)
         instance.full_clean()
         instance.save()
         return instance
@@ -232,3 +257,29 @@ class ArticleStatusActionSerializer(serializers.Serializer):
     action = serializers.ChoiceField(
         choices=['publish', 'unpublish', 'submit_moderation', 'save_draft', 'delete']
     )
+
+
+class AutoSubmitArticleSerializer(serializers.Serializer):
+    title = serializers.CharField(required=False, allow_blank=True)
+    headline = serializers.CharField(required=False, allow_blank=True)
+    tile_preview = serializers.CharField(required=False, allow_blank=True)
+    summary = serializers.CharField(required=False, allow_blank=True)
+    content = serializers.CharField(required=False, allow_blank=True)
+    body_markdown = serializers.CharField(required=False, allow_blank=True)
+    source = serializers.CharField(required=False, allow_blank=True)
+    canonical_url = serializers.URLField(required=False, allow_blank=True)
+    url = serializers.URLField(required=False, allow_blank=True)
+    section_slug = serializers.CharField(required=False, allow_blank=True)
+    author_name = serializers.CharField(required=False, allow_blank=True)
+    tags = serializers.ListField(
+        child=serializers.CharField(allow_blank=True),
+        required=False,
+    )
+    symbols = serializers.ListField(
+        child=serializers.CharField(allow_blank=True),
+        required=False,
+    )
+
+
+class AutoSubmitBatchSerializer(serializers.Serializer):
+    articles = AutoSubmitArticleSerializer(many=True)

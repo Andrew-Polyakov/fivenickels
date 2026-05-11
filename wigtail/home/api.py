@@ -1,25 +1,67 @@
 """
 REST API Views for article editing from profile page.
 """
+import secrets
+
+from django.conf import settings
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
+from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.http import Http404
 from django.db import transaction
 
+from home.article_auto_submit import submit_articles_batch
 from home.models import TaggedContentPage, ContentTag, TaxonomyTerm
 from home.serializers import (
     ArticleEditorSerializer,
     ArticleUpdateSerializer,
     ArticleStatusActionSerializer,
+    AutoSubmitBatchSerializer,
 )
 
 
 class IsAuthenticatedUser(permissions.BasePermission):
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_authenticated)
+
+
+class HasArticleSubmitBearerToken(permissions.BasePermission):
+    message = "Valid Bearer token required."
+
+    def has_permission(self, request, view):
+        expected = (getattr(settings, "ARTICLE_SUBMIT_BEARER_TOKEN", None) or "").strip()
+        if not expected:
+            return False
+        auth = request.META.get("HTTP_AUTHORIZATION", "")
+        if not auth.startswith("Bearer "):
+            return False
+        token = auth[7:].strip()
+        if not token:
+            return False
+        return secrets.compare_digest(token, expected)
+
+
+class ArticleAutoSubmitView(APIView):
+    permission_classes = [HasArticleSubmitBearerToken]
+    parser_classes = (JSONParser,)
+
+    def post(self, request):
+        serializer = AutoSubmitBatchSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        articles = serializer.validated_data.get("articles") or []
+        if not articles:
+            return Response(
+                {"error": "articles must contain at least one item."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        summary = submit_articles_batch(articles)
+        http_status = status.HTTP_200_OK
+        if summary["created"] == 0 and summary["failed"] > 0:
+            http_status = status.HTTP_400_BAD_REQUEST
+        return Response(summary, status=http_status)
 
 
 class ArticleEditorViewSet(viewsets.ModelViewSet):
