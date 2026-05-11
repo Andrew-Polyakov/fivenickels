@@ -401,6 +401,11 @@ class TaggedContentPage(SeoMetaFields, Page):
         validators=[MinValueValidator(1), MaxValueValidator(10)],
         help_text="1–10 content priority for shadcn card source mode: priority articles.",
     )
+    awaiting_moderation = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="Queued for profile moderation review until approved or published.",
+    )
     priority_expires_at = models.DateTimeField(
         null=True,
         blank=True,

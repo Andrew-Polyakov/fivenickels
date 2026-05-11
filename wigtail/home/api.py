@@ -108,6 +108,9 @@ class ArticleEditorViewSet(viewsets.ModelViewSet):
             revision = instance.save_revision(user=request.user)
             revision.publish()
             instance.refresh_from_db()
+            if instance.awaiting_moderation:
+                instance.awaiting_moderation = False
+                instance.save(update_fields=['awaiting_moderation'])
             return Response({'status': 'success', 'message': 'Article published',
                              'article': ArticleEditorSerializer(instance).data})
 
@@ -118,8 +121,22 @@ class ArticleEditorViewSet(viewsets.ModelViewSet):
                              'article': ArticleEditorSerializer(instance).data})
 
         if action_name == 'submit_moderation':
-            instance.save_revision(user=request.user, submitted_for_moderation=True)
+            instance.save_revision(user=request.user)
+            instance.awaiting_moderation = True
+            instance.save(update_fields=['awaiting_moderation'])
             return Response({'status': 'success', 'message': 'Submitted for moderation',
+                             'article': ArticleEditorSerializer(instance).data})
+
+        if action_name == 'approve_moderation':
+            revision = instance.get_latest_revision()
+            if revision is None:
+                revision = instance.save_revision(user=request.user)
+            revision.publish(user=request.user)
+            instance.refresh_from_db()
+            if instance.awaiting_moderation:
+                instance.awaiting_moderation = False
+                instance.save(update_fields=['awaiting_moderation'])
+            return Response({'status': 'success', 'message': 'Article approved and published',
                              'article': ArticleEditorSerializer(instance).data})
 
         if action_name == 'save_draft':

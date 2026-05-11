@@ -109,6 +109,9 @@ def popup_logout(request: HttpRequest) -> HttpResponse:
     return redirect(redirect_to)
 
 
+PROFILE_PAGE_SIZE = 25
+
+
 @require_GET
 @login_required
 def profile(request: HttpRequest) -> HttpResponse:
@@ -119,7 +122,7 @@ def profile(request: HttpRequest) -> HttpResponse:
         TaggedContentPage.objects.live()
         .public()
         .select_related("section_term", "taxonomy_category")
-        .order_by("-first_published_at")[:500]
+        .order_by("-first_published_at")
     )
     articles_data = [
         {
@@ -134,11 +137,36 @@ def profile(request: HttpRequest) -> HttpResponse:
         }
         for p in articles_qs
     ]
+    moderation_qs = (
+        TaggedContentPage.objects.filter(awaiting_moderation=True)
+        .select_related("section_term", "taxonomy_category", "author_user")
+        .order_by("-latest_revision_created_at", "-id")
+    )
+    moderation_data = [
+        {
+            "id": p.id,
+            "title": p.title,
+            "section_name": p.section_term.name,
+            "category_name": p.taxonomy_category.name if p.taxonomy_category_id else "",
+            "submitted": (
+                p.latest_revision_created_at.strftime("%Y-%m-%d")
+                if p.latest_revision_created_at
+                else ""
+            ),
+            "author_name": p.card_author_name(),
+            "preview": p.listing_preview_markdown()[:200],
+            "edit_url": reverse("article_editor", kwargs={"article_id": p.id}),
+            "approve_url": reverse("article-article-action", args=[p.id]),
+        }
+        for p in moderation_qs
+    ]
     return render(
         request,
         "profile.html",
         {
             "articles_data": articles_data,
+            "moderation_data": moderation_data,
             "create_article_url": reverse("article_create"),
+            "profile_page_size": PROFILE_PAGE_SIZE,
         },
     )

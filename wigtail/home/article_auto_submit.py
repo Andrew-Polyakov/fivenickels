@@ -216,6 +216,8 @@ def submit_article_payload(payload: dict[str, Any]) -> AutoSubmitItemResult:
     if submit_user is not None:
         revision_kwargs["user"] = submit_user
     page.save_revision(**revision_kwargs)
+    page.awaiting_moderation = True
+    page.save(update_fields=["awaiting_moderation"])
 
     return AutoSubmitItemResult(
         status="created",

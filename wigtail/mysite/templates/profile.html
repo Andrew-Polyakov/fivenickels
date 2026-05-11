@@ -25,10 +25,13 @@
 </section>
 
 {{ articles_data|json_script:"profile-articles-data" }}
+{{ moderation_data|json_script:"profile-moderation-data" }}
 <div
     data-shadcn-profile-articles
     data-articles-json-id="profile-articles-data"
+    data-moderation-json-id="profile-moderation-data"
     data-create-article-url="{{ create_article_url }}"
     data-csrf-token="{{ csrf_token }}"
+    data-page-size="{{ profile_page_size }}"
 ></div>
 {% endblock %}

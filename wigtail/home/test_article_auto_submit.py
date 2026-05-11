@@ -89,6 +89,7 @@ class ArticleAutoSubmitAPITests(WagtailPageTestCase):
 
         page = TaggedContentPage.objects.get(canonical_url=canonical)
         self.assertFalse(page.live)
+        self.assertTrue(page.awaiting_moderation)
         self.assertEqual(page.section_term_id, self.section.pk)
         self.assertIsNotNone(page.get_latest_revision())
 

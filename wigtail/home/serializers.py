@@ -255,7 +255,14 @@ class ArticleUpdateSerializer(serializers.ModelSerializer):
 
 class ArticleStatusActionSerializer(serializers.Serializer):
     action = serializers.ChoiceField(
-        choices=['publish', 'unpublish', 'submit_moderation', 'save_draft', 'delete']
+        choices=[
+            'publish',
+            'unpublish',
+            'submit_moderation',
+            'approve_moderation',
+            'save_draft',
+            'delete',
+        ]
     )
 
 

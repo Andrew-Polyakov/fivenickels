@@ -925,6 +925,58 @@ class InlineEditingApiTests(WagtailPageTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, f'data-create-article-url="{reverse("article_create")}"')
 
+    def test_profile_exposes_moderation_mount_and_page_size(self):
+        self.client.force_login(self.admin_user)
+        response = self.client.get(reverse("profile"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-moderation-json-id="profile-moderation-data"')
+        self.assertContains(response, 'data-page-size="25"')
+        self.assertContains(response, "profile-moderation-data")
+
+    def test_profile_includes_awaiting_moderation_item(self):
+        self.client.force_login(self.admin_user)
+        page = TaggedContentPage(
+            title="Moderation Queue Story",
+            slug="moderation-queue-story",
+            section_term=self.energy,
+            tile_preview="Needs review",
+            awaiting_moderation=True,
+            live=False,
+        )
+        self.homepage.add_child(instance=page)
+        page.save_revision(user=self.admin_user)
+
+        response = self.client.get(reverse("profile"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Moderation Queue Story")
+        self.assertContains(
+            response,
+            reverse("article-article-action", args=[page.pk]),
+        )
+
+    def test_approve_moderation_action_publishes_article(self):
+        self.client.force_login(self.admin_user)
+        page = TaggedContentPage(
+            title="Approve Me",
+            slug="approve-me",
+            section_term=self.energy,
+            tile_preview="preview",
+            awaiting_moderation=True,
+            live=False,
+        )
+        self.homepage.add_child(instance=page)
+        page.save_revision(user=self.admin_user)
+
+        response = self.client.post(
+            reverse("article-article-action", args=[page.pk]),
+            data='{"action": "approve_moderation"}',
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        page.refresh_from_db()
+        self.assertTrue(page.live)
+        self.assertFalse(page.awaiting_moderation)
+
     def test_create_article_creates_draft_and_redirects_to_editor(self):
         self.client.force_login(self.admin_user)
         existing_ids = set(TaggedContentPage.objects.values_list("id", flat=True))

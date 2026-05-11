@@ -1,0 +1,13 @@
+---
+description: Prefer shadcn/ui components in frontend UI code
+globs: front-end/src/**/*.tsx
+alwaysApply: false
+---
+
+# Shadcn First UI Components
+
+- Use existing shadcn/ui components before writing custom markup or custom controls.
+- Prefer composition of existing primitives (`Tabs`, `Table`, `Pagination`, `Dialog`, `Button`, etc.).
+- Only build custom UI elements when no suitable shadcn component exists or the user explicitly asks for custom UI.
+- When using a component category, check and follow current shadcn docs/API first.
+- Keep styling additive: layout-oriented `className` customizations are fine, but avoid replacing core component behavior.
