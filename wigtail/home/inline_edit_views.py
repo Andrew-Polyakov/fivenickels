@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 from django.contrib.auth.decorators import user_passes_test
@@ -333,6 +334,86 @@ def search_articles(request: HttpRequest) -> JsonResponse:
         }
         for row in rows
     ]
+    return JsonResponse({"results": results})
+
+
+@require_POST
+@user_passes_test(_admin_inline_access)
+def save_taxonomy_content(request: HttpRequest) -> JsonResponse:
+    payload = _json_payload(request)
+    try:
+        term_id = int(payload.get("term_id"))
+    except (TypeError, ValueError):
+        return JsonResponse({"error": "Category id is required."}, status=400)
+
+    content_json = payload.get("content_json")
+    if not isinstance(content_json, dict):
+        return JsonResponse({"error": "Invalid content payload."}, status=400)
+
+    term = TaxonomyTerm.objects.filter(pk=term_id).first()
+    if term is None:
+        return JsonResponse({"error": "Category not found."}, status=404)
+
+    term.content_constructor_json = content_json
+    term.save(update_fields=["content_constructor_json"])
+    return JsonResponse({"saved": True, "term_id": term.pk})
+
+
+@require_POST
+@user_passes_test(_admin_inline_access)
+def upload_taxonomy_image(request: HttpRequest) -> JsonResponse:
+    if "image" not in request.FILES:
+        return JsonResponse({"error": "No image provided."}, status=400)
+
+    from wagtail.images import get_image_model
+    Image = get_image_model()
+    image_file = request.FILES["image"]
+    image = Image.objects.create(title=image_file.name, file=image_file)
+    try:
+        url = image.get_rendition("original").url
+    except Exception:
+        url = image.file.url
+
+    return JsonResponse({"id": image.id, "url": url, "title": image.title})
+
+
+@require_GET
+@user_passes_test(_admin_inline_access)
+def search_taxonomy_articles(request: HttpRequest) -> JsonResponse:
+    query = str(request.GET.get("q") or "").strip()
+    qs = (
+        TaggedContentPage.objects
+        .live().public()
+        .prefetch_related("tags")
+        .select_related("hero_image", "og_image")
+        .order_by("-first_published_at")
+    )
+    if query:
+        for token in [t for t in query.split() if t]:
+            qs = qs.filter(title__icontains=token)
+    rows = list(qs[:12])
+    results = []
+    for row in rows:
+        image_url = None
+        for img in (row.hero_image, row.og_image):
+            if img is None:
+                continue
+            try:
+                image_url = img.get_rendition("fill-400x250").url
+                break
+            except Exception:
+                continue
+        first_tag = row.tags.first()
+        raw_preview = (row.tile_preview or "").strip()
+        excerpt = re.sub(r"[*#`_~\[\]()]+", "", raw_preview)[:200].strip() or None
+        results.append({
+            "id": row.pk,
+            "title": row.title,
+            "url": row.url or "",
+            "imageUrl": image_url,
+            "tag": first_tag.name if first_tag else None,
+            "excerpt": excerpt,
+        })
     return JsonResponse({"results": results})
 
 

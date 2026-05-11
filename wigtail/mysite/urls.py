@@ -73,6 +73,21 @@ urlpatterns = [
         inline_edit_views.list_content_tags,
         name="inline_list_content_tags",
     ),
+    path(
+        "inline/taxonomy/save-content/",
+        inline_edit_views.save_taxonomy_content,
+        name="save_taxonomy_content",
+    ),
+    path(
+        "inline/taxonomy/upload-image/",
+        inline_edit_views.upload_taxonomy_image,
+        name="upload_taxonomy_image",
+    ),
+    path(
+        "inline/taxonomy/article-search/",
+        inline_edit_views.search_taxonomy_articles,
+        name="search_taxonomy_articles",
+    ),
     path("rating/forex/", broker_views.forex_ratings, name="forex_ratings"),
     path("rating/forex/<int:pk>/update/", broker_views.broker_rating_update, name="broker_rating_update"),
     path("search/suggest/", search_views.search_suggest, name="search_suggest"),

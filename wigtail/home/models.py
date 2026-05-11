@@ -44,6 +44,11 @@ class TaxonomyTerm(MP_Node):
         blank=True,
         help_text="Master pane resizable layout (rows/columns) when widgets StreamField is empty; staff-only edit via site UI.",
     )
+    content_constructor_json = models.JSONField(
+        null=True,
+        blank=True,
+        help_text="Taxonomy page content constructor blocks (React editor). When set, overrides widgets and master_layout_json.",
+    )
     is_visible = models.BooleanField(
         default=True,
         help_text="If unchecked, this term is hidden from site navigation.",
@@ -77,11 +82,16 @@ class TaxonomyTerm(MP_Node):
         FieldPanel("sort_order"),
         FieldPanel("widgets"),
         FieldPanel("master_layout_json"),
+        FieldPanel("content_constructor_json"),
     ]
 
     class Meta:
         verbose_name = "taxonomy term"
         verbose_name_plural = "taxonomy terms"
+
+    @property
+    def has_content_constructor(self) -> bool:
+        return self.content_constructor_json is not None
 
     def get_visible_children(self):
         return (

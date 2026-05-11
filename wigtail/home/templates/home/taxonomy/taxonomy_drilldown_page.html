@@ -21,35 +21,19 @@
 
 <div class="taxonomy-drilldown">
 
-    {% if taxonomy_active_node.widgets %}
-        <div class="scn-content-outline taxonomy-drilldown__outline">
-            <h1 class="taxonomy-drilldown__title">{{ taxonomy_active_node.name }}</h1>
-
-            <div class="home-stream taxonomy-drilldown__widgets" data-taxonomy-master-pane>
-                {% render_main_site_stream taxonomy_active_node.widgets %}
-            </div>
-        </div>
-    {% else %}
-        {{ taxonomy_master_layout_payload|json_script:"taxonomy-master-layout-json" }}
-        <div
-            class="taxonomy-drilldown__master-pane taxonomy-drilldown__widgets"
-            data-taxonomy-master-pane
-        >
-            <div
-                class="shadcn-card-layout-root"
-                data-shadcn-card-layout
-                data-taxonomy-subsection-layout="1"
-                data-master-pane-enabled="{% if can_save_taxonomy_master_layout %}1{% else %}0{% endif %}"
-                data-layout-json-id="taxonomy-master-layout-json"
-                data-taxonomy-section-title="{{ taxonomy_active_node.name }}"
-                data-taxonomy-term-id="{{ taxonomy_active_node.pk }}"
-                data-can-save-master-layout="{% if can_save_taxonomy_master_layout %}1{% else %}0{% endif %}"
-                {% if can_save_taxonomy_master_layout %}
-                data-save-master-layout-url="{% url 'save_taxonomy_master_layout' %}"
-                {% endif %}
-            ></div>
-        </div>
+    {% if taxonomy_active_node.has_content_constructor %}
+        {{ taxonomy_active_node.content_constructor_json|json_script:"taxonomy-content-constructor-json" }}
     {% endif %}
+    <div
+        class="taxonomy-drilldown__master-pane taxonomy-drilldown__widgets"
+        data-shadcn-taxonomy-editor
+        data-term-id="{{ taxonomy_active_node.pk }}"
+        {% if taxonomy_active_node.has_content_constructor %}data-json-id="taxonomy-content-constructor-json"{% endif %}
+        data-can-edit="{% if can_save_taxonomy_master_layout %}1{% else %}0{% endif %}"
+        data-save-url="{% url 'save_taxonomy_content' %}"
+        data-upload-url="{% url 'upload_taxonomy_image' %}"
+        data-article-search-url="{% url 'search_taxonomy_articles' %}"
+    ></div>
 
 </div>
 
