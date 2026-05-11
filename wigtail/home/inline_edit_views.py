@@ -303,6 +303,13 @@ def search_articles(request: HttpRequest) -> JsonResponse:
     query = str(request.GET.get("q") or "").strip()
     random_raw = str(request.GET.get("random") or "").strip().lower()
     random_mode = random_raw in ("1", "true", "yes")
+    article_id_raw = str(request.GET.get("article_id") or "").strip()
+    article_id: int | None = None
+    if article_id_raw:
+        try:
+            article_id = int(article_id_raw)
+        except ValueError:
+            article_id = None
     section_term_id_raw = str(request.GET.get("section_term_id") or "").strip()
     tag_ids_raw = str(request.GET.get("tag_ids") or "").strip()
     tag_ids: list[int] = []
@@ -327,9 +334,11 @@ def search_articles(request: HttpRequest) -> JsonResponse:
             except ValueError:
                 continue
         exclude_ids = exclude_ids[:200]
-    if not random_mode and not _admin_inline_access(request.user):
+    if not random_mode and article_id is None and not _admin_inline_access(request.user):
         return JsonResponse({"results": []}, status=403)
     qs = TaggedContentPage.objects.live().public().order_by("-first_published_at")
+    if article_id is not None:
+        qs = qs.filter(pk=article_id)
     if section_term_id_raw:
         try:
             term = TaxonomyTerm.objects.filter(pk=int(section_term_id_raw)).first()
@@ -348,7 +357,7 @@ def search_articles(request: HttpRequest) -> JsonResponse:
     elif query:
         for token in [t for t in query.split() if t]:
             qs = qs.filter(title__icontains=token)
-    limit = 1 if random_mode else 20
+    limit = 1 if random_mode or article_id is not None else 20
     qs = qs.select_related("section_term", "author_user", "hero_image", "og_image").prefetch_related("tags")
     rows = list(qs[:limit])
     results = [_article_result_payload(row, request) for row in rows]

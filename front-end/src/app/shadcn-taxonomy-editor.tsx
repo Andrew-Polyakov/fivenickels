@@ -72,16 +72,28 @@ function uid(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
+function carouselSlotNeedsPreviewHydration(slot: CarouselSlot): boolean {
+  if (slot.mode === 'random' || slot.mode === 'priority') {
+    return true;
+  }
+  if (slot.mode !== 'specific' || typeof slot.articleId !== 'number' || slot.articleId <= 0) {
+    return false;
+  }
+  return !slot.publishedAt?.trim() || !slot.articleImageUrl || !slot.articleExcerpt?.trim();
+}
+
 function useResolvedCarouselPreviews(cards: CarouselSlot[], termId: number): Record<string, ArticleResult | null> {
   const [resolved, setResolved] = React.useState<Record<string, ArticleResult | null>>({});
   const signature = React.useMemo(
-    () => cards.map((slot) => `${slot.id}:${slot.mode}:${slot.articleId ?? ''}:${slot.articleTitle ?? ''}`).join('|'),
+    () => cards.map((slot) => (
+      `${slot.id}:${slot.mode}:${slot.articleId ?? ''}:${slot.articleTitle ?? ''}:${slot.publishedAt ?? ''}`
+    )).join('|'),
     [cards]
   );
 
   React.useEffect(() => {
-    const randomSlots = cards.filter((slot) => slot.mode === 'random');
-    if (randomSlots.length === 0) {
+    const hydrateSlots = cards.filter((slot) => carouselSlotNeedsPreviewHydration(slot));
+    if (hydrateSlots.length === 0) {
       setResolved({});
       return;
     }
@@ -94,14 +106,18 @@ function useResolvedCarouselPreviews(cards: CarouselSlot[], termId: number): Rec
     let cancelled = false;
     void (async () => {
       const next: Record<string, ArticleResult | null> = {};
-      for (const slot of randomSlots) {
+      for (const slot of hydrateSlots) {
         const q = new URLSearchParams();
-        q.set('random', '1');
-        if (sectionTermId) {
-          q.set('section_term_id', String(sectionTermId));
-        }
-        if (usedIds.size > 0) {
-          q.set('exclude_ids', Array.from(usedIds).join(','));
+        if (slot.mode === 'specific' && typeof slot.articleId === 'number' && slot.articleId > 0) {
+          q.set('article_id', String(slot.articleId));
+        } else {
+          q.set('random', '1');
+          if (sectionTermId) {
+            q.set('section_term_id', String(sectionTermId));
+          }
+          if (usedIds.size > 0) {
+            q.set('exclude_ids', Array.from(usedIds).join(','));
+          }
         }
         try {
           const res = await fetch(`/inline/article/search/?${q.toString()}`, { credentials: 'same-origin' });
@@ -234,12 +250,15 @@ function CarouselCard({ imageUrl, tags, title, excerpt, url, authorName, publish
   authorName?: string | null;
   publishedAt?: string | null;
 }) {
+  const publishedLabel = publishedAt?.trim() || '';
   const inner = (
     <Card className={cn('carousel-article-card', url && 'carousel-article-card--link')}>
-      {imageUrl
-        ? <img src={imageUrl} alt={title} className="carousel-article-card__img" />
-        : <div className="carousel-article-card__img-placeholder" aria-hidden="true" />
-      }
+      <div className="carousel-article-card__media">
+        {imageUrl
+          ? <img src={imageUrl} alt={title} className="carousel-article-card__img" />
+          : <div className="carousel-article-card__img-placeholder" aria-hidden="true" />
+        }
+      </div>
       <CardContent className="carousel-article-card__body">
         {(tags ?? []).length > 0 ? (
           <div className="carousel-article-card__tags">
@@ -254,8 +273,12 @@ function CarouselCard({ imageUrl, tags, title, excerpt, url, authorName, publish
         {excerpt && <p className="carousel-article-card__excerpt">{excerpt}</p>}
       </CardContent>
       <div className="carousel-article-card__footer">
-        <span>{authorName || 'Fivenickels Editorial'}</span>
-        <span>{publishedAt || ''}</span>
+        <span className="carousel-article-card__author">{authorName || 'Fivenickels Editorial'}</span>
+        {publishedLabel ? (
+          <time className="carousel-article-card__published" dateTime={publishedLabel}>
+            {publishedLabel}
+          </time>
+        ) : null}
       </div>
     </Card>
   );
@@ -671,52 +694,38 @@ function CarouselEditor({ block, searchUrl, termId, onChange }: {
                 <CarouselCard
                   imageUrl={
                     slot.mode === 'specific'
-                      ? slot.articleImageUrl
-                      : slot.mode === 'random'
-                        ? resolvedRandom[slot.id]?.imageUrl ?? null
-                        : null
+                      ? slot.articleImageUrl ?? resolvedRandom[slot.id]?.imageUrl ?? null
+                      : resolvedRandom[slot.id]?.imageUrl ?? null
                   }
                   tags={
                     slot.mode === 'specific'
-                      ? slot.articleTags
-                      : slot.mode === 'random'
-                        ? resolvedRandom[slot.id]?.tags ?? []
-                        : undefined
+                      ? slot.articleTags ?? resolvedRandom[slot.id]?.tags ?? []
+                      : resolvedRandom[slot.id]?.tags ?? []
                   }
                   title={
                     slot.mode === 'specific'
-                      ? (slot.articleTitle ?? `Slot ${i + 1}`)
-                      : slot.mode === 'priority'
-                        ? 'Priority article'
-                        : resolvedRandom[slot.id]?.title ?? 'Random article'
+                      ? (slot.articleTitle ?? resolvedRandom[slot.id]?.title ?? `Slot ${i + 1}`)
+                      : resolvedRandom[slot.id]?.title ?? (slot.mode === 'priority' ? 'Priority article' : 'Random article')
                   }
                   excerpt={
                     slot.mode === 'specific'
-                      ? slot.articleExcerpt
-                      : slot.mode === 'random'
-                        ? resolvedRandom[slot.id]?.excerpt
-                        : undefined
+                      ? slot.articleExcerpt ?? resolvedRandom[slot.id]?.excerpt
+                      : resolvedRandom[slot.id]?.excerpt
                   }
                   url={
                     slot.mode === 'specific'
-                      ? slot.articleUrl
-                      : slot.mode === 'random'
-                        ? resolvedRandom[slot.id]?.url
-                        : undefined
+                      ? slot.articleUrl ?? resolvedRandom[slot.id]?.url
+                      : resolvedRandom[slot.id]?.url
                   }
                   authorName={
                     slot.mode === 'specific'
-                      ? slot.authorName
-                      : slot.mode === 'random'
-                        ? resolvedRandom[slot.id]?.authorName
-                        : undefined
+                      ? slot.authorName ?? resolvedRandom[slot.id]?.authorName
+                      : resolvedRandom[slot.id]?.authorName
                   }
                   publishedAt={
                     slot.mode === 'specific'
-                      ? slot.publishedAt
-                      : slot.mode === 'random'
-                        ? resolvedRandom[slot.id]?.publishedAt
-                        : undefined
+                      ? slot.publishedAt ?? resolvedRandom[slot.id]?.publishedAt
+                      : resolvedRandom[slot.id]?.publishedAt
                   }
                 />
               </CarouselItem>
@@ -867,52 +876,38 @@ function ReadOnlyBlock({ block, termId }: { block: TaxonomyBlock; termId: number
                 <CarouselCard
                   imageUrl={
                     slot.mode === 'specific'
-                      ? slot.articleImageUrl
-                      : slot.mode === 'random'
-                        ? resolvedRandom[slot.id]?.imageUrl ?? null
-                        : null
+                      ? slot.articleImageUrl ?? resolvedRandom[slot.id]?.imageUrl ?? null
+                      : resolvedRandom[slot.id]?.imageUrl ?? null
                   }
                   tags={
                     slot.mode === 'specific'
-                      ? slot.articleTags
-                      : slot.mode === 'random'
-                        ? resolvedRandom[slot.id]?.tags ?? []
-                        : undefined
+                      ? slot.articleTags ?? resolvedRandom[slot.id]?.tags ?? []
+                      : resolvedRandom[slot.id]?.tags ?? []
                   }
                   title={
                     slot.mode === 'specific'
-                      ? (slot.articleTitle ?? `Article ${i + 1}`)
-                      : slot.mode === 'priority'
-                        ? `Priority article ${i + 1}`
-                        : resolvedRandom[slot.id]?.title ?? `Article ${i + 1}`
+                      ? (slot.articleTitle ?? resolvedRandom[slot.id]?.title ?? `Article ${i + 1}`)
+                      : resolvedRandom[slot.id]?.title ?? (slot.mode === 'priority' ? `Priority article ${i + 1}` : `Article ${i + 1}`)
                   }
                   excerpt={
                     slot.mode === 'specific'
-                      ? slot.articleExcerpt
-                      : slot.mode === 'random'
-                        ? resolvedRandom[slot.id]?.excerpt
-                        : undefined
+                      ? slot.articleExcerpt ?? resolvedRandom[slot.id]?.excerpt
+                      : resolvedRandom[slot.id]?.excerpt
                   }
                   url={
                     slot.mode === 'specific'
-                      ? slot.articleUrl
-                      : slot.mode === 'random'
-                        ? resolvedRandom[slot.id]?.url
-                        : undefined
+                      ? slot.articleUrl ?? resolvedRandom[slot.id]?.url
+                      : resolvedRandom[slot.id]?.url
                   }
                   authorName={
                     slot.mode === 'specific'
-                      ? slot.authorName
-                      : slot.mode === 'random'
-                        ? resolvedRandom[slot.id]?.authorName
-                        : undefined
+                      ? slot.authorName ?? resolvedRandom[slot.id]?.authorName
+                      : resolvedRandom[slot.id]?.authorName
                   }
                   publishedAt={
                     slot.mode === 'specific'
-                      ? slot.publishedAt
-                      : slot.mode === 'random'
-                        ? resolvedRandom[slot.id]?.publishedAt
-                        : undefined
+                      ? slot.publishedAt ?? resolvedRandom[slot.id]?.publishedAt
+                      : resolvedRandom[slot.id]?.publishedAt
                   }
                 />
               </CarouselItem>

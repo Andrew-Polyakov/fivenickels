@@ -718,8 +718,12 @@ function ArticleCardView({
         {data.excerpt ? <p className="scn-article-card__excerpt">{data.excerpt}</p> : null}
       </CardContent>
       <div className="scn-article-card__footer-meta">
-        <span>{data.authorName || 'Fivenickels Editorial'}</span>
-        <span>{data.publishedAt || ''}</span>
+        <span className="scn-article-card__author">{data.authorName || 'Fivenickels Editorial'}</span>
+        {data.publishedAt?.trim() ? (
+          <time className="scn-article-card__published" dateTime={data.publishedAt}>
+            {data.publishedAt}
+          </time>
+        ) : null}
       </div>
     </>
   );

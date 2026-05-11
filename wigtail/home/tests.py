@@ -1103,6 +1103,17 @@ class CardSourcePropertiesTests(WagtailPageTestCase):
             any(p is not None and p.pk == direct.pk for p in pages),
         )
 
+    def test_inline_search_article_id_hydrates_without_auth(self):
+        response = self.client.get(
+            reverse("inline_search_articles"),
+            {"article_id": str(self.page_high.pk)},
+        )
+        self.assertEqual(response.status_code, 200)
+        results = response.json().get("results") or []
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].get("id"), self.page_high.pk)
+        self.assertIn("publishedAt", results[0])
+
     def test_inline_search_random_market_news_includes_direct_container_articles(self):
         from home.taxonomy import MARKET_NEWS_SLUG
 
