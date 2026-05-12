@@ -376,6 +376,21 @@
         }
     }
 
+    function initProfileWorkspace() {
+        if (
+            window.mountShadcnProfileArticlesTable &&
+            typeof window.mountShadcnProfileArticlesTable === "function"
+        ) {
+            window.mountShadcnProfileArticlesTable();
+        }
+    }
+
+    function initTaxonomyEditor() {
+        if (window.mountTaxonomyEditor && typeof window.mountTaxonomyEditor === "function") {
+            window.mountTaxonomyEditor();
+        }
+    }
+
     function initMarketMoversFilter() {
         var root = document.querySelector("[data-market-movers-root]");
         if (!root || root.getAttribute("data-market-movers-bound") === "1") {
@@ -569,6 +584,8 @@
         initInlineTileTitleAdmin();
         initTileShareButtons();
         initShadcnCardLayouts();
+        initProfileWorkspace();
+        initTaxonomyEditor();
         initMarketMoversFilter();
     }
 
@@ -849,6 +866,8 @@
         initInlineTileTitleAdmin();
         initTileShareButtons();
         initShadcnCardLayouts();
+        initProfileWorkspace();
+        initTaxonomyEditor();
         initMarketMoversFilter();
     });
 
@@ -865,6 +884,8 @@
         initInlineTileTitleAdmin();
         initTileShareButtons();
         initShadcnCardLayouts();
+        initProfileWorkspace();
+        initTaxonomyEditor();
         initMarketMoversFilter();
     });
 
