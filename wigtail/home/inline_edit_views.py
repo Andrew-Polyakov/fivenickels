@@ -240,9 +240,10 @@ def _article_result_payload(row: TaggedContentPage, request: HttpRequest) -> dic
         "section": row.section_term.name if row.section_term_id else "",
         "url": row.get_url(request=request) or row.url or "",
         "imageUrl": _article_result_image_url(row),
-        "tags": list(row.tags.values_list("name", flat=True)[:3]),
+        "tags": list(row.tags.values_list("name", flat=True)[:5]),
         "authorName": row.card_author_name(),
         "publishedAt": date_format(row.first_published_at, "F j, Y") if row.first_published_at else "",
+        "catalyst": (row.catalyst or "").strip(),
     }
 
 
@@ -438,10 +439,11 @@ def search_taxonomy_articles(request: HttpRequest) -> JsonResponse:
             "url": row.url or "",
             "imageUrl": image_url,
             "tag": (row.tags.values_list("name", flat=True).first() or None),
-            "tags": list(row.tags.values_list("name", flat=True)[:3]),
+            "tags": list(row.tags.values_list("name", flat=True)[:5]),
             "excerpt": excerpt,
             "authorName": row.card_author_name(),
             "publishedAt": date_format(row.first_published_at, "F j, Y") if row.first_published_at else "",
+            "catalyst": (row.catalyst or "").strip(),
         })
     return JsonResponse({"results": results})
 

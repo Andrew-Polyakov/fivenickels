@@ -7,6 +7,7 @@ export type CarouselCardViewModel = {
   url?: string | null;
   authorName?: string | null;
   publishedAt?: string | null;
+  catalyst?: string | null;
 };
 
 export type CarouselPackedSingleSlide = {

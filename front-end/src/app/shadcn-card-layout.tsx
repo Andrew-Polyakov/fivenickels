@@ -729,7 +729,7 @@ function ArticleCardView({
       </Card>
     );
   }
-  const tags = (data.tags ?? []).slice(0, 3);
+  const tags = (data.tags ?? []).slice(0, 5);
   const sentimentIconSrc = catalystIconSrc(data.catalyst);
   const body = (
     <>

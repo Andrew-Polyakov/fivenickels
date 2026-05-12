@@ -47,7 +47,7 @@ def _article_card_dict(page: Page | None, request) -> dict[str, Any]:
         "href": href or "",
         "excerpt": excerpt or "",
         "imageUrl": image_url,
-        "tags": list(spec.tags.values_list("name", flat=True)[:3]),
+        "tags": list(spec.tags.values_list("name", flat=True)[:5]),
         "authorName": spec.card_author_name(),
         "publishedAt": date_format(spec.first_published_at, "F j, Y") if spec.first_published_at else "",
         "catalyst": catalyst,

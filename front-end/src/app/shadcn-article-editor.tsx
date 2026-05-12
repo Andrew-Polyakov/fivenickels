@@ -153,42 +153,27 @@ function mergeUniqueTags(...collections: Tag[][]): Tag[] {
 
 function CatalystBullIcon() {
   return (
-    <svg
+    <img
       className="scn-catalyst-toggle__icon"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      src="/static/images/bull.png"
+      alt="Bullish"
+      width={128}
+      height={128}
       aria-hidden="true"
-    >
-      <path d="M8.5 17.5V10.5c0-2.5 1.6-4.5 3.5-4.5s3.5 2 3.5 4.5v7" />
-      <path d="M6.5 8.5 8 6.5l2 1.5" />
-      <path d="M17.5 8.5 16 6.5l-2 1.5" />
-      <path d="M6.5 17.5h11" />
-    </svg>
+    />
   );
 }
 
 function CatalystBearIcon() {
   return (
-    <svg
+    <img
       className="scn-catalyst-toggle__icon"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      src="/static/images/bear.png"
+      alt="Bearish"
+      width={128}
+      height={128}
       aria-hidden="true"
-    >
-      <path d="M8.5 16.5V11c0-2.2 1.6-4 3.5-4s3.5 1.8 3.5 4v5.5" />
-      <path d="M7 9.5 8.5 7.5 10.5 9" />
-      <path d="M17 9.5 15.5 7.5 13.5 9" />
-      <path d="M9.5 13h5" />
-      <path d="M7.5 16.5h9" />
-    </svg>
+    />
   );
 }
 
@@ -1330,20 +1315,19 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
         <span className={`scn-editor-status scn-editor-status--${status}`}>
           {status === 'published' ? 'Live' : 'Draft'}
         </span>
+        <div className="scn-editor-title-wrap">
+          <Input
+            className="scn-editor-title-input"
+            placeholder="Article title"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+          />
+        </div>
         <div className="scn-editor-header__actions">
           <Button onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
           <ActionsPopover status={status} onAction={handleAction} disabled={saving} />
         </div>
       </header>
-
-      <div className="scn-editor-title-wrap">
-        <Input
-          className="scn-editor-title-input"
-          placeholder="Article title"
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-        />
-      </div>
 
       <div className="scn-editor-layout">
         {/* Body */}

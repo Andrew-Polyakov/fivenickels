@@ -50,6 +50,7 @@ type CarouselSlot  = {
   articleUrl?: string | null;
   authorName?: string | null;
   publishedAt?: string | null;
+  catalyst?: string | null;
 };
 type CarouselBlock = { id: string; type: 'carousel'; cards: CarouselSlot[]; infiniteScroll?: boolean };
 
@@ -85,7 +86,7 @@ function carouselSlotNeedsPreviewHydration(slot: CarouselSlot): boolean {
   if (slot.mode !== 'specific' || typeof slot.articleId !== 'number' || slot.articleId <= 0) {
     return false;
   }
-  return !slot.publishedAt?.trim() || !slot.articleImageUrl || !slot.articleExcerpt?.trim();
+  return !slot.publishedAt?.trim() || !slot.articleImageUrl || !slot.articleExcerpt?.trim() || !slot.catalyst;
 }
 
 function useResolvedCarouselPreviews(cards: CarouselSlot[], termId: number): Record<string, ArticleResult | null> {
@@ -178,6 +179,7 @@ type ArticleResult = {
   excerpt?: string | null;
   authorName?: string | null;
   publishedAt?: string | null;
+  catalyst?: string | null;
 };
 
 function ArticleSearchInput({ value, onChange, searchUrl, placeholder = 'Search articles…' }: {
@@ -247,9 +249,17 @@ function ArticleSearchInput({ value, onChange, searchUrl, placeholder = 'Search 
 
 // ─── Carousel Article Card ────────────────────────────────────────────────────
 
-function CarouselCard({ imageUrl, tags, title, excerpt, url, authorName, publishedAt }: CarouselCardViewModel) {
+function carouselCatalystIconSrc(catalyst?: string | null): string | null {
+  if (catalyst === 'Bullish') return '/static/images/bull.png';
+  if (catalyst === 'Bearish') return '/static/images/bear.png';
+  return null;
+}
+
+function CarouselCard({ imageUrl, tags, title, excerpt, url, authorName, publishedAt, catalyst }: CarouselCardViewModel) {
   const publishedLabel = publishedAt?.trim() || '';
   const imageless = !hasCarouselCardImage({ imageUrl });
+  const sentimentIconSrc = carouselCatalystIconSrc(catalyst);
+  const tagList = (tags ?? []).slice(0, 5);
   const inner = (
     <Card className={cn(
       'carousel-article-card',
@@ -262,9 +272,19 @@ function CarouselCard({ imageUrl, tags, title, excerpt, url, authorName, publish
         </div>
       ) : null}
       <CardContent className="carousel-article-card__body">
-        {(tags ?? []).length > 0 ? (
+        {tagList.length > 0 || sentimentIconSrc ? (
           <div className="carousel-article-card__tags">
-            {(tags ?? []).slice(0, 3).map((tag) => (
+            {sentimentIconSrc ? (
+              <img
+                src={sentimentIconSrc}
+                alt=""
+                width={32}
+                height={32}
+                className="scn-catalyst-icon scn-article-card__catalyst-icon"
+                aria-hidden="true"
+              />
+            ) : null}
+            {tagList.map((tag) => (
               <span key={tag} className="carousel-article-card__tag">
                 {tag}
               </span>
@@ -329,6 +349,9 @@ function resolveCarouselSlotViewModel(
     publishedAt: slot.mode === 'specific'
       ? slot.publishedAt ?? preview?.publishedAt
       : preview?.publishedAt,
+    catalyst: slot.mode === 'specific'
+      ? slot.catalyst ?? preview?.catalyst
+      : preview?.catalyst,
   };
 }
 
