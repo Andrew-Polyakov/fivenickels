@@ -376,16 +376,16 @@
         }
     }
 
-    function initProfileWorkspace() {
-        if (
-            window.mountShadcnProfileArticlesTable &&
-            typeof window.mountShadcnProfileArticlesTable === "function"
-        ) {
+    function remountShadcnWidgets() {
+        if (window.mountShadcnBrokerTable && typeof window.mountShadcnBrokerTable === "function") {
+            window.mountShadcnBrokerTable();
+        }
+        if (window.mountShadcnProfileArticlesTable && typeof window.mountShadcnProfileArticlesTable === "function") {
             window.mountShadcnProfileArticlesTable();
         }
-    }
-
-    function initTaxonomyEditor() {
+        if (window.mountShadcnArticleEditor && typeof window.mountShadcnArticleEditor === "function") {
+            window.mountShadcnArticleEditor();
+        }
         if (window.mountTaxonomyEditor && typeof window.mountTaxonomyEditor === "function") {
             window.mountTaxonomyEditor();
         }
@@ -584,8 +584,7 @@
         initInlineTileTitleAdmin();
         initTileShareButtons();
         initShadcnCardLayouts();
-        initProfileWorkspace();
-        initTaxonomyEditor();
+        remountShadcnWidgets();
         initMarketMoversFilter();
     }
 
@@ -866,8 +865,7 @@
         initInlineTileTitleAdmin();
         initTileShareButtons();
         initShadcnCardLayouts();
-        initProfileWorkspace();
-        initTaxonomyEditor();
+        remountShadcnWidgets();
         initMarketMoversFilter();
     });
 
@@ -884,8 +882,7 @@
         initInlineTileTitleAdmin();
         initTileShareButtons();
         initShadcnCardLayouts();
-        initProfileWorkspace();
-        initTaxonomyEditor();
+        remountShadcnWidgets();
         initMarketMoversFilter();
     });
 
