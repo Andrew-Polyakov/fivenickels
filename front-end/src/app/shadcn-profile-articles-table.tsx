@@ -52,6 +52,12 @@ type ModerationRow = {
 
 const DEFAULT_PAGE_SIZE = 25;
 
+function catalystIconSrc(catalyst?: string): string | null {
+  if (catalyst === 'Bullish') return '/static/images/bull.png';
+  if (catalyst === 'Bearish') return '/static/images/bear.png';
+  return null;
+}
+
 function catalystSurfaceClass(catalyst?: string): string | null {
   if (catalyst === 'Bullish') return 'scn-profile-article-row--bullish';
   if (catalyst === 'Bearish') return 'scn-profile-article-row--bearish';
@@ -217,6 +223,26 @@ function ProfileArticlesTable({
         cell: ({ row }) => {
           const value = row.getValue('category_name') as string;
           return value || <span className="scn-text-muted">—</span>;
+        },
+      },
+      {
+        accessorKey: 'catalyst',
+        header: 'Sentiment',
+        cell: ({ row }) => {
+          const iconSrc = catalystIconSrc(row.original.catalyst);
+          if (!iconSrc) {
+            return <span className="scn-text-muted">—</span>;
+          }
+          return (
+            <img
+              src={iconSrc}
+              alt=""
+              width={64}
+              height={64}
+              className="scn-catalyst-icon scn-profile-sentiment__icon"
+              aria-hidden="true"
+            />
+          );
         },
       },
       {

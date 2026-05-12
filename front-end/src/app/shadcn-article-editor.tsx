@@ -23,6 +23,7 @@ import { ScrollArea } from '../components/ui/scroll-area';
 import { ToggleGroup, ToggleGroupItem } from '../components/ui/toggle-group';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { RteToolbar, TABLE_EXTENSIONS } from '../components/ui/rte-editor';
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from '../components/ui/empty';
 import { cn } from '../lib/utils';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -835,7 +836,9 @@ function ParagraphEditor({ block, apiBase, onChange }: {
           onInsertImage={() => imageInputRef.current?.click()}
         />
       )}
-      <EditorContent editor={editor} className="scn-rte-content" />
+      <ScrollArea className="scn-editor-block-scroll scn-editor-block-scroll--paragraph">
+        <EditorContent editor={editor} className="scn-rte-content" />
+      </ScrollArea>
       <input ref={imageInputRef} type="file" accept="image/*" className="scn-sr-only"
         onChange={e => { const f = e.target.files?.[0]; if (f) handleImageFile(f); e.target.value = ''; }} />
     </div>
@@ -900,13 +903,15 @@ function SeparatorEditor({ block, onChange }: { block: SeparatorBlock; onChange:
 function MarkdownEditor({ block, onChange }: { block: MarkdownBlock; onChange: (b: MarkdownBlock) => void }) {
   return (
     <div className="scn-editor-block__fields">
-      <textarea
-        className="scn-editor-tile-preview scn-editor-markdown"
-        placeholder="Markdown body content…"
-        rows={12}
-        value={block.markdown}
-        onChange={e => onChange({ ...block, markdown: e.target.value })}
-      />
+      <ScrollArea className="scn-editor-block-scroll scn-editor-block-scroll--markdown">
+        <textarea
+          className="scn-editor-tile-preview scn-editor-markdown"
+          placeholder="Markdown body content…"
+          rows={12}
+          value={block.markdown}
+          onChange={e => onChange({ ...block, markdown: e.target.value })}
+        />
+      </ScrollArea>
     </div>
   );
 }
@@ -1340,38 +1345,51 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
         />
       </div>
 
-      <div className="scn-editor-meta-strip">
-        <CatalystSection value={catalyst} onChange={setCatalyst} />
-        <TaxonomyBreadcrumb
-          rootTerms={rootTerms}
-          sectionTermId={sectionTermId}
-          categoryId={categoryId}
-          onSectionChange={id => { setSection(id); setCategory(null); }}
-          onCategoryChange={setCategory}
-        />
-      </div>
-
       <div className="scn-editor-layout">
         {/* Body */}
         <div className="scn-editor-body">
-          {blocks.map((block, i) => (
-            <BlockEditor
-              key={block.id}
-              block={block}
-              index={i}
-              total={blocks.length}
-              articleId={articleId}
-              apiBase={apiBase}
-              onChange={updated => setBlocks(prev => prev.map((b, j) => j === i ? updated : b))}
-              onRemove={() => setBlocks(prev => prev.filter((_, j) => j !== i))}
-              onMove={dir => moveBlock(i, dir)}
-            />
-          ))}
-          <AddBlockMenu onAdd={addBlock} />
+          {blocks.length === 0 ? (
+            <Empty className="scn-editor-card scn-editor-empty-blocks">
+              <EmptyHeader>
+                <EmptyTitle>Start with your first block</EmptyTitle>
+                <EmptyDescription>Add content blocks to build the article body.</EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent>
+                <AddBlockMenu onAdd={addBlock} />
+              </EmptyContent>
+            </Empty>
+          ) : (
+            <>
+              {blocks.map((block, i) => (
+                <BlockEditor
+                  key={block.id}
+                  block={block}
+                  index={i}
+                  total={blocks.length}
+                  articleId={articleId}
+                  apiBase={apiBase}
+                  onChange={updated => setBlocks(prev => prev.map((b, j) => j === i ? updated : b))}
+                  onRemove={() => setBlocks(prev => prev.filter((_, j) => j !== i))}
+                  onMove={dir => moveBlock(i, dir)}
+                />
+              ))}
+              <AddBlockMenu onAdd={addBlock} />
+            </>
+          )}
         </div>
 
         {/* Sidebar */}
         <aside className="scn-editor-sidebar">
+          <TaxonomyBreadcrumb
+            rootTerms={rootTerms}
+            sectionTermId={sectionTermId}
+            categoryId={categoryId}
+            onSectionChange={id => { setSection(id); setCategory(null); }}
+            onCategoryChange={setCategory}
+          />
+
+          <CatalystSection value={catalyst} onChange={setCatalyst} />
+
           <HeroImageUpload
             imageUrl={heroUrl}
             articleId={articleId}
@@ -1416,10 +1434,10 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
             ) : null}
           </div>
 
-          <div className="scn-editor-card">
+          <div className="scn-editor-card scn-editor-card--tile-preview">
             <h3 className="scn-editor-card__title">Tile preview</h3>
             <textarea
-              className="scn-editor-tile-preview"
+              className="scn-editor-tile-preview scn-editor-tile-preview--fill"
               placeholder="Short description shown on the article tile…"
               rows={3}
               value={tilePreview}

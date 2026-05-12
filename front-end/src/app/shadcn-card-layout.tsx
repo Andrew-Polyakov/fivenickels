@@ -633,6 +633,12 @@ function catalystCardClass(catalyst?: string): string | null {
   return null;
 }
 
+function catalystIconSrc(catalyst?: string): string | null {
+  if (catalyst === 'Bullish') return '/static/images/bull.png';
+  if (catalyst === 'Bearish') return '/static/images/bear.png';
+  return null;
+}
+
 function ArticleCardView({
   data,
   onDelete,
@@ -723,6 +729,8 @@ function ArticleCardView({
       </Card>
     );
   }
+  const tags = (data.tags ?? []).slice(0, 3);
+  const sentimentIconSrc = catalystIconSrc(data.catalyst);
   const body = (
     <>
       {data.imageUrl ? (
@@ -731,9 +739,19 @@ function ArticleCardView({
         </div>
       ) : null}
       <CardHeader>
-        {(data.tags ?? []).length > 0 ? (
+        {tags.length > 0 || sentimentIconSrc ? (
           <div className="scn-article-card__tags">
-            {(data.tags ?? []).slice(0, 3).map((tag) => (
+            {sentimentIconSrc ? (
+              <img
+                src={sentimentIconSrc}
+                alt=""
+                width={32}
+                height={32}
+                className="scn-catalyst-icon scn-article-card__catalyst-icon"
+                aria-hidden="true"
+              />
+            ) : null}
+            {tags.map((tag) => (
               <span key={tag} className="scn-article-card__tag">
                 {tag}
               </span>
