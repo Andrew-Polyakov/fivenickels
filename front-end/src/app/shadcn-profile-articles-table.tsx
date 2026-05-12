@@ -231,14 +231,18 @@ function ProfileArticlesTable({
         cell: ({ row }) => {
           const iconSrc = catalystIconSrc(row.original.catalyst);
           if (!iconSrc) {
-            return <span className="scn-text-muted">—</span>;
+            return (
+              <span className="scn-profile-sentiment__placeholder" aria-hidden="true">
+                —
+              </span>
+            );
           }
           return (
             <img
               src={iconSrc}
               alt=""
-              width={64}
-              height={64}
+              width={32}
+              height={32}
               className="scn-catalyst-icon scn-profile-sentiment__icon"
               aria-hidden="true"
             />
@@ -404,7 +408,7 @@ function ProfileArticlesTable({
             pagedRows.map((row) => (
               <TableRow key={row.id} className={cn(catalystSurfaceClass(row.original.catalyst))}>
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
+                  <TableCell key={cell.id} className={cn(cell.column.id === 'catalyst' && 'scn-profile-sentiment__cell')}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
