@@ -2,12 +2,29 @@
 {% for segment in segments %}
     {% if segment.type == "block" %}
         {% include_block segment.block %}
+    {% elif segment.type == "recent_articles" %}
+        <div
+            class="scn-recent-articles-root"
+            data-recent-articles-block
+            data-layout-json-id="{{ segment.uid }}"
+        ></div>
+        {{ segment.payload|json_script:segment.uid }}
+    {% elif segment.type == "bento_grid_01" %}
+        <div
+            class="scn-bentogrid01-root"
+            data-shadcn-bentogrid01
+            data-layout-json-id="{{ segment.uid }}"
+        ></div>
+        {{ segment.payload|json_script:segment.uid }}
     {% else %}
         <div
-            class="shadcn-card-layout-root"
-            data-shadcn-card-layout
+            class="scn-bento2-root"
+            data-shadcn-bento2
             data-layout-json-id="{{ segment.uid }}"
             {% if can_save_taxonomy_master_layout %}data-master-pane-enabled="1"{% endif %}
+            {% if can_save_taxonomy_master_layout %}data-can-save-master-layout="1"{% endif %}
+            {% if save_taxonomy_master_layout_url %}data-save-master-layout-url="{{ save_taxonomy_master_layout_url }}"{% endif %}
+            {% if taxonomy_term_id %}data-taxonomy-term-id="{{ taxonomy_term_id }}"{% endif %}
         ></div>
         {{ segment.payload|json_script:segment.uid }}
     {% endif %}

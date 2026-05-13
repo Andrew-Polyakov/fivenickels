@@ -19,7 +19,7 @@ import { ToggleGroup, ToggleGroupItem } from '../components/ui/toggle-group';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { RteToolbar, TABLE_EXTENSIONS } from '../components/ui/rte-editor';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '../components/ui/carousel';
-import { FlexibleBentoGrid, bentoColSpanMap, bentoRowSpanMap, type BentoFeature } from '../components/ui/bento-grid';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '../components/ui/resizable';
 import {
   hasCarouselCardImage,
   packCarouselSlides,
@@ -35,9 +35,24 @@ type ImageBlock     = { id: string; type: 'image';     imageId: number | null; i
 type EmbedBlock     = { id: string; type: 'embed';     url: string };
 type SeparatorBlock = { id: string; type: 'separator'; orientation: 'horizontal' | 'vertical' };
 
-type BentoCard   = { id: string; mode: 'random' | 'specific' | 'priority'; articleId?: number | null; articleTitle?: string | null; colSpan: number; rowSpan: number };
-type BentoColumn = { id: string; colSpan: number; cards: BentoCard[] };
-type BentoBlock  = { id: string; type: 'bento'; columns: BentoColumn[] };
+type BentoGrid01Feature = {
+  id: string;
+  header_type: 'reminder_animation' | 'animated_ui_block' | 'image' | 'card' | 'richtext';
+  image_url_light: string;
+  image_url_dark: string;
+  title: string;
+  description: string;
+  col_span: '4' | '8';
+  mode?: 'random' | 'priority' | 'specific';
+  articleId?: number | null;
+  articleTitle?: string | null;
+  html?: string;
+};
+type BentoGrid01Block  = {
+  id: string; type: 'bento_grid_01'; badge_text: string; heading: string; features: BentoGrid01Feature[];
+  panelSizes?: number[];
+  height?: string;
+};
 
 type CarouselSlot  = {
   id: string;
@@ -54,7 +69,7 @@ type CarouselSlot  = {
 };
 type CarouselBlock = { id: string; type: 'carousel'; cards: CarouselSlot[]; infiniteScroll?: boolean };
 
-type TaxonomyBlock = HeadingBlock | ParagraphBlock | ImageBlock | EmbedBlock | SeparatorBlock | BentoBlock | CarouselBlock;
+type TaxonomyBlock = HeadingBlock | ParagraphBlock | ImageBlock | EmbedBlock | SeparatorBlock | BentoGrid01Block | CarouselBlock;
 type TaxonomyContentJson = { version: number; blocks: TaxonomyBlock[] };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -249,13 +264,13 @@ function ArticleSearchInput({ value, onChange, searchUrl, placeholder = 'Search 
 
 // ─── Carousel Article Card ────────────────────────────────────────────────────
 
-function carouselCatalystIconSrc(catalyst?: string | null): string | null {
+export function carouselCatalystIconSrc(catalyst?: string | null): string | null {
   if (catalyst === 'Bullish') return '/static/images/bull.png';
   if (catalyst === 'Bearish') return '/static/images/bear.png';
   return null;
 }
 
-function CarouselCard({ imageUrl, tags, title, excerpt, url, authorName, publishedAt, catalyst }: CarouselCardViewModel) {
+export function CarouselCard({ imageUrl, tags, title, excerpt, url, authorName, publishedAt, catalyst }: CarouselCardViewModel) {
   const publishedLabel = publishedAt?.trim() || '';
   const imageless = !hasCarouselCardImage({ imageUrl });
   const sentimentIconSrc = carouselCatalystIconSrc(catalyst);
@@ -566,134 +581,366 @@ function SeparatorEditor({ block, onChange }: { block: SeparatorBlock; onChange:
   );
 }
 
-// ─── Bento Editor ─────────────────────────────────────────────────────────────
+// ─── Bento Grid 01 Editor ─────────────────────────────────────────────────────
 
-function BentoEditor({ block, searchUrl, onChange }: {
-  block: BentoBlock; searchUrl: string; onChange: (b: BentoBlock) => void;
+const BENTO_TILE_LABEL: Record<string, string> = {
+  image: 'Image tile',
+  reminder_animation: 'Reminder Animation',
+  animated_ui_block: 'Animated UI Block',
+  card: 'Article card',
+  richtext: 'Rich text',
+};
+
+const BENTO_TILE_TYPES: Array<{ type: BentoGrid01Feature['header_type']; desc: string }> = [
+  { type: 'image',              desc: 'Light / dark image pair' },
+  { type: 'reminder_animation', desc: 'Built-in reminder animation' },
+  { type: 'animated_ui_block',  desc: 'Built-in animated UI block' },
+  { type: 'card',               desc: 'Resolved article card' },
+  { type: 'richtext',           desc: 'Formatted rich text content' },
+];
+
+function BentoTileRichTextEditor({ feat, onChange }: {
+  feat: BentoGrid01Feature; onChange: (html: string) => void;
 }) {
-  function addColumn() {
-    onChange({ ...block, columns: [...block.columns, { id: uid(), colSpan: 1, cards: [] }] });
+  const [editing, setEditing] = React.useState(false);
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({ heading: { levels: [2, 3] } }),
+      TiptapLink.configure({ openOnClick: false }),
+      Placeholder.configure({ placeholder: 'Write tile content…' }),
+    ],
+    content: feat.html || '',
+    onUpdate: ({ editor: e }) => onChange(e.getHTML()),
+  });
+
+  React.useEffect(() => {
+    if (editor && !editor.isDestroyed) editor.commands.setContent(feat.html || '', { emitUpdate: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [feat.id]);
+
+  React.useEffect(() => { return () => { editor?.destroy(); }; /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+
+  return (
+    <div className="scn-bento-richtext-tile">
+      <div className="scn-bento-richtext-tile__bar">
+        <ToggleGroup
+          value={editing ? 'edit' : 'view'}
+          onValueChange={v => { if (v) setEditing(v === 'edit'); }}
+        >
+          <ToggleGroupItem value="view">View</ToggleGroupItem>
+          <ToggleGroupItem value="edit">Edit</ToggleGroupItem>
+        </ToggleGroup>
+      </div>
+      {editing ? (
+        <div className="scn-rte-wrap scn-rte-wrap--active">
+          {editor && <RteToolbar editor={editor} />}
+          <EditorContent editor={editor} className="scn-rte-content" />
+        </div>
+      ) : (
+        <div className="scn-taxonomy-content__paragraph"
+          dangerouslySetInnerHTML={{ __html: feat.html || '<p style="color:var(--muted-foreground)">Empty rich text tile</p>' }} />
+      )}
+    </div>
+  );
+}
+
+function BentoFeaturePreview({ feat, resolved, linkable }: {
+  feat: BentoGrid01Feature;
+  resolved: ArticleResult | null | undefined;
+  linkable?: boolean;
+}) {
+  if (feat.header_type === 'card') {
+    if (resolved) {
+      return (
+        <CarouselCard
+          {...{
+            key: feat.id,
+            imageUrl: resolved.imageUrl,
+            tags: resolved.tags,
+            title: resolved.title,
+            excerpt: resolved.excerpt,
+            url: linkable ? resolved.url : undefined,
+            authorName: resolved.authorName,
+            publishedAt: resolved.publishedAt,
+            catalyst: resolved.catalyst,
+          }}
+        />
+      );
+    }
+    return (
+      <Card className="scn-bento-editor__placeholder-card">
+        <CardContent>
+          <CardTitle>{feat.mode === 'specific' ? (feat.articleTitle || 'Specific article') : `${feat.mode ?? 'random'} article`}</CardTitle>
+          <p className="scn-taxonomy-content__bento-desc">Loading…</p>
+        </CardContent>
+      </Card>
+    );
   }
 
-  function removeColumn(colId: string) {
-    onChange({ ...block, columns: block.columns.filter(c => c.id !== colId) });
+  if (feat.header_type === 'richtext') {
+    return (
+      <div className="scn-bento-editor__richtext-preview scn-taxonomy-content__paragraph"
+        dangerouslySetInnerHTML={{ __html: feat.html || '<p style="color:var(--color-text-muted)">Empty rich text</p>' }}
+      />
+    );
   }
 
-  function setColumnSpan(colId: string, colSpan: number) {
-    onChange({ ...block, columns: block.columns.map(c => c.id === colId ? { ...c, colSpan } : c) });
+  if (feat.header_type === 'image') {
+    const src = feat.image_url_dark || feat.image_url_light;
+    if (src) {
+      return <img src={src} alt={feat.title || ''} className="scn-bento-editor__image-preview" />;
+    }
+    return (
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+        <span>Image tile</span>
+      </div>
+    );
   }
 
-  function addCard(colId: string) {
-    const col = block.columns.find(c => c.id === colId);
-    const card: BentoCard = { id: uid(), mode: 'random', colSpan: col?.colSpan ?? 1, rowSpan: 1 };
+  return (
+    <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+      <span>{BENTO_TILE_LABEL[feat.header_type] ?? 'Feature tile'}</span>
+    </div>
+  );
+}
+
+function BentoFeaturePanel({ feat, resolved, searchUrl, onPatch, onRemove }: {
+  feat: BentoGrid01Feature;
+  resolved: ArticleResult | null | undefined;
+  searchUrl: string;
+  onPatch: (patch: Partial<BentoGrid01Feature>) => void;
+  onRemove: () => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <div className="scn-bento-editor__panel-content" role="button" tabIndex={0}>
+          <span className="scn-bento-editor__panel-label">{BENTO_TILE_LABEL[feat.header_type] ?? 'Tile'}</span>
+          <BentoFeaturePreview feat={feat} resolved={resolved} />
+        </div>
+      </PopoverTrigger>
+      <PopoverContent className="scn-popover-content scn-bento-editor__feat-popover" align="center" side="bottom">
+        <div className="scn-bento-editor__feat-popover-body">
+          <div className="scn-bento-editor__card-row">
+            <Select value={feat.header_type}
+              onChange={e => onPatch({ header_type: e.target.value as BentoGrid01Feature['header_type'] })}>
+              <option value="image">Image (light/dark)</option>
+              <option value="reminder_animation">Reminder Animation</option>
+              <option value="animated_ui_block">Animated UI Block</option>
+              <option value="card">Article card</option>
+              <option value="richtext">Rich text</option>
+            </Select>
+          </div>
+          {feat.header_type === 'image' && (
+            <>
+              <Input value={feat.image_url_light} placeholder="Image URL (light mode)"
+                onChange={e => onPatch({ image_url_light: e.target.value })} />
+              <Input value={feat.image_url_dark} placeholder="Image URL (dark mode)"
+                onChange={e => onPatch({ image_url_dark: e.target.value })} />
+            </>
+          )}
+          {feat.header_type === 'card' && (
+            <>
+              <ToggleGroup
+                value={feat.mode ?? 'random'}
+                onValueChange={v => {
+                  if (v) onPatch({ mode: v as BentoGrid01Feature['mode'], articleId: null, articleTitle: null });
+                }}
+              >
+                <ToggleGroupItem value="random">Random</ToggleGroupItem>
+                <ToggleGroupItem value="priority">Priority</ToggleGroupItem>
+                <ToggleGroupItem value="specific">Specific</ToggleGroupItem>
+              </ToggleGroup>
+              {feat.mode === 'specific' && (
+                <ArticleSearchInput
+                  value={{ id: feat.articleId ?? null, title: feat.articleTitle ?? null }}
+                  onChange={v => onPatch({ articleId: v.id, articleTitle: v.title })}
+                  searchUrl={searchUrl}
+                />
+              )}
+            </>
+          )}
+          {feat.header_type === 'richtext' && (
+            <BentoTileRichTextEditor feat={feat} onChange={html => onPatch({ html })} />
+          )}
+          <Input value={feat.title} placeholder="Title"
+            onChange={e => onPatch({ title: e.target.value })} />
+          <Input value={feat.description} placeholder="Description"
+            onChange={e => onPatch({ description: e.target.value })} />
+          <Button variant="outline" className="scn-editor-block__ctrl-btn--danger scn-bento-editor__remove-btn"
+            onClick={() => { onRemove(); setOpen(false); }}>
+            Remove tile
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function BentoResizableLayout({ features, resolvedRandom, searchUrl, onPatch, onRemove, panelSizes, onLayoutChange, height }: {
+  features: BentoGrid01Feature[];
+  resolvedRandom: Record<string, ArticleResult | null>;
+  searchUrl: string;
+  onPatch: (featId: string, patch: Partial<BentoGrid01Feature>) => void;
+  onRemove: (featId: string) => void;
+  panelSizes?: number[];
+  onLayoutChange?: (sizes: number[]) => void;
+  height?: string;
+}) {
+  if (features.length === 0) {
+    return <div className="scn-bento-editor__empty">Add tiles with the + button</div>;
+  }
+
+  const layoutStyle: React.CSSProperties | undefined = height && height !== 'auto'
+    ? { height } : undefined;
+
+  function renderPanel(feat: BentoGrid01Feature) {
+    return (
+      <BentoFeaturePanel
+        feat={feat}
+        resolved={resolvedRandom[feat.id]}
+        searchUrl={searchUrl}
+        onPatch={patch => onPatch(feat.id, patch)}
+        onRemove={() => onRemove(feat.id)}
+      />
+    );
+  }
+
+  const hLeft = panelSizes?.[0] ?? 50;
+
+  if (features.length === 1) {
+    return (
+      <ResizablePanelGroup orientation="horizontal" className="scn-bento-editor__layout" style={layoutStyle}>
+        <ResizablePanel defaultSize={100}>{renderPanel(features[0])}</ResizablePanel>
+      </ResizablePanelGroup>
+    );
+  }
+
+  if (features.length === 2) {
+    return (
+      <ResizablePanelGroup orientation="horizontal" className="scn-bento-editor__layout" style={layoutStyle}
+        onLayoutChanged={layout => {
+          if (!onLayoutChange) return;
+          const vals = Object.values(layout);
+          onLayoutChange(vals);
+        }}>
+        <ResizablePanel id="h0" defaultSize={hLeft}>{renderPanel(features[0])}</ResizablePanel>
+        <ResizableHandle withHandle />
+        <ResizablePanel id="h1" defaultSize={100 - hLeft}>{renderPanel(features[1])}</ResizablePanel>
+      </ResizablePanelGroup>
+    );
+  }
+
+  const rest = features.slice(1);
+  const verticalSizes = panelSizes?.slice(1);
+  const defaultVSize = Math.floor(100 / rest.length);
+
+  return (
+    <ResizablePanelGroup orientation="horizontal" className="scn-bento-editor__layout" style={layoutStyle}
+      onLayoutChanged={layout => {
+        if (!onLayoutChange) return;
+        const hSize = layout['h0'] ?? hLeft;
+        const savedVertical = panelSizes?.slice(1) ?? rest.map(() => defaultVSize);
+        onLayoutChange([hSize, ...savedVertical]);
+      }}>
+      <ResizablePanel id="h0" defaultSize={hLeft}>{renderPanel(features[0])}</ResizablePanel>
+      <ResizableHandle withHandle />
+      <ResizablePanel id="h1" defaultSize={100 - hLeft}>
+        <ResizablePanelGroup orientation="vertical"
+          onLayoutChanged={layout => {
+            if (!onLayoutChange) return;
+            const vSizes = rest.map((_, i) => layout[`v${i}`] ?? defaultVSize);
+            onLayoutChange([hLeft, ...vSizes]);
+          }}>
+          {rest.map((feat, i) => (
+            <React.Fragment key={feat.id}>
+              {i > 0 && <ResizableHandle withHandle />}
+              <ResizablePanel id={`v${i}`} defaultSize={verticalSizes?.[i] ?? defaultVSize}>{renderPanel(feat)}</ResizablePanel>
+            </React.Fragment>
+          ))}
+        </ResizablePanelGroup>
+      </ResizablePanel>
+    </ResizablePanelGroup>
+  );
+}
+
+function BentoGrid01Editor({ block, searchUrl, termId, onChange }: {
+  block: BentoGrid01Block; searchUrl: string; termId: number; onChange: (b: BentoGrid01Block) => void;
+}) {
+  const [addOpen, setAddOpen] = React.useState(false);
+  const cardSlots = React.useMemo(() => bentoCardFeaturesToSlots(block.features), [block.features]);
+  const resolvedRandom = useResolvedCarouselPreviews(cardSlots, termId);
+
+  function addFeature(headerType: BentoGrid01Feature['header_type']) {
+    const base = { id: uid(), image_url_light: '', image_url_dark: '', title: '', description: '', col_span: '4' as const };
+    const feat: BentoGrid01Feature = headerType === 'card'
+      ? { ...base, header_type: 'card', mode: 'random' }
+      : headerType === 'richtext'
+        ? { ...base, header_type: 'richtext', html: '' }
+        : { ...base, header_type: headerType };
+    onChange({ ...block, features: [...block.features, feat] });
+  }
+
+  function patchFeature(featId: string, patch: Partial<BentoGrid01Feature>) {
     onChange({
       ...block,
-      columns: block.columns.map(c => c.id === colId ? { ...c, cards: [...c.cards, card] } : c),
+      features: block.features.map(f => f.id === featId ? { ...f, ...patch } : f),
     });
   }
 
-  function removeCard(colId: string, cardId: string) {
-    onChange({
-      ...block,
-      columns: block.columns.map(c =>
-        c.id === colId ? { ...c, cards: c.cards.filter(card => card.id !== cardId) } : c
-      ),
-    });
+  function removeFeature(featId: string) {
+    onChange({ ...block, features: block.features.filter(f => f.id !== featId) });
   }
 
-  function patchCard(colId: string, cardId: string, patch: Partial<BentoCard>) {
-    onChange({
-      ...block,
-      columns: block.columns.map(c =>
-        c.id === colId
-          ? { ...c, cards: c.cards.map(card => card.id === cardId ? { ...card, ...patch } : card) }
-          : c
-      ),
-    });
-  }
+  const layoutRef = React.useRef(block.panelSizes);
+  layoutRef.current = block.panelSizes;
 
-  const totalGridCols = Math.max(4, block.columns.reduce((s, c) => s + c.colSpan, 0));
-  const hasCards = block.columns.some(c => c.cards.length > 0);
+  const handleLayoutChange = React.useCallback((sizes: number[]) => {
+    const rounded = sizes.map(s => Math.round(s * 10) / 10);
+    const prev = layoutRef.current;
+    if (prev && prev.length === rounded.length && prev.every((v, i) => v === rounded[i])) return;
+    onChange({ ...block, panelSizes: rounded });
+  }, [block, onChange]);
 
   return (
     <div className="scn-bento-editor">
-      <div className="scn-bento-editor__columns">
-        {block.columns.map(col => (
-          <div key={col.id} className="scn-bento-editor__column">
-            <div className="scn-bento-editor__col-header">
-              <span className="scn-editor-block__type">Column</span>
-              <div className="scn-bento-editor__col-controls">
-                <span className="scn-bento-editor__span-label">Width</span>
-                <Select value={col.colSpan.toString()}
-                  onChange={e => setColumnSpan(col.id, parseInt(e.target.value))}>
-                  {[1, 2, 3, 4].map(n => <option key={n} value={n}>{n}</option>)}
-                </Select>
-                <button className="scn-editor-block__ctrl-btn scn-editor-block__ctrl-btn--danger"
-                  onClick={() => removeColumn(col.id)} title="Remove column">×</button>
-              </div>
-            </div>
-            <div className="scn-bento-editor__cards">
-              {col.cards.map(card => (
-                <div key={card.id} className="scn-bento-editor__card">
-                  <div className="scn-bento-editor__card-row">
-                    <Select value={card.mode}
-                      onChange={e => patchCard(col.id, card.id, { mode: e.target.value as BentoCard['mode'] })}>
-                      <option value="random">Random article</option>
-                      <option value="priority">By priority</option>
-                      <option value="specific">Specific article</option>
-                    </Select>
-                    <span className="scn-bento-editor__span-label">Cols</span>
-                    <Select value={card.colSpan.toString()}
-                      onChange={e => patchCard(col.id, card.id, { colSpan: parseInt(e.target.value) })}>
-                      {[1, 2, 3, 4].map(n => <option key={n} value={n}>{n}</option>)}
-                    </Select>
-                    <span className="scn-bento-editor__span-label">Rows</span>
-                    <Select value={card.rowSpan.toString()}
-                      onChange={e => patchCard(col.id, card.id, { rowSpan: parseInt(e.target.value) })}>
-                      {[1, 2, 3].map(n => <option key={n} value={n}>{n}</option>)}
-                    </Select>
-                    <button className="scn-editor-block__ctrl-btn scn-editor-block__ctrl-btn--danger"
-                      onClick={() => removeCard(col.id, card.id)} title="Remove card">×</button>
-                  </div>
-                  {card.mode === 'specific' && (
-                    <ArticleSearchInput
-                      value={{ id: card.articleId ?? null, title: card.articleTitle ?? null }}
-                      onChange={v => patchCard(col.id, card.id, { articleId: v.id, articleTitle: v.title })}
-                      searchUrl={searchUrl}
-                      placeholder="Search for specific article…"
-                    />
-                  )}
-                </div>
-              ))}
-              <Button variant="ghost" className="scn-bento-editor__add-card"
-                onClick={() => addCard(col.id)}>+ Add card</Button>
-            </div>
-          </div>
-        ))}
-        <button className="scn-bento-editor__add-col" onClick={addColumn}>+ Add column</button>
+      <div className="scn-bento-editor__col-header">
+        <Input value={block.badge_text} placeholder="Badge text"
+          onChange={e => onChange({ ...block, badge_text: e.target.value })} />
+        <Input value={block.heading} placeholder="Section heading"
+          onChange={e => onChange({ ...block, heading: e.target.value })} />
+        <Input value={block.height ?? 'auto'} placeholder="Height (e.g. 400px or auto)"
+          className="scn-bento-editor__height-input"
+          onChange={e => onChange({ ...block, height: e.target.value || undefined })} />
+        <Popover open={addOpen} onOpenChange={setAddOpen}>
+          <PopoverTrigger asChild>
+            <button className="scn-bento-editor__add-col">+</button>
+          </PopoverTrigger>
+          <PopoverContent className="scn-popover-content scn-editor-add-block-menu" align="end">
+            {BENTO_TILE_TYPES.map(bt => (
+              <button key={bt.type} className="scn-editor-add-block-item"
+                onClick={() => { addFeature(bt.type); setAddOpen(false); }}>
+                <span className="scn-editor-add-block-item__label">{BENTO_TILE_LABEL[bt.type]}</span>
+                <span className="scn-editor-add-block-item__desc">{bt.desc}</span>
+              </button>
+            ))}
+          </PopoverContent>
+        </Popover>
       </div>
 
-      {hasCards && (
-        <div className="scn-bento-editor__preview">
-          <p className="scn-bento-editor__preview-label">Preview</p>
-          <FlexibleBentoGrid
-            columns={4}
-            className="scn-bento-editor__preview-grid"
-            items={block.columns.flatMap(col =>
-              col.cards.map(card => ({
-                title: card.mode === 'specific'
-                  ? (card.articleTitle ?? 'Specific article')
-                  : card.mode === 'priority' ? 'By priority' : 'Random article',
-                className: cn(
-                  'scn-bento-editor__preview-card',
-                  bentoColSpanMap[card.colSpan] ?? 'md:col-span-1',
-                  bentoRowSpanMap[card.rowSpan] ?? 'row-span-1',
-                ),
-              } satisfies BentoFeature))
-            )}
-          />
-        </div>
-      )}
+      <BentoResizableLayout
+        features={block.features}
+        resolvedRandom={resolvedRandom}
+        searchUrl={searchUrl}
+        onPatch={patchFeature}
+        onRemove={removeFeature}
+        panelSizes={block.panelSizes}
+        onLayoutChange={handleLayoutChange}
+        height={block.height}
+      />
     </div>
   );
 }
@@ -839,7 +1086,7 @@ function CarouselEditor({ block, searchUrl, termId, onChange }: {
 
 const BLOCK_LABEL: Record<string, string> = {
   heading: 'Heading', paragraph: 'Paragraph', image: 'Image', embed: 'Embed',
-  separator: 'Separator', bento: 'Bento Layout', carousel: 'Carousel',
+  separator: 'Separator', bento_grid_01: 'Bento block', carousel: 'Carousel',
 };
 
 function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl, onChange, onRemove, onMove }: {
@@ -867,7 +1114,7 @@ function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl,
         {block.type === 'image'     && <ImageEditor     block={block} uploadUrl={uploadUrl} onChange={onChange as (b: ImageBlock) => void} />}
         {block.type === 'embed'     && <EmbedEditor     block={block} onChange={onChange as (b: EmbedBlock) => void} />}
         {block.type === 'separator' && <SeparatorEditor block={block} onChange={onChange as (b: SeparatorBlock) => void} />}
-        {block.type === 'bento'     && <BentoEditor     block={block} searchUrl={articleSearchUrl} onChange={onChange as (b: BentoBlock) => void} />}
+        {block.type === 'bento_grid_01' && <BentoGrid01Editor block={block} searchUrl={articleSearchUrl} termId={termId} onChange={onChange as (b: BentoGrid01Block) => void} />}
         {block.type === 'carousel'  && <CarouselEditor  block={block} searchUrl={articleSearchUrl} termId={termId} onChange={onChange as (b: CarouselBlock) => void} />}
       </div>
     </div>
@@ -884,7 +1131,7 @@ function AddBlockMenu({ onAdd }: { onAdd: (type: TaxonomyBlock['type']) => void 
     { type: 'image',     desc: 'Uploaded image' },
     { type: 'embed',     desc: 'YouTube, Twitter…' },
     { type: 'separator', desc: 'Horizontal or vertical rule' },
-    { type: 'bento',     desc: 'CSS grid card mosaic' },
+    { type: 'bento_grid_01', desc: 'Feature showcase bento grid' },
     { type: 'carousel',  desc: 'Infinite article carousel' },
   ];
   return (
@@ -907,8 +1154,24 @@ function AddBlockMenu({ onAdd }: { onAdd: (type: TaxonomyBlock['type']) => void 
 
 // ─── Read-only renderer ───────────────────────────────────────────────────────
 
+function bentoCardFeaturesToSlots(features: BentoGrid01Feature[]): CarouselSlot[] {
+  return features
+    .filter(f => f.header_type === 'card')
+    .map(f => ({
+      id: f.id,
+      mode: f.mode ?? 'random',
+      articleId: f.articleId ?? null,
+      articleTitle: f.articleTitle ?? null,
+    }));
+}
+
 function ReadOnlyBlock({ block, termId }: { block: TaxonomyBlock; termId: number }) {
-  const resolvedRandom = useResolvedCarouselPreviews(block.type === 'carousel' ? block.cards : [], termId);
+  const previewSlots = React.useMemo(() => {
+    if (block.type === 'carousel') return block.cards;
+    if (block.type === 'bento_grid_01') return bentoCardFeaturesToSlots(block.features);
+    return [];
+  }, [block]);
+  const resolvedRandom = useResolvedCarouselPreviews(previewSlots, termId);
 
   if (block.type === 'heading') {
     const Tag = block.level as 'h1' | 'h2';
@@ -942,20 +1205,73 @@ function ReadOnlyBlock({ block, termId }: { block: TaxonomyBlock; termId: number
     return <hr className={`scn-taxonomy-content__sep scn-taxonomy-content__sep--${block.orientation}`} />;
   }
 
-  if (block.type === 'bento') {
-    const items: BentoFeature[] = block.columns.flatMap(col =>
-      col.cards.map(card => ({
-        title: card.mode === 'specific'
-          ? (card.articleTitle ?? 'Article')
-          : card.mode === 'priority' ? 'Priority article' : 'Latest article',
-        className: cn(
-          'scn-taxonomy-content__bento-card',
-          bentoColSpanMap[card.colSpan] ?? 'md:col-span-1',
-          bentoRowSpanMap[card.rowSpan] ?? 'row-span-1',
-        ),
-      }))
+  if (block.type === 'bento_grid_01') {
+    const features = block.features;
+    const sizes = block.panelSizes;
+    const hLeft = sizes?.[0] ?? 50;
+    const blockHeight = block.height && block.height !== 'auto' ? block.height : undefined;
+
+    function renderReadOnlyPanel(f: BentoGrid01Feature) {
+      return (
+        <div key={f.id} className="scn-bento-readonly__panel">
+          <BentoFeaturePreview feat={f} resolved={resolvedRandom[f.id]} linkable />
+        </div>
+      );
+    }
+
+    let gridContent: React.ReactNode;
+    if (features.length === 0) {
+      gridContent = null;
+    } else if (features.length === 1) {
+      gridContent = (
+        <div className="scn-bento-readonly__grid"
+          style={blockHeight ? { height: blockHeight } : undefined}>
+          {renderReadOnlyPanel(features[0])}
+        </div>
+      );
+    } else if (features.length === 2) {
+      gridContent = (
+        <div className="scn-bento-readonly__grid scn-bento-readonly__grid--two-col"
+          style={{
+            gridTemplateColumns: `${hLeft}fr ${100 - hLeft}fr`,
+            ...(blockHeight ? { height: blockHeight } : {}),
+          }}>
+          {renderReadOnlyPanel(features[0])}
+          {renderReadOnlyPanel(features[1])}
+        </div>
+      );
+    } else {
+      const rest = features.slice(1);
+      const verticalSizes = sizes?.slice(1);
+      const defaultVSize = 100 / rest.length;
+      const rowTemplate = rest
+        .map((_, i) => `${verticalSizes?.[i] ?? defaultVSize}fr`)
+        .join(' ');
+
+      gridContent = (
+        <div className="scn-bento-readonly__grid scn-bento-readonly__grid--hero"
+          style={{
+            gridTemplateColumns: `${hLeft}fr ${100 - hLeft}fr`,
+            ...(blockHeight ? { height: blockHeight } : {}),
+          }}>
+          <div className="scn-bento-readonly__hero">
+            {renderReadOnlyPanel(features[0])}
+          </div>
+          <div className="scn-bento-readonly__right-stack"
+            style={verticalSizes ? { display: 'grid', gridTemplateRows: rowTemplate, gap: '0.65rem' } : undefined}>
+            {features.slice(1).map(f => renderReadOnlyPanel(f))}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="scn-taxonomy-content__bento-preview">
+        {block.badge_text && <div className="scn-taxonomy-content__bento-badge">{block.badge_text}</div>}
+        {block.heading && <h2 className="scn-taxonomy-content__heading">{block.heading}</h2>}
+        {gridContent}
+      </div>
     );
-    return <FlexibleBentoGrid items={items} columns={4} />;
   }
 
   if (block.type === 'carousel') {
@@ -1043,7 +1359,7 @@ function TaxonomyEditor({ termId, initialJson, canEdit, saveUrl, uploadUrl, arti
         case 'image':     return { id, type: 'image',     imageId: null, imageUrl: null };
         case 'embed':     return { id, type: 'embed',     url: '' };
         case 'separator': return { id, type: 'separator', orientation: 'horizontal' };
-        case 'bento':     return { id, type: 'bento',     columns: [] };
+        case 'bento_grid_01': return { id, type: 'bento_grid_01', badge_text: 'Features', heading: '', features: [] };
         case 'carousel':  return { id, type: 'carousel',  cards: [{ id: uid(), mode: 'random', articleId: null, articleTitle: null }], infiniteScroll: false };
       }
     })();

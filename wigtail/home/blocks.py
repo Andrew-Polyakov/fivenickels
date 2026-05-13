@@ -206,6 +206,63 @@ class SiteCardBlock(blocks.StructBlock):
         label = "Article card"
 
 
+class BentoGridFeatureBlock(blocks.StructBlock):
+    header_type = blocks.ChoiceBlock(
+        choices=[
+            ("reminder_animation", "Reminder Animation"),
+            ("animated_ui_block", "Animated UI Block"),
+            ("image", "Image (light/dark)"),
+            ("card", "Article card"),
+            ("richtext", "Rich text"),
+        ],
+        default="image",
+    )
+    image_url_light = blocks.URLBlock(required=False, label="Image URL (light mode)")
+    image_url_dark = blocks.URLBlock(required=False, label="Image URL (dark mode)")
+    mode = blocks.ChoiceBlock(
+        choices=[
+            ("random", "Random"),
+            ("specific_article", "Specific article"),
+            ("priority_articles", "Priority articles"),
+        ],
+        default="random",
+        required=False,
+    )
+    specific_page = blocks.PageChooserBlock(
+        target_model="home.TaggedContentPage",
+        required=False,
+        label="Specific article",
+    )
+    tags = blocks.ListBlock(
+        SnippetChooserBlock("home.ContentTag", required=True),
+        required=False,
+        label="Tags",
+    )
+    html = blocks.RichTextBlock(required=False, label="Rich text content")
+    title = blocks.CharBlock()
+    description = blocks.CharBlock()
+    col_span = blocks.ChoiceBlock(
+        choices=[("4", "4/12 cols"), ("8", "8/12 cols")],
+        default="4",
+    )
+
+    class Meta:
+        icon = "image"
+        label = "Feature tile"
+
+
+class BentoGrid01Block(blocks.StructBlock):
+    badge_text = blocks.CharBlock(default="Features")
+    heading = blocks.CharBlock(
+        default="Beautifully designed bento grid section"
+    )
+    features = blocks.ListBlock(BentoGridFeatureBlock())
+
+    class Meta:
+        icon = "grip"
+        label = "Bento block"
+
+
 class LayoutSeparatorBlock(blocks.StructBlock):
     orientation = blocks.ChoiceBlock(
         choices=[
@@ -230,6 +287,7 @@ MAIN_SITE_STREAMBLOCK = blocks.StreamBlock(
         ("embed", EmbedBlock()),
         ("card", SiteCardBlock()),
         ("separator", LayoutSeparatorBlock()),
+        ("bento_grid_01", BentoGrid01Block()),
     ],
     use_json_field=True,
 )

@@ -38,8 +38,14 @@ def render_main_site_stream(context, stream):
     )
     segments = []
     for seg in segments_in:
-        if seg["type"] == "card_layout":
+        if seg["type"] in ("card_layout", "recent_articles", "bento_grid_01"):
             segments.append({**seg, "uid": f"scn-{uuid.uuid4().hex[:12]}"})
         else:
             segments.append(seg)
-    return {"segments": segments}
+    flat = _template_context_dict(context)
+    return {
+        "segments": segments,
+        "can_save_taxonomy_master_layout": flat.get("can_save_taxonomy_master_layout", False),
+        "save_taxonomy_master_layout_url": flat.get("save_taxonomy_master_layout_url", ""),
+        "taxonomy_term_id": flat.get("taxonomy_term_id", ""),
+    }

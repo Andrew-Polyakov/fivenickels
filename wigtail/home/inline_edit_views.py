@@ -209,6 +209,7 @@ def set_taxonomy_term_nav(request: HttpRequest) -> JsonResponse:
 
 
 def _normalize_master_layout_payload(layout: object) -> dict | None:
+    """Normalize layout payload. Accepts v1 (legacy), v2 (taxonomy), and v3 (bento resizable)."""
     if not isinstance(layout, dict):
         return None
     rows = layout.get("rows")

@@ -181,6 +181,9 @@ def build_rows_from_card_buffer(
     return rows
 
 
+BENTO_LAYOUT_VERSION = 3
+
+
 def build_layout_payload(buffer_blocks: list, parent_context: dict | None) -> dict[str, Any]:
     rows = build_rows_from_card_buffer(buffer_blocks, parent_context)
     # Keep separators meaningful: no leading/trailing separators and no doubles.
@@ -194,7 +197,31 @@ def build_layout_payload(buffer_blocks: list, parent_context: dict | None) -> di
         cleaned.append(row)
     while cleaned and cleaned[-1].get("kind") == "separator":
         cleaned.pop()
-    return {"rows": cleaned}
+    return {"rows": cleaned, "layoutVersion": BENTO_LAYOUT_VERSION}
+
+
+def _build_recent_articles_payload(
+    buffer_blocks: list, parent_context: dict | None
+) -> dict[str, Any]:
+    """Produce a flat cards list (hero-first) for the RecentArticlesBlock."""
+    used_page_ids: list[int] = []
+    cards: list[dict[str, Any]] = []
+    for block in buffer_blocks:
+        if block.block_type != "card":
+            continue
+        entry = _card_entry_from_block_value(block.value, parent_context, used_page_ids)
+        card = entry.get("card")
+        if card:
+            cards.append(card)
+    return {"cards": cards}
+
+
+def _has_separator_blocks(buffer: list) -> bool:
+    return any(b.block_type == "separator" for b in buffer)
+
+
+def _card_count_in_buffer(buffer: list) -> int:
+    return sum(1 for b in buffer if b.block_type == "card")
 
 
 def iter_main_site_stream_segments(
@@ -207,6 +234,7 @@ def iter_main_site_stream_segments(
     Yield dicts:
     - {"type": "block", "block": bound_block}
     - {"type": "card_layout", "payload": {...}}
+    - {"type": "recent_articles", "payload": {...}}
     """
     buffer: list = []
     for block in stream:
@@ -216,24 +244,103 @@ def iter_main_site_stream_segments(
             buffer.append(block)
             continue
         if block.block_type == "separator":
+            buffer.append(block)
+            continue
+
+        if block.block_type == "bento_grid_01":
             if buffer:
-                buffer.append(block)
-            else:
-                buffer.append(block)
+                use_recent = (
+                    not _has_separator_blocks(buffer) and _card_count_in_buffer(buffer) >= 2
+                )
+                if use_recent:
+                    payload = _build_recent_articles_payload(buffer, parent_context)
+                    buffer = []
+                    if payload["cards"]:
+                        yield {"type": "recent_articles", "payload": payload}
+                else:
+                    payload = build_layout_payload(buffer, parent_context)
+                    buffer = []
+                    if payload["rows"]:
+                        yield {"type": "card_layout", "payload": payload}
+            yield {"type": "bento_grid_01", "payload": _serialize_bentogrid01(block.value, parent_context)}
             continue
 
         if buffer:
-            payload = build_layout_payload(buffer, parent_context)
-            buffer = []
-            if payload["rows"]:
-                yield {"type": "card_layout", "payload": payload}
+            use_recent = (
+                not _has_separator_blocks(buffer) and _card_count_in_buffer(buffer) >= 2
+            )
+            if use_recent:
+                payload = _build_recent_articles_payload(buffer, parent_context)
+                buffer = []
+                if payload["cards"]:
+                    yield {"type": "recent_articles", "payload": payload}
+            else:
+                payload = build_layout_payload(buffer, parent_context)
+                buffer = []
+                if payload["rows"]:
+                    yield {"type": "card_layout", "payload": payload}
 
         yield {"type": "block", "block": block}
 
     if buffer:
-        payload = build_layout_payload(buffer, parent_context)
-        if payload["rows"]:
-            yield {"type": "card_layout", "payload": payload}
+        use_recent = (
+            not _has_separator_blocks(buffer) and _card_count_in_buffer(buffer) >= 2
+        )
+        if use_recent:
+            payload = _build_recent_articles_payload(buffer, parent_context)
+            if payload["cards"]:
+                yield {"type": "recent_articles", "payload": payload}
+        else:
+            payload = build_layout_payload(buffer, parent_context)
+            if payload["rows"]:
+                yield {"type": "card_layout", "payload": payload}
+
+
+def _serialize_bentogrid01(block_value: dict, parent_context: dict | None = None) -> dict[str, Any]:
+    """Convert a BentoGrid01Block value dict to a JSON-safe payload."""
+    request = (parent_context or {}).get("request")
+    used_page_ids: list[int] = []
+    features: list[dict[str, Any]] = []
+    for feat in block_value.get("features") or []:
+        val = feat.value if hasattr(feat, "value") else feat
+        header_type = str(val.get("header_type") or "image")
+        entry: dict[str, Any] = {
+            "header_type": header_type,
+            "image_url_light": str(val.get("image_url_light") or ""),
+            "image_url_dark": str(val.get("image_url_dark") or ""),
+            "title": str(val.get("title") or ""),
+            "description": str(val.get("description") or ""),
+            "col_span": str(val.get("col_span") or "4"),
+        }
+        if header_type == "card":
+            art = {
+                "mode": val.get("mode") or "random",
+                "specific_page": val.get("specific_page"),
+                "tags": val.get("tags") or [],
+            }
+            state = _resolve_universal_tile_state(art, parent_context, list(used_page_ids))
+            if state["kind"] == "article" and state.get("tile_page") is not None:
+                tile_page = state["tile_page"]
+                pk = getattr(tile_page, "pk", None)
+                if pk is not None:
+                    used_page_ids.append(int(pk))
+                card = _article_card_dict(tile_page, request)
+                entry["article"] = card
+            else:
+                entry["article"] = {"kind": "empty"}
+        if header_type == "richtext":
+            from wagtail.rich_text import expand_db_html
+
+            raw_html = val.get("html")
+            if hasattr(raw_html, "source"):
+                raw_html = raw_html.source
+            entry["html"] = expand_db_html(str(raw_html or ""))
+        features.append(entry)
+    return {
+        "badge_text": str(block_value.get("badge_text") or "Features"),
+        "heading": str(block_value.get("heading") or ""),
+        "features": features,
+    }
 
 
 def serialize_article_card_for_related(page: Page | None, request) -> dict[str, Any]:

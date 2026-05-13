@@ -8,7 +8,9 @@ import { TaxonomyChipWidgetComponent } from './app/taxonomy-chip-widget.componen
 import { appMaterialDialogDefaults } from './app/dialog-defaults';
 import { mountShadcnAuthDialogBridge, type AuthTab } from './app/auth-dialog-shadcn';
 import { mountShadcnBreadcrumbs } from './app/shadcn-breadcrumb';
-import { mountShadcnArticleCards, mountShadcnCardLayouts, mountSimilarArticleCarousels } from './app/shadcn-card-layout';
+import { mountShadcnArticleCards, mountSimilarArticleCarousels, mountRecentArticlesBlocks } from './app/shadcn-card-layout';
+import { mountShadcnBento2 } from './app/shadcn-bento2';
+import { mountShadcnBentoGrid01 } from './app/shadcn-bentogrid01';
 import { mountShadcnTaxonomySiteNav } from './app/shadcn-taxonomy-site-nav';
 import { mountShadcnBrokerTable } from './app/shadcn-broker-data-table';
 import { mountShadcnProfileArticlesTable } from './app/shadcn-profile-articles-table';
@@ -28,15 +30,17 @@ declare global {
     showMaterialAlert?: (message: string, title?: string) => Promise<void>;
     showMaterialPrompt?: (data: PromptDialogData) => Promise<string | undefined>;
     showMaterialAuthDialog?: (initialTab: 'login' | 'signup') => void;
-    mountShadcnCardLayouts?: () => void;
+    mountShadcnBento2?: () => void;
     mountShadcnArticleCards?: () => void;
     mountSimilarArticleCarousels?: () => void;
+    mountRecentArticlesBlocks?: () => void;
     mountShadcnBreadcrumbs?: () => void;
     mountShadcnTaxonomySiteNav?: () => void;
     mountShadcnBrokerTable?: () => void;
     mountShadcnProfileArticlesTable?: () => void;
     mountShadcnArticleEditor?: () => void;
     mountTaxonomyEditor?: () => void;
+    mountShadcnBentoGrid01?: () => void;
   }
 }
 
@@ -92,15 +96,17 @@ createApplication({
       customElements.define('taxonomy-chip-widget', taxonomyElement);
     }
     window.mountTaxonomyChipWidgets = mountTaxonomyChipWidgets;
-    window.mountShadcnCardLayouts = mountShadcnCardLayouts;
+    window.mountShadcnBento2 = mountShadcnBento2;
     window.mountShadcnArticleCards = mountShadcnArticleCards;
     window.mountSimilarArticleCarousels = mountSimilarArticleCarousels;
+    window.mountRecentArticlesBlocks = mountRecentArticlesBlocks;
     window.mountShadcnBreadcrumbs = mountShadcnBreadcrumbs;
     window.mountShadcnTaxonomySiteNav = mountShadcnTaxonomySiteNav;
     window.mountShadcnBrokerTable = mountShadcnBrokerTable;
     window.mountShadcnProfileArticlesTable = mountShadcnProfileArticlesTable;
     window.mountShadcnArticleEditor = mountShadcnArticleEditor;
     window.mountTaxonomyEditor = mountTaxonomyEditor;
+    window.mountShadcnBentoGrid01 = mountShadcnBentoGrid01;
     window.showMaterialConfirm = (message: string, title?: string) =>
       new Promise<boolean>((resolve) => {
         dialog
@@ -137,13 +143,15 @@ createApplication({
     };
     mountTaxonomyChipWidgets();
     mountShadcnTaxonomySiteNav();
-    mountShadcnCardLayouts();
+    mountShadcnBento2();
     mountSimilarArticleCarousels();
     mountShadcnArticleCards();
+    mountRecentArticlesBlocks();
     mountShadcnBreadcrumbs();
     mountShadcnBrokerTable();
     mountShadcnProfileArticlesTable();
     mountShadcnArticleEditor();
     mountTaxonomyEditor();
+    mountShadcnBentoGrid01();
   })
   .catch((err) => console.error(err));

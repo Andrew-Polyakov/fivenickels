@@ -17,7 +17,7 @@ from django.utils import timezone
 from django.utils.crypto import get_random_string
 
 from home.blocks import _resolve_section_term, _resolve_universal_tile_state
-from home.card_layout import build_layout_payload, serialize_article_card_for_related
+from home.card_layout import BENTO_LAYOUT_VERSION, build_layout_payload, serialize_article_card_for_related
 from home.navigation import normalize_sector_query_param
 from home.query import (
     _section_term_ids_for_taxonomy_scope,
@@ -1301,4 +1301,65 @@ class CardSourcePropertiesTests(WagtailPageTestCase):
         self.assertIn("tags", match)
         self.assertIn("authorName", match)
         self.assertIn("publishedAt", match)
+
+    def test_build_layout_payload_includes_bento_version(self):
+        class StreamBlockDummy:
+            __slots__ = ("block_type", "value")
+
+            def __init__(self, block_type, value):
+                self.block_type = block_type
+                self.value = value
+
+        dummy_stream = [
+            StreamBlockDummy(
+                "card",
+                {"article": {"mode": "random", "section_term": self.energy}},
+            ),
+        ]
+        payload = build_layout_payload(dummy_stream, {"page": self.homepage})
+        self.assertEqual(payload.get("layoutVersion"), BENTO_LAYOUT_VERSION)
+        self.assertEqual(payload.get("layoutVersion"), 3)
+
+    def test_save_master_layout_accepts_v3_payload(self):
+        self.client.force_login(self.staff)
+        term = TaxonomyTerm.objects.filter(is_visible=True).first()
+        if term is None:
+            self.skipTest("No taxonomy term available for save test")
+        import json
+
+        layout = {
+            "rows": [
+                {"kind": "row", "items": [{"type": "card", "card": {"kind": "stub", "message": "test"}}]},
+            ],
+            "layoutVersion": 3,
+        }
+        response = self.client.post(
+            reverse("save_taxonomy_master_layout"),
+            data=json.dumps({"term_id": term.pk, "layout": layout}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        term.refresh_from_db()
+        self.assertEqual(term.master_layout_json.get("layoutVersion"), 3)
+
+    def test_save_master_layout_backward_compat_v1(self):
+        self.client.force_login(self.staff)
+        term = TaxonomyTerm.objects.filter(is_visible=True).first()
+        if term is None:
+            self.skipTest("No taxonomy term available for save test")
+        import json
+
+        layout = {
+            "rows": [
+                {"kind": "row", "items": [{"type": "card", "card": {"kind": "stub", "message": "legacy"}}]},
+            ],
+        }
+        response = self.client.post(
+            reverse("save_taxonomy_master_layout"),
+            data=json.dumps({"term_id": term.pk, "layout": layout}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        term.refresh_from_db()
+        self.assertNotIn("layoutVersion", term.master_layout_json)
 
