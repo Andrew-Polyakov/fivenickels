@@ -20,6 +20,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popove
 import { RteToolbar, TABLE_EXTENSIONS } from '../components/ui/rte-editor';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '../components/ui/carousel';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '../components/ui/resizable';
+import { Slider } from '../components/ui/slider';
+import { Checkbox } from '../components/ui/checkbox';
 import {
   hasCarouselCardImage,
   packCarouselSlides,
@@ -912,9 +914,26 @@ function BentoGrid01Editor({ block, searchUrl, termId, onChange }: {
           onChange={e => onChange({ ...block, badge_text: e.target.value })} />
         <Input value={block.heading} placeholder="Section heading"
           onChange={e => onChange({ ...block, heading: e.target.value })} />
-        <Input value={block.height ?? 'auto'} placeholder="Height (e.g. 400px or auto)"
-          className="scn-bento-editor__height-input"
-          onChange={e => onChange({ ...block, height: e.target.value || undefined })} />
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="scn-bento-editor__size-btn">Size</button>
+          </PopoverTrigger>
+          <PopoverContent className="scn-popover-content scn-bento-editor__size-popover" align="end">
+            <label className="scn-bento-editor__size-auto-row">
+              <Checkbox checked={!block.height || block.height === 'auto'}
+                onCheckedChange={checked => onChange({ ...block, height: checked ? undefined : '320px' })} />
+              <span>Auto</span>
+            </label>
+            {block.height && block.height !== 'auto' && (
+              <div className="scn-bento-editor__size-slider-row">
+                <Slider min={320} max={1000} step={10}
+                  value={[parseInt(block.height) || 320]}
+                  onValueChange={([v]) => onChange({ ...block, height: `${v}px` })} />
+                <span className="scn-bento-editor__size-value">{block.height}</span>
+              </div>
+            )}
+          </PopoverContent>
+        </Popover>
         <Popover open={addOpen} onOpenChange={setAddOpen}>
           <PopoverTrigger asChild>
             <button className="scn-bento-editor__add-col">+</button>
