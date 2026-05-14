@@ -21,7 +21,7 @@ from home.alpaca_market_client import (
 
 
 # Bump when request shape or error strings change (clears stale cached failures).
-BAR_CACHE_VERSION = "v2"
+BAR_CACHE_VERSION = "v3"
 BAR_CACHE_TTL_SECONDS = 90
 
 
@@ -73,6 +73,25 @@ def _normalize_bar(raw: dict[str, Any]) -> dict[str, Any] | None:
 def _bars_feed_from_env() -> str:
     raw = (os.environ.get("ALPACA_BARS_FEED") or "iex").strip().lower()
     return raw if raw else "iex"
+
+
+def _bars_adjustment_from_env() -> str | None:
+    """
+    Alpaca ``adjustment`` for historical bars (split/dividend etc.).
+
+    Default ``split`` aligns better with typical broker/TV daily charts than raw prints.
+    Set ``ALPACA_BARS_ADJUSTMENT=raw`` for unadjusted. Omit sending the param when
+    ``ALPACA_BARS_ADJUSTMENT`` is ``-`` or ``none`` (case-insensitive).
+    """
+    raw = os.environ.get("ALPACA_BARS_ADJUSTMENT")
+    if raw is None:
+        return "split"
+    s = raw.strip()
+    if not s:
+        return "split"
+    if s.lower() in ("-", "none", "omit"):
+        return None
+    return s
 
 
 def _iso_utc_z(dt: datetime) -> str:
@@ -152,13 +171,19 @@ def fetch_recent_stock_bars(
     """
     Return up to ``limit`` bars oldest-first for charting, and an optional error message.
 
-    Bars are cached briefly per symbol/timeframe/limit.
+    Requests the **most recent** ``limit`` bars in ``[start, end]`` via ``sort=desc``,
+    then reverses to chronological order. Uses explicit ``end`` = UTC now.
+
+    Bars are cached briefly per symbol/timeframe/limit/feed/adjustment.
     """
     sym = (symbol or "").strip().upper()
     if not sym:
         return [], None
 
-    cache_key = f"alpaca:bars:{BAR_CACHE_VERSION}:{sym}:{timeframe}:{limit}"
+    feed = _bars_feed_from_env()
+    adjustment = _bars_adjustment_from_env()
+    adj_key = adjustment if adjustment else "-"
+    cache_key = f"alpaca:bars:{BAR_CACHE_VERSION}:{sym}:{timeframe}:{limit}:{feed}:{adj_key}"
     hit = cache.get(cache_key)
     if isinstance(hit, dict) and "bars" in hit:
         raw_list = hit.get("bars")
@@ -191,16 +216,19 @@ def fetch_recent_stock_bars(
 
     response_text = ""
     try:
+        end_dt = datetime.now(timezone.utc)
         start_dt = _default_query_start_utc(timeframe, limit)
-        feed = _bars_feed_from_env()
-        params = {
+        params: dict[str, str | int] = {
             "symbols": sym,
             "timeframe": timeframe,
             "limit": limit,
-            "sort": "asc",
+            "sort": "desc",
             "start": _iso_utc_z(start_dt),
+            "end": _iso_utc_z(end_dt),
             "feed": feed,
         }
+        if adjustment is not None:
+            params["adjustment"] = adjustment
         r = sess.get(url, headers=headers, params=params, timeout=timeout)
         response_text = r.text or ""
         if not r.ok:
@@ -242,6 +270,7 @@ def fetch_recent_stock_bars(
         b = _normalize_bar(raw) if isinstance(raw, dict) else None
         if b is not None:
             normalized.append(b)
+    normalized.reverse()
 
     cache.set(cache_key, {"bars": normalized, "error": None}, BAR_CACHE_TTL_SECONDS)
     return normalized, None

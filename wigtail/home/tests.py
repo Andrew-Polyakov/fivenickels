@@ -9,6 +9,7 @@ from home.models import (
     TaxonomyTerm,
 )
 from decimal import Decimal
+import os
 from unittest.mock import Mock, patch
 
 from django.contrib.auth import get_user_model
@@ -1435,4 +1436,54 @@ class AlpacaBarsClientTests(SimpleTestCase):
         self.assertIsNotNone(err)
         self.assertIn("unexpected response shape", err)
         self.assertIn("subscription required", err)
+
+    def test_bars_request_includes_end_sort_desc_and_adjustment(self):
+        mock_resp = Mock(ok=True)
+        mock_resp.text = '{"bars":{"AAPL":[]}}'
+        mock_resp.json.return_value = {"bars": {"AAPL": []}}
+        mock_sess = Mock()
+        mock_sess.get.return_value = mock_resp
+        with patch.dict(os.environ, {"ALPACA_BARS_ADJUSTMENT": "split"}, clear=False):
+            fetch_recent_stock_bars("AAPL", limit=5, key_id="kid", secret="sec", session=mock_sess)
+        params = mock_sess.get.call_args[1]["params"]
+        self.assertEqual(params["sort"], "desc")
+        self.assertEqual(params["adjustment"], "split")
+        self.assertEqual(params["limit"], 5)
+        self.assertIn("start", params)
+        self.assertIn("end", params)
+
+    def test_bars_request_omits_adjustment_when_none(self):
+        mock_resp = Mock(ok=True)
+        mock_resp.text = '{"bars":{"AAPL":[]}}'
+        mock_resp.json.return_value = {"bars": {"AAPL": []}}
+        mock_sess = Mock()
+        mock_sess.get.return_value = mock_resp
+        with patch.dict(os.environ, {"ALPACA_BARS_ADJUSTMENT": "none"}, clear=False):
+            fetch_recent_stock_bars("AAPL", limit=5, key_id="kid", secret="sec", session=mock_sess)
+        params = mock_sess.get.call_args[1]["params"]
+        self.assertNotIn("adjustment", params)
+
+    def test_bars_reversed_to_chronological_order(self):
+        mock_resp = Mock(ok=True)
+        mock_resp.text = "{}"
+        mock_resp.json.return_value = {
+            "bars": {
+                "AAPL": [
+                    {"t": "2024-01-05T05:00:00Z", "o": 3, "h": 3, "l": 3, "c": 3, "v": 100},
+                    {"t": "2024-01-04T05:00:00Z", "o": 2, "h": 2, "l": 2, "c": 2, "v": 100},
+                    {"t": "2024-01-03T05:00:00Z", "o": 1, "h": 1, "l": 1, "c": 1, "v": 100},
+                ],
+            }
+        }
+        mock_sess = Mock()
+        mock_sess.get.return_value = mock_resp
+        bars, err = fetch_recent_stock_bars(
+            "AAPL", limit=3, key_id="kid", secret="sec", session=mock_sess
+        )
+        self.assertIsNone(err)
+        self.assertEqual(len(bars), 3)
+        self.assertLess(bars[0]["t"], bars[1]["t"])
+        self.assertLess(bars[1]["t"], bars[2]["t"])
+        self.assertEqual(bars[0]["c"], 1.0)
+        self.assertEqual(bars[2]["c"], 3.0)
 
