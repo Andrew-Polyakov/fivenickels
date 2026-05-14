@@ -1497,6 +1497,10 @@ body.template-taxonomy-drilldown .scn-taxonomy-content__carousel-wrap .carousel_
 
 }
 
+body.template-taxonomy-drilldown .scn-taxonomy-content__carousel-wrap--fixed-h .carousel {
+    max-height: none;
+}
+
 .taxonomy-drilldown {
 
     max-width: none;
@@ -7228,6 +7232,36 @@ body.page-article-editor .site-content {
     justify-content: space-between;
 }
 
+.scn-carousel-editor__header--tools {
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    justify-content: flex-end;
+}
+
+.scn-carousel-editor__header--tools .scn-carousel-editor__count {
+    margin-right: auto;
+}
+
+.scn-carousel-editor__popover--narrow {
+    width: auto;
+    max-height: none;
+    padding-inline: 1rem;
+    padding-block: 0.75rem;
+}
+
+.scn-carousel-editor__hetero-tile {
+    min-height: 0;
+    width: 100%;
+}
+
+.scn-carousel-editor__hetero-tile .scn-bento-editor__panel-content {
+    min-height: 120px;
+}
+
+.scn-carousel-editor__card-trigger--panel .scn-bento-editor__panel-content {
+    width: 100%;
+}
+
 .scn-carousel-editor__count {
     font-size: 0.8125rem;
     color: var(--color-text-muted);
@@ -7296,6 +7330,10 @@ body.page-article-editor .site-content {
     min-height: 0;
     display: flex;
     flex-direction: column;
+}
+
+.scn-carousel-editor__preview.scn-carousel-editor__preview--fixed-h {
+    max-height: none;
 }
 
 .scn-carousel-editor__preview-item { flex: 0 0 clamp(200px, 35%, 300px); padding-right: 1rem; display: flex; flex-direction: column; }
@@ -7854,6 +7892,22 @@ body.page-article-editor .site-content {
 .scn-taxonomy-content__bento-preview { position: relative; padding: 5px 1.5rem; }
 
 .scn-taxonomy-content__carousel-item { padding-right: 1rem; display: flex; flex-direction: column; }
+
+.scn-carousel-readonly__tile {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: 8px;
+    box-sizing: border-box;
+}
+
+.scn-carousel-readonly__tile .carousel-article-card {
+    min-height: 0;
+}
+
+.scn-taxonomy-content__carousel-wrap--fixed-h .carousel {
+    max-height: none;
+}
 
 .scn-taxonomy-content__carousel-card {
     /* legacy fallback — actual cards now use .carousel-article-card */

@@ -2182,6 +2182,14 @@ turbo-frame#site-nav.site-nav {
   min-height: 0;
 }
 
+.scn-taxonomy-content__carousel-wrap--fixed-h .carousel {
+  max-height: none;
+}
+
+.carousel.scn-carousel-editor__preview.scn-carousel-editor__preview--fixed-h {
+  max-height: none;
+}
+
 .carousel.scn-carousel-editor__preview .carousel__viewport {
   flex: 1 1 auto;
   min-height: 0;

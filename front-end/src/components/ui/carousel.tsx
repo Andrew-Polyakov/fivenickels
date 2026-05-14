@@ -70,7 +70,10 @@ export const Carousel = React.forwardRef<
     onSelect(api);
     api.on('reInit', onSelect);
     api.on('select', onSelect);
-    return () => { api.off('select', onSelect); };
+    return () => {
+      api.off('reInit', onSelect);
+      api.off('select', onSelect);
+    };
   }, [api, onSelect]);
 
   return (
@@ -99,9 +102,34 @@ export const CarouselContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
-  const { carouselRef } = useCarousel();
+  const { carouselRef, api } = useCarousel();
+  const viewportRef = React.useRef<HTMLDivElement | null>(null);
+
+  const setViewportRef = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      viewportRef.current = node;
+      carouselRef(node);
+    },
+    [carouselRef],
+  );
+
+  React.useLayoutEffect(() => {
+    if (!api) return;
+    const el = viewportRef.current;
+    if (!el) return;
+    if (typeof ResizeObserver === 'undefined') {
+      api.reInit();
+      return;
+    }
+    const ro = new ResizeObserver(() => {
+      api.reInit();
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [api]);
+
   return (
-    <div ref={carouselRef} className="carousel__viewport">
+    <div ref={setViewportRef} className="carousel__viewport">
       <div ref={ref} className={cn('carousel__track', className)} {...props} />
     </div>
   );

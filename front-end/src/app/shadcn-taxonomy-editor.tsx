@@ -14,7 +14,6 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Select } from '../components/ui/select';
-import { ScrollArea } from '../components/ui/scroll-area';
 import { ToggleGroup, ToggleGroupItem } from '../components/ui/toggle-group';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { RteToolbar, TABLE_EXTENSIONS } from '../components/ui/rte-editor';
@@ -83,7 +82,13 @@ type CarouselSlot  = {
   publishedAt?: string | null;
   catalyst?: string | null;
 };
-type CarouselBlock = { id: string; type: 'carousel'; cards: CarouselSlot[]; infiniteScroll?: boolean };
+type CarouselBlock = {
+  id: string;
+  type: 'carousel';
+  features: BentoGrid01Feature[];
+  infiniteScroll?: boolean;
+  height?: string;
+};
 
 type TaxonomyBlock = HeadingBlock | ParagraphBlock | ImageBlock | EmbedBlock | SeparatorBlock | BentoGrid01Block | CarouselBlock;
 type TaxonomyContentJson = { version: number; blocks: TaxonomyBlock[] };
@@ -185,13 +190,65 @@ function useResolvedCarouselPreviews(cards: CarouselSlot[], termId: number): Rec
   return resolved;
 }
 
+function legacyCarouselSlotsToFeatures(cards: CarouselSlot[]): BentoGrid01Feature[] {
+  return cards.map((slot) => ({
+    id: slot.id,
+    header_type: 'card' as const,
+    image_url_light: '',
+    image_url_dark: '',
+    title: '',
+    description: '',
+    col_span: '4' as const,
+    mode: slot.mode,
+    articleId: slot.articleId,
+    articleTitle: slot.articleTitle,
+  }));
+}
+
+/** Exported for tests — normalize a carousel block from persisted JSON (legacy `cards` → `features`). */
+export function normalizeCarouselBlockFromJson(raw: Record<string, unknown>): CarouselBlock | null {
+  if (raw['type'] !== 'carousel' || typeof raw['id'] !== 'string') return null;
+  const rawFeatures = raw['features'];
+  let features: BentoGrid01Feature[] = [];
+  if (Array.isArray(rawFeatures) && rawFeatures.length > 0) {
+    features = rawFeatures.filter((f): f is BentoGrid01Feature =>
+      typeof f === 'object' && f !== null && typeof (f as BentoGrid01Feature).id === 'string'
+        && typeof (f as BentoGrid01Feature).header_type === 'string',
+    ) as BentoGrid01Feature[];
+  }
+  if (features.length === 0 && Array.isArray(raw['cards'])) {
+    const cards = raw['cards'].filter((c): c is CarouselSlot =>
+      typeof c === 'object' && c !== null && typeof (c as CarouselSlot).id === 'string',
+    );
+    features = legacyCarouselSlotsToFeatures(cards);
+  }
+  const infiniteScroll = typeof raw['infiniteScroll'] === 'boolean' ? raw['infiniteScroll'] as boolean : undefined;
+  const height = typeof raw['height'] === 'string' ? raw['height'] : undefined;
+  return {
+    id: raw['id'],
+    type: 'carousel',
+    features,
+    ...(infiniteScroll !== undefined ? { infiniteScroll } : {}),
+    ...(height !== undefined ? { height } : {}),
+  };
+}
+
+function normalizeTaxonomyBlock(raw: Record<string, unknown>): TaxonomyBlock | null {
+  const t = raw['type'];
+  if (typeof t !== 'string') return null;
+  if (t === 'carousel') {
+    return normalizeCarouselBlockFromJson(raw);
+  }
+  return raw as TaxonomyBlock;
+}
+
 function jsonToBlocks(json: object | null): TaxonomyBlock[] {
   if (!json || typeof json !== 'object') return [];
   const j = json as TaxonomyContentJson;
   if (!Array.isArray(j.blocks)) return [];
-  return j.blocks.filter((b): b is TaxonomyBlock =>
-    typeof b === 'object' && b !== null && typeof (b as Record<string, unknown>)['type'] === 'string'
-  );
+  return j.blocks
+    .map((b) => (typeof b === 'object' && b !== null ? normalizeTaxonomyBlock(b as Record<string, unknown>) : null))
+    .filter((b): b is TaxonomyBlock => b !== null);
 }
 
 function blocksToJson(blocks: TaxonomyBlock[]): TaxonomyContentJson {
@@ -478,6 +535,33 @@ function resolveCarouselSlotViewModel(
   };
 }
 
+function resolveCarouselCardFeatureViewModel(
+  feat: BentoGrid01Feature,
+  index: number,
+  resolvedRandom: Record<string, ArticleResult | null>,
+  context: 'editor' | 'readonly' | 'editor_preview',
+): CarouselCardViewModel | null {
+  if (feat.header_type !== 'card') return null;
+  const slot: CarouselSlot = {
+    id: feat.id,
+    mode: feat.mode ?? 'random',
+    articleId: feat.articleId ?? null,
+    articleTitle: feat.articleTitle ?? null,
+  };
+  const base = resolveCarouselSlotViewModel(slot, index, resolvedRandom, context);
+  if (!base) return null;
+  return {
+    ...base,
+    bgOpacity: feat.cardBgOpacity,
+    fontColor: feat.cardFontColor,
+    imageLayout: feat.cardImageLayout ?? 'fit_under',
+  };
+}
+
+export function carouselFeaturesAllCards(features: BentoGrid01Feature[]): boolean {
+  return features.length > 0 && features.every((f) => f.header_type === 'card');
+}
+
 function renderPackedTaxonomyCarouselSlide(
   slide: CarouselPackedSlide,
   itemClassName: string,
@@ -505,114 +589,44 @@ function renderPackedTaxonomyCarouselSlide(
   );
 }
 
-function CarouselSlotSettingsFields({ slot, slotIndex, searchUrl, onPatch, onRemove }: {
-  slot: CarouselSlot;
-  slotIndex: number;
-  searchUrl: string;
-  onPatch: (patch: Partial<CarouselSlot>) => void;
-  onRemove: () => void;
-}) {
-  return (
-    <div className="scn-carousel-editor__slot">
-      <div className="scn-carousel-editor__slot-header">
-        <span className="scn-carousel-editor__slot-num">Slot {slotIndex + 1}</span>
-        <button type="button" className="scn-editor-block__ctrl-btn scn-editor-block__ctrl-btn--danger"
-          onClick={onRemove} title="Remove">×</button>
-      </div>
-      <ToggleGroup
-        value={slot.mode}
-        onValueChange={v => {
-          if (v) onPatch({ mode: v as CarouselSlot['mode'], articleId: null, articleTitle: null });
-        }}
-      >
-        <ToggleGroupItem value="random">Random</ToggleGroupItem>
-        <ToggleGroupItem value="priority">Priority</ToggleGroupItem>
-        <ToggleGroupItem value="specific">Specific</ToggleGroupItem>
-      </ToggleGroup>
-      {slot.mode === 'specific' && (
-        <ArticleSearchInput
-          value={{ id: slot.articleId, title: slot.articleTitle }}
-          onChange={v => onPatch({
-            articleId:       v.id,
-            articleTitle:    v.title,
-            articleImageUrl: v.id ? (v as ArticleResult).imageUrl ?? null : null,
-            articleTags:     v.id ? ((v as ArticleResult).tags ?? []) : [],
-            articleExcerpt:  v.id ? (v as ArticleResult).excerpt  ?? null : null,
-            articleUrl:      v.id ? (v as ArticleResult).url      ?? null : null,
-            authorName:      v.id ? (v as ArticleResult).authorName ?? null : null,
-            publishedAt:     v.id ? (v as ArticleResult).publishedAt ?? null : null,
-          })}
-          searchUrl={searchUrl}
-          placeholder="Search article…"
-        />
-      )}
-    </div>
-  );
-}
-
-function renderPackedCarouselEditorSlide(
+function renderPackedCarouselEditorBentoSlide(
   slide: CarouselPackedSlide,
   itemClassName: string,
-  cards: CarouselSlot[],
+  cardFeaturesById: Record<string, BentoGrid01Feature>,
   searchUrl: string,
-  openSlotId: string | null,
-  setOpenSlotId: (id: string | null) => void,
-  setSettingsOpen: (open: boolean) => void,
-  patchSlot: (slotId: string, patch: Partial<CarouselSlot>) => void,
-  removeSlot: (slotId: string) => void,
+  stockPreviewUrl: string,
+  resolvedRandom: Record<string, ArticleResult | null>,
+  onPatch: (featId: string, patch: Partial<BentoGrid01Feature>) => void,
+  onRemove: (featId: string) => void,
 ): React.ReactNode {
-  function slotIndexFor(cardKey: string): number {
-    const i = cards.findIndex(c => c.id === cardKey);
-    return i >= 0 ? i : 0;
-  }
-
-  function renderCardPopover(cardVm: CarouselCardViewModel): React.ReactNode {
-    const cardKey = cardVm.key;
-    const slot = cards.find(c => c.id === cardKey);
-    if (!slot) {
-      return <CarouselCard {...cardVm} />;
-    }
-    const slotIndex = slotIndexFor(cardKey);
+  function renderPanel(feat: BentoGrid01Feature): React.ReactNode {
     return (
-      <Popover
-        key={cardKey}
-        open={openSlotId === cardKey}
-        onOpenChange={(open) => {
-          setOpenSlotId(open ? cardKey : null);
-          if (open) setSettingsOpen(false);
-        }}
-      >
-        <PopoverTrigger asChild>
-          <div
-            className="scn-bento-editor__panel-content scn-carousel-editor__card-trigger"
-            role="button"
-            tabIndex={0}
-            onPointerDown={(e) => e.stopPropagation()}
-          >
-            <span className="scn-bento-editor__panel-label">Slot {slotIndex + 1}</span>
-            <CarouselCard {...cardVm} />
-          </div>
-        </PopoverTrigger>
-        <PopoverContent className="scn-popover-content scn-bento-editor__feat-popover" align="center" side="bottom">
-          <CarouselSlotSettingsFields
-            slot={slot}
-            slotIndex={slotIndex}
-            searchUrl={searchUrl}
-            onPatch={patch => patchSlot(slot.id, patch)}
-            onRemove={() => {
-              removeSlot(slot.id);
-              setOpenSlotId(null);
-            }}
-          />
-        </PopoverContent>
-      </Popover>
+      <BentoFeaturePanel
+        key={feat.id}
+        feat={feat}
+        resolved={resolvedRandom[feat.id]}
+        searchUrl={searchUrl}
+        stockPreviewUrl={stockPreviewUrl}
+        onPatch={patch => onPatch(feat.id, patch)}
+        onRemove={() => onRemove(feat.id)}
+      />
     );
   }
 
   if (slide.kind === 'single') {
+    const feat = cardFeaturesById[slide.card.key];
+    if (!feat) {
+      return (
+        <CarouselItem key={slide.key} className={cn(itemClassName, 'carousel-slides__item')}>
+          <CarouselCard {...slide.card} />
+        </CarouselItem>
+      );
+    }
     return (
       <CarouselItem key={slide.key} className={cn(itemClassName, 'carousel-slides__item')}>
-        {renderCardPopover(slide.card)}
+        <div className="scn-carousel-editor__card-trigger scn-carousel-editor__card-trigger--panel">
+          {renderPanel(feat)}
+        </div>
       </CarouselItem>
     );
   }
@@ -623,7 +637,18 @@ function renderPackedCarouselEditorSlide(
         className="carousel-slides__stack"
         style={{ ['--carousel-stack-rows']: String(slide.cards.length) } as React.CSSProperties}
       >
-        {slide.cards.map((c) => renderCardPopover(c))}
+        {slide.cards.map((c) => {
+          const feat = cardFeaturesById[c.key];
+          if (!feat) {
+            const { key: cardKey, ...cardProps } = c;
+            return <CarouselCard key={cardKey} {...cardProps} />;
+          }
+          return (
+            <div key={feat.id} className="scn-carousel-editor__card-trigger scn-carousel-editor__card-trigger--panel">
+              {renderPanel(feat)}
+            </div>
+          );
+        })}
       </div>
     </CarouselItem>
   );
@@ -837,6 +862,26 @@ const BENTO_TILE_TYPES: Array<{ type: BentoGrid01Feature['header_type']; desc: s
   { type: 'richtext',           desc: 'Formatted rich text content' },
   { type: 'stock_bars',         desc: 'OHLC chart + ticker chips (cadence & bar count)' },
 ];
+
+function createBentoFeatureOfType(headerType: BentoGrid01Feature['header_type']): BentoGrid01Feature {
+  const base = { id: uid(), image_url_light: '', image_url_dark: '', title: '', description: '', col_span: '4' as const };
+  if (headerType === 'card') {
+    return { ...base, header_type: 'card', mode: 'random' };
+  }
+  if (headerType === 'richtext') {
+    return { ...base, header_type: 'richtext', html: '' };
+  }
+  if (headerType === 'stock_bars') {
+    return {
+      ...base,
+      header_type: 'stock_bars',
+      stock_symbols: ['AAPL'],
+      stock_bars_cadence: 'day',
+      stock_bars_limit: 180,
+    };
+  }
+  return { ...base, header_type: headerType };
+}
 
 type StockBarsPreviewJson = {
   chart_symbol: string;
@@ -1337,21 +1382,7 @@ function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, termId, onChange
   const resolvedRandom = useResolvedCarouselPreviews(cardSlots, termId);
 
   function addFeature(headerType: BentoGrid01Feature['header_type']) {
-    const base = { id: uid(), image_url_light: '', image_url_dark: '', title: '', description: '', col_span: '4' as const };
-    const feat: BentoGrid01Feature = headerType === 'card'
-      ? { ...base, header_type: 'card', mode: 'random' }
-      : headerType === 'richtext'
-        ? { ...base, header_type: 'richtext', html: '' }
-        : headerType === 'stock_bars'
-          ? {
-            ...base,
-            header_type: 'stock_bars',
-            stock_symbols: ['AAPL'],
-            stock_bars_cadence: 'day',
-            stock_bars_limit: 180,
-          }
-          : { ...base, header_type: headerType };
-    onChange({ ...block, features: [...block.features, feat] });
+    onChange({ ...block, features: [...block.features, createBentoFeatureOfType(headerType)] });
   }
 
   function patchFeature(featId: string, patch: Partial<BentoGrid01Feature>) {
@@ -1451,105 +1482,160 @@ function carouselAutoplayOpts(infiniteScroll: boolean) {
   return { loop: true };
 }
 
-function CarouselEditor({ block, searchUrl, termId, onChange }: {
-  block: CarouselBlock; searchUrl: string; termId: number; onChange: (b: CarouselBlock) => void;
+function CarouselEditor({ block, searchUrl, stockPreviewUrl, termId, onChange }: {
+  block: CarouselBlock;
+  searchUrl: string;
+  stockPreviewUrl: string;
+  termId: number;
+  onChange: (b: CarouselBlock) => void;
 }) {
   const [settingsOpen, setSettingsOpen] = React.useState(false);
-  const [openSlotId, setOpenSlotId] = React.useState<string | null>(null);
-  const resolvedRandom = useResolvedCarouselPreviews(block.cards, termId);
+  const [addOpen, setAddOpen] = React.useState(false);
+  const features = block.features;
+  const cardSlots = React.useMemo(() => bentoCardFeaturesToSlots(features), [features]);
+  const resolvedRandom = useResolvedCarouselPreviews(cardSlots, termId);
   const infiniteScroll = Boolean(block.infiniteScroll);
+  const allCards = carouselFeaturesAllCards(features);
+
+  const cardFeaturesById = React.useMemo(() => {
+    const m: Record<string, BentoGrid01Feature> = {};
+    for (const f of features) {
+      if (f.header_type === 'card') m[f.id] = f;
+    }
+    return m;
+  }, [features]);
+
   const packedSlides = React.useMemo(
-    () => packCarouselSlides(
-      block.cards
-        .map((slot, index) => resolveCarouselSlotViewModel(slot, index, resolvedRandom, 'editor_preview'))
-        .filter((card): card is CarouselCardViewModel => card !== null),
-    ),
-    [block.cards, resolvedRandom],
+    () => {
+      if (!allCards) return [];
+      const vms = features.map((feat, index) =>
+        resolveCarouselCardFeatureViewModel(feat, index, resolvedRandom, 'editor_preview'),
+      ).filter((c): c is CarouselCardViewModel => c !== null);
+      return packCarouselSlides(vms);
+    },
+    [allCards, features, resolvedRandom],
   );
 
-  function addSlot() {
-    onChange({ ...block, cards: [...block.cards, { id: uid(), mode: 'random', articleId: null, articleTitle: null }] });
+  function patchFeature(featId: string, patch: Partial<BentoGrid01Feature>) {
+    onChange({
+      ...block,
+      features: features.map(f => f.id === featId ? { ...f, ...patch } : f),
+    });
   }
 
-  function removeSlot(slotId: string) {
-    setOpenSlotId(prev => (prev === slotId ? null : prev));
-    onChange({ ...block, cards: block.cards.filter(c => c.id !== slotId) });
+  function removeFeature(featId: string) {
+    onChange({ ...block, features: features.filter(f => f.id !== featId) });
   }
 
-  function patchSlot(slotId: string, patch: Partial<CarouselSlot>) {
-    onChange({ ...block, cards: block.cards.map(c => c.id === slotId ? { ...c, ...patch } : c) });
+  function addCarouselFeature(headerType: BentoGrid01Feature['header_type']) {
+    onChange({ ...block, features: [...features, createBentoFeatureOfType(headerType)] });
   }
+
+  const previewFixedHeightStyle: React.CSSProperties | undefined =
+    block.height && block.height !== 'auto'
+      ? { height: block.height, minHeight: 0 }
+      : undefined;
 
   return (
     <div className="scn-carousel-editor">
-      <div className="scn-carousel-editor__header">
+      <div className="scn-carousel-editor__header scn-carousel-editor__header--tools">
         <span className="scn-carousel-editor__count">
-          {block.cards.length} slot{block.cards.length !== 1 ? 's' : ''}
+          {features.length} tile{features.length !== 1 ? 's' : ''}
         </span>
-        <Popover open={settingsOpen} onOpenChange={(open) => {
-          setSettingsOpen(open);
-          if (open) setOpenSlotId(null);
-        }}>
+        <Popover open={settingsOpen} onOpenChange={setSettingsOpen}>
           <PopoverTrigger asChild>
-            <Button variant="ghost" className="scn-carousel-editor__settings-btn" aria-label="Configure slots">
+            <Button variant="ghost" className="scn-carousel-editor__settings-btn" aria-label="Carousel settings">
               <Settings2 size={16} />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="scn-popover-content scn-carousel-editor__popover" align="end">
-            <div className="scn-carousel-editor__popover-settings">
-              <Button
-                type="button"
-                variant="outline"
-                className={cn(
-                  'scn-carousel-editor__infinite-btn',
-                  infiniteScroll && 'scn-carousel-editor__infinite-btn--active'
-                )}
-                onClick={() => onChange({ ...block, infiniteScroll: !infiniteScroll })}
-                aria-pressed={infiniteScroll}
-              >
-                <InfinityIcon size={14} />
-                Infinite scroll
-              </Button>
-              <Button variant="ghost" className="scn-bento-editor__add-card scn-carousel-editor__add-slot-btn" onClick={addSlot}>
-                + Add slot
-              </Button>
-            </div>
-            <ScrollArea className="scn-carousel-editor__scroll-area">
-              <div className="scn-carousel-editor__slots">
-                {block.cards.map((slot, i) => (
-                  <CarouselSlotSettingsFields
-                    key={slot.id}
-                    slot={slot}
-                    slotIndex={i}
-                    searchUrl={searchUrl}
-                    onPatch={patch => patchSlot(slot.id, patch)}
-                    onRemove={() => removeSlot(slot.id)}
-                  />
-                ))}
+          <PopoverContent className="scn-popover-content scn-carousel-editor__popover scn-carousel-editor__popover--narrow" align="end">
+            <Button
+              type="button"
+              variant="outline"
+              className={cn(
+                'scn-carousel-editor__infinite-btn',
+                infiniteScroll && 'scn-carousel-editor__infinite-btn--active'
+              )}
+              onClick={() => onChange({ ...block, infiniteScroll: !infiniteScroll })}
+              aria-pressed={infiniteScroll}
+            >
+              <InfinityIcon size={14} />
+              Infinite scroll
+            </Button>
+          </PopoverContent>
+        </Popover>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button type="button" className="scn-bento-editor__size-btn">Size</button>
+          </PopoverTrigger>
+          <PopoverContent className="scn-popover-content scn-bento-editor__size-popover" align="end">
+            <label className="scn-bento-editor__size-auto-row">
+              <Checkbox checked={!block.height || block.height === 'auto'}
+                onCheckedChange={checked => onChange({ ...block, height: checked ? undefined : '320px' })} />
+              <span>Auto</span>
+            </label>
+            {block.height && block.height !== 'auto' && (
+              <div className="scn-bento-editor__size-slider-row">
+                <Slider min={320} max={1000} step={10}
+                  value={[parseInt(block.height, 10) || 320]}
+                  onValueChange={([v]) => onChange({ ...block, height: `${v}px` })} />
+                <span className="scn-bento-editor__size-value">{block.height}</span>
               </div>
-            </ScrollArea>
+            )}
+          </PopoverContent>
+        </Popover>
+        <Popover open={addOpen} onOpenChange={setAddOpen}>
+          <PopoverTrigger asChild>
+            <button type="button" className="scn-bento-editor__add-col" aria-label="Add tile">+</button>
+          </PopoverTrigger>
+          <PopoverContent className="scn-popover-content scn-editor-add-block-menu" align="end">
+            {BENTO_TILE_TYPES.map(bt => (
+              <button key={bt.type} type="button" className="scn-editor-add-block-item"
+                onClick={() => { addCarouselFeature(bt.type); setAddOpen(false); }}>
+                <span className="scn-editor-add-block-item__label">{BENTO_TILE_LABEL[bt.type]}</span>
+                <span className="scn-editor-add-block-item__desc">{bt.desc}</span>
+              </button>
+            ))}
           </PopoverContent>
         </Popover>
       </div>
 
-      {block.cards.length > 0 && (
+      {features.length > 0 && (
         <Carousel
-          className="scn-carousel-editor__preview"
+          className={cn(
+            'scn-carousel-editor__preview',
+            block.height && block.height !== 'auto' && 'scn-carousel-editor__preview--fixed-h',
+          )}
+          style={previewFixedHeightStyle}
           opts={carouselAutoplayOpts(infiniteScroll)}
           plugins={carouselAutoplayPlugins(infiniteScroll)}
         >
           <CarouselContent>
-            {packedSlides.map((slide) => renderPackedCarouselEditorSlide(
-              slide,
-              'scn-carousel-editor__preview-item',
-              block.cards,
-              searchUrl,
-              openSlotId,
-              setOpenSlotId,
-              setSettingsOpen,
-              patchSlot,
-              removeSlot,
-            ))}
+            {allCards
+              ? packedSlides.map((slide) => renderPackedCarouselEditorBentoSlide(
+                slide,
+                'scn-carousel-editor__preview-item',
+                cardFeaturesById,
+                searchUrl,
+                stockPreviewUrl,
+                resolvedRandom,
+                patchFeature,
+                removeFeature,
+              ))
+              : features.map((feat) => (
+                <CarouselItem key={feat.id} className={cn('scn-carousel-editor__preview-item', 'carousel-slides__item')}>
+                  <div className="scn-carousel-editor__hetero-tile">
+                    <BentoFeaturePanel
+                      feat={feat}
+                      resolved={resolvedRandom[feat.id]}
+                      searchUrl={searchUrl}
+                      stockPreviewUrl={stockPreviewUrl}
+                      onPatch={patch => patchFeature(feat.id, patch)}
+                      onRemove={() => removeFeature(feat.id)}
+                    />
+                  </div>
+                </CarouselItem>
+              ))}
           </CarouselContent>
           <CarouselPrevious />
           <CarouselNext />
@@ -1592,7 +1678,15 @@ function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl,
         {block.type === 'embed'     && <EmbedEditor     block={block} onChange={onChange as (b: EmbedBlock) => void} />}
         {block.type === 'separator' && <SeparatorEditor block={block} onChange={onChange as (b: SeparatorBlock) => void} />}
         {block.type === 'bento_grid_01' && <BentoGrid01Editor block={block} searchUrl={articleSearchUrl} stockPreviewUrl={stockPreviewUrl} termId={termId} onChange={onChange as (b: BentoGrid01Block) => void} />}
-        {block.type === 'carousel'  && <CarouselEditor  block={block} searchUrl={articleSearchUrl} termId={termId} onChange={onChange as (b: CarouselBlock) => void} />}
+        {block.type === 'carousel' && (
+          <CarouselEditor
+            block={block}
+            searchUrl={articleSearchUrl}
+            stockPreviewUrl={stockPreviewUrl}
+            termId={termId}
+            onChange={onChange as (b: CarouselBlock) => void}
+          />
+        )}
       </div>
     </div>
   );
@@ -1644,7 +1738,7 @@ function bentoCardFeaturesToSlots(features: BentoGrid01Feature[]): CarouselSlot[
 
 function ReadOnlyBlock({ block, termId, stockPreviewUrl }: { block: TaxonomyBlock; termId: number; stockPreviewUrl: string }) {
   const previewSlots = React.useMemo(() => {
-    if (block.type === 'carousel') return block.cards;
+    if (block.type === 'carousel') return bentoCardFeaturesToSlots(block.features);
     if (block.type === 'bento_grid_01') return bentoCardFeaturesToSlots(block.features);
     return [];
   }, [block]);
@@ -1753,22 +1847,60 @@ function ReadOnlyBlock({ block, termId, stockPreviewUrl }: { block: TaxonomyBloc
 
   if (block.type === 'carousel') {
     const infiniteScroll = Boolean(block.infiniteScroll);
-    const packedSlides = packCarouselSlides(
-      block.cards
-        .map((slot, index) => resolveCarouselSlotViewModel(slot, index, resolvedRandom, 'readonly'))
-        .filter((card): card is CarouselCardViewModel => card !== null),
+    const features = block.features;
+    const blockHeight = block.height && block.height !== 'auto' ? block.height : undefined;
+    const wrapStyle: React.CSSProperties | undefined = blockHeight
+      ? { height: blockHeight, minHeight: 0, flexShrink: 0 }
+      : undefined;
+
+    const carouselWrapClass = cn(
+      'scn-taxonomy-content__carousel-wrap',
+      blockHeight && 'scn-taxonomy-content__carousel-wrap--fixed-h',
     );
-    if (packedSlides.length === 0) {
+
+    if (features.length === 0) {
       return null;
     }
+
+    if (carouselFeaturesAllCards(features)) {
+      const packedSlides = packCarouselSlides(
+        features
+          .map((feat, index) => resolveCarouselCardFeatureViewModel(feat, index, resolvedRandom, 'readonly'))
+          .filter((card): card is CarouselCardViewModel => card !== null),
+      );
+      if (packedSlides.length === 0) {
+        return null;
+      }
+      return (
+        <div className={carouselWrapClass} style={wrapStyle}>
+          <Carousel
+            opts={carouselAutoplayOpts(infiniteScroll)}
+            plugins={carouselAutoplayPlugins(infiniteScroll)}
+          >
+            <CarouselContent>
+              {packedSlides.map((slide) => renderPackedTaxonomyCarouselSlide(slide, 'scn-taxonomy-content__carousel-item'))}
+            </CarouselContent>
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
+        </div>
+      );
+    }
+
     return (
-      <div className="scn-taxonomy-content__carousel-wrap">
+      <div className={carouselWrapClass} style={wrapStyle}>
         <Carousel
           opts={carouselAutoplayOpts(infiniteScroll)}
           plugins={carouselAutoplayPlugins(infiniteScroll)}
         >
           <CarouselContent>
-            {packedSlides.map((slide) => renderPackedTaxonomyCarouselSlide(slide, 'scn-taxonomy-content__carousel-item'))}
+            {features.map((feat) => (
+              <CarouselItem key={feat.id} className={cn('scn-taxonomy-content__carousel-item', 'carousel-slides__item')}>
+                <div className="scn-carousel-readonly__tile">
+                  <BentoFeaturePreview feat={feat} resolved={resolvedRandom[feat.id]} linkable stockPreviewUrl={stockPreviewUrl} />
+                </div>
+              </CarouselItem>
+            ))}
           </CarouselContent>
           <CarouselPrevious />
           <CarouselNext />
@@ -1865,7 +1997,7 @@ function TaxonomyEditor({ termId, initialJson, canEdit, saveUrl, uploadUrl, arti
         case 'embed':     return { id, type: 'embed',     url: '' };
         case 'separator': return { id, type: 'separator', orientation: 'horizontal' };
         case 'bento_grid_01': return { id, type: 'bento_grid_01', badge_text: 'Features', heading: '', features: [] };
-        case 'carousel':  return { id, type: 'carousel',  cards: [{ id: uid(), mode: 'random', articleId: null, articleTitle: null }], infiniteScroll: false };
+        case 'carousel': return { id, type: 'carousel', features: [createBentoFeatureOfType('card')], infiniteScroll: false };
       }
     })();
     setBlocks(prev => [...prev, newBlock]);
