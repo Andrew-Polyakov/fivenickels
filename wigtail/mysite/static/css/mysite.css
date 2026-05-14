@@ -7200,6 +7200,8 @@ body.page-article-editor .site-content {
 .scn-bento-readonly__panel {
     min-height: 0;
     overflow: hidden;
+    padding: 5px;
+    box-sizing: border-box;
 }
 
 .scn-bento-readonly__panel .carousel-article-card {
@@ -7833,6 +7835,8 @@ body.page-article-editor .site-content {
 }
 
 .scn-taxonomy-content__carousel-wrap { position: relative; padding: 5px 1.5rem; }
+
+.scn-taxonomy-content__bento-preview { position: relative; padding: 5px 1.5rem; }
 
 .scn-taxonomy-content__carousel-item { padding-right: 1rem; display: flex; flex-direction: column; }
 

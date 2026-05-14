@@ -156,10 +156,14 @@ function BentoGrid01Root({ payload }: { payload: BentoGrid01Payload }) {
           <div className="grid grid-cols-12 gap-5">
             {payload.features.map((feature, i) => {
               const span = feature.col_span === '8' ? 'lg:col-span-8' : 'lg:col-span-4';
+              const headerClip =
+                feature.header_type === 'card' ? '' : ' overflow-hidden';
               return (
-                <div key={i} className={`${span} col-span-12 overflow-hidden`}>
+                <div key={i} className={`${span} col-span-12`}>
                   <div className="rounded-xl border border-border h-full flex flex-col">
-                    <div className="bg-muted rounded-t-xl py-8 px-9 relative flex-1 flex items-center justify-center min-h-[200px]">
+                    <div
+                      className={`bg-muted rounded-t-xl py-8 px-9 relative flex-1 flex items-center justify-center min-h-[200px]${headerClip}`}
+                    >
                       <FeatureHeader feature={feature} />
                     </div>
                     <div className="flex flex-col gap-0.5 p-8 border-t border-border">

@@ -654,6 +654,13 @@
 .scn-bento-readonly__panel {
   min-height: 0;
   overflow: hidden;
+  padding: 5px;
+  box-sizing: border-box;
+}
+
+.scn-taxonomy-content__bento-preview {
+  position: relative;
+  padding: 5px 1.5rem;
 }
 
 .scn-bento-readonly__panel .carousel-article-card {
