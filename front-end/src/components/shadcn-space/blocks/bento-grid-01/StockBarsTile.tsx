@@ -102,7 +102,7 @@ export default function StockBarsTile({ bars, chips, chartSymbol, barsError }: S
 
   return (
     <div className="relative w-full min-h-[200px] flex flex-col items-stretch justify-center pt-10 px-1">
-      <div className="absolute left-2 top-2 z-10 flex flex-row flex-wrap gap-2 max-w-[calc(100%-0.5rem)]">
+      <div className="absolute left-2 top-2 z-20 flex flex-row flex-wrap gap-2 max-w-[calc(100%-0.5rem)]">
         {chips.map((chip, i) => (
           <a key={`${chip.symbol}-${i}`} href={chip.href} className="ticker-chip">
             <span className={`ticker-chip__box ticker-chip__box--${chip.pct_class}`}>
@@ -113,17 +113,32 @@ export default function StockBarsTile({ bars, chips, chartSymbol, barsError }: S
         ))}
       </div>
 
-      {bars.length === 0 ? (
-        <div className="text-muted-foreground text-sm text-center px-4 py-6">
-          {barsError
-            ? barsError
-            : sym
-              ? `No bar data for ${sym}.`
-              : 'Add stock symbols in the CMS to show bars.'}
+      {sym ? (
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 top-10 z-0 flex items-center justify-center"
+          aria-hidden
+        >
+          <span
+            className="select-none text-6xl font-bold uppercase leading-none tracking-tight text-foreground/[0.09] sm:text-7xl md:text-8xl dark:text-foreground/[0.11]"
+          >
+            {sym}
+          </span>
         </div>
-      ) : (
-        <StockBarsSvg bars={bars} />
-      )}
+      ) : null}
+
+      <div className="relative z-10 w-full">
+        {bars.length === 0 ? (
+          <div className="text-muted-foreground text-sm text-center px-4 py-6">
+            {barsError
+              ? barsError
+              : sym
+                ? `No bar data for ${sym}.`
+                : 'Add stock symbols in the CMS to show bars.'}
+          </div>
+        ) : (
+          <StockBarsSvg bars={bars} />
+        )}
+      </div>
     </div>
   );
 }

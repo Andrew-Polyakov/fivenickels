@@ -6,7 +6,8 @@ Uses the same base URL and credentials as ``alpaca_market_client``.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+import os
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import requests
@@ -19,7 +20,8 @@ from home.alpaca_market_client import (
 )
 
 
-BAR_CACHE_VERSION = "v1"
+# Bump when request shape or error strings change (clears stale cached failures).
+BAR_CACHE_VERSION = "v2"
 BAR_CACHE_TTL_SECONDS = 90
 
 
@@ -66,6 +68,72 @@ def _normalize_bar(raw: dict[str, Any]) -> dict[str, Any] | None:
     if o is None or h is None or l is None or c is None:
         return None
     return {"t": t_unix, "o": o, "h": h, "l": l, "c": c, "v": vol}
+
+
+def _bars_feed_from_env() -> str:
+    raw = (os.environ.get("ALPACA_BARS_FEED") or "iex").strip().lower()
+    return raw if raw else "iex"
+
+
+def _iso_utc_z(dt: datetime) -> str:
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
+    return dt.isoformat().replace("+00:00", "Z")
+
+
+def _default_query_start_utc(timeframe: str, limit: int) -> datetime:
+    """Look-back wide enough to collect ``limit`` bars (weekends / holidays)."""
+    tf = (timeframe or "1Day").strip()
+    if tf in ("1Day", "1D") or tf.endswith("Day"):
+        days = max(limit * 5, 30)
+    elif "Week" in tf or tf == "1W":
+        days = max(limit * 14, 56)
+    elif "Hour" in tf or "Min" in tf:
+        days = max(limit // 24 + 7, 14)
+    else:
+        days = max(limit * 5, 30)
+    return datetime.now(timezone.utc) - timedelta(days=days)
+
+
+def _alpaca_api_message(payload: Any) -> str | None:
+    if not isinstance(payload, dict):
+        return None
+    for key in ("message", "msg", "detail"):
+        v = payload.get(key)
+        if isinstance(v, str) and v.strip():
+            return v.strip()
+    return None
+
+
+def _unexpected_shape_message(
+    sym: str,
+    payload: Any,
+    bars_root: Any,
+    series: Any,
+    response_text: str,
+) -> str:
+    parts = [f"Alpaca bars: unexpected response shape (symbol={sym})"]
+    if isinstance(payload, dict):
+        parts.append(f"keys={sorted(payload.keys())!s}")
+    else:
+        parts.append(f"payload_type={type(payload).__name__}")
+    parts.append(f"bars_type={type(bars_root).__name__}")
+    if bars_root is None:
+        parts.append("bars=None")
+    elif isinstance(bars_root, dict):
+        keys_sample = list(bars_root.keys())[:8]
+        parts.append(f"bars_keys_sample={keys_sample!s}")
+    msg_hint = _alpaca_api_message(payload)
+    if msg_hint:
+        parts.append(f"api_message={msg_hint[:180]!r}")
+    if series is not None and not isinstance(series, list):
+        parts.append(f"series_type={type(series).__name__}")
+    snippet = (response_text or "")[:220].replace("\n", " ")
+    if snippet:
+        parts.append(f"body_snippet={snippet!r}")
+    return "; ".join(parts)
 
 
 def fetch_recent_stock_bars(
@@ -118,17 +186,23 @@ def fetch_recent_stock_bars(
         "APCA-API-KEY-ID": kid,
         "APCA-API-SECRET-KEY": sec,
     }
-    params = {
-        "symbols": sym,
-        "timeframe": timeframe,
-        "limit": limit,
-        "sort": "asc",
-    }
 
+    response_text = ""
     try:
+        start_dt = _default_query_start_utc(timeframe, limit)
+        feed = _bars_feed_from_env()
+        params = {
+            "symbols": sym,
+            "timeframe": timeframe,
+            "limit": limit,
+            "sort": "asc",
+            "start": _iso_utc_z(start_dt),
+            "feed": feed,
+        }
         r = sess.get(url, headers=headers, params=params, timeout=timeout)
+        response_text = r.text or ""
         if not r.ok:
-            msg = f"Alpaca bars HTTP {r.status_code}: {(r.text or '')[:200]}"
+            msg = f"Alpaca bars HTTP {r.status_code}: {(response_text or '')[:200]}"
             cache.set(cache_key, {"bars": [], "error": msg}, BAR_CACHE_TTL_SECONDS)
             return [], msg
         payload = r.json()
@@ -141,17 +215,23 @@ def fetch_recent_stock_bars(
         cache.set(cache_key, {"bars": [], "error": msg}, BAR_CACHE_TTL_SECONDS)
         return [], msg
 
-    bars_root = payload.get("bars") if isinstance(payload, dict) else None
+    bars_root_raw = payload.get("bars") if isinstance(payload, dict) else None
     series: list[Any] | None = None
-    if isinstance(bars_root, dict):
-        series = bars_root.get(sym)
+    bars_root = bars_root_raw
+    if isinstance(bars_root_raw, list):
+        series = bars_root_raw
+    elif isinstance(bars_root_raw, dict):
+        series = bars_root_raw.get(sym)
         if series is None:
-            for k, v in bars_root.items():
+            for k, v in bars_root_raw.items():
                 if str(k).upper() == sym:
                     series = v
                     break
     if not isinstance(series, list):
-        msg = "Alpaca bars: unexpected response shape"
+        if isinstance(bars_root_raw, dict) and len(bars_root_raw) == 0:
+            cache.set(cache_key, {"bars": [], "error": None}, BAR_CACHE_TTL_SECONDS)
+            return [], None
+        msg = _unexpected_shape_message(sym, payload, bars_root_raw, series, response_text)
         cache.set(cache_key, {"bars": [], "error": msg}, BAR_CACHE_TTL_SECONDS)
         return [], msg
 

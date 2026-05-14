@@ -9,13 +9,15 @@ from home.models import (
     TaxonomyTerm,
 )
 from decimal import Decimal
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from django.contrib.auth import get_user_model
+from django.test import SimpleTestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 
+from home.alpaca_bars_client import fetch_recent_stock_bars
 from home.blocks import _resolve_section_term, _resolve_universal_tile_state
 from home.card_layout import BENTO_LAYOUT_VERSION, build_layout_payload, serialize_article_card_for_related
 from home.navigation import normalize_sector_query_param
@@ -1398,4 +1400,35 @@ class StockBarsPreviewViewTests(WagtailPageTestCase):
         self.assertIn("bars", data)
         self.assertIn("chips", data)
         mock_serialize.assert_called_once_with(["AAPL"])
+
+
+@override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}})
+class AlpacaBarsClientTests(SimpleTestCase):
+    """Unit tests for ``fetch_recent_stock_bars`` (no live Alpaca calls)."""
+
+    def test_empty_bars_map_returns_empty_list(self):
+        mock_resp = Mock(ok=True)
+        mock_resp.text = '{"bars":{}}'
+        mock_resp.json.return_value = {"bars": {}}
+        mock_sess = Mock()
+        mock_sess.get.return_value = mock_resp
+        bars, err = fetch_recent_stock_bars(
+            "AAPL", limit=5, key_id="kid", secret="sec", session=mock_sess
+        )
+        self.assertEqual(bars, [])
+        self.assertIsNone(err)
+
+    def test_missing_bars_includes_api_message_in_error(self):
+        mock_resp = Mock(ok=True)
+        mock_resp.text = '{"message":"subscription required"}'
+        mock_resp.json.return_value = {"message": "subscription required"}
+        mock_sess = Mock()
+        mock_sess.get.return_value = mock_resp
+        bars, err = fetch_recent_stock_bars(
+            "AAPL", limit=5, key_id="kid", secret="sec", session=mock_sess
+        )
+        self.assertEqual(bars, [])
+        self.assertIsNotNone(err)
+        self.assertIn("unexpected response shape", err)
+        self.assertIn("subscription required", err)
 
