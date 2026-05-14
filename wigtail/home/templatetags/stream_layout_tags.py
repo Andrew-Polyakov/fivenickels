@@ -31,9 +31,14 @@ def _template_context_dict(context) -> dict:
 @register.inclusion_tag("home/includes/main_site_stream.html", takes_context=True)
 def render_main_site_stream(context, stream):
     sector = context.get("sector_tile_filter")
+    flat_ctx = _template_context_dict(context)
+    cluster_recent = flat_ctx.get("stream_cluster_bare_cards_to_recent", True)
     segments_in = list(
         iter_main_site_stream_segments(
-            stream, _template_context_dict(context), sector_slug=sector
+            stream,
+            flat_ctx,
+            sector_slug=sector,
+            cluster_bare_cards_to_recent=cluster_recent,
         )
     )
     segments = []
@@ -42,7 +47,7 @@ def render_main_site_stream(context, stream):
             segments.append({**seg, "uid": f"scn-{uuid.uuid4().hex[:12]}"})
         else:
             segments.append(seg)
-    flat = _template_context_dict(context)
+    flat = flat_ctx
     return {
         "segments": segments,
         "can_save_taxonomy_master_layout": flat.get("can_save_taxonomy_master_layout", False),

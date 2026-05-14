@@ -552,6 +552,11 @@ class HomePage(RoutablePageMixin, Page):
         MAIN_SITE_STREAMBLOCK,
         blank=True,
         use_json_field=True,
+        verbose_name="Landing blocks",
+        help_text=(
+            "Build the public home page with blocks (Heading, Paragraph, Article card, etc.). "
+            'Use "+ Add block" to add or reorder sections.'
+        ),
     )
     markets_data_link = models.ForeignKey(
         "wagtailcore.Page",
@@ -570,7 +575,10 @@ class HomePage(RoutablePageMixin, Page):
     ]
 
     content_panels = Page.content_panels + [
-        FieldPanel("body"),
+        MultiFieldPanel(
+            [FieldPanel("body")],
+            heading="Landing page",
+        ),
     ]
 
     @route(r"^_taxonomy/$", name="taxonomy_nav_root")

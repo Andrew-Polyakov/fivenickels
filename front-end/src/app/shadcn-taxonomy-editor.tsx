@@ -8,7 +8,7 @@ import StarterKit from '@tiptap/starter-kit';
 import TiptapLink from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 
-import { Infinity as InfinityIcon, Settings2 } from 'lucide-react';
+import { Check, ChevronsUpDown, Infinity as InfinityIcon, Settings2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardTitle } from '../components/ui/card';
@@ -16,6 +16,7 @@ import { Input } from '../components/ui/input';
 import { Select } from '../components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '../components/ui/toggle-group';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
+import { Command, CommandGroup, CommandItem, CommandList } from '../components/ui/command';
 import { RteToolbar, TABLE_EXTENSIONS } from '../components/ui/rte-editor';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '../components/ui/carousel';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '../components/ui/resizable';
@@ -1279,10 +1280,14 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, onPatch
               <span className="text-muted-foreground text-xs">Right-click the tile for quick ticker edit.</span>
             </div>
           )}
-          <Input value={feat.title} placeholder="Title"
-            onChange={e => onPatch({ title: e.target.value })} />
-          <Input value={feat.description} placeholder="Description"
-            onChange={e => onPatch({ description: e.target.value })} />
+          {feat.header_type !== 'card' && (
+            <>
+              <Input value={feat.title} placeholder="Title"
+                onChange={e => onPatch({ title: e.target.value })} />
+              <Input value={feat.description} placeholder="Description"
+                onChange={e => onPatch({ description: e.target.value })} />
+            </>
+          )}
           <Button variant="outline" className="scn-editor-block__ctrl-btn--danger scn-bento-editor__remove-btn"
             onClick={() => { onRemove(); setOpen(false); }}>
             Remove tile
@@ -1502,6 +1507,7 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, termId, onChange }:
 }) {
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [addOpen, setAddOpen] = React.useState(false);
+  const [stackDepthComboOpen, setStackDepthComboOpen] = React.useState(false);
   const features = block.features;
   const cardSlots = React.useMemo(() => bentoCardFeaturesToSlots(features), [features]);
   const resolvedRandom = useResolvedCarouselPreviews(cardSlots, termId);
@@ -1560,7 +1566,11 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, termId, onChange }:
               <Settings2 size={16} />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="scn-popover-content scn-carousel-editor__popover scn-carousel-editor__settings-popover" align="end">
+          <PopoverContent
+            className="scn-popover-content scn-carousel-editor__popover scn-carousel-editor__settings-popover"
+            align="end"
+            collisionPadding={12}
+          >
             <div className="scn-carousel-editor__settings-popover-body">
               <Button
                 type="button"
@@ -1594,12 +1604,52 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, termId, onChange }:
               <div className="scn-carousel-editor__stack-depth">
                 <span className="scn-bento-editor__style-label">Cards per stacked slide</span>
                 <p className="text-muted-foreground text-xs mb-1.5">When several imageless article tiles sit together, pack up to this many per slide (1 = never stack).</p>
-                <div className="scn-bento-editor__size-slider-row">
-                  <Slider min={1} max={4} step={1}
-                    value={[stackDepth]}
-                    onValueChange={([v]) => onChange({ ...block, stackDepth: v })} />
-                  <span className="scn-bento-editor__size-value tabular-nums">{stackDepth}</span>
-                </div>
+                <Popover open={stackDepthComboOpen} onOpenChange={setStackDepthComboOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="scn-carousel-editor__stack-combobox-trigger"
+                      aria-expanded={stackDepthComboOpen}
+                      aria-label="Cards per stacked slide"
+                    >
+                      <span className="scn-carousel-editor__stack-combobox-trigger-label">
+                        {stackDepth === 1 ? '1 (never stack)' : `${stackDepth} cards`}
+                      </span>
+                      <ChevronsUpDown size={14} className="shrink-0 opacity-60" aria-hidden />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="scn-popover-content scn-carousel-editor__stack-combobox-popover"
+                    align="start"
+                    sideOffset={4}
+                    collisionPadding={12}
+                  >
+                    <Command shouldFilter={false}>
+                      <CommandList>
+                        <CommandGroup>
+                          {[1, 2, 3, 4].map((n) => (
+                            <CommandItem
+                              key={n}
+                              value={`stack-depth-${n}`}
+                              onSelect={() => {
+                                onChange({ ...block, stackDepth: n });
+                                setStackDepthComboOpen(false);
+                              }}
+                            >
+                              <Check
+                                size={14}
+                                className={cn(stackDepth === n ? 'opacity-100' : 'opacity-0')}
+                                aria-hidden
+                              />
+                              {n === 1 ? '1 — never stack' : `${n} cards per slide`}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
           </PopoverContent>

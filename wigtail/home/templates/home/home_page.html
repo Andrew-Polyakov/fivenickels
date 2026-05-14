@@ -10,10 +10,12 @@
 
 {% block content %}
 
+{% with stream_cluster_bare_cards_to_recent=False %}
 <div class="home-stream">
 
     {% render_main_site_stream page.body %}
 
 </div>
+{% endwith %}
 
 {% endblock content %}

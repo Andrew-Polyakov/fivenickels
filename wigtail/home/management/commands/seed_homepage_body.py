@@ -10,14 +10,12 @@ Usage (from wigtail/):
 from __future__ import annotations
 
 from django.core.management.base import BaseCommand
-from django.utils.html import escape
-from wagtail.rich_text import RichText
 
 from home.models import HomePage, TaggedContentPage
 
 
 class Command(BaseCommand):
-    help = "Seed HomePage.body with heading, intro, and article cards when empty."
+    help = "Seed HomePage.body with article card blocks when empty (no fixed headings)."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -68,17 +66,7 @@ class Command(BaseCommand):
             )
             return
 
-        body_stream: list = [
-            ("heading", {"level": "h2", "text": "Latest stories"}),
-            (
-                "paragraph",
-                RichText(
-                    "<p>"
-                    "Highlights from recently published articles across the site."
-                    "</p>"
-                ),
-            ),
-        ]
+        body_stream: list = []
         for page in pages:
             section_term = getattr(page, "section_term", None)
             body_stream.append(

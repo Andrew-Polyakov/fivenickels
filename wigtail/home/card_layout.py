@@ -229,17 +229,31 @@ def _card_count_in_buffer(buffer: list) -> int:
     return sum(1 for b in buffer if b.block_type == "card")
 
 
+def _should_cluster_cards_to_recent_articles(
+    buffer: list, *, cluster_bare_cards_to_recent: bool
+) -> bool:
+    """When True, two or more bare card blocks become one adaptive Recent Articles mount."""
+    if not cluster_bare_cards_to_recent:
+        return False
+    return not _has_separator_blocks(buffer) and _card_count_in_buffer(buffer) >= 2
+
+
 def iter_main_site_stream_segments(
     stream,
     parent_context: dict | None,
     *,
     sector_slug: str | None = None,
+    cluster_bare_cards_to_recent: bool = True,
 ):
     """
     Yield dicts:
     - {"type": "block", "block": bound_block}
     - {"type": "card_layout", "payload": {...}}
     - {"type": "recent_articles", "payload": {...}}
+
+    When ``cluster_bare_cards_to_recent`` is False (e.g. home page), consecutive
+    article cards are always rendered as ``card_layout`` so each CMS block stays
+    a normal stream segment instead of one adaptive Recent Articles mount.
     """
     buffer: list = []
     for block in stream:
@@ -254,8 +268,8 @@ def iter_main_site_stream_segments(
 
         if block.block_type == "bento_grid_01":
             if buffer:
-                use_recent = (
-                    not _has_separator_blocks(buffer) and _card_count_in_buffer(buffer) >= 2
+                use_recent = _should_cluster_cards_to_recent_articles(
+                    buffer, cluster_bare_cards_to_recent=cluster_bare_cards_to_recent
                 )
                 if use_recent:
                     payload = _build_recent_articles_payload(buffer, parent_context)
@@ -271,8 +285,8 @@ def iter_main_site_stream_segments(
             continue
 
         if buffer:
-            use_recent = (
-                not _has_separator_blocks(buffer) and _card_count_in_buffer(buffer) >= 2
+            use_recent = _should_cluster_cards_to_recent_articles(
+                buffer, cluster_bare_cards_to_recent=cluster_bare_cards_to_recent
             )
             if use_recent:
                 payload = _build_recent_articles_payload(buffer, parent_context)
@@ -288,8 +302,8 @@ def iter_main_site_stream_segments(
         yield {"type": "block", "block": block}
 
     if buffer:
-        use_recent = (
-            not _has_separator_blocks(buffer) and _card_count_in_buffer(buffer) >= 2
+        use_recent = _should_cluster_cards_to_recent_articles(
+            buffer, cluster_bare_cards_to_recent=cluster_bare_cards_to_recent
         )
         if use_recent:
             payload = _build_recent_articles_payload(buffer, parent_context)
