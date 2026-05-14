@@ -1,3 +1,7 @@
+export type CarouselCardFontColorKey = 'white' | 'black' | 'slime' | 'gray';
+
+export type CarouselCardImageLayout = 'fit_under' | 'scales_fit_top';
+
 export type CarouselCardViewModel = {
   key: string;
   imageUrl?: string | null;
@@ -8,6 +12,10 @@ export type CarouselCardViewModel = {
   authorName?: string | null;
   publishedAt?: string | null;
   catalyst?: string | null;
+  bgOpacity?: number;
+  fontColor?: CarouselCardFontColorKey;
+  /** Omitted = legacy column layout (body, footer, image fills bottom). Bento usually sets this. */
+  imageLayout?: CarouselCardImageLayout;
 };
 
 export type CarouselPackedSingleSlide = {
@@ -19,7 +27,8 @@ export type CarouselPackedSingleSlide = {
 export type CarouselPackedStackSlide = {
   kind: 'stack';
   key: string;
-  cards: [CarouselCardViewModel, CarouselCardViewModel];
+  cards: [CarouselCardViewModel, CarouselCardViewModel]
+    | [CarouselCardViewModel, CarouselCardViewModel, CarouselCardViewModel];
 };
 
 export type CarouselPackedSlide = CarouselPackedSingleSlide | CarouselPackedStackSlide;
@@ -29,6 +38,16 @@ export function hasCarouselCardImage(card: Pick<CarouselCardViewModel, 'imageUrl
 }
 
 function flushPendingImageless(pending: CarouselCardViewModel[], slides: CarouselPackedSlide[]): void {
+  while (pending.length >= 3) {
+    const a = pending.shift()!;
+    const b = pending.shift()!;
+    const c = pending.shift()!;
+    slides.push({
+      kind: 'stack',
+      key: `${a.key}__${b.key}__${c.key}`,
+      cards: [a, b, c],
+    });
+  }
   while (pending.length >= 2) {
     const first = pending.shift()!;
     const second = pending.shift()!;

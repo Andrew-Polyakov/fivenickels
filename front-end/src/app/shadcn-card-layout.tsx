@@ -401,7 +401,7 @@ const layoutRoots = new WeakMap<HTMLElement, Root>();
 
 type TileCarouselPackedSlide =
   | { kind: 'single'; key: string; payload: ArticleCardPayload }
-  | { kind: 'stack'; key: string; payloads: [ArticleCardPayload, ArticleCardPayload] };
+  | { kind: 'stack'; key: string; payloads: ArticleCardPayload[] };
 
 function articlePayloadToCarouselViewModel(card: ArticleCardPayload, index: number): CarouselCardViewModel | null {
   if (card.kind !== 'article') {
@@ -437,15 +437,12 @@ function packArticleCardSlides(cards: ArticleCardPayload[]): TileCarouselPackedS
         payload: entries[index]?.payload ?? cards[index] ?? cards[0],
       };
     }
-    const first = entries.find((entry) => entry.view.key === slide.cards[0].key);
-    const second = entries.find((entry) => entry.view.key === slide.cards[1].key);
     return {
       kind: 'stack',
       key: slide.key,
-      payloads: [
-        first?.payload ?? cards[0],
-        second?.payload ?? cards[1],
-      ] as [ArticleCardPayload, ArticleCardPayload],
+      payloads: slide.cards.map(
+        (cvm) => entries.find((entry) => entry.view.key === cvm.key)?.payload ?? cards[0],
+      ),
     };
   });
 }
@@ -479,7 +476,10 @@ function TileCarouselSlides({ cards }: { cards: ArticleCardPayload[] }): React.J
           </div>
         ) : (
           <div key={slide.key} className="tile-carousel__cell tile-carousel__cell--stack">
-            <div className="tile-carousel__stack">
+            <div
+              className="tile-carousel__stack"
+              style={{ ['--carousel-stack-rows']: String(slide.payloads.length) } as React.CSSProperties}
+            >
               {slide.payloads.map((payload, stackIndex) => (
                 <div key={`${slide.key}-${stackIndex}`} className="tile-carousel__cell-inner">
                   <ArticleCardView data={payload} />

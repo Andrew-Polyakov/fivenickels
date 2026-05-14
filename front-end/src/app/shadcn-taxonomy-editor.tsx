@@ -25,6 +25,8 @@ import { Checkbox } from '../components/ui/checkbox';
 import {
   hasCarouselCardImage,
   packCarouselSlides,
+  type CarouselCardFontColorKey,
+  type CarouselCardImageLayout,
   type CarouselCardViewModel,
   type CarouselPackedSlide,
 } from './carousel-slide-packing';
@@ -49,6 +51,9 @@ type BentoGrid01Feature = {
   articleId?: number | null;
   articleTitle?: string | null;
   html?: string;
+  cardBgOpacity?: number;
+  cardFontColor?: CarouselCardFontColorKey;
+  cardImageLayout?: CarouselCardImageLayout;
 };
 type BentoGrid01Block  = {
   id: string; type: 'bento_grid_01'; badge_text: string; heading: string; features: BentoGrid01Feature[];
@@ -272,53 +277,140 @@ export function carouselCatalystIconSrc(catalyst?: string | null): string | null
   return null;
 }
 
-export function CarouselCard({ imageUrl, tags, title, excerpt, url, authorName, publishedAt, catalyst }: CarouselCardViewModel) {
+function carouselCardResolveFontColor(key: CarouselCardFontColorKey | undefined): string {
+  switch (key ?? 'white') {
+    case 'black':
+      return '#0a0a0a';
+    case 'slime':
+      return 'var(--color-slime)';
+    case 'gray':
+      return 'rgba(226, 232, 240, 0.7)';
+    default:
+      return '#ffffff';
+  }
+}
+
+export function CarouselCard(props: CarouselCardViewModel) {
+  const {
+    imageUrl,
+    tags,
+    title,
+    excerpt,
+    url,
+    authorName,
+    publishedAt,
+    catalyst,
+    bgOpacity,
+    fontColor,
+    imageLayout,
+  } = props;
   const publishedLabel = publishedAt?.trim() || '';
   const imageless = !hasCarouselCardImage({ imageUrl });
   const sentimentIconSrc = carouselCatalystIconSrc(catalyst);
   const tagList = (tags ?? []).slice(0, 5);
-  const inner = (
-    <Card className={cn(
-      'carousel-article-card',
-      imageless && 'carousel-article-card--imageless',
-      url && 'carousel-article-card--link',
-    )}>
-      {!imageless ? (
-        <div className="carousel-article-card__media">
-          <img src={imageUrl ?? ''} alt={title} className="carousel-article-card__img" />
+  const opacityPct = bgOpacity ?? 100;
+  const bodyBackground = `rgba(0, 0, 0, ${opacityPct / 100})`;
+  const textColor = carouselCardResolveFontColor(fontColor);
+
+  const bodyEl = (
+    <CardContent className="carousel-article-card__body" style={{ background: bodyBackground }}>
+      {tagList.length > 0 || sentimentIconSrc ? (
+        <div className="carousel-article-card__tags">
+          {sentimentIconSrc ? (
+            <img
+              src={sentimentIconSrc}
+              alt=""
+              width={32}
+              height={32}
+              className="scn-catalyst-icon scn-article-card__catalyst-icon"
+              aria-hidden="true"
+            />
+          ) : null}
+          {tagList.map((tag) => (
+            <span key={tag} className="carousel-article-card__tag">
+              {tag}
+            </span>
+          ))}
         </div>
       ) : null}
-      <CardContent className="carousel-article-card__body">
-        {tagList.length > 0 || sentimentIconSrc ? (
-          <div className="carousel-article-card__tags">
-            {sentimentIconSrc ? (
-              <img
-                src={sentimentIconSrc}
-                alt=""
-                width={32}
-                height={32}
-                className="scn-catalyst-icon scn-article-card__catalyst-icon"
-                aria-hidden="true"
-              />
-            ) : null}
-            {tagList.map((tag) => (
-              <span key={tag} className="carousel-article-card__tag">
-                {tag}
-              </span>
-            ))}
-          </div>
-        ) : null}
-        <CardTitle className="carousel-article-card__title">{title}</CardTitle>
-        {excerpt && <p className="carousel-article-card__excerpt">{excerpt}</p>}
-      </CardContent>
-      <div className="carousel-article-card__footer">
-        <span className="carousel-article-card__author">{authorName || 'Fivenickels Editorial'}</span>
-        {publishedLabel ? (
-          <time className="carousel-article-card__published" dateTime={publishedLabel}>
-            {publishedLabel}
-          </time>
-        ) : null}
-      </div>
+      <CardTitle className="carousel-article-card__title">{title}</CardTitle>
+      {excerpt && <p className="carousel-article-card__excerpt">{excerpt}</p>}
+    </CardContent>
+  );
+
+  const footerEl = (
+    <div className="carousel-article-card__footer" style={{ background: bodyBackground }}>
+      <span className="carousel-article-card__author">{authorName || 'Fivenickels Editorial'}</span>
+      {publishedLabel ? (
+        <time className="carousel-article-card__published" dateTime={publishedLabel}>
+          {publishedLabel}
+        </time>
+      ) : null}
+    </div>
+  );
+
+  const legacyMediaEl = !imageless ? (
+    <div className="carousel-article-card__media">
+      <img src={imageUrl ?? ''} alt={title} className="carousel-article-card__img" />
+    </div>
+  ) : null;
+
+  let layoutModClass: string;
+  let cardChildren: React.ReactNode;
+
+  if (imageless) {
+    layoutModClass = 'carousel-article-card--imageless';
+    cardChildren = (
+      <>
+        {bodyEl}
+        {footerEl}
+      </>
+    );
+  } else if (imageLayout === 'fit_under') {
+    layoutModClass = 'carousel-article-card--fit-under';
+    cardChildren = (
+      <>
+        <div className="carousel-article-card__media carousel-article-card__media--under" aria-hidden="true">
+          <img src={imageUrl ?? ''} alt="" className="carousel-article-card__img carousel-article-card__img--cover" />
+        </div>
+        <div className="carousel-article-card__forefront">
+          {bodyEl}
+          {footerEl}
+        </div>
+      </>
+    );
+  } else if (imageLayout === 'scales_fit_top') {
+    layoutModClass = 'carousel-article-card--scales-top';
+    cardChildren = (
+      <>
+        <div className="carousel-article-card__media carousel-article-card__media--contain-slot">
+          <img src={imageUrl ?? ''} alt={title} className="carousel-article-card__img carousel-article-card__img--contain" />
+        </div>
+        {bodyEl}
+        {footerEl}
+      </>
+    );
+  } else {
+    layoutModClass = 'carousel-article-card--with-bottom-image';
+    cardChildren = (
+      <>
+        {bodyEl}
+        {footerEl}
+        {legacyMediaEl}
+      </>
+    );
+  }
+
+  const inner = (
+    <Card
+      className={cn(
+        'carousel-article-card',
+        layoutModClass,
+        url && 'carousel-article-card--link',
+      )}
+      style={{ color: textColor }}
+    >
+      {cardChildren}
     </Card>
   );
   return url
@@ -386,9 +478,14 @@ function renderPackedTaxonomyCarouselSlide(
 
   return (
     <CarouselItem key={slide.key} className={cn(itemClassName, 'carousel-slides__item', 'carousel-slides__item--stack')}>
-      <div className="carousel-slides__stack">
-        <CarouselCard {...slide.cards[0]} />
-        <CarouselCard {...slide.cards[1]} />
+      <div
+        className="carousel-slides__stack"
+        style={{ ['--carousel-stack-rows']: String(slide.cards.length) } as React.CSSProperties}
+      >
+        {slide.cards.map((c) => {
+          const { key: cardKey, ...cardProps } = c;
+          return <CarouselCard key={cardKey} {...cardProps} />;
+        })}
       </div>
     </CarouselItem>
   );
@@ -666,6 +763,9 @@ function BentoFeaturePreview({ feat, resolved, linkable }: {
             authorName: resolved.authorName,
             publishedAt: resolved.publishedAt,
             catalyst: resolved.catalyst,
+            bgOpacity: feat.cardBgOpacity,
+            fontColor: feat.cardFontColor,
+            imageLayout: feat.cardImageLayout ?? 'fit_under',
           }}
         />
       );
@@ -763,6 +863,41 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, onPatch, onRemove }: {
                   searchUrl={searchUrl}
                 />
               )}
+              <div className="scn-bento-editor__card-style">
+                <span className="scn-bento-editor__style-label">Image layout</span>
+                <ToggleGroup value={feat.cardImageLayout ?? 'fit_under'}
+                  onValueChange={v => { if (v) onPatch({ cardImageLayout: v as CarouselCardImageLayout }); }}>
+                  <ToggleGroupItem value="fit_under">Fit under</ToggleGroupItem>
+                  <ToggleGroupItem value="scales_fit_top">Scales to fit</ToggleGroupItem>
+                </ToggleGroup>
+                <span className="scn-bento-editor__style-label">Background opacity</span>
+                <div className="scn-bento-editor__size-slider-row">
+                  <Slider min={0} max={100} step={5}
+                    value={[feat.cardBgOpacity ?? 100]}
+                    onValueChange={([v]) => onPatch({ cardBgOpacity: v })} />
+                  <span className="scn-bento-editor__size-value">{feat.cardBgOpacity ?? 100}%</span>
+                </div>
+                <span className="scn-bento-editor__style-label">Font color</span>
+                <ToggleGroup value={feat.cardFontColor ?? 'white'}
+                  onValueChange={v => { if (v) onPatch({ cardFontColor: v as CarouselCardFontColorKey }); }}>
+                  <ToggleGroupItem value="white">
+                    <span className="scn-bento-editor__color-swatch" style={{ background: '#ffffff' }} />
+                    White
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="black">
+                    <span className="scn-bento-editor__color-swatch" style={{ background: '#0a0a0a' }} />
+                    Black
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="slime">
+                    <span className="scn-bento-editor__color-swatch scn-bento-editor__color-swatch--slime" />
+                    Green
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="gray">
+                    <span className="scn-bento-editor__color-swatch" style={{ background: 'rgba(226,232,240,0.7)' }} />
+                    Gray
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
             </>
           )}
           {feat.header_type === 'richtext' && (
@@ -1338,6 +1473,33 @@ function Toast({ message, type, onDismiss }: {
   );
 }
 
+function TaxonomyEditorSaveBar({
+  saving,
+  lastSaved,
+  onSave,
+  variant = 'top',
+}: {
+  saving: boolean;
+  lastSaved: Date | null;
+  onSave: () => void;
+  variant?: 'top' | 'bottom';
+}) {
+  const barClass =
+    variant === 'bottom'
+      ? 'scn-taxonomy-editor__save-bar scn-taxonomy-editor__save-bar--footer'
+      : 'scn-taxonomy-editor__save-bar';
+  return (
+    <div className={barClass}>
+      <Button onClick={onSave} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
+      {lastSaved && (
+        <span className="scn-taxonomy-editor__saved">
+          Saved {lastSaved.toLocaleTimeString()}
+        </span>
+      )}
+    </div>
+  );
+}
+
 // ─── Root component ───────────────────────────────────────────────────────────
 
 function TaxonomyEditor({ termId, initialJson, canEdit, saveUrl, uploadUrl, articleSearchUrl }: {
@@ -1405,14 +1567,7 @@ function TaxonomyEditor({ termId, initialJson, canEdit, saveUrl, uploadUrl, arti
 
   return (
     <div className="scn-taxonomy-editor">
-      <div className="scn-taxonomy-editor__save-bar">
-        <Button onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
-        {lastSaved && (
-          <span className="scn-taxonomy-editor__saved">
-            Saved {lastSaved.toLocaleTimeString()}
-          </span>
-        )}
-      </div>
+      <TaxonomyEditorSaveBar saving={saving} lastSaved={lastSaved} onSave={handleSave} />
 
       <div className="scn-editor-body">
         {blocks.map((block, i) => (
@@ -1431,6 +1586,8 @@ function TaxonomyEditor({ termId, initialJson, canEdit, saveUrl, uploadUrl, arti
         ))}
         <AddBlockMenu onAdd={addBlock} />
       </div>
+
+      <TaxonomyEditorSaveBar saving={saving} lastSaved={lastSaved} onSave={handleSave} variant="bottom" />
 
       {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
     </div>

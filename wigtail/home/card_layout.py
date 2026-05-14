@@ -328,6 +328,9 @@ def _serialize_bentogrid01(block_value: dict, parent_context: dict | None = None
                 entry["article"] = card
             else:
                 entry["article"] = {"kind": "empty"}
+            layout_raw = val.get("card_image_layout")
+            if layout_raw in ("fit_under", "scales_fit_top"):
+                entry["card_image_layout"] = layout_raw
         if header_type == "richtext":
             from wagtail.rich_text import expand_db_html
 

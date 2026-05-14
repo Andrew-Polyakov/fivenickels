@@ -245,6 +245,15 @@ class BentoGridFeatureBlock(blocks.StructBlock):
         choices=[("4", "4/12 cols"), ("8", "8/12 cols")],
         default="4",
     )
+    card_image_layout = blocks.ChoiceBlock(
+        choices=[
+            ("fit_under", "Fit under (full-bleed behind text)"),
+            ("scales_fit_top", "Scales to fit (image above text)"),
+        ],
+        default="fit_under",
+        required=False,
+        label="Article card image layout",
+    )
 
     class Meta:
         icon = "image"

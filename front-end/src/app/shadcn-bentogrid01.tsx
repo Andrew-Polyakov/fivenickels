@@ -13,6 +13,7 @@ import { Badge } from '../components/ui/badge';
 import AnimatedUiBlock from '../components/shadcn-space/blocks/bento-grid-01/AnimatedUiBlock';
 import ReminderAnimation from '../components/shadcn-space/blocks/bento-grid-01/ReminderAnimation';
 import { CarouselCard } from './shadcn-taxonomy-editor';
+import type { CarouselCardImageLayout } from './carousel-slide-packing';
 
 // ── Types (mirror the Django BentoGrid01Block fields) ─────────────────────
 
@@ -37,6 +38,7 @@ export interface BentoGrid01FeaturePayload {
   col_span: '4' | '8';
   article?: ArticlePayload;
   html?: string;
+  card_image_layout?: CarouselCardImageLayout;
 }
 
 export interface BentoGrid01Payload {
@@ -58,15 +60,18 @@ function FeatureHeader({ feature }: { feature: BentoGrid01FeaturePayload }) {
     const a = feature.article;
     return (
       <CarouselCard
-        key="bento-card"
-        imageUrl={a.imageUrl}
-        tags={a.tags}
-        title={a.title ?? ''}
-        excerpt={a.excerpt}
-        url={a.href}
-        authorName={a.authorName}
-        publishedAt={a.publishedAt}
-        catalyst={a.catalyst}
+        {...{
+          key: 'bento-card',
+          imageUrl: a.imageUrl,
+          tags: a.tags,
+          title: a.title ?? '',
+          excerpt: a.excerpt,
+          url: a.href,
+          authorName: a.authorName,
+          publishedAt: a.publishedAt,
+          catalyst: a.catalyst,
+          imageLayout: feature.card_image_layout ?? 'fit_under',
+        }}
       />
     );
   }
