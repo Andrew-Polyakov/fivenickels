@@ -22,6 +22,21 @@ describe('normalizeCarouselBlockFromJson', () => {
     expect(b?.infiniteScroll).toBe(true);
   });
 
+  it('parses and clamps stackDepth', () => {
+    expect(normalizeCarouselBlockFromJson({
+      id: 'z',
+      type: 'carousel',
+      features: [],
+      stackDepth: 5,
+    })?.stackDepth).toBe(4);
+    expect(normalizeCarouselBlockFromJson({
+      id: 'z',
+      type: 'carousel',
+      features: [],
+      stackDepth: 2,
+    })?.stackDepth).toBe(2);
+  });
+
   it('prefers features when present', () => {
     const raw = {
       id: 'x',

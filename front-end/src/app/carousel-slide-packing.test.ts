@@ -16,7 +16,7 @@ describe('packCarouselSlides', () => {
     ]);
   });
 
-  it('packs 6 imageless cards as two stacks of 3', () => {
+  it('packs 6 imageless cards as two stacks of 3 (default depth)', () => {
     const c = [card('1'), card('2'), card('3'), card('4'), card('5'), card('6')];
     const slides = packCarouselSlides(c);
     expect(slides).toHaveLength(2);
@@ -30,7 +30,7 @@ describe('packCarouselSlides', () => {
     });
   });
 
-  it('packs 5 imageless cards as one triple and one double', () => {
+  it('packs 5 imageless cards as one triple and one double (default depth)', () => {
     const c = [card('1'), card('2'), card('3'), card('4'), card('5')];
     const slides = packCarouselSlides(c);
     expect(slides).toHaveLength(2);
@@ -48,6 +48,30 @@ describe('packCarouselSlides', () => {
     const slides = packCarouselSlides([a, b, img, c]);
     expect(slides.map((s) => s.kind)).toEqual(['stack', 'single', 'single']);
     expect(slides[0]?.kind === 'stack' && slides[0].cards.map((x) => x.key)).toEqual(['a', 'b']);
+  });
+
+  it('stackDepth 1 never stacks imageless runs', () => {
+    const c = [card('1'), card('2'), card('3'), card('4')];
+    const slides = packCarouselSlides(c, { stackDepth: 1 });
+    expect(slides).toHaveLength(4);
+    expect(slides.every((s) => s.kind === 'single')).toBe(true);
+  });
+
+  it('stackDepth 4 packs seven imageless as 4 then 3', () => {
+    const c = Array.from({ length: 7 }, (_, i) => card(String(i + 1)));
+    const slides = packCarouselSlides(c, { stackDepth: 4 });
+    expect(slides).toHaveLength(2);
+    expect(slides[0]?.kind === 'stack' && slides[0].cards).toHaveLength(4);
+    expect(slides[1]?.kind === 'stack' && slides[1].cards).toHaveLength(3);
+  });
+
+  it('stackDepth 2 packs five imageless as pair pair single', () => {
+    const c = [card('1'), card('2'), card('3'), card('4'), card('5')];
+    const slides = packCarouselSlides(c, { stackDepth: 2 });
+    expect(slides).toHaveLength(3);
+    expect(slides[0]?.kind === 'stack' && slides[0].cards).toHaveLength(2);
+    expect(slides[1]?.kind === 'stack' && slides[1].cards).toHaveLength(2);
+    expect(slides[2]).toMatchObject({ kind: 'single', key: '5' });
   });
 });
 

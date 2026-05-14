@@ -682,6 +682,30 @@
   padding-inline: 1.15rem;
 }
 
+.scn-carousel-editor__popover.scn-carousel-editor__settings-popover {
+  width: min(340px, calc(100vw - 2.5rem));
+  max-height: min(560px, 85vh);
+  padding-inline: 1rem;
+  padding-block: 0.85rem;
+  box-sizing: border-box;
+}
+
+.scn-carousel-editor__settings-popover-body {
+  margin-inline: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.scn-carousel-editor__settings-hint {
+  margin: -0.25rem 0 0;
+  line-height: 1.35;
+}
+
+.scn-carousel-editor__stack-depth .scn-bento-editor__style-label {
+  margin-bottom: 0;
+}
+
 .scn-carousel-editor__popover-settings {
   display: flex;
   flex-direction: column;

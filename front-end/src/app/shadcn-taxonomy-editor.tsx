@@ -88,6 +88,8 @@ type CarouselBlock = {
   features: BentoGrid01Feature[];
   infiniteScroll?: boolean;
   height?: string;
+  /** Max cards per stacked slide when packing consecutive imageless article cards (1–4). Default 3 when omitted. */
+  stackDepth?: number;
 };
 
 type TaxonomyBlock = HeadingBlock | ParagraphBlock | ImageBlock | EmbedBlock | SeparatorBlock | BentoGrid01Block | CarouselBlock;
@@ -224,12 +226,18 @@ export function normalizeCarouselBlockFromJson(raw: Record<string, unknown>): Ca
   }
   const infiniteScroll = typeof raw['infiniteScroll'] === 'boolean' ? raw['infiniteScroll'] as boolean : undefined;
   const height = typeof raw['height'] === 'string' ? raw['height'] : undefined;
+  let stackDepth: number | undefined;
+  const rawSd = raw['stackDepth'];
+  if (typeof rawSd === 'number' && Number.isFinite(rawSd)) {
+    stackDepth = Math.min(4, Math.max(1, Math.round(rawSd)));
+  }
   return {
     id: raw['id'],
     type: 'carousel',
     features,
     ...(infiniteScroll !== undefined ? { infiniteScroll } : {}),
     ...(height !== undefined ? { height } : {}),
+    ...(stackDepth !== undefined ? { stackDepth } : {}),
   };
 }
 
@@ -1468,6 +1476,12 @@ function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, termId, onChange
 
 const CAROUSEL_AUTOPLAY_DELAY_MS = 3500;
 
+function carouselStackDepth(block: Pick<CarouselBlock, 'stackDepth'>): number {
+  const n = block.stackDepth;
+  if (n == null || !Number.isFinite(n)) return 3;
+  return Math.min(4, Math.max(1, Math.round(n)));
+}
+
 function carouselAutoplayPlugins(infiniteScroll: boolean) {
   if (!infiniteScroll) {
     return undefined;
@@ -1476,10 +1490,7 @@ function carouselAutoplayPlugins(infiniteScroll: boolean) {
 }
 
 function carouselAutoplayOpts(infiniteScroll: boolean) {
-  if (!infiniteScroll) {
-    return undefined;
-  }
-  return { loop: true };
+  return { loop: Boolean(infiniteScroll) };
 }
 
 function CarouselEditor({ block, searchUrl, stockPreviewUrl, termId, onChange }: {
@@ -1495,6 +1506,7 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, termId, onChange }:
   const cardSlots = React.useMemo(() => bentoCardFeaturesToSlots(features), [features]);
   const resolvedRandom = useResolvedCarouselPreviews(cardSlots, termId);
   const infiniteScroll = Boolean(block.infiniteScroll);
+  const stackDepth = carouselStackDepth(block);
   const allCards = carouselFeaturesAllCards(features);
 
   const cardFeaturesById = React.useMemo(() => {
@@ -1511,9 +1523,9 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, termId, onChange }:
       const vms = features.map((feat, index) =>
         resolveCarouselCardFeatureViewModel(feat, index, resolvedRandom, 'editor_preview'),
       ).filter((c): c is CarouselCardViewModel => c !== null);
-      return packCarouselSlides(vms);
+      return packCarouselSlides(vms, { stackDepth });
     },
-    [allCards, features, resolvedRandom],
+    [allCards, features, resolvedRandom, stackDepth],
   );
 
   function patchFeature(featId: string, patch: Partial<BentoGrid01Feature>) {
@@ -1548,40 +1560,48 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, termId, onChange }:
               <Settings2 size={16} />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="scn-popover-content scn-carousel-editor__popover scn-carousel-editor__popover--narrow" align="end">
-            <Button
-              type="button"
-              variant="outline"
-              className={cn(
-                'scn-carousel-editor__infinite-btn',
-                infiniteScroll && 'scn-carousel-editor__infinite-btn--active'
+          <PopoverContent className="scn-popover-content scn-carousel-editor__popover scn-carousel-editor__settings-popover" align="end">
+            <div className="scn-carousel-editor__settings-popover-body">
+              <Button
+                type="button"
+                variant="outline"
+                className={cn(
+                  'scn-carousel-editor__infinite-btn',
+                  infiniteScroll && 'scn-carousel-editor__infinite-btn--active'
+                )}
+                onClick={() => onChange({ ...block, infiniteScroll: !infiniteScroll })}
+                aria-pressed={infiniteScroll}
+              >
+                <InfinityIcon size={14} />
+                Infinite scroll
+              </Button>
+              <p className="scn-carousel-editor__settings-hint text-muted-foreground text-xs">
+                On: auto-advance and loop. Off: arrows only (no auto-play, no wrap).
+              </p>
+              <label className="scn-bento-editor__size-auto-row">
+                <Checkbox checked={!block.height || block.height === 'auto'}
+                  onCheckedChange={checked => onChange({ ...block, height: checked ? undefined : '320px' })} />
+                <span>Auto height</span>
+              </label>
+              {block.height && block.height !== 'auto' && (
+                <div className="scn-bento-editor__size-slider-row">
+                  <Slider min={320} max={1000} step={10}
+                    value={[parseInt(block.height, 10) || 320]}
+                    onValueChange={([v]) => onChange({ ...block, height: `${v}px` })} />
+                  <span className="scn-bento-editor__size-value">{block.height}</span>
+                </div>
               )}
-              onClick={() => onChange({ ...block, infiniteScroll: !infiniteScroll })}
-              aria-pressed={infiniteScroll}
-            >
-              <InfinityIcon size={14} />
-              Infinite scroll
-            </Button>
-          </PopoverContent>
-        </Popover>
-        <Popover>
-          <PopoverTrigger asChild>
-            <button type="button" className="scn-bento-editor__size-btn">Size</button>
-          </PopoverTrigger>
-          <PopoverContent className="scn-popover-content scn-bento-editor__size-popover" align="end">
-            <label className="scn-bento-editor__size-auto-row">
-              <Checkbox checked={!block.height || block.height === 'auto'}
-                onCheckedChange={checked => onChange({ ...block, height: checked ? undefined : '320px' })} />
-              <span>Auto</span>
-            </label>
-            {block.height && block.height !== 'auto' && (
-              <div className="scn-bento-editor__size-slider-row">
-                <Slider min={320} max={1000} step={10}
-                  value={[parseInt(block.height, 10) || 320]}
-                  onValueChange={([v]) => onChange({ ...block, height: `${v}px` })} />
-                <span className="scn-bento-editor__size-value">{block.height}</span>
+              <div className="scn-carousel-editor__stack-depth">
+                <span className="scn-bento-editor__style-label">Cards per stacked slide</span>
+                <p className="text-muted-foreground text-xs mb-1.5">When several imageless article tiles sit together, pack up to this many per slide (1 = never stack).</p>
+                <div className="scn-bento-editor__size-slider-row">
+                  <Slider min={1} max={4} step={1}
+                    value={[stackDepth]}
+                    onValueChange={([v]) => onChange({ ...block, stackDepth: v })} />
+                  <span className="scn-bento-editor__size-value tabular-nums">{stackDepth}</span>
+                </div>
               </div>
-            )}
+            </div>
           </PopoverContent>
         </Popover>
         <Popover open={addOpen} onOpenChange={setAddOpen}>
@@ -1863,10 +1883,12 @@ function ReadOnlyBlock({ block, termId, stockPreviewUrl }: { block: TaxonomyBloc
     }
 
     if (carouselFeaturesAllCards(features)) {
+      const sd = carouselStackDepth(block);
       const packedSlides = packCarouselSlides(
         features
           .map((feat, index) => resolveCarouselCardFeatureViewModel(feat, index, resolvedRandom, 'readonly'))
           .filter((card): card is CarouselCardViewModel => card !== null),
+        { stackDepth: sd },
       );
       if (packedSlides.length === 0) {
         return null;
@@ -1997,7 +2019,13 @@ function TaxonomyEditor({ termId, initialJson, canEdit, saveUrl, uploadUrl, arti
         case 'embed':     return { id, type: 'embed',     url: '' };
         case 'separator': return { id, type: 'separator', orientation: 'horizontal' };
         case 'bento_grid_01': return { id, type: 'bento_grid_01', badge_text: 'Features', heading: '', features: [] };
-        case 'carousel': return { id, type: 'carousel', features: [createBentoFeatureOfType('card')], infiniteScroll: false };
+        case 'carousel': return {
+          id,
+          type: 'carousel',
+          features: [createBentoFeatureOfType('card')],
+          infiniteScroll: false,
+          stackDepth: 3,
+        };
       }
     })();
     setBlocks(prev => [...prev, newBlock]);

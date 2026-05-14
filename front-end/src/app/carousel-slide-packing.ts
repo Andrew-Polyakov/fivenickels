@@ -27,45 +27,66 @@ export type CarouselPackedSingleSlide = {
 export type CarouselPackedStackSlide = {
   kind: 'stack';
   key: string;
-  cards: [CarouselCardViewModel, CarouselCardViewModel]
-    | [CarouselCardViewModel, CarouselCardViewModel, CarouselCardViewModel];
+  /** Length ≥ 2 for stacks emitted by packing (runtime invariant). */
+  cards: CarouselCardViewModel[];
 };
 
 export type CarouselPackedSlide = CarouselPackedSingleSlide | CarouselPackedStackSlide;
+
+export type PackCarouselSlidesOptions = {
+  /** 1 = never stack imageless cards; 2–4 = max cards per stacked slide. Default 3. */
+  stackDepth?: number;
+};
 
 export function hasCarouselCardImage(card: Pick<CarouselCardViewModel, 'imageUrl'>): boolean {
   return Boolean(card.imageUrl?.trim());
 }
 
-function flushPendingImageless(pending: CarouselCardViewModel[], slides: CarouselPackedSlide[]): void {
-  while (pending.length >= 3) {
-    const a = pending.shift()!;
-    const b = pending.shift()!;
-    const c = pending.shift()!;
-    slides.push({
-      kind: 'stack',
-      key: `${a.key}__${b.key}__${c.key}`,
-      cards: [a, b, c],
-    });
-  }
-  while (pending.length >= 2) {
-    const first = pending.shift()!;
-    const second = pending.shift()!;
-    slides.push({
-      kind: 'stack',
-      key: `${first.key}__${second.key}`,
-      cards: [first, second],
-    });
-  }
-  if (pending.length === 1) {
-    const card = pending.shift()!;
-    slides.push({ kind: 'single', key: card.key, card });
-  }
+function clampStackDepth(raw: number | undefined): number {
+  if (raw == null || !Number.isFinite(raw)) return 3;
+  return Math.min(4, Math.max(1, Math.round(raw)));
 }
 
-export function packCarouselSlides(cards: CarouselCardViewModel[]): CarouselPackedSlide[] {
+function flushPendingImageless(
+  pending: CarouselCardViewModel[],
+  slides: CarouselPackedSlide[],
+  stackDepth: number,
+): void {
+  while (pending.length >= stackDepth) {
+    const chunk = pending.splice(0, stackDepth);
+    slides.push({
+      kind: 'stack',
+      key: chunk.map((c) => c.key).join('__'),
+      cards: chunk,
+    });
+  }
+  const rem = pending.length;
+  if (rem === 0) return;
+  if (rem === 1) {
+    const card = pending.shift()!;
+    slides.push({ kind: 'single', key: card.key, card });
+    return;
+  }
+  const chunk = pending.splice(0, rem);
+  slides.push({
+    kind: 'stack',
+    key: chunk.map((c) => c.key).join('__'),
+    cards: chunk,
+  });
+}
+
+export function packCarouselSlides(
+  cards: CarouselCardViewModel[],
+  options?: PackCarouselSlidesOptions,
+): CarouselPackedSlide[] {
   if (cards.length === 0) {
     return [];
+  }
+
+  const stackDepth = clampStackDepth(options?.stackDepth);
+
+  if (stackDepth <= 1) {
+    return cards.map((card) => ({ kind: 'single', key: card.key, card }));
   }
 
   const imagelessCount = cards.filter((card) => !hasCarouselCardImage(card)).length;
@@ -78,13 +99,13 @@ export function packCarouselSlides(cards: CarouselCardViewModel[]): CarouselPack
 
   for (const card of cards) {
     if (hasCarouselCardImage(card)) {
-      flushPendingImageless(pendingImageless, slides);
+      flushPendingImageless(pendingImageless, slides, stackDepth);
       slides.push({ kind: 'single', key: card.key, card });
       continue;
     }
     pendingImageless.push(card);
   }
 
-  flushPendingImageless(pendingImageless, slides);
+  flushPendingImageless(pendingImageless, slides, stackDepth);
   return slides;
 }
