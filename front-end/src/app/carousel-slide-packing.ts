@@ -1,6 +1,12 @@
 export type CarouselCardFontColorKey = 'white' | 'black' | 'slime' | 'gray';
 
-export type CarouselCardImageLayout = 'fit_under' | 'scales_fit_top';
+export type CarouselCardImageLayout =
+  | 'fit_under'
+  | 'scales_fit_top'
+  | 'text_on_top'
+  | 'text_on_left'
+  | 'text_on_right'
+  | 'text_only';
 
 export type CarouselCardViewModel = {
   key: string;
@@ -40,6 +46,14 @@ export type PackCarouselSlidesOptions = {
 
 export function hasCarouselCardImage(card: Pick<CarouselCardViewModel, 'imageUrl'>): boolean {
   return Boolean(card.imageUrl?.trim());
+}
+
+/** True when the card should render a hero image (excludes `text_only` even if `imageUrl` is set). */
+export function carouselCardShowsHeroImage(
+  card: Pick<CarouselCardViewModel, 'imageUrl' | 'imageLayout'>,
+): boolean {
+  if (card.imageLayout === 'text_only') return false;
+  return hasCarouselCardImage(card);
 }
 
 function clampStackDepth(raw: number | undefined): number {
@@ -89,7 +103,7 @@ export function packCarouselSlides(
     return cards.map((card) => ({ kind: 'single', key: card.key, card }));
   }
 
-  const imagelessCount = cards.filter((card) => !hasCarouselCardImage(card)).length;
+  const imagelessCount = cards.filter((card) => !carouselCardShowsHeroImage(card)).length;
   if (imagelessCount < 2) {
     return cards.map((card) => ({ kind: 'single', key: card.key, card }));
   }
@@ -98,7 +112,7 @@ export function packCarouselSlides(
   const pendingImageless: CarouselCardViewModel[] = [];
 
   for (const card of cards) {
-    if (hasCarouselCardImage(card)) {
+    if (carouselCardShowsHeroImage(card)) {
       flushPendingImageless(pendingImageless, slides, stackDepth);
       slides.push({ kind: 'single', key: card.key, card });
       continue;

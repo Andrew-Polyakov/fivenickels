@@ -702,6 +702,28 @@
   padding: 5px 1.5rem;
 }
 
+/* Stream-field separator blocks (readonly article / taxonomy body). */
+.scn-taxonomy-content__sep {
+  border: none;
+}
+
+.scn-taxonomy-content__sep--horizontal {
+  height: 1px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0.5rem 0;
+  background: rgba(var(--sc-rgb-glow), 0.88);
+  box-shadow:
+    0 0 14px rgba(var(--sc-rgb-glow), 0.48),
+    0 0 6px rgba(var(--sc-rgb-glow), 0.32);
+}
+
+.scn-taxonomy-content__sep--vertical {
+  border-left: 1px solid var(--color-border-subtle, rgba(148, 163, 184, 0.45));
+  height: 2rem;
+  align-self: center;
+}
+
 .scn-bento-readonly__panel .carousel-article-card {
   height: 100%;
 }
@@ -1088,22 +1110,26 @@ turbo-frame#site-nav.site-nav {
   overflow: visible;
 }
 
-/* Root taxonomy row: editorial rule band + flat triggers (scoped so other nav rows unchanged). */
+/* Root taxonomy row: glowing green rule band + flat triggers (scoped so other nav rows unchanged). */
 .site-nav__row.scn-taxonomy-site-nav__unified {
   width: 100%;
   margin: 0;
   padding: 0.45rem 0;
   box-sizing: border-box;
-  border-top: 1px solid rgba(148, 163, 184, 0.35);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+  border-top: 1px solid rgba(var(--sc-rgb-glow), 0.55);
+  border-bottom: 1px solid rgba(var(--sc-rgb-glow), 0.55);
   background: transparent;
+  box-shadow:
+    0 -2px 18px rgba(var(--sc-rgb-glow), 0.42),
+    0 2px 18px rgba(var(--sc-rgb-glow), 0.42);
 }
 
 .site-nav__row.scn-taxonomy-site-nav__unified .scn-navigation-menu__trigger,
 .site-nav__row.scn-taxonomy-site-nav__unified .scn-navigation-menu__trigger--link {
   border-radius: 0;
   height: auto;
-  min-height: 2.25rem;
+  min-height: 2.5rem;
+  font-size: 1rem;
 }
 
 .site-nav__row.scn-taxonomy-site-nav__unified .scn-navigation-menu__trigger:hover,
@@ -1675,12 +1701,16 @@ turbo-frame#site-nav.site-nav {
 
 .scn-card-layout__sep {
   margin: 0.25rem 0;
-  background: rgba(148, 163, 184, 0.45);
 }
 
-.taxonomy-drilldown__widgets .scn-card-layout__sep,
-.taxonomy-drilldown__master-pane .scn-card-layout__sep {
+.taxonomy-drilldown__widgets .scn-card-layout__sep.scn-separator--horizontal,
+.taxonomy-drilldown__master-pane .scn-card-layout__sep.scn-separator--horizontal {
   margin: 0.1rem 0 0.2rem;
+}
+
+.taxonomy-drilldown__widgets .scn-card-layout__sep.scn-separator--vertical,
+.taxonomy-drilldown__master-pane .scn-card-layout__sep.scn-separator--vertical {
+  margin: 0 0.15rem;
 }
 
 .scn-subsection-empty {
@@ -2279,6 +2309,45 @@ img[src*='bear.png'].scn-catalyst-toggle__icon {
   margin-top: 0;
 }
 
+.carousel-article-card--split-text-left,
+.carousel-article-card--split-text-right {
+  flex-direction: row;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.carousel-article-card__text-stack {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 45%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.carousel-article-card__text-stack .carousel-article-card__body {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.carousel-article-card__text-stack .carousel-article-card__footer {
+  flex-shrink: 0;
+  margin-top: 0;
+}
+
+.carousel-article-card__media--split {
+  flex: 1 1 55%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.carousel-article-card__media--split .carousel-article-card__img--cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  aspect-ratio: unset;
+  display: block;
+}
+
 .carousel-article-card__img--contain {
   max-width: 100%;
   max-height: 100%;
@@ -2383,6 +2452,24 @@ img[src*='bear.png'].scn-catalyst-toggle__icon {
 
 .carousel-slides__stack .carousel-article-card--scales-top .carousel-article-card__body {
   flex: 0 0 auto;
+  min-height: 0;
+}
+
+.carousel-slides__stack .carousel-article-card--split-text-left,
+.carousel-slides__stack .carousel-article-card--split-text-right {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.carousel-slides__stack .carousel-article-card--split-text-left .carousel-article-card__text-stack,
+.carousel-slides__stack .carousel-article-card--split-text-right .carousel-article-card__text-stack {
+  flex: 1 1 45%;
+  min-height: 0;
+}
+
+.carousel-slides__stack .carousel-article-card--split-text-left .carousel-article-card__media--split,
+.carousel-slides__stack .carousel-article-card--split-text-right .carousel-article-card__media--split {
+  flex: 1 1 55%;
   min-height: 0;
 }
 
@@ -2670,6 +2757,14 @@ img[src*='bear.png'].scn-catalyst-toggle__icon {
   background: rgba(148, 163, 184, 0.45);
 }
 
+/* Slim glowing green line between stacked layout blocks (horizontal only; vertical panel splits stay neutral). */
+.scn-card-layout__sep.scn-separator--horizontal {
+  background: rgba(var(--sc-rgb-glow), 0.88);
+  box-shadow:
+    0 0 14px rgba(var(--sc-rgb-glow), 0.48),
+    0 0 6px rgba(var(--sc-rgb-glow), 0.32);
+}
+
 /* ────────────────────────────────────────────────────────────────────────────
  * Adaptive Recent Articles Block
  * All cards fit within the outer pane. Hero + responsive grid of small cards.
@@ -2948,7 +3043,10 @@ img[src*='bear.png'].scn-catalyst-toggle__icon {
 /* Horizontal separator */
 .bento2-sep {
   margin: 0.25rem 0;
-  background: rgba(148, 163, 184, 0.35);
+  background: rgba(var(--sc-rgb-glow), 0.88);
+  box-shadow:
+    0 0 14px rgba(var(--sc-rgb-glow), 0.48),
+    0 0 6px rgba(var(--sc-rgb-glow), 0.32);
 }
 
 /* Resize handles */

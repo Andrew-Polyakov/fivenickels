@@ -305,11 +305,35 @@ html[data-reading-theme='day'] .scn-navigation-menu__trigger--active {
     0 6px 16px rgba(0, 0, 0, 0.25);
 }
 
-/* Root taxonomy strip: two rules on white, muted labels, black active bar (overrides generic day nav triggers above). */
+/* Root taxonomy strip: glowing green rules on white, muted labels (active tab uses green accent). */
 html[data-reading-theme='day'] .site-nav__row.scn-taxonomy-site-nav__unified {
   background: #ffffff;
-  border-top-color: var(--color-border-subtle, rgba(0, 0, 0, 0.12));
-  border-bottom-color: var(--color-border-subtle, rgba(0, 0, 0, 0.12));
+  border-top: 1px solid rgba(var(--sc-rgb-glow), 0.45);
+  border-bottom: 1px solid rgba(var(--sc-rgb-glow), 0.45);
+  box-shadow:
+    0 -2px 16px rgba(var(--sc-rgb-glow), 0.32),
+    0 2px 16px rgba(var(--sc-rgb-glow), 0.32);
+}
+
+html[data-reading-theme='day'] .scn-card-layout__sep.scn-separator--horizontal {
+  background: rgba(var(--sc-rgb-glow), 0.72);
+  box-shadow:
+    0 0 14px rgba(var(--sc-rgb-glow), 0.34),
+    0 0 6px rgba(var(--sc-rgb-glow), 0.24);
+}
+
+html[data-reading-theme='day'] .bento2-sep {
+  background: rgba(var(--sc-rgb-glow), 0.72);
+  box-shadow:
+    0 0 14px rgba(var(--sc-rgb-glow), 0.34),
+    0 0 6px rgba(var(--sc-rgb-glow), 0.24);
+}
+
+html[data-reading-theme='day'] .scn-taxonomy-content__sep--horizontal {
+  background: rgba(var(--sc-rgb-glow), 0.72);
+  box-shadow:
+    0 0 14px rgba(var(--sc-rgb-glow), 0.34),
+    0 0 6px rgba(var(--sc-rgb-glow), 0.24);
 }
 
 html[data-reading-theme='day']

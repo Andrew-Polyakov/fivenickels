@@ -364,6 +364,39 @@ html[data-reading-theme="day"] .markdown-tile__body a:hover {
 
 }
 
+html[data-reading-theme="day"] .home-stream > .scn-bentogrid01-root ~ .scn-bentogrid01-root,
+html[data-reading-theme="day"] .home-stream > .scn-bentogrid01-root ~ .scn-bento2-root,
+html[data-reading-theme="day"] .home-stream > .scn-bentogrid01-root ~ .scn-recent-articles-root,
+html[data-reading-theme="day"] .home-stream > .scn-bento2-root ~ .scn-bentogrid01-root,
+html[data-reading-theme="day"] .home-stream > .scn-bento2-root ~ .scn-bento2-root,
+html[data-reading-theme="day"] .home-stream > .scn-bento2-root ~ .scn-recent-articles-root,
+html[data-reading-theme="day"] .home-stream > .scn-recent-articles-root ~ .scn-bentogrid01-root,
+html[data-reading-theme="day"] .home-stream > .scn-recent-articles-root ~ .scn-bento2-root,
+html[data-reading-theme="day"] .home-stream > .scn-recent-articles-root ~ .scn-recent-articles-root {
+
+    border-top-color: rgba(var(--sc-rgb-glow), 0.5);
+
+    box-shadow:
+        0 -2px 18px rgba(var(--sc-rgb-glow), 0.3);
+
+}
+
+html[data-reading-theme="day"] .stream-block:not(.stream-block--perforation) {
+
+    background: linear-gradient(165deg, #ffffff 0%, #fafdfb 100%);
+
+    color: var(--color-text);
+
+    border-color: rgba(var(--sc-rgb-glow), 0.38);
+
+    box-shadow:
+        0 0 0 1px rgba(var(--sc-rgb-glow), 0.12),
+        0 0 20px rgba(var(--sc-rgb-glow), 0.2),
+        0 4px 22px rgba(0, 0, 0, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+
+}
+
 html[data-reading-theme="day"] .tile-carousel__btn {
 
     border-color: rgba(0, 0, 0, 0.16);
@@ -1336,7 +1369,7 @@ body.template-homepage {
 
     align-items: center;
 
-    gap: 0.12rem;
+    gap: 0.24rem;
 
 }
 
@@ -1352,7 +1385,7 @@ body.template-homepage {
 
     font-weight: 700;
 
-    font-size: clamp(1.35rem, 3vw, 2.05rem);
+    font-size: clamp(3.24rem, 7.2vw, 4.92rem);
 
     line-height: 1.05;
 
@@ -1368,7 +1401,7 @@ body.template-homepage {
 
     font-family: var(--font-sans);
 
-    font-size: 0.62rem;
+    font-size: 1.24rem;
 
     font-weight: 500;
 
@@ -2618,12 +2651,27 @@ body.template-taxonomy-drilldown .scn-taxonomy-content__carousel-wrap--fixed-h .
 
 }
 
-.taxonomy-drilldown__widgets .scn-card-layout__sep,
-.taxonomy-drilldown__master-pane .scn-card-layout__sep {
+.taxonomy-drilldown__widgets .scn-card-layout__sep.scn-separator--horizontal,
+.taxonomy-drilldown__master-pane .scn-card-layout__sep.scn-separator--horizontal {
 
     margin: 0.1rem 0 0.2rem;
 
+    background: rgba(var(--sc-rgb-glow), 0.88);
+
+    box-shadow:
+        0 0 14px rgba(var(--sc-rgb-glow), 0.48),
+        0 0 6px rgba(var(--sc-rgb-glow), 0.32);
+
+}
+
+.taxonomy-drilldown__widgets .scn-card-layout__sep.scn-separator--vertical,
+.taxonomy-drilldown__master-pane .scn-card-layout__sep.scn-separator--vertical {
+
+    margin: 0 0.15rem;
+
     background: rgba(148, 163, 184, 0.45);
+
+    box-shadow: none;
 
 }
 
@@ -3075,6 +3123,28 @@ mark.search-hit {
 
 }
 
+/* Glowing green rule between stacked bento / card-carousel / recent-articles mounts (skips non-mount blocks between). */
+.home-stream > .scn-bentogrid01-root ~ .scn-bentogrid01-root,
+.home-stream > .scn-bentogrid01-root ~ .scn-bento2-root,
+.home-stream > .scn-bentogrid01-root ~ .scn-recent-articles-root,
+.home-stream > .scn-bento2-root ~ .scn-bentogrid01-root,
+.home-stream > .scn-bento2-root ~ .scn-bento2-root,
+.home-stream > .scn-bento2-root ~ .scn-recent-articles-root,
+.home-stream > .scn-recent-articles-root ~ .scn-bentogrid01-root,
+.home-stream > .scn-recent-articles-root ~ .scn-bento2-root,
+.home-stream > .scn-recent-articles-root ~ .scn-recent-articles-root {
+
+    margin-top: 1.75rem;
+
+    padding-top: 1.75rem;
+
+    border-top: 1px solid rgba(var(--sc-rgb-glow), 0.55);
+
+    box-shadow:
+        0 -2px 20px rgba(var(--sc-rgb-glow), 0.4);
+
+}
+
 
 
 .home-stream a {
@@ -3103,6 +3173,27 @@ mark.search-hit {
 
 }
 
+/* Green glowing frame for standard stream blocks (paragraph, markdown, embed, image, heading). */
+.stream-block:not(.stream-block--perforation) {
+
+    box-sizing: border-box;
+
+    padding: 1rem 1.2rem;
+
+    border-radius: 0.55rem;
+
+    border: 1px solid rgba(var(--sc-rgb-glow), 0.42);
+
+    background: rgba(12, 18, 32, 0.52);
+
+    box-shadow:
+        0 0 0 1px rgba(var(--sc-rgb-glow), 0.1),
+        0 0 24px rgba(var(--sc-rgb-glow), 0.28),
+        0 6px 28px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+
+}
+
 
 
 .stream-block--heading {
@@ -3112,6 +3203,8 @@ mark.search-hit {
     font-weight: 600;
 
     letter-spacing: -0.02em;
+
+    padding: 0.55rem 1rem;
 
 }
 
@@ -9052,9 +9145,27 @@ img[src*='bear.png'].scn-catalyst-toggle__icon {
     border: none;
 }
 
-.scn-taxonomy-content__sep { border: none; }
-.scn-taxonomy-content__sep--horizontal { border-top: 1px solid var(--color-border-subtle); }
-.scn-taxonomy-content__sep--vertical { border-left: 1px solid var(--color-border-subtle); height: 2rem; align-self: center; }
+.scn-taxonomy-content__sep {
+    border: none;
+}
+
+/* Stream-field horizontal separator: solid neon line (matches layout band rules). */
+.scn-taxonomy-content__sep--horizontal {
+    height: 1px;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0.5rem 0;
+    background: rgba(var(--sc-rgb-glow), 0.88);
+    box-shadow:
+        0 0 14px rgba(var(--sc-rgb-glow), 0.48),
+        0 0 6px rgba(var(--sc-rgb-glow), 0.32);
+}
+
+.scn-taxonomy-content__sep--vertical {
+    border-left: 1px solid var(--color-border-subtle);
+    height: 2rem;
+    align-self: center;
+}
 
 /* bento read-only cards use .bento-grid-item from the grid component.
    .scn-taxonomy-content__bento-card is passed as className to BentoGridItem

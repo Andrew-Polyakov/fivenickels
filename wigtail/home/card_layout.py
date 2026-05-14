@@ -29,6 +29,18 @@ def card_visible_for_sector(card_value: dict, sector_slug: str | None) -> bool:
     return term is not None and getattr(term, "slug", None) == sector_slug
 
 
+_BENTO_CARD_IMAGE_LAYOUT_CHOICES = frozenset(
+    {
+        "fit_under",
+        "scales_fit_top",
+        "text_on_top",
+        "text_on_left",
+        "text_on_right",
+        "text_only",
+    }
+)
+
+
 def _article_card_dict(page: Page | None, request) -> dict[str, Any]:
     if page is None:
         return {"kind": "empty"}
@@ -455,7 +467,7 @@ def _serialize_bentogrid01(block_value: dict, parent_context: dict | None = None
             else:
                 entry["article"] = {"kind": "empty"}
             layout_raw = val.get("card_image_layout")
-            if layout_raw in ("fit_under", "scales_fit_top"):
+            if layout_raw in _BENTO_CARD_IMAGE_LAYOUT_CHOICES:
                 entry["card_image_layout"] = layout_raw
         if header_type == "richtext":
             from wagtail.rich_text import expand_db_html

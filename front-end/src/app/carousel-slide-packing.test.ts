@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { hasCarouselCardImage, packCarouselSlides, type CarouselCardViewModel } from './carousel-slide-packing';
+import {
+  carouselCardShowsHeroImage,
+  hasCarouselCardImage,
+  packCarouselSlides,
+  type CarouselCardViewModel,
+} from './carousel-slide-packing';
 
 function card(key: string, imageUrl: string | null = null): CarouselCardViewModel {
   return { key, title: key, imageUrl };
@@ -73,6 +78,33 @@ describe('packCarouselSlides', () => {
     expect(slides[1]?.kind === 'stack' && slides[1].cards).toHaveLength(2);
     expect(slides[2]).toMatchObject({ kind: 'single', key: '5' });
   });
+
+  it('packs text_only cards with URLs as imageless stacks', () => {
+    const a: CarouselCardViewModel = {
+      key: 'a',
+      title: 'a',
+      imageUrl: 'https://x.example/a.jpg',
+      imageLayout: 'text_only',
+    };
+    const b: CarouselCardViewModel = {
+      key: 'b',
+      title: 'b',
+      imageUrl: 'https://x.example/b.jpg',
+      imageLayout: 'text_only',
+    };
+    const slides = packCarouselSlides([a, b]);
+    expect(slides).toHaveLength(1);
+    expect(slides[0]?.kind).toBe('stack');
+    expect(slides[0]?.kind === 'stack' && slides[0].cards).toEqual([a, b]);
+  });
+
+  it('flushes text_only run before a hero card', () => {
+    const a: CarouselCardViewModel = { key: 'a', title: 'a', imageUrl: 'https://x/a.jpg', imageLayout: 'text_only' };
+    const b: CarouselCardViewModel = { key: 'b', title: 'b', imageUrl: 'https://x/b.jpg', imageLayout: 'text_only' };
+    const img: CarouselCardViewModel = { key: 'c', title: 'c', imageUrl: 'https://x/c.jpg', imageLayout: 'fit_under' };
+    const slides = packCarouselSlides([a, b, img]);
+    expect(slides.map((s) => s.kind)).toEqual(['stack', 'single']);
+  });
 });
 
 describe('hasCarouselCardImage', () => {
@@ -80,5 +112,15 @@ describe('hasCarouselCardImage', () => {
     expect(hasCarouselCardImage({ imageUrl: '' })).toBe(false);
     expect(hasCarouselCardImage({ imageUrl: '   ' })).toBe(false);
     expect(hasCarouselCardImage({ imageUrl: null })).toBe(false);
+  });
+});
+
+describe('carouselCardShowsHeroImage', () => {
+  it('hides hero for text_only even when URL is set', () => {
+    expect(carouselCardShowsHeroImage({ imageUrl: 'https://x.example/x.jpg', imageLayout: 'text_only' })).toBe(false);
+  });
+
+  it('shows hero for other layouts when URL is set', () => {
+    expect(carouselCardShowsHeroImage({ imageUrl: 'https://x.example/x.jpg', imageLayout: 'text_on_left' })).toBe(true);
   });
 });

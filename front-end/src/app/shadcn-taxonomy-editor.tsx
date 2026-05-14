@@ -23,7 +23,7 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '../compone
 import { Slider } from '../components/ui/slider';
 import { Checkbox } from '../components/ui/checkbox';
 import {
-  hasCarouselCardImage,
+  carouselCardShowsHeroImage,
   packCarouselSlides,
   type CarouselCardFontColorKey,
   type CarouselCardImageLayout,
@@ -380,7 +380,7 @@ export function CarouselCard(props: CarouselCardViewModel) {
     imageLayout,
   } = props;
   const publishedLabel = publishedAt?.trim() || '';
-  const imageless = !hasCarouselCardImage({ imageUrl });
+  const showHero = carouselCardShowsHeroImage({ imageUrl, imageLayout });
   const sentimentIconSrc = carouselCatalystIconSrc(catalyst);
   const tagList = (tags ?? []).slice(0, 5);
   const opacityPct = bgOpacity ?? 100;
@@ -424,16 +424,29 @@ export function CarouselCard(props: CarouselCardViewModel) {
     </div>
   );
 
-  const legacyMediaEl = !imageless ? (
+  const legacyMediaEl = showHero ? (
     <div className="carousel-article-card__media">
       <img src={imageUrl ?? ''} alt={title} className="carousel-article-card__img" />
     </div>
   ) : null;
 
+  const splitMediaEl = showHero ? (
+    <div className="carousel-article-card__media carousel-article-card__media--split">
+      <img src={imageUrl ?? ''} alt={title} className="carousel-article-card__img carousel-article-card__img--cover" />
+    </div>
+  ) : null;
+
+  const textStackEl = (
+    <div className="carousel-article-card__text-stack">
+      {bodyEl}
+      {footerEl}
+    </div>
+  );
+
   let layoutModClass: string;
   let cardChildren: React.ReactNode;
 
-  if (imageless) {
+  if (!showHero) {
     layoutModClass = 'carousel-article-card--imageless';
     cardChildren = (
       <>
@@ -463,6 +476,22 @@ export function CarouselCard(props: CarouselCardViewModel) {
         </div>
         {bodyEl}
         {footerEl}
+      </>
+    );
+  } else if (imageLayout === 'text_on_left') {
+    layoutModClass = 'carousel-article-card--split-text-left';
+    cardChildren = (
+      <>
+        {textStackEl}
+        {splitMediaEl}
+      </>
+    );
+  } else if (imageLayout === 'text_on_right') {
+    layoutModClass = 'carousel-article-card--split-text-right';
+    cardChildren = (
+      <>
+        {splitMediaEl}
+        {textStackEl}
       </>
     );
   } else {
@@ -1199,12 +1228,20 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, onPatch
                 />
               )}
               <div className="scn-bento-editor__card-style">
-                <span className="scn-bento-editor__style-label">Image layout</span>
-                <ToggleGroup value={feat.cardImageLayout ?? 'fit_under'}
-                  onValueChange={v => { if (v) onPatch({ cardImageLayout: v as CarouselCardImageLayout }); }}>
-                  <ToggleGroupItem value="fit_under">Fit under</ToggleGroupItem>
-                  <ToggleGroupItem value="scales_fit_top">Scales to fit</ToggleGroupItem>
-                </ToggleGroup>
+                <span className="scn-bento-editor__style-label">Text &amp; image layout</span>
+                <Select
+                  value={feat.cardImageLayout ?? 'fit_under'}
+                  onChange={(e) => {
+                    onPatch({ cardImageLayout: e.target.value as CarouselCardImageLayout });
+                  }}
+                >
+                  <option value="fit_under">Fit under (full-bleed behind text)</option>
+                  <option value="scales_fit_top">Scales to fit (image above text)</option>
+                  <option value="text_on_top">Text above image</option>
+                  <option value="text_on_left">Text on the left, image on the right</option>
+                  <option value="text_on_right">Image on the left, text on the right</option>
+                  <option value="text_only">Text only (no hero image)</option>
+                </Select>
                 <span className="scn-bento-editor__style-label">Background opacity</span>
                 <div className="scn-bento-editor__size-slider-row">
                   <Slider min={0} max={100} step={5}
