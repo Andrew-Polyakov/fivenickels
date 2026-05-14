@@ -66,6 +66,8 @@
 
                     {% if routable_home %}
 
+                        {% if tag.slug %}
+
                         <a
 
                             class="tag-cloud__link"
@@ -73,6 +75,12 @@
                             href="{% routablepageurl routable_home "tag_archive" tag_slug=tag.slug %}?section={{ page.section_term.slug }}"
 
                         >{{ tag.name }}</a>
+
+                        {% else %}
+
+                        <span class="tag-cloud__link tag-cloud__link--inactive">{{ tag.name }}</span>
+
+                        {% endif %}
 
                     {% else %}
 

@@ -9,6 +9,7 @@ from django.urls import reverse
 from django.utils.html import escape
 
 from home.alpaca_asset_client import fetch_asset_meta
+from home.alpaca_market_client import SnapshotMetrics
 from home.market_format import (
     format_day_volume,
     format_percent_change,
@@ -113,6 +114,34 @@ _PAREN_EXCHANGE_TICKER_RE = re.compile(
     r"\(\s*(NYSE|NASDAQ|AMEX|ARCA|BATS)\s*:\s*([A-Za-z]{1,6})\s*\)",
     re.IGNORECASE,
 )
+
+
+def chip_json_payload(
+    sym: str,
+    *,
+    row: MarketTickerRow | None = None,
+    metrics: SnapshotMetrics | None = None,
+) -> dict[str, str]:
+    """JSON-safe ticker chip for React / layout payloads (carousel-style fields)."""
+    slug = (sym or "").strip().lower()
+    upper = (sym or "").strip().upper()
+    href = href_for_ticker_subpage(ticker_slug=slug or "_")
+    if row is not None:
+        label = row.display_label()
+        pct = row.percent_change
+    elif metrics is not None:
+        label = upper
+        pct = metrics.percent_change
+    else:
+        label = upper
+        pct = None
+    return {
+        "symbol": upper,
+        "label": label,
+        "href": href,
+        "pct_formatted": format_percent_change(pct),
+        "pct_class": percent_change_css_class(pct),
+    }
 
 
 def chip_context_for_row(row: MarketTickerRow) -> dict:

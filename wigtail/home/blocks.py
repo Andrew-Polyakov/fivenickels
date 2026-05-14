@@ -214,6 +214,7 @@ class BentoGridFeatureBlock(blocks.StructBlock):
             ("image", "Image (light/dark)"),
             ("card", "Article card"),
             ("richtext", "Rich text"),
+            ("stock_bars", "Stock bars (30)"),
         ],
         default="image",
     )
@@ -253,6 +254,15 @@ class BentoGridFeatureBlock(blocks.StructBlock):
         default="fit_under",
         required=False,
         label="Article card image layout",
+    )
+    stock_symbols = blocks.ListBlock(
+        blocks.CharBlock(max_length=16),
+        required=False,
+        label="Stock symbols",
+        help_text=(
+            "Stock bars tile only: first symbol drives the 30-bar chart; "
+            "every symbol listed here appears as a chip."
+        ),
     )
 
     class Meta:

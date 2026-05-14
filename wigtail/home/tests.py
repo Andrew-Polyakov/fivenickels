@@ -208,8 +208,8 @@ class TaxonomyTagsTests(WagtailPageTestCase):
                     "article": {
                         "importance": 10,
                         "section_term": self.energy,
-                        "mode": "manual_article",
-                        "manual_page": self.page_e1,
+                        "mode": "specific_article",
+                        "specific_page": self.page_e1,
                     }
                 },
             ),
@@ -219,8 +219,8 @@ class TaxonomyTagsTests(WagtailPageTestCase):
                     "article": {
                         "importance": 10,
                         "section_term": self.energy,
-                        "mode": "manual_article",
-                        "manual_page": self.page_e2,
+                        "mode": "specific_article",
+                        "specific_page": self.page_e2,
                     }
                 },
             ),
@@ -410,6 +410,14 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, "Energy one")
         self.assertNotContains(r, "Materials one")
+
+    def test_tagged_article_renders_when_tag_has_empty_slug(self):
+        ContentTag.objects.filter(pk=self.tag_beta.pk).update(slug="")
+        r = self.client.get(self.page_e1.url)
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "Beta")
+        self.assertContains(r, "tag-cloud__link--inactive")
+        self.assertContains(r, "tags/alpha/")
 
     def test_home_sector_nav_includes_subsection_url(self):
         from home.taxonomy import taxonomy_prefix_path

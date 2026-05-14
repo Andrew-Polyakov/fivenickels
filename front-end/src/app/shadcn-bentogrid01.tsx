@@ -12,6 +12,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { Badge } from '../components/ui/badge';
 import AnimatedUiBlock from '../components/shadcn-space/blocks/bento-grid-01/AnimatedUiBlock';
 import ReminderAnimation from '../components/shadcn-space/blocks/bento-grid-01/ReminderAnimation';
+import StockBarsTile from '../components/shadcn-space/blocks/bento-grid-01/StockBarsTile';
 import { CarouselCard } from './shadcn-taxonomy-editor';
 import type { CarouselCardImageLayout } from './carousel-slide-packing';
 
@@ -29,8 +30,25 @@ interface ArticlePayload {
   catalyst?: string;
 }
 
+export interface StockBarPointPayload {
+  t: number;
+  o: number;
+  h: number;
+  l: number;
+  c: number;
+  v?: number | null;
+}
+
+export interface StockChipPayload {
+  symbol: string;
+  label: string;
+  href: string;
+  pct_formatted: string;
+  pct_class: string;
+}
+
 export interface BentoGrid01FeaturePayload {
-  header_type: 'reminder_animation' | 'animated_ui_block' | 'image' | 'card' | 'richtext';
+  header_type: 'reminder_animation' | 'animated_ui_block' | 'image' | 'card' | 'richtext' | 'stock_bars';
   image_url_light?: string;
   image_url_dark?: string;
   title: string;
@@ -39,6 +57,10 @@ export interface BentoGrid01FeaturePayload {
   article?: ArticlePayload;
   html?: string;
   card_image_layout?: CarouselCardImageLayout;
+  chart_symbol?: string;
+  bars?: StockBarPointPayload[];
+  chips?: StockChipPayload[];
+  bars_error?: string;
 }
 
 export interface BentoGrid01Payload {
@@ -79,6 +101,16 @@ function FeatureHeader({ feature }: { feature: BentoGrid01FeaturePayload }) {
     return (
       <div className="scn-taxonomy-content__paragraph"
         dangerouslySetInnerHTML={{ __html: feature.html }} />
+    );
+  }
+  if (feature.header_type === 'stock_bars') {
+    return (
+      <StockBarsTile
+        bars={feature.bars ?? []}
+        chips={feature.chips ?? []}
+        chartSymbol={feature.chart_symbol ?? ''}
+        barsError={feature.bars_error}
+      />
     );
   }
   return (
@@ -127,7 +159,7 @@ function BentoGrid01Root({ payload }: { payload: BentoGrid01Payload }) {
               return (
                 <div key={i} className={`${span} col-span-12 overflow-hidden`}>
                   <div className="rounded-xl border border-border h-full flex flex-col">
-                    <div className="bg-muted rounded-t-xl py-8 px-9 relative flex-1 flex items-center justify-center">
+                    <div className="bg-muted rounded-t-xl py-8 px-9 relative flex-1 flex items-center justify-center min-h-[200px]">
                       <FeatureHeader feature={feature} />
                     </div>
                     <div className="flex flex-col gap-0.5 p-8 border-t border-border">

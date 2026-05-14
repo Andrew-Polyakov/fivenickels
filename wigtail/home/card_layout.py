@@ -12,7 +12,10 @@ from django.http import HttpRequest
 from django.utils.formats import date_format
 
 from home.blocks import _resolve_universal_tile_state
-from home.models import TaggedContentPage
+from home.alpaca_bars_client import fetch_recent_stock_bars
+from home.alpaca_market_client import fetch_snapshots
+from home.models import MarketTickerRow, TaggedContentPage
+from home.ticker_utils import chip_json_payload
 
 
 def card_visible_for_sector(card_value: dict, sector_slug: str | None) -> bool:
@@ -296,6 +299,29 @@ def iter_main_site_stream_segments(
                 yield {"type": "card_layout", "payload": payload}
 
 
+def _stock_symbols_from_bento_feature(val: dict[str, Any]) -> list[str]:
+    raw = val.get("stock_symbols") or []
+    out: list[str] = []
+    for item in raw:
+        if item is None:
+            continue
+        inner = getattr(item, "value", item)
+        s = str(inner).strip().upper()
+        if s:
+            out.append(s)
+    return out
+
+
+def _dedupe_symbols(symbols: list[str]) -> list[str]:
+    seen: set[str] = set()
+    out: list[str] = []
+    for s in symbols:
+        if s not in seen:
+            seen.add(s)
+            out.append(s)
+    return out
+
+
 def _serialize_bentogrid01(block_value: dict, parent_context: dict | None = None) -> dict[str, Any]:
     """Convert a BentoGrid01Block value dict to a JSON-safe payload."""
     request = (parent_context or {}).get("request")
@@ -338,6 +364,37 @@ def _serialize_bentogrid01(block_value: dict, parent_context: dict | None = None
             if hasattr(raw_html, "source"):
                 raw_html = raw_html.source
             entry["html"] = expand_db_html(str(raw_html or ""))
+        if header_type == "stock_bars":
+            syms_raw = _stock_symbols_from_bento_feature(val)
+            syms = _dedupe_symbols(syms_raw)
+            chart_sym = syms[0] if syms else ""
+            bars: list[dict[str, Any]] = []
+            bars_err: str | None = None
+            if chart_sym:
+                bars, bars_err = fetch_recent_stock_bars(chart_sym)
+            entry["chart_symbol"] = chart_sym
+            entry["bars"] = bars
+            if bars_err:
+                entry["bars_error"] = bars_err
+
+            rows_by = {
+                r.symbol.upper(): r
+                for r in MarketTickerRow.objects.filter(symbol__in=syms)
+            }
+            missing = [s for s in syms if s not in rows_by]
+            snaps: dict = {}
+            if missing:
+                try:
+                    snaps = fetch_snapshots(missing)
+                except Exception:
+                    snaps = {}
+
+            chips: list[dict[str, str]] = []
+            for s in syms:
+                row = rows_by.get(s)
+                met = snaps.get(s) if row is None else None
+                chips.append(chip_json_payload(s, row=row, metrics=met))
+            entry["chips"] = chips
         features.append(entry)
     return {
         "badge_text": str(block_value.get("badge_text") or "Features"),
