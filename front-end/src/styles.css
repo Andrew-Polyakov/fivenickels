@@ -1088,8 +1088,57 @@ turbo-frame#site-nav.site-nav {
   overflow: visible;
 }
 
-.scn-taxonomy-site-nav__unified.site-nav__row {
+/* Root taxonomy row: editorial rule band + flat triggers (scoped so other nav rows unchanged). */
+.site-nav__row.scn-taxonomy-site-nav__unified {
   width: 100%;
+  margin: 0;
+  padding: 0.45rem 0;
+  box-sizing: border-box;
+  border-top: 1px solid rgba(148, 163, 184, 0.35);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+  background: transparent;
+}
+
+.site-nav__row.scn-taxonomy-site-nav__unified .scn-navigation-menu__trigger,
+.site-nav__row.scn-taxonomy-site-nav__unified .scn-navigation-menu__trigger--link {
+  border-radius: 0;
+  height: auto;
+  min-height: 2.25rem;
+}
+
+.site-nav__row.scn-taxonomy-site-nav__unified .scn-navigation-menu__trigger:hover,
+.site-nav__row.scn-taxonomy-site-nav__unified .scn-navigation-menu__trigger:focus-visible,
+.site-nav__row.scn-taxonomy-site-nav__unified .scn-navigation-menu__trigger[data-state='open'] {
+  background: rgba(248, 250, 252, 0.06);
+  color: #f8fafc;
+}
+
+.site-nav__row.scn-taxonomy-site-nav__unified .scn-navigation-menu__trigger:focus-visible {
+  box-shadow: 0 0 0 2px rgba(var(--sc-rgb-glow), 0.45);
+}
+
+.site-nav__row.scn-taxonomy-site-nav__unified .scn-navigation-menu__trigger--active,
+.site-nav__row.scn-taxonomy-site-nav__unified a.scn-navigation-menu__trigger--link.scn-navigation-menu__trigger--active {
+  background: transparent;
+  color: #d1fae5;
+  box-shadow:
+    inset 0 3px 0 0 var(--sc-accent-bright, #5cff8a),
+    0 -4px 18px rgba(var(--sc-rgb-glow), 0.55),
+    0 -1px 12px rgba(var(--sc-rgb-glow), 0.4);
+}
+
+.site-nav__row.scn-taxonomy-site-nav__unified
+  .scn-navigation-menu__trigger--active:hover,
+.site-nav__row.scn-taxonomy-site-nav__unified
+  .scn-navigation-menu__trigger--active:focus-visible,
+.site-nav__row.scn-taxonomy-site-nav__unified
+  .scn-navigation-menu__trigger--active[data-state='open'] {
+  background: rgba(248, 250, 252, 0.06);
+  color: #d1fae5;
+  box-shadow:
+    inset 0 3px 0 0 var(--sc-accent-bright, #5cff8a),
+    0 -4px 18px rgba(var(--sc-rgb-glow), 0.55),
+    0 -1px 12px rgba(var(--sc-rgb-glow), 0.4);
 }
 
 .scn-navigation-menu {

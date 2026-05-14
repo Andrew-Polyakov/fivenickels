@@ -305,6 +305,69 @@ html[data-reading-theme='day'] .scn-navigation-menu__trigger--active {
     0 6px 16px rgba(0, 0, 0, 0.25);
 }
 
+/* Root taxonomy strip: two rules on white, muted labels, black active bar (overrides generic day nav triggers above). */
+html[data-reading-theme='day'] .site-nav__row.scn-taxonomy-site-nav__unified {
+  background: #ffffff;
+  border-top-color: var(--color-border-subtle, rgba(0, 0, 0, 0.12));
+  border-bottom-color: var(--color-border-subtle, rgba(0, 0, 0, 0.12));
+}
+
+html[data-reading-theme='day']
+  .site-nav__row.scn-taxonomy-site-nav__unified
+  .scn-navigation-menu__trigger,
+html[data-reading-theme='day']
+  .site-nav__row.scn-taxonomy-site-nav__unified
+  .scn-navigation-menu__trigger--link {
+  color: var(--color-text-muted, #585658);
+  background: transparent;
+}
+
+html[data-reading-theme='day']
+  .site-nav__row.scn-taxonomy-site-nav__unified
+  .scn-navigation-menu__trigger:hover,
+html[data-reading-theme='day']
+  .site-nav__row.scn-taxonomy-site-nav__unified
+  .scn-navigation-menu__trigger:focus-visible,
+html[data-reading-theme='day']
+  .site-nav__row.scn-taxonomy-site-nav__unified
+  .scn-navigation-menu__trigger[data-state='open'] {
+  background: rgba(0, 0, 0, 0.04);
+  color: #000000;
+}
+
+html[data-reading-theme='day']
+  .site-nav__row.scn-taxonomy-site-nav__unified
+  .scn-navigation-menu__trigger--active,
+html[data-reading-theme='day']
+  .site-nav__row.scn-taxonomy-site-nav__unified
+  a.scn-navigation-menu__trigger--link.scn-navigation-menu__trigger--active {
+  background: transparent;
+  color: #000000;
+  border: none;
+  border-radius: 0;
+  box-shadow:
+    inset 0 3px 0 0 var(--sc-accent-hex, #00994d),
+    0 -4px 16px rgba(var(--sc-rgb-glow), 0.45),
+    0 -1px 10px rgba(var(--sc-rgb-glow), 0.3);
+}
+
+html[data-reading-theme='day']
+  .site-nav__row.scn-taxonomy-site-nav__unified
+  .scn-navigation-menu__trigger--active:hover,
+html[data-reading-theme='day']
+  .site-nav__row.scn-taxonomy-site-nav__unified
+  .scn-navigation-menu__trigger--active:focus-visible,
+html[data-reading-theme='day']
+  .site-nav__row.scn-taxonomy-site-nav__unified
+  .scn-navigation-menu__trigger--active[data-state='open'] {
+  background: rgba(0, 0, 0, 0.04);
+  color: #000000;
+  box-shadow:
+    inset 0 3px 0 0 var(--sc-accent-hex, #00994d),
+    0 -4px 16px rgba(var(--sc-rgb-glow), 0.45),
+    0 -1px 10px rgba(var(--sc-rgb-glow), 0.3);
+}
+
 html[data-reading-theme='day'] .scn-navigation-menu__viewport {
   background: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.12);
