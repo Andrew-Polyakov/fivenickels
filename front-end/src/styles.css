@@ -512,6 +512,22 @@
   flex-direction: column;
   gap: 0.65rem;
 }
+.scn-bento-editor__theme-popover {
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+.scn-bento-editor__theme-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.scn-bento-editor__theme-field > label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-muted, #888);
+}
 
 .scn-bento-editor__size-auto-row {
   display: flex;

@@ -339,6 +339,10 @@ def _serialize_bentogrid01(block_value: dict, parent_context: dict | None = None
     return {
         "badge_text": str(block_value.get("badge_text") or "Features"),
         "heading": str(block_value.get("heading") or ""),
+        "theme": str(block_value.get("theme") or "default"),
+        "tile_style": str(block_value.get("tile_style") or "bordered"),
+        "section_padding": str(block_value.get("section_padding") or "default"),
+        "show_badge": bool(block_value.get("show_badge", True)),
         "features": features,
     }
 
