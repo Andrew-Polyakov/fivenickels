@@ -257,7 +257,7 @@ export function ArticleCardView({
                 alt=""
                 width={32}
                 height={32}
-                className="scn-catalyst-icon scn-article-card__catalyst-icon"
+                className={`scn-catalyst-icon scn-article-card__catalyst-icon${data.catalyst === 'Bearish' ? ' scn-catalyst-icon--bear' : ''}`}
                 aria-hidden="true"
               />
             ) : null}

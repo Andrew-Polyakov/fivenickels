@@ -24,7 +24,7 @@
                 <ul class="market-movers__chip-list">
                     {% for chip in market_movers.winners %}
                         <li class="market-movers__chip-item">
-                            {% include "components/ticker_chip.html" with chip=chip %}
+                            {% include "components/ticker_chip.html" with chip=chip show_price_row=True %}
                         </li>
                     {% endfor %}
                 </ul>
@@ -35,7 +35,7 @@
                 <ul class="market-movers__chip-list">
                     {% for chip in market_movers.loosers %}
                         <li class="market-movers__chip-item">
-                            {% include "components/ticker_chip.html" with chip=chip %}
+                            {% include "components/ticker_chip.html" with chip=chip show_price_row=True %}
                         </li>
                     {% endfor %}
                 </ul>

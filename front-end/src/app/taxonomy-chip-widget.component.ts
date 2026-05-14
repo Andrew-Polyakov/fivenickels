@@ -100,10 +100,12 @@ type TaxonomyChip = {
     :host {
       display: block;
       width: 100%;
+      font-family: var(--font-sans, 'Roboto', system-ui, -apple-system, 'Segoe UI', sans-serif);
     }
     .taxonomy-chip-widget {
       width: 100%;
       display: block;
+      font-family: inherit;
     }
     .taxonomy-chip-widget__set {
       width: 100%;

@@ -237,13 +237,14 @@ function ProfileArticlesTable({
               </span>
             );
           }
+          const bearish = row.original.catalyst === 'Bearish';
           return (
             <img
               src={iconSrc}
               alt=""
               width={32}
               height={32}
-              className="scn-catalyst-icon scn-profile-sentiment__icon"
+              className={`scn-catalyst-icon scn-profile-sentiment__icon${bearish ? ' scn-catalyst-icon--bear' : ''}`}
               aria-hidden="true"
             />
           );

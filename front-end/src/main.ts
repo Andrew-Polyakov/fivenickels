@@ -15,6 +15,7 @@ import { mountShadcnTaxonomySiteNav } from './app/shadcn-taxonomy-site-nav';
 import { mountShadcnBrokerTable } from './app/shadcn-broker-data-table';
 import { mountShadcnProfileArticlesTable } from './app/shadcn-profile-articles-table';
 import { mountShadcnArticleEditor } from './app/shadcn-article-editor';
+import { mountShadcnReadingThemeToggle } from './app/shadcn-reading-theme-toggle';
 import { mountTaxonomyEditor } from './app/shadcn-taxonomy-editor';
 import {
   ConfirmDialogComponent,
@@ -41,6 +42,7 @@ declare global {
     mountShadcnArticleEditor?: () => void;
     mountTaxonomyEditor?: () => void;
     mountShadcnBentoGrid01?: () => void;
+    mountShadcnReadingThemeToggle?: () => void;
   }
 }
 
@@ -107,6 +109,7 @@ createApplication({
     window.mountShadcnArticleEditor = mountShadcnArticleEditor;
     window.mountTaxonomyEditor = mountTaxonomyEditor;
     window.mountShadcnBentoGrid01 = mountShadcnBentoGrid01;
+    window.mountShadcnReadingThemeToggle = mountShadcnReadingThemeToggle;
     window.showMaterialConfirm = (message: string, title?: string) =>
       new Promise<boolean>((resolve) => {
         dialog
@@ -142,6 +145,7 @@ createApplication({
       authDialogBridge.openAuthDialog(initialTab);
     };
     mountTaxonomyChipWidgets();
+    mountShadcnReadingThemeToggle();
     mountShadcnTaxonomySiteNav();
     mountShadcnBento2();
     mountSimilarArticleCarousels();

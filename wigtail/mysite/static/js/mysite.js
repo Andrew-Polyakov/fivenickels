@@ -361,6 +361,23 @@
         }
     }
 
+    function initReadingThemeToggle() {
+        if (
+            window.mountShadcnReadingThemeToggle &&
+            typeof window.mountShadcnReadingThemeToggle === "function"
+        ) {
+            window.mountShadcnReadingThemeToggle();
+        }
+    }
+
+    /** Reading toggle is registered asynchronously by the ES module bundle; retry briefly after load. */
+    function scheduleReadingThemeToggleMount() {
+        var delays = [0, 50, 150, 400];
+        delays.forEach(function (ms) {
+            window.setTimeout(initReadingThemeToggle, ms);
+        });
+    }
+
     function initShadcnCardLayouts() {
         if (window.mountShadcnCardLayouts && typeof window.mountShadcnCardLayouts === "function") {
             window.mountShadcnCardLayouts();
@@ -586,6 +603,8 @@
         initShadcnCardLayouts();
         remountShadcnWidgets();
         initMarketMoversFilter();
+        initReadingThemeToggle();
+        scheduleReadingThemeToggleMount();
     }
 
     function handleTurboFrameLoad(e) {
@@ -867,6 +886,8 @@
         initShadcnCardLayouts();
         remountShadcnWidgets();
         initMarketMoversFilter();
+        initReadingThemeToggle();
+        scheduleReadingThemeToggleMount();
     });
 
     document.addEventListener("turbo:load", function () {
@@ -884,6 +905,8 @@
         initShadcnCardLayouts();
         remountShadcnWidgets();
         initMarketMoversFilter();
+        initReadingThemeToggle();
+        scheduleReadingThemeToggleMount();
     });
 
     document.addEventListener("turbo:frame-load", handleTurboFrameLoad);

@@ -35,6 +35,13 @@
         {# Angular Material theme first, then site CSS (dialogs, chips, shadcn mounts). #}
         <link rel="stylesheet" type="text/css" href="{% static 'angular-taxonomy-chip-widget/browser/styles.css' %}">
         <link rel="stylesheet" type="text/css" href="{% static 'css/mysite.css' %}">
+        <script>
+            try {
+                if (localStorage.getItem('reading-theme') === 'day') {
+                    document.documentElement.setAttribute('data-reading-theme', 'day');
+                }
+            } catch (_e) {}
+        </script>
 
         {% block extra_css %}
         {# Override this in templates to add extra stylesheets #}
@@ -177,6 +184,7 @@
                                     Sign in
                                 </button>
                                 {% endif %}
+                                <div id="site-reading-theme-mount"></div>
                             </div>
                         </div>
                     </div>

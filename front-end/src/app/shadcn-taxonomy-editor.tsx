@@ -383,7 +383,7 @@ export function CarouselCard(props: CarouselCardViewModel) {
   const sentimentIconSrc = carouselCatalystIconSrc(catalyst);
   const tagList = (tags ?? []).slice(0, 5);
   const opacityPct = bgOpacity ?? 100;
-  const bodyBackground = `rgba(0, 0, 0, ${opacityPct / 100})`;
+  const bodyBackground = `rgba(var(--carousel-card-surface-rgb), ${opacityPct / 100})`;
   const textColor = carouselCardResolveFontColor(fontColor);
 
   const bodyEl = (
@@ -396,7 +396,7 @@ export function CarouselCard(props: CarouselCardViewModel) {
               alt=""
               width={32}
               height={32}
-              className="scn-catalyst-icon scn-article-card__catalyst-icon"
+              className={`scn-catalyst-icon scn-article-card__catalyst-icon${catalyst === 'Bearish' ? ' scn-catalyst-icon--bear' : ''}`}
               aria-hidden="true"
             />
           ) : null}

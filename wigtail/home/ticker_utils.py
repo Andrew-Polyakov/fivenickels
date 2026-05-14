@@ -12,6 +12,7 @@ from home.alpaca_asset_client import fetch_asset_meta
 from home.alpaca_market_client import SnapshotMetrics
 from home.market_format import (
     format_day_volume,
+    format_equity_price,
     format_percent_change,
     percent_change_css_class,
 )
@@ -152,6 +153,7 @@ def chip_context_for_row(row: MarketTickerRow) -> dict:
         "pct_formatted": format_percent_change(row.percent_change),
         "pct_class": percent_change_css_class(row.percent_change),
         "volume_display": format_day_volume(row.day_volume),
+        "price_display": format_equity_price(row.last_price),
     }
 
 

@@ -167,7 +167,7 @@ function CatalystBullIcon() {
 function CatalystBearIcon() {
   return (
     <img
-      className="scn-catalyst-toggle__icon"
+      className="scn-catalyst-toggle__icon scn-catalyst-icon--bear"
       src="/static/images/bear.png"
       alt="Bearish"
       width={128}

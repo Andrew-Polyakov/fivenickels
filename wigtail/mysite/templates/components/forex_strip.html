@@ -11,10 +11,12 @@
                     <div
                         class="ticker-chip__box forex-strip__box ticker-chip__box--{{ row.pct_class }}"
                     >
-                        <span class="ticker-chip__label forex-strip__label">{{ row.label }}</span>
+                        <div class="forex-strip__head-line">
+                            <span class="ticker-chip__label forex-strip__label">{{ row.label }}</span>
+                            <span class="ticker-chip__pct">{{ row.pct_formatted }}</span>
+                        </div>
                         <div class="forex-strip__quote-line">
                             <span class="forex-strip__mid">{{ row.mid_display }}</span>
-                            <span class="ticker-chip__pct">{{ row.pct_formatted }}</span>
                         </div>
                     </div>
                 </li>
