@@ -4,11 +4,13 @@ Batch StreamField blocks into shadcn card layout payloads (rows + separators).
 
 from __future__ import annotations
 
+from datetime import datetime, timezone as dt_timezone
 from typing import Any
 
 from wagtail.models import Page
 
 from django.http import HttpRequest
+from django.utils import timezone as django_timezone
 from django.utils.formats import date_format
 
 from home.blocks import _resolve_universal_tile_state
@@ -322,7 +324,45 @@ def _dedupe_symbols(symbols: list[str]) -> list[str]:
     return out
 
 
-def serialize_stock_bars_tile_payload(symbols: list[str]) -> dict[str, Any]:
+STOCK_BARS_DEFAULT_TIMEFRAME = "1Day"
+STOCK_BARS_LIMIT_DEFAULT = 180
+STOCK_BARS_LIMIT_MIN = 90
+STOCK_BARS_LIMIT_MAX = 360
+
+
+def stock_bars_timeframe_from_cadence(cadence: object) -> str:
+    """Map CMS cadence choice to Alpaca bars timeframe string."""
+    c = str(cadence or "day").strip().lower()
+    if c == "week":
+        return "1Week"
+    if c == "month":
+        return "1Month"
+    return "1Day"
+
+
+def stock_bars_limit_clamped(raw: object) -> int:
+    try:
+        n = int(raw)
+    except (TypeError, ValueError):
+        n = STOCK_BARS_LIMIT_DEFAULT
+    return max(STOCK_BARS_LIMIT_MIN, min(STOCK_BARS_LIMIT_MAX, n))
+def _stock_bars_as_of_iso_utc(bars: list[dict[str, Any]]) -> str:
+    """RFC3339 UTC for last bar (chart cadence) or current time if no bars."""
+    if bars:
+        t = bars[-1].get("t")
+        if isinstance(t, (int, float)):
+            return datetime.fromtimestamp(float(t), tz=dt_timezone.utc).strftime(
+                "%Y-%m-%dT%H:%M:%SZ"
+            )
+    return django_timezone.now().astimezone(dt_timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def serialize_stock_bars_tile_payload(
+    symbols: list[str],
+    *,
+    timeframe: str | None = None,
+    limit: int | None = None,
+) -> dict[str, Any]:
     """
     JSON payload for one ``stock_bars`` bento feature: chart bars + ticker chips.
 
@@ -331,14 +371,18 @@ def serialize_stock_bars_tile_payload(symbols: list[str]) -> dict[str, Any]:
     """
     syms = _dedupe_symbols([(s or "").strip().upper() for s in symbols if (s or "").strip()])
     chart_sym = syms[0] if syms else ""
+    tf = (timeframe or "").strip() or STOCK_BARS_DEFAULT_TIMEFRAME
+    lim = stock_bars_limit_clamped(limit if limit is not None else STOCK_BARS_LIMIT_DEFAULT)
     bars: list[dict[str, Any]] = []
     bars_err: str | None = None
     if chart_sym:
-        bars, bars_err = fetch_recent_stock_bars(chart_sym)
+        bars, bars_err = fetch_recent_stock_bars(chart_sym, timeframe=tf, limit=lim)
     out: dict[str, Any] = {
         "chart_symbol": chart_sym,
         "bars": bars,
         "chips": [],
+        "bars_timeframe": tf,
+        "bars_as_of_utc": _stock_bars_as_of_iso_utc(bars),
     }
     if bars_err:
         out["bars_error"] = bars_err
@@ -409,10 +453,15 @@ def _serialize_bentogrid01(block_value: dict, parent_context: dict | None = None
         if header_type == "stock_bars":
             syms_raw = _stock_symbols_from_bento_feature(val)
             syms = _dedupe_symbols(syms_raw)
-            stock_payload = serialize_stock_bars_tile_payload(syms)
+            cadence = val.get("stock_bars_cadence") or "day"
+            tf = stock_bars_timeframe_from_cadence(cadence)
+            lim = stock_bars_limit_clamped(val.get("stock_bars_limit"))
+            stock_payload = serialize_stock_bars_tile_payload(syms, timeframe=tf, limit=lim)
             entry["chart_symbol"] = stock_payload["chart_symbol"]
             entry["bars"] = stock_payload["bars"]
             entry["chips"] = stock_payload["chips"]
+            entry["bars_timeframe"] = stock_payload["bars_timeframe"]
+            entry["bars_as_of_utc"] = stock_payload["bars_as_of_utc"]
             if stock_payload.get("bars_error"):
                 entry["bars_error"] = stock_payload["bars_error"]
         features.append(entry)

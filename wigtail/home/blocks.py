@@ -214,7 +214,7 @@ class BentoGridFeatureBlock(blocks.StructBlock):
             ("image", "Image (light/dark)"),
             ("card", "Article card"),
             ("richtext", "Rich text"),
-            ("stock_bars", "Stock bars (30)"),
+            ("stock_bars", "Stock bars"),
         ],
         default="image",
     )
@@ -260,9 +260,26 @@ class BentoGridFeatureBlock(blocks.StructBlock):
         required=False,
         label="Stock symbols",
         help_text=(
-            "Stock bars tile only: first symbol drives the 30-bar chart; "
+            "Stock bars tile only: first symbol drives the OHLC chart; "
             "every symbol listed here appears as a chip."
         ),
+    )
+    stock_bars_cadence = blocks.ChoiceBlock(
+        choices=[
+            ("day", "Day"),
+            ("week", "Week"),
+            ("month", "Month"),
+        ],
+        default="day",
+        required=False,
+        label="Cadence (stock bars)",
+    )
+    stock_bars_limit = blocks.IntegerBlock(
+        required=False,
+        default=180,
+        min_value=90,
+        max_value=360,
+        label="Number of bars (stock bars)",
     )
 
     class Meta:

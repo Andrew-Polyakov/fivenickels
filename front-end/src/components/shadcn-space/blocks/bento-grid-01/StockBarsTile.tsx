@@ -23,12 +23,35 @@ export interface StockBarsTileProps {
   chips: StockChipPayload[];
   chartSymbol: string;
   barsError?: string;
+  /** Alpaca timeframe string (e.g. ``1Day``) — shown as Daily / Weekly / … */
+  barsTimeframe?: string;
 }
 
 const PAD_X = 8;
 const PAD_Y = 10;
 const SLOT = 10;
 const BODY_W = 5;
+
+function formatBarsCadence(timeframe: string | undefined): string {
+  if (!timeframe?.trim()) {
+    return '';
+  }
+  const u = timeframe.trim();
+  const labels: Record<string, string> = {
+    '1Day': 'Daily',
+    '1D': 'Daily',
+    '1Week': 'Weekly',
+    '1W': 'Weekly',
+    '1Month': 'Monthly',
+    '1Mo': 'Monthly',
+    '3Month': 'Quarterly',
+    '1Year': 'Yearly',
+    '1Hour': 'Hourly',
+    '1H': 'Hourly',
+    '1Min': '1-minute',
+  };
+  return labels[u] ?? u;
+}
 
 function StockBarsSvg({ bars }: { bars: StockBarPoint[] }) {
   const n = bars.length;
@@ -97,8 +120,17 @@ function StockBarsSvg({ bars }: { bars: StockBarPoint[] }) {
   );
 }
 
-export default function StockBarsTile({ bars, chips, chartSymbol, barsError }: StockBarsTileProps) {
+export default function StockBarsTile({
+  bars,
+  chips,
+  chartSymbol,
+  barsError,
+  barsTimeframe,
+}: StockBarsTileProps) {
   const sym = (chartSymbol || '').trim().toUpperCase();
+  const cadenceLabel =
+    formatBarsCadence(barsTimeframe) || (bars.length > 0 ? 'Daily' : '');
+  const showMeta = Boolean(cadenceLabel);
 
   return (
     <div className="relative w-full min-h-[200px] flex flex-col items-stretch justify-center pt-10 px-1">
@@ -113,19 +145,6 @@ export default function StockBarsTile({ bars, chips, chartSymbol, barsError }: S
         ))}
       </div>
 
-      {sym ? (
-        <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 top-10 z-0 flex items-center justify-center"
-          aria-hidden
-        >
-          <span
-            className="select-none text-6xl font-bold uppercase leading-none tracking-tight text-foreground/[0.09] sm:text-7xl md:text-8xl dark:text-foreground/[0.11]"
-          >
-            {sym}
-          </span>
-        </div>
-      ) : null}
-
       <div className="relative z-10 w-full">
         {bars.length === 0 ? (
           <div className="text-muted-foreground text-sm text-center px-4 py-6">
@@ -139,6 +158,15 @@ export default function StockBarsTile({ bars, chips, chartSymbol, barsError }: S
           <StockBarsSvg bars={bars} />
         )}
       </div>
+
+      {showMeta ? (
+        <div
+          className="pointer-events-none absolute bottom-2 left-2 z-[15] max-w-[min(100%,16rem)] text-left text-xs leading-snug text-muted-foreground font-medium tabular-nums"
+          aria-label={cadenceLabel || undefined}
+        >
+          {cadenceLabel}
+        </div>
+      ) : null}
     </div>
   );
 }

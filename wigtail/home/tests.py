@@ -1382,6 +1382,8 @@ class StockBarsPreviewViewTests(WagtailPageTestCase):
         mock_serialize.return_value = {
             "chart_symbol": "AAPL",
             "bars": [{"t": 1.0, "o": 1.0, "h": 2.0, "l": 0.5, "c": 1.5, "v": None}],
+            "bars_timeframe": "1Day",
+            "bars_as_of_utc": "2026-01-15T00:00:00Z",
             "chips": [
                 {
                     "symbol": "AAPL",
@@ -1399,7 +1401,9 @@ class StockBarsPreviewViewTests(WagtailPageTestCase):
         self.assertEqual(data["chart_symbol"], "AAPL")
         self.assertIn("bars", data)
         self.assertIn("chips", data)
-        mock_serialize.assert_called_once_with(["AAPL"])
+        self.assertEqual(data.get("bars_timeframe"), "1Day")
+        self.assertEqual(data.get("bars_as_of_utc"), "2026-01-15T00:00:00Z")
+        mock_serialize.assert_called_once_with(["AAPL"], timeframe="1Day", limit=180)
 
 
 @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}})

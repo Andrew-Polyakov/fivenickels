@@ -90,6 +90,8 @@ def _default_query_start_utc(timeframe: str, limit: int) -> datetime:
         days = max(limit * 5, 30)
     elif "Week" in tf or tf == "1W":
         days = max(limit * 14, 56)
+    elif "Month" in tf or tf in ("1Mo", "1M"):
+        days = max(limit * 35, 400)
     elif "Hour" in tf or "Min" in tf:
         days = max(limit // 24 + 7, 14)
     else:

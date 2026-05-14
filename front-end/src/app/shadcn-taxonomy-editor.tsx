@@ -59,6 +59,10 @@ type BentoGrid01Feature = {
   cardImageLayout?: CarouselCardImageLayout;
   /** Stock bars tile: first symbol → chart; all symbols → chips (persisted JSON). */
   stock_symbols?: string[];
+  /** Alpaca cadence: day = 1Day bars, week = 1Week, month = 1Month. */
+  stock_bars_cadence?: 'day' | 'week' | 'month';
+  /** Bar count for chart (90–360); server clamps. */
+  stock_bars_limit?: number;
 };
 type BentoGrid01Block  = {
   id: string; type: 'bento_grid_01'; badge_text: string; heading: string; features: BentoGrid01Feature[];
@@ -822,7 +826,7 @@ const BENTO_TILE_LABEL: Record<string, string> = {
   animated_ui_block: 'Animated UI Block',
   card: 'Article card',
   richtext: 'Rich text',
-  stock_bars: 'Stock bars (30)',
+  stock_bars: 'Stock bars',
 };
 
 const BENTO_TILE_TYPES: Array<{ type: BentoGrid01Feature['header_type']; desc: string }> = [
@@ -831,7 +835,7 @@ const BENTO_TILE_TYPES: Array<{ type: BentoGrid01Feature['header_type']; desc: s
   { type: 'animated_ui_block',  desc: 'Built-in animated UI block' },
   { type: 'card',               desc: 'Resolved article card' },
   { type: 'richtext',           desc: 'Formatted rich text content' },
-  { type: 'stock_bars',         desc: 'Daily OHLC chart + ticker chips' },
+  { type: 'stock_bars',         desc: 'OHLC chart + ticker chips (cadence & bar count)' },
 ];
 
 type StockBarsPreviewJson = {
@@ -839,14 +843,28 @@ type StockBarsPreviewJson = {
   bars: StockBarPoint[];
   chips: StockChipPayload[];
   bars_error?: string;
+  bars_timeframe?: string;
+  bars_as_of_utc?: string;
 };
 
 function parseCommaTickers(raw: string): string[] {
   return raw.split(/[\s,]+/).map(s => s.trim().toUpperCase()).filter(Boolean);
 }
 
-function BentoStockBarsPreview({ symbols, stockPreviewUrl }: { symbols: string[]; stockPreviewUrl: string }) {
+function BentoStockBarsPreview({
+  symbols,
+  cadence,
+  barsLimit,
+  stockPreviewUrl,
+}: {
+  symbols: string[];
+  cadence: 'day' | 'week' | 'month';
+  barsLimit: number;
+  stockPreviewUrl: string;
+}) {
   const symKey = symbols.join(',');
+  const safeLimit = Math.min(360, Math.max(90, Math.round(barsLimit) || 180));
+  const c = cadence === 'week' || cadence === 'month' ? cadence : 'day';
   const [data, setData] = React.useState<StockBarsPreviewJson | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [fetchErr, setFetchErr] = React.useState<string | null>(null);
@@ -861,7 +879,7 @@ function BentoStockBarsPreview({ symbols, stockPreviewUrl }: { symbols: string[]
     const ac = new AbortController();
     setLoading(true);
     setFetchErr(null);
-    const q = new URLSearchParams({ symbols: symKey });
+    const q = new URLSearchParams({ symbols: symKey, cadence: c, bars_limit: String(safeLimit) });
     fetch(`${stockPreviewUrl}?${q}`, { signal: ac.signal, credentials: 'same-origin' })
       .then(async (r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -876,7 +894,7 @@ function BentoStockBarsPreview({ symbols, stockPreviewUrl }: { symbols: string[]
       })
       .finally(() => { if (!ac.signal.aborted) setLoading(false); });
     return () => ac.abort();
-  }, [stockPreviewUrl, symKey]);
+  }, [stockPreviewUrl, symKey, c, safeLimit]);
 
   if (!stockPreviewUrl) {
     return (
@@ -908,6 +926,7 @@ function BentoStockBarsPreview({ symbols, stockPreviewUrl }: { symbols: string[]
       chips={data.chips}
       chartSymbol={data.chart_symbol}
       barsError={data.bars_error}
+      barsTimeframe={data.bars_timeframe}
     />
   );
 }
@@ -1007,6 +1026,8 @@ function BentoFeaturePreview({ feat, resolved, linkable, stockPreviewUrl }: {
     return (
       <BentoStockBarsPreview
         symbols={feat.stock_symbols ?? []}
+        cadence={feat.stock_bars_cadence ?? 'day'}
+        barsLimit={feat.stock_bars_limit ?? 180}
         stockPreviewUrl={stockPreviewUrl ?? ''}
       />
     );
@@ -1081,6 +1102,8 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, onPatch
                   onPatch({
                     header_type: v,
                     stock_symbols: feat.stock_symbols?.length ? feat.stock_symbols : ['AAPL'],
+                    stock_bars_cadence: feat.stock_bars_cadence ?? 'day',
+                    stock_bars_limit: feat.stock_bars_limit ?? 180,
                   });
                 } else {
                   onPatch({ header_type: v });
@@ -1091,7 +1114,7 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, onPatch
               <option value="animated_ui_block">Animated UI Block</option>
               <option value="card">Article card</option>
               <option value="richtext">Rich text</option>
-              <option value="stock_bars">Stock bars (30)</option>
+              <option value="stock_bars">Stock bars</option>
             </Select>
           </div>
           {feat.header_type === 'image' && (
@@ -1162,15 +1185,46 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, onPatch
             <BentoTileRichTextEditor feat={feat} onChange={html => onPatch({ html })} />
           )}
           {feat.header_type === 'stock_bars' && (
-            <label className="flex flex-col gap-1.5">
-              <span className="text-muted-foreground text-sm">Symbols (comma-separated)</span>
-              <Input
-                value={(feat.stock_symbols ?? []).join(', ')}
-                placeholder="e.g. AAPL, MSFT"
-                onChange={e => { onPatch({ stock_symbols: parseCommaTickers(e.target.value) }); }}
-              />
-              <span className="text-muted-foreground text-xs">Right-click the tile to edit symbols.</span>
-            </label>
+            <div className="flex flex-col gap-3">
+              <div className="grid grid-cols-2 gap-3 items-end">
+                <label className="flex flex-col gap-1.5 min-w-0">
+                  <span className="text-muted-foreground text-sm">Tickers</span>
+                  <Input
+                    value={(feat.stock_symbols ?? []).join(', ')}
+                    placeholder="e.g. AAPL, MSFT"
+                    onChange={e => { onPatch({ stock_symbols: parseCommaTickers(e.target.value) }); }}
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5 min-w-0">
+                  <span className="text-muted-foreground text-sm">Cadence</span>
+                  <Select
+                    value={feat.stock_bars_cadence ?? 'day'}
+                    onChange={e => {
+                      const v = e.target.value;
+                      if (v === 'week' || v === 'month' || v === 'day') {
+                        onPatch({ stock_bars_cadence: v });
+                      }
+                    }}>
+                    <option value="day">Day</option>
+                    <option value="week">Week</option>
+                    <option value="month">Month</option>
+                  </Select>
+                </label>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <span className="text-muted-foreground text-sm">
+                  Number of bars: <span className="tabular-nums text-foreground">{feat.stock_bars_limit ?? 180}</span>
+                </span>
+                <Slider
+                  min={90}
+                  max={360}
+                  step={1}
+                  value={[feat.stock_bars_limit ?? 180]}
+                  onValueChange={([v]) => onPatch({ stock_bars_limit: v })}
+                />
+              </div>
+              <span className="text-muted-foreground text-xs">Right-click the tile for quick ticker edit.</span>
+            </div>
           )}
           <Input value={feat.title} placeholder="Title"
             onChange={e => onPatch({ title: e.target.value })} />
@@ -1289,7 +1343,13 @@ function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, termId, onChange
       : headerType === 'richtext'
         ? { ...base, header_type: 'richtext', html: '' }
         : headerType === 'stock_bars'
-          ? { ...base, header_type: 'stock_bars', stock_symbols: ['AAPL'] }
+          ? {
+            ...base,
+            header_type: 'stock_bars',
+            stock_symbols: ['AAPL'],
+            stock_bars_cadence: 'day',
+            stock_bars_limit: 180,
+          }
           : { ...base, header_type: headerType };
     onChange({ ...block, features: [...block.features, feat] });
   }

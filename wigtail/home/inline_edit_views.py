@@ -10,7 +10,12 @@ from django.utils.formats import date_format
 from django.utils.text import slugify
 from django.views.decorators.http import require_GET, require_POST
 
-from home.card_layout import _dedupe_symbols, serialize_stock_bars_tile_payload
+from home.card_layout import (
+    _dedupe_symbols,
+    serialize_stock_bars_tile_payload,
+    stock_bars_limit_clamped,
+    stock_bars_timeframe_from_cadence,
+)
 from home.models import SubsectionIndexPage, TaggedContentPage, TaxonomyTerm
 from home.query import _section_term_ids_for_taxonomy_scope
 from home.taxonomy import MARKET_NEWS_SLUG, ensure_top_row_taxonomy_terms
@@ -413,7 +418,15 @@ def preview_stock_bars_tile(request: HttpRequest) -> JsonResponse:
     raw = str(request.GET.get("symbols") or "")
     parts = [p.strip().upper() for p in re.split(r"[\s,]+", raw) if p.strip()]
     syms = _dedupe_symbols(parts)
-    return JsonResponse(serialize_stock_bars_tile_payload(syms))
+    cadence = str(request.GET.get("cadence") or "day").strip().lower()
+    if cadence not in ("day", "week", "month"):
+        cadence = "day"
+    timeframe = stock_bars_timeframe_from_cadence(cadence)
+    limit_raw = request.GET.get("bars_limit")
+    if limit_raw is None or str(limit_raw).strip() == "":
+        limit_raw = request.GET.get("limit")
+    limit = stock_bars_limit_clamped(limit_raw)
+    return JsonResponse(serialize_stock_bars_tile_payload(syms, timeframe=timeframe, limit=limit))
 
 
 @require_GET

@@ -61,6 +61,8 @@ export interface BentoGrid01FeaturePayload {
   bars?: StockBarPointPayload[];
   chips?: StockChipPayload[];
   bars_error?: string;
+  bars_timeframe?: string;
+  bars_as_of_utc?: string;
 }
 
 export interface BentoGrid01Payload {
@@ -110,6 +112,7 @@ function FeatureHeader({ feature }: { feature: BentoGrid01FeaturePayload }) {
         chips={feature.chips ?? []}
         chartSymbol={feature.chart_symbol ?? ''}
         barsError={feature.bars_error}
+        barsTimeframe={feature.bars_timeframe}
       />
     );
   }
@@ -158,20 +161,25 @@ function BentoGrid01Root({ payload }: { payload: BentoGrid01Payload }) {
               const span = feature.col_span === '8' ? 'lg:col-span-8' : 'lg:col-span-4';
               const headerClip =
                 feature.header_type === 'card' ? '' : ' overflow-hidden';
+              const showTextFooter = feature.header_type !== 'stock_bars';
               return (
                 <div key={i} className={`${span} col-span-12`}>
                   <div className="rounded-xl border border-border h-full flex flex-col">
                     <div
-                      className={`bg-muted rounded-t-xl py-8 px-9 relative flex-1 flex items-center justify-center min-h-[200px]${headerClip}`}
+                      className={`bg-muted rounded-t-xl py-8 px-9 relative flex-1 flex items-center justify-center min-h-[200px]${headerClip}${
+                        showTextFooter ? '' : ' rounded-b-xl'
+                      }`}
                     >
                       <FeatureHeader feature={feature} />
                     </div>
-                    <div className="flex flex-col gap-0.5 p-8 border-t border-border">
-                      <h3 className="text-xl font-medium text-foreground">{feature.title}</h3>
-                      <p className="text-base font-normal text-muted-foreground">
-                        {feature.description}
-                      </p>
-                    </div>
+                    {showTextFooter ? (
+                      <div className="flex flex-col gap-0.5 p-8 border-t border-border">
+                        <h3 className="text-xl font-medium text-foreground">{feature.title}</h3>
+                        <p className="text-base font-normal text-muted-foreground">
+                          {feature.description}
+                        </p>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               );
