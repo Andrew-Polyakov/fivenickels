@@ -1,0 +1,31 @@
+<div
+    class="stream-block stream-block--perforation"
+    role="presentation"
+    aria-hidden="true"
+>
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 100 19"
+        width="100%"
+        preserveAspectRatio="none"
+        focusable="false"
+        class="stream-block--perforation__svg"
+    >
+        <defs>
+            <pattern
+                id="{{ svg_pattern_id }}"
+                width="14"
+                height="19"
+                patternUnits="userSpaceOnUse"
+            >
+                {# var(--color-text-muted) works inside inline SVG; currentColor in patterns is unreliable cross-browser. #}
+                <rect x="6" y="0" width="2" height="2" fill="var(--color-text-muted, #64748b)" />
+                <rect x="5.5" y="3" width="3" height="3" fill="var(--color-text-muted, #64748b)" />
+                <rect x="4.5" y="7" width="5" height="5" fill="var(--color-text-muted, #64748b)" />
+                <rect x="5.5" y="13" width="3" height="3" fill="var(--color-text-muted, #64748b)" />
+                <rect x="6" y="17" width="2" height="2" fill="var(--color-text-muted, #64748b)" />
+            </pattern>
+        </defs>
+        <rect width="100" height="19" fill="url(#{{ svg_pattern_id }})" />
+    </svg>
+</div>

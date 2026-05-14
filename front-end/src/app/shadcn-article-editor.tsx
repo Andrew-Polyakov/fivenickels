@@ -38,7 +38,15 @@ type MarkdownBlock  = { id: string; type: 'markdown'; markdown: string };
 type ImageBlock     = { id: string; type: 'image';     imageId: number | null; imageUrl: string | null };
 type EmbedBlock     = { id: string; type: 'embed';     url: string };
 type SeparatorBlock = { id: string; type: 'separator'; orientation: 'horizontal' | 'vertical' };
-type BodyBlock = HeadingBlock | ParagraphBlock | MarkdownBlock | ImageBlock | EmbedBlock | SeparatorBlock;
+type PerforationBlock = { id: string; type: 'perforation_separator' };
+type BodyBlock =
+  | HeadingBlock
+  | ParagraphBlock
+  | MarkdownBlock
+  | ImageBlock
+  | EmbedBlock
+  | SeparatorBlock
+  | PerforationBlock;
 
 type CatalystUi = 'bear' | 'neutral' | 'bull';
 type CatalystValue = '' | 'Bearish' | 'Bullish';
@@ -112,8 +120,10 @@ function apiToEditor(apiBlocks: ArticleApiData['body']): BodyBlock[] {
     } else if (b.type === 'separator') {
       const v = b.value as { orientation?: string } | null;
       out.push({ id, type: 'separator', orientation: (v?.orientation as 'horizontal' | 'vertical') || 'horizontal' });
+    } else if (b.type === 'perforation_separator') {
+      out.push({ id, type: 'perforation_separator' });
     }
-    // skip card, unknown
+    // skip card, bento, unknown
   }
   return out;
 }
@@ -137,7 +147,8 @@ function editorToApi(blocks: BodyBlock[]): unknown[] {
     if (b.type === 'markdown')  return { id: b.id, type: 'markdown',  value: b.markdown || '' };
     if (b.type === 'image')     return { id: b.id, type: 'image',     value: b.imageId };
     if (b.type === 'embed')     return { id: b.id, type: 'embed',     value: { url: b.url } };
-    return { id: b.id, type: 'separator', value: { orientation: (b as SeparatorBlock).orientation } };
+    if (b.type === 'perforation_separator') return { id: b.id, type: 'perforation_separator', value: null };
+    return { id: b.id, type: 'separator', value: { orientation: b.orientation } };
   });
 }
 
@@ -885,6 +896,35 @@ function SeparatorEditor({ block, onChange }: { block: SeparatorBlock; onChange:
   );
 }
 
+function PerforationSeparatorEditor() {
+  const patternId = React.useMemo(() => `perf-ed-${uid()}`, []);
+  const fill = 'var(--muted-foreground, #71717a)';
+  return (
+    <div className="scn-editor-block__fields scn-editor-perforation-preview" aria-hidden>
+      <p className="scn-editor-perforation-preview__hint">Dotted tear line (matches public article layout).</p>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 100 19"
+        width="100%"
+        preserveAspectRatio="none"
+        focusable="false"
+        className="scn-editor-perforation-preview__svg"
+      >
+        <defs>
+          <pattern id={patternId} width="14" height="19" patternUnits="userSpaceOnUse">
+            <rect x="6" y="0" width="2" height="2" fill={fill} />
+            <rect x="5.5" y="3" width="3" height="3" fill={fill} />
+            <rect x="4.5" y="7" width="5" height="5" fill={fill} />
+            <rect x="5.5" y="13" width="3" height="3" fill={fill} />
+            <rect x="6" y="17" width="2" height="2" fill={fill} />
+          </pattern>
+        </defs>
+        <rect width="100" height="19" fill={`url(#${patternId})`} />
+      </svg>
+    </div>
+  );
+}
+
 function MarkdownEditor({ block, onChange }: { block: MarkdownBlock; onChange: (b: MarkdownBlock) => void }) {
   return (
     <div className="scn-editor-block__fields">
@@ -901,7 +941,13 @@ function MarkdownEditor({ block, onChange }: { block: MarkdownBlock; onChange: (
 }
 
 const BLOCK_LABEL: Record<string, string> = {
-  heading: 'Heading', paragraph: 'Paragraph', markdown: 'Markdown', image: 'Image', embed: 'Embed', separator: 'Separator',
+  heading: 'Heading',
+  paragraph: 'Paragraph',
+  markdown: 'Markdown',
+  image: 'Image',
+  embed: 'Embed',
+  separator: 'Separator',
+  perforation_separator: 'Perforated divider',
 };
 
 function BlockEditor({ block, index, total, articleId, apiBase, onChange, onRemove, onMove }: {
@@ -928,6 +974,7 @@ function BlockEditor({ block, index, total, articleId, apiBase, onChange, onRemo
         {block.type === 'image'     && <ImageEditor     block={block} articleId={articleId} apiBase={apiBase} onChange={onChange as (b: ImageBlock) => void} />}
         {block.type === 'embed'     && <EmbedEditor     block={block} onChange={onChange as (b: EmbedBlock) => void} />}
         {block.type === 'separator' && <SeparatorEditor block={block} onChange={onChange as (b: SeparatorBlock) => void} />}
+        {block.type === 'perforation_separator' && <PerforationSeparatorEditor />}
       </div>
     </div>
   );
@@ -942,6 +989,7 @@ function AddBlockMenu({ onAdd }: { onAdd: (type: BodyBlock['type']) => void }) {
     { type: 'image',     desc: 'Uploaded image' },
     { type: 'embed',     desc: 'YouTube, Twitter…' },
     { type: 'separator', desc: 'Horizontal or vertical rule' },
+    { type: 'perforation_separator', desc: 'Dotted perforation (decorative)' },
   ];
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -1282,6 +1330,7 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
         case 'image':     return { id, type: 'image',     imageId: null, imageUrl: null };
         case 'embed':     return { id, type: 'embed',     url: '' };
         case 'separator': return { id, type: 'separator', orientation: 'horizontal' };
+        case 'perforation_separator': return { id, type: 'perforation_separator' };
       }
     })();
     setBlocks(prev => [...prev, newBlock]);

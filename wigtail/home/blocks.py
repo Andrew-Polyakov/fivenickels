@@ -1,3 +1,5 @@
+import uuid
+
 from wagtail import blocks
 from wagtail.embeds.blocks import EmbedBlock
 from wagtail.images.blocks import ImageChooserBlock
@@ -314,6 +316,24 @@ class LayoutSeparatorBlock(blocks.StructBlock):
         label = "Layout separator"
 
 
+class PerforationSeparatorBlock(blocks.StaticBlock):
+    """Decorative full-width dotted tear line (not a layout separator for cards)."""
+
+    def get_context(self, value, parent_context=None):
+        context = super().get_context(value, parent_context=parent_context)
+        context["svg_pattern_id"] = f"perf-{uuid.uuid4().hex[:12]}"
+        return context
+
+    class Meta:
+        icon = "dots"
+        label = "Perforated divider"
+        admin_text = (
+            "Horizontal dotted perforation; dots are largest in the middle row, "
+            "smallest at the top and bottom."
+        )
+        template = "home/blocks/perforation_separator.html"
+
+
 MAIN_SITE_STREAMBLOCK = blocks.StreamBlock(
     [
         ("heading", HeadingBlock()),
@@ -323,6 +343,7 @@ MAIN_SITE_STREAMBLOCK = blocks.StreamBlock(
         ("embed", EmbedBlock()),
         ("card", SiteCardBlock()),
         ("separator", LayoutSeparatorBlock()),
+        ("perforation_separator", PerforationSeparatorBlock()),
         ("bento_grid_01", BentoGrid01Block()),
     ],
     use_json_field=True,

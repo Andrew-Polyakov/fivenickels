@@ -95,7 +95,11 @@ class StreamBlockSerializer(serializers.Serializer):
                 return {'level': value.get('level', 'h2'), 'text': value.get('text', '')}
             if block_type == 'separator':
                 return {'orientation': value.get('orientation', 'horizontal')}
+            if block_type == 'perforation_separator':
+                return None
             # fallback for unknown block types
+            if value is None:
+                return None
             try:
                 return dict(value)
             except (TypeError, ValueError):

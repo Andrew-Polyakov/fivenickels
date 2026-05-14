@@ -2918,6 +2918,26 @@ mark.search-hit {
 
 
 
+.stream-block--perforation {
+
+    color: var(--color-text-muted);
+
+}
+
+
+
+.stream-block--perforation__svg {
+
+    display: block;
+
+    width: 100%;
+
+    height: 1.2rem;
+
+}
+
+
+
 .markdown-tiles-section {
 
     margin-bottom: 2rem;

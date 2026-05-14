@@ -509,6 +509,29 @@
     border-top: 1px solid var(--border);
 }
 
+.stream-block--perforation {
+    color: var(--muted-foreground);
+    margin: 0.75rem 0;
+}
+
+.stream-block--perforation__svg {
+    display: block;
+    width: 100%;
+    height: 1.2rem;
+}
+
+.scn-editor-perforation-preview__hint {
+    margin: 0 0 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--muted-foreground);
+}
+
+.scn-editor-perforation-preview__svg {
+    display: block;
+    width: 100%;
+    height: 1.2rem;
+}
+
 /* Popover */
 .popover {
     position: fixed;
