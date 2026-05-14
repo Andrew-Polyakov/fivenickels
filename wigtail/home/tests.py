@@ -1371,3 +1371,31 @@ class CardSourcePropertiesTests(WagtailPageTestCase):
         term.refresh_from_db()
         self.assertNotIn("layoutVersion", term.master_layout_json)
 
+
+class StockBarsPreviewViewTests(WagtailPageTestCase):
+    """GET ``stock_bars_preview`` returns chart + chips JSON (public, no auth)."""
+
+    @patch("home.inline_edit_views.serialize_stock_bars_tile_payload")
+    def test_stock_bars_preview_returns_payload_keys(self, mock_serialize):
+        mock_serialize.return_value = {
+            "chart_symbol": "AAPL",
+            "bars": [{"t": 1.0, "o": 1.0, "h": 2.0, "l": 0.5, "c": 1.5, "v": None}],
+            "chips": [
+                {
+                    "symbol": "AAPL",
+                    "label": "AAPL",
+                    "href": "/ticker/aapl/",
+                    "pct_formatted": "—",
+                    "pct_class": "is-neutral",
+                }
+            ],
+        }
+        url = reverse("stock_bars_preview")
+        response = self.client.get(url, {"symbols": "AAPL"})
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["chart_symbol"], "AAPL")
+        self.assertIn("bars", data)
+        self.assertIn("chips", data)
+        mock_serialize.assert_called_once_with(["AAPL"])
+

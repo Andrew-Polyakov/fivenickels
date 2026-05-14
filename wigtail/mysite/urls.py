@@ -89,6 +89,11 @@ urlpatterns = [
         inline_edit_views.search_taxonomy_articles,
         name="search_taxonomy_articles",
     ),
+    path(
+        "inline/taxonomy/stock-bars-preview/",
+        inline_edit_views.preview_stock_bars_tile,
+        name="stock_bars_preview",
+    ),
     path("rating/forex/", broker_views.forex_ratings, name="forex_ratings"),
     path("rating/forex/<int:pk>/update/", broker_views.broker_rating_update, name="broker_rating_update"),
     path("search/suggest/", search_views.search_suggest, name="search_suggest"),

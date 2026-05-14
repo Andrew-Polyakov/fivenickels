@@ -7595,6 +7595,14 @@ body.page-article-editor .site-content {
     width: 100%;
 }
 
+.carousel__item.carousel-slides__item:not(.carousel-slides__item--stack) > .scn-carousel-editor__card-trigger {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
 .carousel__item.carousel-slides__item:not(.carousel-slides__item--stack) > .carousel-article-card__anchor {
     display: flex;
     flex-direction: column;
@@ -7614,6 +7622,13 @@ body.page-article-editor .site-content {
 .carousel-slides__stack > .carousel-article-card {
     min-height: 0;
     height: 100%;
+}
+
+.carousel-slides__stack > .scn-carousel-editor__card-trigger {
+    min-height: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
 .carousel-slides__stack > .carousel-article-card__anchor {

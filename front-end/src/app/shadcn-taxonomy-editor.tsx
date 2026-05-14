@@ -31,6 +31,9 @@ import {
   type CarouselPackedSlide,
 } from './carousel-slide-packing';
 
+import StockBarsTile from '../components/shadcn-space/blocks/bento-grid-01/StockBarsTile';
+import type { StockBarPoint, StockChipPayload } from '../components/shadcn-space/blocks/bento-grid-01/StockBarsTile';
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type HeadingBlock   = { id: string; type: 'heading';   level: 'h1' | 'h2'; text: string };
@@ -41,7 +44,7 @@ type SeparatorBlock = { id: string; type: 'separator'; orientation: 'horizontal'
 
 type BentoGrid01Feature = {
   id: string;
-  header_type: 'reminder_animation' | 'animated_ui_block' | 'image' | 'card' | 'richtext';
+  header_type: 'reminder_animation' | 'animated_ui_block' | 'image' | 'card' | 'richtext' | 'stock_bars';
   image_url_light: string;
   image_url_dark: string;
   title: string;
@@ -54,6 +57,8 @@ type BentoGrid01Feature = {
   cardBgOpacity?: number;
   cardFontColor?: CarouselCardFontColorKey;
   cardImageLayout?: CarouselCardImageLayout;
+  /** Stock bars tile: first symbol → chart; all symbols → chips (persisted JSON). */
+  stock_symbols?: string[];
 };
 type BentoGrid01Block  = {
   id: string; type: 'bento_grid_01'; badge_text: string; heading: string; features: BentoGrid01Feature[];
@@ -422,20 +427,27 @@ function resolveCarouselSlotViewModel(
   slot: CarouselSlot,
   index: number,
   resolvedRandom: Record<string, ArticleResult | null>,
-  context: 'editor' | 'readonly',
+  context: 'editor' | 'readonly' | 'editor_preview',
 ): CarouselCardViewModel | null {
   const preview = resolvedRandom[slot.id];
   if (context === 'readonly' && slot.mode !== 'specific' && !preview) {
     return null;
   }
-  const fallbackTitle = context === 'editor'
+  const editorLike = context === 'editor' || context === 'editor_preview';
+  const fallbackTitle = editorLike
     ? `Slot ${index + 1}`
     : `Article ${index + 1}`;
   const title = slot.mode === 'specific'
     ? (slot.articleTitle ?? preview?.title ?? fallbackTitle)
     : preview?.title ?? (slot.mode === 'priority'
-      ? (context === 'editor' ? 'Priority article' : `Priority article ${index + 1}`)
-      : (context === 'editor' ? 'Random article' : fallbackTitle));
+      ? (editorLike ? 'Priority article' : `Priority article ${index + 1}`)
+      : (editorLike ? 'Random article' : fallbackTitle));
+
+  const url = context === 'editor_preview'
+    ? undefined
+    : slot.mode === 'specific'
+      ? slot.articleUrl ?? preview?.url
+      : preview?.url;
 
   return {
     key: slot.id,
@@ -449,9 +461,7 @@ function resolveCarouselSlotViewModel(
     excerpt: slot.mode === 'specific'
       ? slot.articleExcerpt ?? preview?.excerpt
       : preview?.excerpt,
-    url: slot.mode === 'specific'
-      ? slot.articleUrl ?? preview?.url
-      : preview?.url,
+    url,
     authorName: slot.mode === 'specific'
       ? slot.authorName ?? preview?.authorName
       : preview?.authorName,
@@ -486,6 +496,130 @@ function renderPackedTaxonomyCarouselSlide(
           const { key: cardKey, ...cardProps } = c;
           return <CarouselCard key={cardKey} {...cardProps} />;
         })}
+      </div>
+    </CarouselItem>
+  );
+}
+
+function CarouselSlotSettingsFields({ slot, slotIndex, searchUrl, onPatch, onRemove }: {
+  slot: CarouselSlot;
+  slotIndex: number;
+  searchUrl: string;
+  onPatch: (patch: Partial<CarouselSlot>) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="scn-carousel-editor__slot">
+      <div className="scn-carousel-editor__slot-header">
+        <span className="scn-carousel-editor__slot-num">Slot {slotIndex + 1}</span>
+        <button type="button" className="scn-editor-block__ctrl-btn scn-editor-block__ctrl-btn--danger"
+          onClick={onRemove} title="Remove">×</button>
+      </div>
+      <ToggleGroup
+        value={slot.mode}
+        onValueChange={v => {
+          if (v) onPatch({ mode: v as CarouselSlot['mode'], articleId: null, articleTitle: null });
+        }}
+      >
+        <ToggleGroupItem value="random">Random</ToggleGroupItem>
+        <ToggleGroupItem value="priority">Priority</ToggleGroupItem>
+        <ToggleGroupItem value="specific">Specific</ToggleGroupItem>
+      </ToggleGroup>
+      {slot.mode === 'specific' && (
+        <ArticleSearchInput
+          value={{ id: slot.articleId, title: slot.articleTitle }}
+          onChange={v => onPatch({
+            articleId:       v.id,
+            articleTitle:    v.title,
+            articleImageUrl: v.id ? (v as ArticleResult).imageUrl ?? null : null,
+            articleTags:     v.id ? ((v as ArticleResult).tags ?? []) : [],
+            articleExcerpt:  v.id ? (v as ArticleResult).excerpt  ?? null : null,
+            articleUrl:      v.id ? (v as ArticleResult).url      ?? null : null,
+            authorName:      v.id ? (v as ArticleResult).authorName ?? null : null,
+            publishedAt:     v.id ? (v as ArticleResult).publishedAt ?? null : null,
+          })}
+          searchUrl={searchUrl}
+          placeholder="Search article…"
+        />
+      )}
+    </div>
+  );
+}
+
+function renderPackedCarouselEditorSlide(
+  slide: CarouselPackedSlide,
+  itemClassName: string,
+  cards: CarouselSlot[],
+  searchUrl: string,
+  openSlotId: string | null,
+  setOpenSlotId: (id: string | null) => void,
+  setSettingsOpen: (open: boolean) => void,
+  patchSlot: (slotId: string, patch: Partial<CarouselSlot>) => void,
+  removeSlot: (slotId: string) => void,
+): React.ReactNode {
+  function slotIndexFor(cardKey: string): number {
+    const i = cards.findIndex(c => c.id === cardKey);
+    return i >= 0 ? i : 0;
+  }
+
+  function renderCardPopover(cardVm: CarouselCardViewModel): React.ReactNode {
+    const cardKey = cardVm.key;
+    const slot = cards.find(c => c.id === cardKey);
+    if (!slot) {
+      return <CarouselCard {...cardVm} />;
+    }
+    const slotIndex = slotIndexFor(cardKey);
+    return (
+      <Popover
+        key={cardKey}
+        open={openSlotId === cardKey}
+        onOpenChange={(open) => {
+          setOpenSlotId(open ? cardKey : null);
+          if (open) setSettingsOpen(false);
+        }}
+      >
+        <PopoverTrigger asChild>
+          <div
+            className="scn-bento-editor__panel-content scn-carousel-editor__card-trigger"
+            role="button"
+            tabIndex={0}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <span className="scn-bento-editor__panel-label">Slot {slotIndex + 1}</span>
+            <CarouselCard {...cardVm} />
+          </div>
+        </PopoverTrigger>
+        <PopoverContent className="scn-popover-content scn-bento-editor__feat-popover" align="center" side="bottom">
+          <CarouselSlotSettingsFields
+            slot={slot}
+            slotIndex={slotIndex}
+            searchUrl={searchUrl}
+            onPatch={patch => patchSlot(slot.id, patch)}
+            onRemove={() => {
+              removeSlot(slot.id);
+              setOpenSlotId(null);
+            }}
+          />
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
+  if (slide.kind === 'single') {
+    return (
+      <CarouselItem key={slide.key} className={cn(itemClassName, 'carousel-slides__item')}>
+        {renderCardPopover(slide.card)}
+      </CarouselItem>
+    );
+  }
+
+  return (
+    <CarouselItem key={slide.key} className={cn(itemClassName, 'carousel-slides__item', 'carousel-slides__item--stack')}>
+      <div
+        className="carousel-slides__stack"
+        style={{ ['--carousel-stack-rows']: String(slide.cards.length) } as React.CSSProperties}
+      >
+        {slide.cards.map((c) => renderCardPopover(c))}
       </div>
     </CarouselItem>
   );
@@ -688,6 +822,7 @@ const BENTO_TILE_LABEL: Record<string, string> = {
   animated_ui_block: 'Animated UI Block',
   card: 'Article card',
   richtext: 'Rich text',
+  stock_bars: 'Stock bars (30)',
 };
 
 const BENTO_TILE_TYPES: Array<{ type: BentoGrid01Feature['header_type']; desc: string }> = [
@@ -696,7 +831,86 @@ const BENTO_TILE_TYPES: Array<{ type: BentoGrid01Feature['header_type']; desc: s
   { type: 'animated_ui_block',  desc: 'Built-in animated UI block' },
   { type: 'card',               desc: 'Resolved article card' },
   { type: 'richtext',           desc: 'Formatted rich text content' },
+  { type: 'stock_bars',         desc: 'Daily OHLC chart + ticker chips' },
 ];
+
+type StockBarsPreviewJson = {
+  chart_symbol: string;
+  bars: StockBarPoint[];
+  chips: StockChipPayload[];
+  bars_error?: string;
+};
+
+function parseCommaTickers(raw: string): string[] {
+  return raw.split(/[\s,]+/).map(s => s.trim().toUpperCase()).filter(Boolean);
+}
+
+function BentoStockBarsPreview({ symbols, stockPreviewUrl }: { symbols: string[]; stockPreviewUrl: string }) {
+  const symKey = symbols.join(',');
+  const [data, setData] = React.useState<StockBarsPreviewJson | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [fetchErr, setFetchErr] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!stockPreviewUrl) {
+      setLoading(false);
+      setFetchErr(null);
+      setData(null);
+      return;
+    }
+    const ac = new AbortController();
+    setLoading(true);
+    setFetchErr(null);
+    const q = new URLSearchParams({ symbols: symKey });
+    fetch(`${stockPreviewUrl}?${q}`, { signal: ac.signal, credentials: 'same-origin' })
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json() as Promise<StockBarsPreviewJson>;
+      })
+      .then((j) => { setData(j); })
+      .catch((e: unknown) => {
+        if (e instanceof Error && e.name === 'AbortError') return;
+        const msg = e instanceof Error ? e.message : 'Failed to load';
+        setFetchErr(msg);
+        setData(null);
+      })
+      .finally(() => { if (!ac.signal.aborted) setLoading(false); });
+    return () => ac.abort();
+  }, [stockPreviewUrl, symKey]);
+
+  if (!stockPreviewUrl) {
+    return (
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+        <span className="scn-taxonomy-content__bento-desc">Configure stock preview URL to show bars.</span>
+      </div>
+    );
+  }
+  if (loading) {
+    return (
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+        <span className="scn-taxonomy-content__bento-desc">Loading chart…</span>
+      </div>
+    );
+  }
+  if (fetchErr) {
+    return (
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+        <span className="scn-taxonomy-content__bento-desc text-destructive">{fetchErr}</span>
+      </div>
+    );
+  }
+  if (!data) {
+    return null;
+  }
+  return (
+    <StockBarsTile
+      bars={data.bars}
+      chips={data.chips}
+      chartSymbol={data.chart_symbol}
+      barsError={data.bars_error}
+    />
+  );
+}
 
 function BentoTileRichTextEditor({ feat, onChange }: {
   feat: BentoGrid01Feature; onChange: (html: string) => void;
@@ -744,10 +958,11 @@ function BentoTileRichTextEditor({ feat, onChange }: {
   );
 }
 
-function BentoFeaturePreview({ feat, resolved, linkable }: {
+function BentoFeaturePreview({ feat, resolved, linkable, stockPreviewUrl }: {
   feat: BentoGrid01Feature;
   resolved: ArticleResult | null | undefined;
   linkable?: boolean;
+  stockPreviewUrl?: string;
 }) {
   if (feat.header_type === 'card') {
     if (resolved) {
@@ -788,6 +1003,15 @@ function BentoFeaturePreview({ feat, resolved, linkable }: {
     );
   }
 
+  if (feat.header_type === 'stock_bars') {
+    return (
+      <BentoStockBarsPreview
+        symbols={feat.stock_symbols ?? []}
+        stockPreviewUrl={stockPreviewUrl ?? ''}
+      />
+    );
+  }
+
   if (feat.header_type === 'image') {
     const src = feat.image_url_dark || feat.image_url_light;
     if (src) {
@@ -807,33 +1031,67 @@ function BentoFeaturePreview({ feat, resolved, linkable }: {
   );
 }
 
-function BentoFeaturePanel({ feat, resolved, searchUrl, onPatch, onRemove }: {
+function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, onPatch, onRemove }: {
   feat: BentoGrid01Feature;
   resolved: ArticleResult | null | undefined;
   searchUrl: string;
+  stockPreviewUrl: string;
   onPatch: (patch: Partial<BentoGrid01Feature>) => void;
   onRemove: () => void;
 }) {
   const [open, setOpen] = React.useState(false);
 
+  function onStockTileContextMenu(e: React.MouseEvent) {
+    if (feat.header_type !== 'stock_bars') return;
+    e.preventDefault();
+    const win = window as Window & {
+      showMaterialPrompt?: (d: { title?: string; label?: string; value?: string }) => Promise<string | undefined>;
+    };
+    if (!win.showMaterialPrompt) return;
+    void win.showMaterialPrompt({
+      title: 'Stock symbols',
+      label: 'Comma-separated tickers',
+      value: (feat.stock_symbols ?? []).join(', '),
+    }).then((raw) => {
+      if (raw == null) return;
+      onPatch({ stock_symbols: parseCommaTickers(raw) });
+    });
+  }
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <div className="scn-bento-editor__panel-content" role="button" tabIndex={0}>
+        <div
+          className="scn-bento-editor__panel-content"
+          role="button"
+          tabIndex={0}
+          onContextMenu={feat.header_type === 'stock_bars' ? onStockTileContextMenu : undefined}
+        >
           <span className="scn-bento-editor__panel-label">{BENTO_TILE_LABEL[feat.header_type] ?? 'Tile'}</span>
-          <BentoFeaturePreview feat={feat} resolved={resolved} />
+          <BentoFeaturePreview feat={feat} resolved={resolved} stockPreviewUrl={stockPreviewUrl} />
         </div>
       </PopoverTrigger>
       <PopoverContent className="scn-popover-content scn-bento-editor__feat-popover" align="center" side="bottom">
         <div className="scn-bento-editor__feat-popover-body">
           <div className="scn-bento-editor__card-row">
             <Select value={feat.header_type}
-              onChange={e => onPatch({ header_type: e.target.value as BentoGrid01Feature['header_type'] })}>
+              onChange={e => {
+                const v = e.target.value as BentoGrid01Feature['header_type'];
+                if (v === 'stock_bars') {
+                  onPatch({
+                    header_type: v,
+                    stock_symbols: feat.stock_symbols?.length ? feat.stock_symbols : ['AAPL'],
+                  });
+                } else {
+                  onPatch({ header_type: v });
+                }
+              }}>
               <option value="image">Image (light/dark)</option>
               <option value="reminder_animation">Reminder Animation</option>
               <option value="animated_ui_block">Animated UI Block</option>
               <option value="card">Article card</option>
               <option value="richtext">Rich text</option>
+              <option value="stock_bars">Stock bars (30)</option>
             </Select>
           </div>
           {feat.header_type === 'image' && (
@@ -903,6 +1161,17 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, onPatch, onRemove }: {
           {feat.header_type === 'richtext' && (
             <BentoTileRichTextEditor feat={feat} onChange={html => onPatch({ html })} />
           )}
+          {feat.header_type === 'stock_bars' && (
+            <label className="flex flex-col gap-1.5">
+              <span className="text-muted-foreground text-sm">Symbols (comma-separated)</span>
+              <Input
+                value={(feat.stock_symbols ?? []).join(', ')}
+                placeholder="e.g. AAPL, MSFT"
+                onChange={e => { onPatch({ stock_symbols: parseCommaTickers(e.target.value) }); }}
+              />
+              <span className="text-muted-foreground text-xs">Right-click the tile to edit symbols.</span>
+            </label>
+          )}
           <Input value={feat.title} placeholder="Title"
             onChange={e => onPatch({ title: e.target.value })} />
           <Input value={feat.description} placeholder="Description"
@@ -917,10 +1186,11 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, onPatch, onRemove }: {
   );
 }
 
-function BentoResizableLayout({ features, resolvedRandom, searchUrl, onPatch, onRemove, panelSizes, onLayoutChange, height }: {
+function BentoResizableLayout({ features, resolvedRandom, searchUrl, stockPreviewUrl, onPatch, onRemove, panelSizes, onLayoutChange, height }: {
   features: BentoGrid01Feature[];
   resolvedRandom: Record<string, ArticleResult | null>;
   searchUrl: string;
+  stockPreviewUrl: string;
   onPatch: (featId: string, patch: Partial<BentoGrid01Feature>) => void;
   onRemove: (featId: string) => void;
   panelSizes?: number[];
@@ -940,6 +1210,7 @@ function BentoResizableLayout({ features, resolvedRandom, searchUrl, onPatch, on
         feat={feat}
         resolved={resolvedRandom[feat.id]}
         searchUrl={searchUrl}
+        stockPreviewUrl={stockPreviewUrl}
         onPatch={patch => onPatch(feat.id, patch)}
         onRemove={() => onRemove(feat.id)}
       />
@@ -1004,8 +1275,8 @@ function BentoResizableLayout({ features, resolvedRandom, searchUrl, onPatch, on
   );
 }
 
-function BentoGrid01Editor({ block, searchUrl, termId, onChange }: {
-  block: BentoGrid01Block; searchUrl: string; termId: number; onChange: (b: BentoGrid01Block) => void;
+function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, termId, onChange }: {
+  block: BentoGrid01Block; searchUrl: string; stockPreviewUrl: string; termId: number; onChange: (b: BentoGrid01Block) => void;
 }) {
   const [addOpen, setAddOpen] = React.useState(false);
   const cardSlots = React.useMemo(() => bentoCardFeaturesToSlots(block.features), [block.features]);
@@ -1017,7 +1288,9 @@ function BentoGrid01Editor({ block, searchUrl, termId, onChange }: {
       ? { ...base, header_type: 'card', mode: 'random' }
       : headerType === 'richtext'
         ? { ...base, header_type: 'richtext', html: '' }
-        : { ...base, header_type: headerType };
+        : headerType === 'stock_bars'
+          ? { ...base, header_type: 'stock_bars', stock_symbols: ['AAPL'] }
+          : { ...base, header_type: headerType };
     onChange({ ...block, features: [...block.features, feat] });
   }
 
@@ -1089,6 +1362,7 @@ function BentoGrid01Editor({ block, searchUrl, termId, onChange }: {
         features={block.features}
         resolvedRandom={resolvedRandom}
         searchUrl={searchUrl}
+        stockPreviewUrl={stockPreviewUrl}
         onPatch={patchFeature}
         onRemove={removeFeature}
         panelSizes={block.panelSizes}
@@ -1121,12 +1395,13 @@ function CarouselEditor({ block, searchUrl, termId, onChange }: {
   block: CarouselBlock; searchUrl: string; termId: number; onChange: (b: CarouselBlock) => void;
 }) {
   const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [openSlotId, setOpenSlotId] = React.useState<string | null>(null);
   const resolvedRandom = useResolvedCarouselPreviews(block.cards, termId);
   const infiniteScroll = Boolean(block.infiniteScroll);
   const packedSlides = React.useMemo(
     () => packCarouselSlides(
       block.cards
-        .map((slot, index) => resolveCarouselSlotViewModel(slot, index, resolvedRandom, 'editor'))
+        .map((slot, index) => resolveCarouselSlotViewModel(slot, index, resolvedRandom, 'editor_preview'))
         .filter((card): card is CarouselCardViewModel => card !== null),
     ),
     [block.cards, resolvedRandom],
@@ -1137,6 +1412,7 @@ function CarouselEditor({ block, searchUrl, termId, onChange }: {
   }
 
   function removeSlot(slotId: string) {
+    setOpenSlotId(prev => (prev === slotId ? null : prev));
     onChange({ ...block, cards: block.cards.filter(c => c.id !== slotId) });
   }
 
@@ -1150,7 +1426,10 @@ function CarouselEditor({ block, searchUrl, termId, onChange }: {
         <span className="scn-carousel-editor__count">
           {block.cards.length} slot{block.cards.length !== 1 ? 's' : ''}
         </span>
-        <Popover open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <Popover open={settingsOpen} onOpenChange={(open) => {
+          setSettingsOpen(open);
+          if (open) setOpenSlotId(null);
+        }}>
           <PopoverTrigger asChild>
             <Button variant="ghost" className="scn-carousel-editor__settings-btn" aria-label="Configure slots">
               <Settings2 size={16} />
@@ -1178,40 +1457,14 @@ function CarouselEditor({ block, searchUrl, termId, onChange }: {
             <ScrollArea className="scn-carousel-editor__scroll-area">
               <div className="scn-carousel-editor__slots">
                 {block.cards.map((slot, i) => (
-                  <div key={slot.id} className="scn-carousel-editor__slot">
-                    <div className="scn-carousel-editor__slot-header">
-                      <span className="scn-carousel-editor__slot-num">Slot {i + 1}</span>
-                      <button className="scn-editor-block__ctrl-btn scn-editor-block__ctrl-btn--danger"
-                        onClick={() => removeSlot(slot.id)} title="Remove">×</button>
-                    </div>
-                    <ToggleGroup
-                      value={slot.mode}
-                      onValueChange={v => {
-                        if (v) patchSlot(slot.id, { mode: v as CarouselSlot['mode'], articleId: null, articleTitle: null });
-                      }}
-                    >
-                      <ToggleGroupItem value="random">Random</ToggleGroupItem>
-                      <ToggleGroupItem value="priority">Priority</ToggleGroupItem>
-                      <ToggleGroupItem value="specific">Specific</ToggleGroupItem>
-                    </ToggleGroup>
-                    {slot.mode === 'specific' && (
-                      <ArticleSearchInput
-                        value={{ id: slot.articleId, title: slot.articleTitle }}
-                        onChange={v => patchSlot(slot.id, {
-                          articleId:       v.id,
-                          articleTitle:    v.title,
-                          articleImageUrl: v.id ? (v as ArticleResult).imageUrl ?? null : null,
-                          articleTags:     v.id ? ((v as ArticleResult).tags ?? []) : [],
-                          articleExcerpt:  v.id ? (v as ArticleResult).excerpt  ?? null : null,
-                          articleUrl:      v.id ? (v as ArticleResult).url      ?? null : null,
-                          authorName:      v.id ? (v as ArticleResult).authorName ?? null : null,
-                          publishedAt:     v.id ? (v as ArticleResult).publishedAt ?? null : null,
-                        })}
-                        searchUrl={searchUrl}
-                        placeholder="Search article…"
-                      />
-                    )}
-                  </div>
+                  <CarouselSlotSettingsFields
+                    key={slot.id}
+                    slot={slot}
+                    slotIndex={i}
+                    searchUrl={searchUrl}
+                    onPatch={patch => patchSlot(slot.id, patch)}
+                    onRemove={() => removeSlot(slot.id)}
+                  />
                 ))}
               </div>
             </ScrollArea>
@@ -1226,7 +1479,17 @@ function CarouselEditor({ block, searchUrl, termId, onChange }: {
           plugins={carouselAutoplayPlugins(infiniteScroll)}
         >
           <CarouselContent>
-            {packedSlides.map((slide) => renderPackedTaxonomyCarouselSlide(slide, 'scn-carousel-editor__preview-item'))}
+            {packedSlides.map((slide) => renderPackedCarouselEditorSlide(
+              slide,
+              'scn-carousel-editor__preview-item',
+              block.cards,
+              searchUrl,
+              openSlotId,
+              setOpenSlotId,
+              setSettingsOpen,
+              patchSlot,
+              removeSlot,
+            ))}
           </CarouselContent>
           <CarouselPrevious />
           <CarouselNext />
@@ -1243,10 +1506,10 @@ const BLOCK_LABEL: Record<string, string> = {
   separator: 'Separator', bento_grid_01: 'Bento block', carousel: 'Carousel',
 };
 
-function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl, onChange, onRemove, onMove }: {
+function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl, stockPreviewUrl, onChange, onRemove, onMove }: {
   block: TaxonomyBlock; index: number; total: number;
   termId: number;
-  uploadUrl: string; articleSearchUrl: string;
+  uploadUrl: string; articleSearchUrl: string; stockPreviewUrl: string;
   onChange: (b: TaxonomyBlock) => void; onRemove: () => void; onMove: (dir: -1 | 1) => void;
 }) {
   return (
@@ -1268,7 +1531,7 @@ function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl,
         {block.type === 'image'     && <ImageEditor     block={block} uploadUrl={uploadUrl} onChange={onChange as (b: ImageBlock) => void} />}
         {block.type === 'embed'     && <EmbedEditor     block={block} onChange={onChange as (b: EmbedBlock) => void} />}
         {block.type === 'separator' && <SeparatorEditor block={block} onChange={onChange as (b: SeparatorBlock) => void} />}
-        {block.type === 'bento_grid_01' && <BentoGrid01Editor block={block} searchUrl={articleSearchUrl} termId={termId} onChange={onChange as (b: BentoGrid01Block) => void} />}
+        {block.type === 'bento_grid_01' && <BentoGrid01Editor block={block} searchUrl={articleSearchUrl} stockPreviewUrl={stockPreviewUrl} termId={termId} onChange={onChange as (b: BentoGrid01Block) => void} />}
         {block.type === 'carousel'  && <CarouselEditor  block={block} searchUrl={articleSearchUrl} termId={termId} onChange={onChange as (b: CarouselBlock) => void} />}
       </div>
     </div>
@@ -1319,7 +1582,7 @@ function bentoCardFeaturesToSlots(features: BentoGrid01Feature[]): CarouselSlot[
     }));
 }
 
-function ReadOnlyBlock({ block, termId }: { block: TaxonomyBlock; termId: number }) {
+function ReadOnlyBlock({ block, termId, stockPreviewUrl }: { block: TaxonomyBlock; termId: number; stockPreviewUrl: string }) {
   const previewSlots = React.useMemo(() => {
     if (block.type === 'carousel') return block.cards;
     if (block.type === 'bento_grid_01') return bentoCardFeaturesToSlots(block.features);
@@ -1368,7 +1631,7 @@ function ReadOnlyBlock({ block, termId }: { block: TaxonomyBlock; termId: number
     function renderReadOnlyPanel(f: BentoGrid01Feature) {
       return (
         <div key={f.id} className="scn-bento-readonly__panel">
-          <BentoFeaturePreview feat={f} resolved={resolvedRandom[f.id]} linkable />
+          <BentoFeaturePreview feat={f} resolved={resolvedRandom[f.id]} linkable stockPreviewUrl={stockPreviewUrl} />
         </div>
       );
     }
@@ -1502,13 +1765,14 @@ function TaxonomyEditorSaveBar({
 
 // ─── Root component ───────────────────────────────────────────────────────────
 
-function TaxonomyEditor({ termId, initialJson, canEdit, saveUrl, uploadUrl, articleSearchUrl }: {
+function TaxonomyEditor({ termId, initialJson, canEdit, saveUrl, uploadUrl, articleSearchUrl, stockPreviewUrl }: {
   termId: number;
   initialJson: object | null;
   canEdit: boolean;
   saveUrl: string;
   uploadUrl: string;
   articleSearchUrl: string;
+  stockPreviewUrl: string;
 }) {
   const [blocks, setBlocks] = React.useState<TaxonomyBlock[]>(() => jsonToBlocks(initialJson));
   const [saving, setSaving] = React.useState(false);
@@ -1560,7 +1824,7 @@ function TaxonomyEditor({ termId, initialJson, canEdit, saveUrl, uploadUrl, arti
   if (!canEdit) {
     return (
       <div className="scn-taxonomy-content">
-        {blocks.map(block => <ReadOnlyBlock key={block.id} block={block} termId={termId} />)}
+        {blocks.map(block => <ReadOnlyBlock key={block.id} block={block} termId={termId} stockPreviewUrl={stockPreviewUrl} />)}
       </div>
     );
   }
@@ -1579,6 +1843,7 @@ function TaxonomyEditor({ termId, initialJson, canEdit, saveUrl, uploadUrl, arti
             termId={termId}
             uploadUrl={uploadUrl}
             articleSearchUrl={articleSearchUrl}
+            stockPreviewUrl={stockPreviewUrl}
             onChange={updated => setBlocks(prev => prev.map((b, j) => j === i ? updated : b))}
             onRemove={() => setBlocks(prev => prev.filter((_, j) => j !== i))}
             onMove={dir => moveBlock(i, dir)}
@@ -1607,6 +1872,7 @@ export function mountTaxonomyEditor(): void {
     const saveUrl = host.dataset['saveUrl'] ?? '';
     const uploadUrl = host.dataset['uploadUrl'] ?? '';
     const articleSearchUrl = host.dataset['articleSearchUrl'] ?? '';
+    const stockPreviewUrl = host.dataset['stockPreviewUrl'] ?? '';
     if (!termId) return;
 
     let initialJson: object | null = null;
@@ -1628,6 +1894,7 @@ export function mountTaxonomyEditor(): void {
         saveUrl={saveUrl}
         uploadUrl={uploadUrl}
         articleSearchUrl={articleSearchUrl}
+        stockPreviewUrl={stockPreviewUrl}
       />
     );
   });

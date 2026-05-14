@@ -10,6 +10,7 @@ from django.utils.formats import date_format
 from django.utils.text import slugify
 from django.views.decorators.http import require_GET, require_POST
 
+from home.card_layout import _dedupe_symbols, serialize_stock_bars_tile_payload
 from home.models import SubsectionIndexPage, TaggedContentPage, TaxonomyTerm
 from home.query import _section_term_ids_for_taxonomy_scope
 from home.taxonomy import MARKET_NEWS_SLUG, ensure_top_row_taxonomy_terms
@@ -404,6 +405,15 @@ def upload_taxonomy_image(request: HttpRequest) -> JsonResponse:
         url = image.file.url
 
     return JsonResponse({"id": image.id, "url": url, "title": image.title})
+
+
+@require_GET
+def preview_stock_bars_tile(request: HttpRequest) -> JsonResponse:
+    """Public JSON for taxonomy Bento stock tile preview (cached Alpaca bars)."""
+    raw = str(request.GET.get("symbols") or "")
+    parts = [p.strip().upper() for p in re.split(r"[\s,]+", raw) if p.strip()]
+    syms = _dedupe_symbols(parts)
+    return JsonResponse(serialize_stock_bars_tile_payload(syms))
 
 
 @require_GET
