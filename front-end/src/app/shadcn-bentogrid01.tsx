@@ -70,9 +70,17 @@ export interface BentoGrid01FeaturePayload {
   bars_as_of_utc?: string;
 }
 
+export type BentoTheme = 'default' | 'dark' | 'muted' | 'accent';
+export type BentoTileStyle = 'bordered' | 'shadow' | 'flat';
+export type BentoSectionPadding = 'default' | 'compact' | 'spacious';
+
 export interface BentoGrid01Payload {
   badge_text: string;
   heading: string;
+  theme?: BentoTheme;
+  tile_style?: BentoTileStyle;
+  section_padding?: BentoSectionPadding;
+  show_badge?: boolean;
   features: BentoGrid01FeaturePayload[];
 }
 
@@ -168,18 +176,83 @@ function FeatureHeader({ feature }: { feature: BentoGrid01FeaturePayload }) {
   );
 }
 
+// ── Theme helpers ─────────────────────────────────────────────────────────
+
+const SECTION_PADDING: Record<BentoSectionPadding, string> = {
+  default: 'py-11 md:py-20',
+  compact: 'py-6 md:py-10',
+  spacious: 'py-16 md:py-28',
+};
+
+const SECTION_BG: Record<BentoTheme, string> = {
+  default: '',
+  dark: 'bg-zinc-950 text-zinc-50',
+  muted: 'bg-muted/50',
+  accent: 'bg-primary/5',
+};
+
+const TILE_WRAPPER: Record<BentoTileStyle, string> = {
+  bordered: 'rounded-xl border border-border',
+  shadow: 'rounded-xl shadow-md',
+  flat: 'rounded-xl',
+};
+
+const TILE_HEADER_BG: Record<BentoTheme, string> = {
+  default: 'bg-muted',
+  dark: 'bg-zinc-900',
+  muted: 'bg-muted/60',
+  accent: 'bg-primary/10',
+};
+
+const TILE_DIVIDER: Record<BentoTileStyle, string> = {
+  bordered: 'border-t border-border',
+  shadow: 'border-t border-border/50',
+  flat: '',
+};
+
+const HEADING_COLOR: Record<BentoTheme, string> = {
+  default: 'text-foreground',
+  dark: 'text-zinc-50',
+  muted: 'text-foreground',
+  accent: 'text-foreground',
+};
+
+const DESCRIPTION_COLOR: Record<BentoTheme, string> = {
+  default: 'text-muted-foreground',
+  dark: 'text-zinc-400',
+  muted: 'text-muted-foreground',
+  accent: 'text-muted-foreground',
+};
+
+const BADGE_VARIANT: Record<BentoTheme, string> = {
+  default: '',
+  dark: 'border-zinc-700 text-zinc-300',
+  muted: '',
+  accent: 'border-primary/30 text-primary',
+};
+
 // ── Root component ────────────────────────────────────────────────────────
 
 function BentoGrid01Root({ payload }: { payload: BentoGrid01Payload }) {
+  const theme: BentoTheme = payload.theme ?? 'default';
+  const tileStyle: BentoTileStyle = payload.tile_style ?? 'bordered';
+  const padding: BentoSectionPadding = payload.section_padding ?? 'default';
+  const showBadge = payload.show_badge !== false;
+
   return (
-    <section>
-      <div className="py-11 md:py-20">
+    <section className={SECTION_BG[theme]}>
+      <div className={SECTION_PADDING[padding]}>
         <div className="max-w-7xl xl:px-16 lg:px-8 px-4 mx-auto flex flex-col gap-12">
           <div className="flex flex-col gap-4 items-center justify-center max-w-3xl mx-auto">
-            <Badge variant="outline" className="px-3 py-1 h-auto text-sm font-normal">
-              {payload.badge_text}
-            </Badge>
-            <h2 className="text-center md:text-5xl text-3xl mx-auto font-medium">
+            {showBadge && (
+              <Badge
+                variant="outline"
+                className={`px-3 py-1 h-auto text-sm font-normal ${BADGE_VARIANT[theme]}`}
+              >
+                {payload.badge_text}
+              </Badge>
+            )}
+            <h2 className={`text-center md:text-5xl text-3xl mx-auto font-medium ${HEADING_COLOR[theme]}`}>
               {payload.heading}
             </h2>
           </div>
@@ -191,18 +264,18 @@ function BentoGrid01Root({ payload }: { payload: BentoGrid01Payload }) {
               const showTextFooter = feature.header_type !== 'stock_bars';
               return (
                 <div key={i} className={`${span} col-span-12`}>
-                  <div className="rounded-xl border border-border h-full flex flex-col">
+                  <div className={`${TILE_WRAPPER[tileStyle]} h-full flex flex-col`}>
                     <div
-                      className={`bg-muted rounded-t-xl py-8 px-9 relative flex-1 flex items-center justify-center min-h-[200px]${headerClip}${
+                      className={`${TILE_HEADER_BG[theme]} rounded-t-xl py-8 px-9 relative flex-1 flex items-center justify-center min-h-[200px]${headerClip}${
                         showTextFooter ? '' : ' rounded-b-xl'
                       }`}
                     >
                       <FeatureHeader feature={feature} />
                     </div>
                     {showTextFooter ? (
-                      <div className="flex flex-col gap-0.5 p-8 border-t border-border">
-                        <h3 className="text-xl font-medium text-foreground">{feature.title}</h3>
-                        <p className="text-base font-normal text-muted-foreground">
+                      <div className={`flex flex-col gap-0.5 p-8 ${TILE_DIVIDER[tileStyle]}`}>
+                        <h3 className={`text-xl font-medium ${HEADING_COLOR[theme]}`}>{feature.title}</h3>
+                        <p className={`text-base font-normal ${DESCRIPTION_COLOR[theme]}`}>
                           {feature.description}
                         </p>
                       </div>

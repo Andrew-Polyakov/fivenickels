@@ -80,6 +80,10 @@ type BentoGrid01Feature = {
 };
 type BentoGrid01Block  = {
   id: string; type: 'bento_grid_01'; badge_text: string; heading: string; features: BentoGrid01Feature[];
+  theme?: 'default' | 'dark' | 'muted' | 'accent';
+  tile_style?: 'bordered' | 'shadow' | 'flat';
+  section_padding?: 'default' | 'compact' | 'spacious';
+  show_badge?: boolean;
   panelSizes?: number[];
   height?: string;
 };
@@ -1615,6 +1619,59 @@ function BentoGrid01BlockHeaderFields({
           </div>
         ) : null}
       </div>
+      <Popover>
+        <PopoverTrigger asChild>
+          <button type="button" className="scn-bento-editor__size-btn" title="Theme settings" aria-label="Theme settings">
+            <Settings2 size={14} />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="scn-popover-content scn-bento-editor__theme-popover" align="end">
+          <div className="scn-bento-editor__theme-field">
+            <label>Theme</label>
+            <Select
+              value={block.theme ?? 'default'}
+              onChange={e => onChange({ ...block, theme: e.target.value as BentoGrid01Block['theme'] })}
+            >
+              <option value="default">Default</option>
+              <option value="dark">Dark</option>
+              <option value="muted">Muted</option>
+              <option value="accent">Accent</option>
+            </Select>
+          </div>
+          <div className="scn-bento-editor__theme-field">
+            <label>Tile style</label>
+            <Select
+              value={block.tile_style ?? 'bordered'}
+              onChange={e => onChange({ ...block, tile_style: e.target.value as BentoGrid01Block['tile_style'] })}
+            >
+              <option value="bordered">Bordered</option>
+              <option value="shadow">Shadow</option>
+              <option value="flat">Flat</option>
+            </Select>
+          </div>
+          <div className="scn-bento-editor__theme-field">
+            <label>Padding</label>
+            <Select
+              value={block.section_padding ?? 'default'}
+              onChange={e => onChange({
+                ...block,
+                section_padding: e.target.value as BentoGrid01Block['section_padding'],
+              })}
+            >
+              <option value="default">Default</option>
+              <option value="compact">Compact</option>
+              <option value="spacious">Spacious</option>
+            </Select>
+          </div>
+          <label className="scn-bento-editor__size-auto-row">
+            <Checkbox
+              checked={block.show_badge !== false}
+              onCheckedChange={checked => onChange({ ...block, show_badge: !!checked })}
+            />
+            <span>Show badge</span>
+          </label>
+        </PopoverContent>
+      </Popover>
       <Popover open={addOpen} onOpenChange={onAddOpenChange}>
         <PopoverTrigger asChild>
           <button type="button" className="scn-bento-editor__add-col" aria-label="Add tile">
@@ -2269,8 +2326,8 @@ function ReadOnlyBlock({ block, termId, stockPreviewUrl }: { block: TaxonomyBloc
     }
 
     return (
-      <div className="scn-taxonomy-content__bento-preview">
-        {block.badge_text && <div className="scn-taxonomy-content__bento-badge">{block.badge_text}</div>}
+      <div className={`scn-taxonomy-content__bento-preview${block.theme === 'dark' ? ' scn-taxonomy-content__bento-preview--dark' : block.theme === 'muted' ? ' scn-taxonomy-content__bento-preview--muted' : block.theme === 'accent' ? ' scn-taxonomy-content__bento-preview--accent' : ''}`}>
+        {block.show_badge !== false && block.badge_text && <div className="scn-taxonomy-content__bento-badge">{block.badge_text}</div>}
         {block.heading && <h2 className="scn-taxonomy-content__heading">{block.heading}</h2>}
         {gridContent}
       </div>
@@ -2430,7 +2487,17 @@ function TaxonomyEditor({ termId, initialJson, canEdit, saveUrl, uploadUrl, arti
         case 'image':     return { id, type: 'image',     imageId: null, imageUrl: null };
         case 'embed':     return { id, type: 'embed',     url: '' };
         case 'separator': return { id, type: 'separator', orientation: 'horizontal' };
-        case 'bento_grid_01': return { id, type: 'bento_grid_01', badge_text: 'Features', heading: '', features: [] };
+        case 'bento_grid_01': return {
+          id,
+          type: 'bento_grid_01',
+          badge_text: 'Features',
+          heading: '',
+          features: [],
+          theme: 'default',
+          tile_style: 'bordered',
+          section_padding: 'default',
+          show_badge: true,
+        };
         case 'carousel': return {
           id,
           type: 'carousel',

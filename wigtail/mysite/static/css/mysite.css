@@ -9465,6 +9465,10 @@ html[data-reading-theme="day"] .carousel-article-card__published {
     color: var(--color-text-muted);
 }
 
+.scn-taxonomy-content__bento-preview--dark { background: #18181b; color: #fafafa; border-radius: 0.75rem; }
+.scn-taxonomy-content__bento-preview--muted { background: rgba(128, 128, 128, 0.08); border-radius: 0.75rem; }
+.scn-taxonomy-content__bento-preview--accent { background: rgba(var(--color-primary-rgb, 59, 130, 246), 0.05); border-radius: 0.75rem; }
+
 .scn-taxonomy-content__carousel-wrap { position: relative; padding: 5px 1.5rem; }
 
 .scn-taxonomy-content__bento-preview { position: relative; padding: 5px 1.5rem; }

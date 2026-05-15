@@ -305,6 +305,42 @@ class BentoGrid01Block(blocks.StructBlock):
     heading = blocks.CharBlock(
         default="Beautifully designed bento grid section"
     )
+    theme = blocks.ChoiceBlock(
+        choices=[
+            ("default", "Default"),
+            ("dark", "Dark"),
+            ("muted", "Muted"),
+            ("accent", "Accent"),
+        ],
+        default="default",
+        required=False,
+        help_text="Overall colour scheme for the bento section.",
+    )
+    tile_style = blocks.ChoiceBlock(
+        choices=[
+            ("bordered", "Bordered"),
+            ("shadow", "Shadow"),
+            ("flat", "Flat"),
+        ],
+        default="bordered",
+        required=False,
+        help_text="Visual style applied to each feature tile.",
+    )
+    section_padding = blocks.ChoiceBlock(
+        choices=[
+            ("default", "Default"),
+            ("compact", "Compact"),
+            ("spacious", "Spacious"),
+        ],
+        default="default",
+        required=False,
+        help_text="Vertical padding around the section.",
+    )
+    show_badge = blocks.BooleanBlock(
+        default=True,
+        required=False,
+        help_text="Uncheck to hide the badge above the heading.",
+    )
     features = blocks.ListBlock(BentoGridFeatureBlock())
 
     class Meta:
