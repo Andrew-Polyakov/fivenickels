@@ -16,7 +16,8 @@ from home.card_layout import (
     stock_bars_limit_clamped,
     stock_bars_timeframe_from_cadence,
 )
-from home.models import SubsectionIndexPage, TaggedContentPage, TaxonomyTerm
+from home.market_widgets import build_forex_quotes_payload, build_market_movers_payload
+from home.models import MarketTickerRow, SubsectionIndexPage, TaggedContentPage, TaxonomyTerm
 from home.query import _section_term_ids_for_taxonomy_scope
 from home.taxonomy import MARKET_NEWS_SLUG, ensure_top_row_taxonomy_terms
 
@@ -427,6 +428,27 @@ def preview_stock_bars_tile(request: HttpRequest) -> JsonResponse:
         limit_raw = request.GET.get("limit")
     limit = stock_bars_limit_clamped(limit_raw)
     return JsonResponse(serialize_stock_bars_tile_payload(syms, timeframe=timeframe, limit=limit))
+
+
+@require_GET
+def preview_forex_strip_tile(request: HttpRequest) -> JsonResponse:
+    """Public JSON for taxonomy Bento FX pairs tile preview."""
+    return JsonResponse({"forex_quotes": build_forex_quotes_payload()})
+
+
+@require_GET
+def preview_market_movers_tile(request: HttpRequest) -> JsonResponse:
+    """Public JSON for taxonomy Bento market movers tile preview."""
+    block_region = str(request.GET.get("market_region") or "").strip() or None
+    rows = list(
+        MarketTickerRow.objects.filter(enabled=True).order_by("sort_order", "symbol")
+    )
+    payload = build_market_movers_payload(
+        rows,
+        request,
+        block_region=block_region,
+    )
+    return JsonResponse(payload)
 
 
 @require_GET

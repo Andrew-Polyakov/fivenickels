@@ -20,7 +20,13 @@ from django.utils.crypto import get_random_string
 
 from home.alpaca_bars_client import fetch_recent_stock_bars
 from home.blocks import _resolve_section_term, _resolve_universal_tile_state
-from home.card_layout import BENTO_LAYOUT_VERSION, build_layout_payload, serialize_article_card_for_related
+from home.card_layout import (
+    BENTO_LAYOUT_VERSION,
+    _serialize_bentogrid01,
+    build_layout_payload,
+    serialize_article_card_for_related,
+)
+from home.context_processors import market_header
 from home.navigation import normalize_sector_query_param
 from home.query import (
     _section_term_ids_for_taxonomy_scope,
@@ -705,7 +711,6 @@ class TaxonomyTagsTests(WagtailPageTestCase):
                     }
                 },
             ),
-            ("separator", {"orientation": "vertical"}),
             (
                 "card",
                 {
@@ -1375,6 +1380,90 @@ class CardSourcePropertiesTests(WagtailPageTestCase):
         self.assertNotIn("layoutVersion", term.master_layout_json)
 
 
+class BentoForexMarketMoversSerializationTests(WagtailPageTestCase):
+    @patch("home.card_layout.build_forex_quotes_payload")
+    def test_serialize_bentogrid01_forex_strip(self, mock_forex):
+        mock_forex.return_value = [
+            {
+                "label": "EUR/USD",
+                "mid_display": "1.100",
+                "pct_formatted": "+0.1%",
+                "pct_class": "is-up",
+            }
+        ]
+        payload = _serialize_bentogrid01(
+            {
+                "badge_text": "Features",
+                "heading": "Markets",
+                "features": [
+                    {
+                        "header_type": "forex_strip",
+                        "title": "",
+                        "description": "",
+                        "col_span": "4",
+                    }
+                ],
+            },
+            {"request": None},
+        )
+        self.assertEqual(payload["features"][0]["header_type"], "forex_strip")
+        self.assertEqual(len(payload["features"][0]["forex_quotes"]), 1)
+        self.assertEqual(payload["features"][0]["forex_quotes"][0]["label"], "EUR/USD")
+
+    def test_serialize_bentogrid01_market_movers(self):
+        MarketTickerRow.objects.create(
+            symbol="WIN",
+            enabled=True,
+            percent_change=Decimal("5.5"),
+            market_region="US",
+            sort_order=1,
+        )
+        MarketTickerRow.objects.create(
+            symbol="LOSE",
+            enabled=True,
+            percent_change=Decimal("-3.2"),
+            market_region="US",
+            sort_order=2,
+        )
+        request = Mock()
+        request.path = "/"
+        request.GET = {}
+        payload = _serialize_bentogrid01(
+            {
+                "badge_text": "Features",
+                "heading": "Movers",
+                "features": [
+                    {
+                        "header_type": "market_movers",
+                        "market_region": "US",
+                        "title": "",
+                        "description": "",
+                        "col_span": "8",
+                    }
+                ],
+            },
+            {"request": request},
+        )
+        feat = payload["features"][0]
+        self.assertEqual(feat["header_type"], "market_movers")
+        self.assertTrue(feat["market_movers"]["has_data"])
+        self.assertEqual(len(feat["market_movers"]["winners"]), 1)
+        self.assertEqual(feat["market_movers"]["winners"][0]["symbol"], "WIN")
+        self.assertEqual(len(feat["market_mover_tabs"]), 3)
+
+    def test_market_header_omits_forex_and_movers(self):
+        request = Mock()
+        request.site = None
+        request.get_host = Mock(return_value="localhost")
+        request.META = {"SERVER_PORT": "8000"}
+        request.GET = {}
+        ctx = market_header(request)
+        self.assertIn("header_tickers", ctx)
+        self.assertNotIn("forex_quotes", ctx)
+        self.assertNotIn("market_movers", ctx)
+        self.assertNotIn("market_mover_tabs", ctx)
+
+
 class StockBarsPreviewViewTests(WagtailPageTestCase):
     """GET ``stock_bars_preview`` returns chart + chips JSON (public, no auth)."""
 
@@ -1405,6 +1494,41 @@ class StockBarsPreviewViewTests(WagtailPageTestCase):
         self.assertEqual(data.get("bars_timeframe"), "1Day")
         self.assertEqual(data.get("bars_as_of_utc"), "2026-01-15T00:00:00Z")
         mock_serialize.assert_called_once_with(["AAPL"], timeframe="1Day", limit=180)
+
+
+class ForexStripPreviewViewTests(WagtailPageTestCase):
+    """GET ``forex_strip_preview`` returns forex quotes JSON (public, no auth)."""
+
+    @patch("home.inline_edit_views.build_forex_quotes_payload")
+    def test_forex_strip_preview_returns_quotes(self, mock_build):
+        mock_build.return_value = [{"pair": "EUR/USD", "rate": "1.08"}]
+        response = self.client.get(reverse("forex_strip_preview"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"forex_quotes": [{"pair": "EUR/USD", "rate": "1.08"}]})
+        mock_build.assert_called_once_with()
+
+
+class MarketMoversPreviewViewTests(WagtailPageTestCase):
+    """GET ``market_movers_preview`` returns movers + tabs JSON (public, no auth)."""
+
+    @patch("home.inline_edit_views.build_market_movers_payload")
+    def test_market_movers_preview_passes_region(self, mock_build):
+        mock_build.return_value = {
+            "market_movers": {"winners": [], "loosers": [], "has_data": False},
+            "market_mover_tabs": [],
+            "selected_region": "ASIA",
+        }
+        response = self.client.get(
+            reverse("market_movers_preview"),
+            {"market_region": "ASIA"},
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("market_movers", data)
+        self.assertIn("market_mover_tabs", data)
+        mock_build.assert_called_once()
+        _args, kwargs = mock_build.call_args
+        self.assertEqual(kwargs.get("block_region"), "ASIA")
 
 
 @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}})

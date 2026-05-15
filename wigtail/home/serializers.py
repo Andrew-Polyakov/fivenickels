@@ -94,7 +94,7 @@ class StreamBlockSerializer(serializers.Serializer):
             if block_type == 'heading':
                 return {'level': value.get('level', 'h2'), 'text': value.get('text', '')}
             if block_type == 'separator':
-                return {'orientation': value.get('orientation', 'horizontal')}
+                return None
             if block_type == 'perforation_separator':
                 return None
             # fallback for unknown block types

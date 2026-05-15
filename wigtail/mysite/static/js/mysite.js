@@ -408,8 +408,7 @@
         }
     }
 
-    function initMarketMoversFilter() {
-        var root = document.querySelector("[data-market-movers-root]");
+    function bindMarketMoversRoot(root) {
         if (!root || root.getAttribute("data-market-movers-bound") === "1") {
             return;
         }
@@ -419,7 +418,7 @@
             var link = evt.target && evt.target.closest
                 ? evt.target.closest("a[data-market-movers-region-link]")
                 : null;
-            if (!link) {
+            if (!link || !root.contains(link)) {
                 return;
             }
             evt.preventDefault();
@@ -454,6 +453,13 @@
                     window.location.href = href;
                 });
         });
+    }
+
+    function initMarketMoversFilter() {
+        var roots = document.querySelectorAll("[data-market-movers-root]");
+        for (var i = 0; i < roots.length; i++) {
+            bindMarketMoversRoot(roots[i]);
+        }
     }
 
     function initInlineTileTitleAdmin() {

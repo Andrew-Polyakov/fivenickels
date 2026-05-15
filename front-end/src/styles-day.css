@@ -546,17 +546,12 @@ html[data-reading-theme='day'] .scn-bento-editor__panel-content {
   background: transparent;
 }
 
-/* Left rail: match mysite.css — tighter page inset + left-align FX / movers (no horizontal auto-center). */
-html[data-reading-theme='day'] .site-page {
-  padding-left: calc(max(0.5rem, 2%) / 3);
-}
-
-html[data-reading-theme='day'] .site-page__rail .forex-strip__grid {
+html[data-reading-theme='day'] .scn-bentogrid01 .forex-strip__grid {
   margin-left: 0;
   margin-right: auto;
 }
 
-html[data-reading-theme='day'] .site-page__rail .market-movers {
+html[data-reading-theme='day'] .scn-bentogrid01 .market-movers {
   margin-left: 0;
   margin-right: auto;
 }

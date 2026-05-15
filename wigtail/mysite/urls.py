@@ -94,6 +94,16 @@ urlpatterns = [
         inline_edit_views.preview_stock_bars_tile,
         name="stock_bars_preview",
     ),
+    path(
+        "inline/taxonomy/forex-strip-preview/",
+        inline_edit_views.preview_forex_strip_tile,
+        name="forex_strip_preview",
+    ),
+    path(
+        "inline/taxonomy/market-movers-preview/",
+        inline_edit_views.preview_market_movers_tile,
+        name="market_movers_preview",
+    ),
     path("rating/forex/", broker_views.forex_ratings, name="forex_ratings"),
     path("rating/forex/<int:pk>/update/", broker_views.broker_rating_update, name="broker_rating_update"),
     path("search/suggest/", search_views.search_suggest, name="search_suggest"),

@@ -520,6 +520,15 @@
     height: 1.2rem;
 }
 
+.scn-editor-separator-preview {
+    padding: 0.35rem 0;
+}
+
+.scn-editor-separator-preview .scn-taxonomy-content__sep--horizontal {
+    margin-top: 0.35rem;
+    margin-bottom: 0.35rem;
+}
+
 .scn-editor-perforation-preview__hint {
     margin: 0 0 0.5rem;
     font-size: 0.8125rem;

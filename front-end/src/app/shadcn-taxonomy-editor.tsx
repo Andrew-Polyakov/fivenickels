@@ -43,7 +43,20 @@ import {
   type CarouselCardViewModel,
   type CarouselPackedSlide,
 } from './carousel-slide-packing';
+import {
+  bentoGrid01SectionClassName,
+  normalizeBentoBlockBackground,
+  normalizeBentoTheme,
+  normalizeBentoTileStyle,
+} from './bento-grid01-theme';
 
+import ForexStripTile, {
+  type ForexQuotePayload,
+} from '../components/shadcn-space/blocks/bento-grid-01/ForexStripTile';
+import MarketMoversTile, {
+  type MarketMoverTabPayload,
+  type MarketMoversGroupPayload,
+} from '../components/shadcn-space/blocks/bento-grid-01/MarketMoversTile';
 import StockBarsTile from '../components/shadcn-space/blocks/bento-grid-01/StockBarsTile';
 import type { StockBarPoint, StockChipPayload } from '../components/shadcn-space/blocks/bento-grid-01/StockBarsTile';
 
@@ -53,11 +66,19 @@ type HeadingBlock   = { id: string; type: 'heading';   level: 'h1' | 'h2'; text:
 type ParagraphBlock = { id: string; type: 'paragraph'; html: string };
 type ImageBlock     = { id: string; type: 'image';     imageId: number | null; imageUrl: string | null };
 type EmbedBlock     = { id: string; type: 'embed';     url: string };
-type SeparatorBlock = { id: string; type: 'separator'; orientation: 'horizontal' | 'vertical' };
+type SeparatorBlock = { id: string; type: 'separator' };
 
 type BentoGrid01Feature = {
   id: string;
-  header_type: 'reminder_animation' | 'animated_ui_block' | 'image' | 'card' | 'richtext' | 'stock_bars';
+  header_type:
+    | 'reminder_animation'
+    | 'animated_ui_block'
+    | 'image'
+    | 'card'
+    | 'richtext'
+    | 'stock_bars'
+    | 'forex_strip'
+    | 'market_movers';
   image_url_light: string;
   image_url_dark: string;
   title: string;
@@ -77,12 +98,20 @@ type BentoGrid01Feature = {
   stock_bars_cadence?: 'day' | 'week' | 'month';
   /** Bar count for chart (90–360); server clamps. */
   stock_bars_limit?: number;
+  /** Market movers tile: default region when no ?market_region= on the page. */
+  market_region?: 'US' | 'ASIA' | 'EUROPE';
 };
+
+const BENTO_WIDGET_TILE_TYPES = new Set<BentoGrid01Feature['header_type']>([
+  'stock_bars',
+  'forex_strip',
+  'market_movers',
+]);
 type BentoGrid01Block  = {
   id: string; type: 'bento_grid_01'; badge_text: string; heading: string; features: BentoGrid01Feature[];
-  theme?: 'default' | 'dark' | 'muted' | 'accent';
+  theme?: 'default' | 'inverted' | 'accent';
   tile_style?: 'bordered' | 'shadow' | 'flat';
-  section_padding?: 'default' | 'compact' | 'spacious';
+  block_background?: 'default' | 'edge_to_edge';
   show_badge?: boolean;
   panelSizes?: number[];
   height?: string;
@@ -311,6 +340,9 @@ function normalizeTaxonomyBlock(raw: Record<string, unknown>): TaxonomyBlock | n
   if (t === 'carousel') {
     return normalizeCarouselBlockFromJson(raw);
   }
+  if (t === 'separator' && typeof raw['id'] === 'string') {
+    return { id: raw['id'], type: 'separator' };
+  }
   if (t === 'bento_grid_01' && typeof raw['id'] === 'string') {
     const rawFeats = raw['features'];
     const features: BentoGrid01Feature[] = Array.isArray(rawFeats)
@@ -318,12 +350,17 @@ function normalizeTaxonomyBlock(raw: Record<string, unknown>): TaxonomyBlock | n
           .map((item) => normalizeBentoFeatureFromUnknown(item))
           .filter((f): f is BentoGrid01Feature => f !== null)
       : [];
+    const block_background = normalizeBentoBlockBackground(raw['block_background']);
     return {
       id: raw['id'],
       type: 'bento_grid_01',
       badge_text: typeof raw['badge_text'] === 'string' ? raw['badge_text'] : 'Features',
       heading: typeof raw['heading'] === 'string' ? raw['heading'] : '',
       features,
+      theme: normalizeBentoTheme(raw['theme']),
+      tile_style: normalizeBentoTileStyle(raw['tile_style']),
+      block_background,
+      show_badge: typeof raw['show_badge'] === 'boolean' ? raw['show_badge'] : true,
       ...(Array.isArray(raw['panelSizes']) ? { panelSizes: raw['panelSizes'] as number[] } : {}),
       ...(typeof raw['height'] === 'string' ? { height: raw['height'] } : {}),
     };
@@ -978,14 +1015,10 @@ function EmbedEditor({ block, onChange }: { block: EmbedBlock; onChange: (b: Emb
   );
 }
 
-function SeparatorEditor({ block, onChange }: { block: SeparatorBlock; onChange: (b: SeparatorBlock) => void }) {
+function SeparatorEditor() {
   return (
-    <div className="scn-editor-block__fields">
-      <Select value={block.orientation}
-        onChange={e => onChange({ ...block, orientation: e.target.value as 'horizontal' | 'vertical' })}>
-        <option value="horizontal">Horizontal</option>
-        <option value="vertical">Vertical</option>
-      </Select>
+    <div className="scn-editor-block__fields scn-editor-separator-preview" aria-hidden>
+      <hr className="scn-taxonomy-content__sep scn-taxonomy-content__sep--horizontal" />
     </div>
   );
 }
@@ -999,6 +1032,8 @@ const BENTO_TILE_LABEL: Record<string, string> = {
   card: 'Article card',
   richtext: 'Rich text',
   stock_bars: 'Stock bars',
+  forex_strip: 'FX pairs',
+  market_movers: 'Market movers',
 };
 
 const BENTO_TILE_TYPES: Array<{ type: BentoGrid01Feature['header_type']; desc: string }> = [
@@ -1008,6 +1043,8 @@ const BENTO_TILE_TYPES: Array<{ type: BentoGrid01Feature['header_type']; desc: s
   { type: 'card',               desc: 'Resolved article card' },
   { type: 'richtext',           desc: 'Formatted rich text content' },
   { type: 'stock_bars',         desc: 'OHLC chart + ticker chips (cadence & bar count)' },
+  { type: 'forex_strip',        desc: 'Live major FX pairs' },
+  { type: 'market_movers',      desc: 'Winners and losers by region' },
 ];
 
 const BENTO_TILE_TYPE_OPTIONS: Array<{ value: BentoGrid01Feature['header_type']; label: string }> = [
@@ -1017,6 +1054,14 @@ const BENTO_TILE_TYPE_OPTIONS: Array<{ value: BentoGrid01Feature['header_type'];
   { value: 'card', label: 'Article card' },
   { value: 'richtext', label: 'Rich text' },
   { value: 'stock_bars', label: 'Stock bars' },
+  { value: 'forex_strip', label: 'FX pairs' },
+  { value: 'market_movers', label: 'Market movers' },
+];
+
+const MARKET_REGION_OPTIONS: Array<{ value: 'US' | 'ASIA' | 'EUROPE'; label: string }> = [
+  { value: 'US', label: 'US' },
+  { value: 'ASIA', label: 'Asia' },
+  { value: 'EUROPE', label: 'Europe' },
 ];
 
 function BentoTileTypeCombobox({
@@ -1156,6 +1201,12 @@ function createBentoFeatureOfType(headerType: BentoGrid01Feature['header_type'])
       stock_bars_limit: 180,
     };
   }
+  if (headerType === 'market_movers') {
+    return { ...base, header_type: 'market_movers', market_region: 'US' };
+  }
+  if (headerType === 'forex_strip') {
+    return { ...base, header_type: 'forex_strip' };
+  }
   return { ...base, header_type: headerType };
 }
 
@@ -1252,6 +1303,155 @@ function BentoStockBarsPreview({
   );
 }
 
+type ForexStripPreviewJson = { forex_quotes: ForexQuotePayload[] };
+
+function BentoForexStripPreview({ forexPreviewUrl }: { forexPreviewUrl: string }) {
+  const [data, setData] = React.useState<ForexStripPreviewJson | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [fetchErr, setFetchErr] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!forexPreviewUrl) {
+      setLoading(false);
+      setFetchErr(null);
+      setData(null);
+      return;
+    }
+    const ac = new AbortController();
+    setLoading(true);
+    setFetchErr(null);
+    fetch(forexPreviewUrl, { signal: ac.signal, credentials: 'same-origin' })
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json() as Promise<ForexStripPreviewJson>;
+      })
+      .then((j) => { setData(j); })
+      .catch((e: unknown) => {
+        if (e instanceof Error && e.name === 'AbortError') return;
+        setFetchErr(e instanceof Error ? e.message : 'Failed to load');
+        setData(null);
+      })
+      .finally(() => { if (!ac.signal.aborted) setLoading(false); });
+    return () => ac.abort();
+  }, [forexPreviewUrl]);
+
+  if (!forexPreviewUrl) {
+    return (
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+        <span className="scn-taxonomy-content__bento-desc">Configure FX preview URL.</span>
+      </div>
+    );
+  }
+  if (loading) {
+    return (
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+        <span className="scn-taxonomy-content__bento-desc">Loading FX…</span>
+      </div>
+    );
+  }
+  if (fetchErr) {
+    return (
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+        <span className="scn-taxonomy-content__bento-desc text-destructive">{fetchErr}</span>
+      </div>
+    );
+  }
+  return <ForexStripTile quotes={data?.forex_quotes ?? []} />;
+}
+
+type MarketMoversPreviewJson = {
+  market_movers: MarketMoversGroupPayload;
+  market_mover_tabs: MarketMoverTabPayload[];
+};
+
+function BentoMarketMoversPreview({
+  marketMoversPreviewUrl,
+  marketRegion,
+}: {
+  marketMoversPreviewUrl: string;
+  marketRegion: 'US' | 'ASIA' | 'EUROPE';
+}) {
+  const [activeRegion, setActiveRegion] = React.useState(marketRegion);
+  const [data, setData] = React.useState<MarketMoversPreviewJson | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [fetchErr, setFetchErr] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    setActiveRegion(marketRegion);
+  }, [marketRegion]);
+
+  React.useEffect(() => {
+    if (!marketMoversPreviewUrl) {
+      setLoading(false);
+      setFetchErr(null);
+      setData(null);
+      return;
+    }
+    const ac = new AbortController();
+    setLoading(true);
+    setFetchErr(null);
+    const q = new URLSearchParams({ market_region: activeRegion });
+    fetch(`${marketMoversPreviewUrl}?${q}`, { signal: ac.signal, credentials: 'same-origin' })
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json() as Promise<MarketMoversPreviewJson>;
+      })
+      .then((j) => { setData(j); })
+      .catch((e: unknown) => {
+        if (e instanceof Error && e.name === 'AbortError') return;
+        setFetchErr(e instanceof Error ? e.message : 'Failed to load');
+        setData(null);
+      })
+      .finally(() => { if (!ac.signal.aborted) setLoading(false); });
+    return () => ac.abort();
+  }, [marketMoversPreviewUrl, activeRegion]);
+
+  function onRegionTabCapture(e: React.MouseEvent<HTMLDivElement>) {
+    const link = (e.target as HTMLElement).closest<HTMLAnchorElement>(
+      'a[data-market-movers-region-link]',
+    );
+    if (!link) return;
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      const region = new URL(link.href, window.location.origin).searchParams.get('market_region');
+      if (region === 'US' || region === 'ASIA' || region === 'EUROPE') {
+        setActiveRegion(region);
+      }
+    } catch { /* ignore malformed href */ }
+  }
+
+  if (!marketMoversPreviewUrl) {
+    return (
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+        <span className="scn-taxonomy-content__bento-desc">Configure market movers preview URL.</span>
+      </div>
+    );
+  }
+  if (loading) {
+    return (
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+        <span className="scn-taxonomy-content__bento-desc">Loading market movers…</span>
+      </div>
+    );
+  }
+  if (fetchErr || !data) {
+    return (
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+        <span className="scn-taxonomy-content__bento-desc text-destructive">{fetchErr ?? 'No data'}</span>
+      </div>
+    );
+  }
+  return (
+    <div onClickCapture={onRegionTabCapture}>
+      <MarketMoversTile
+        marketMovers={data.market_movers}
+        tabs={data.market_mover_tabs}
+      />
+    </div>
+  );
+}
+
 function BentoTileRichTextEditor({ feat, onChange }: {
   feat: BentoGrid01Feature; onChange: (html: string) => void;
 }) {
@@ -1298,11 +1498,13 @@ function BentoTileRichTextEditor({ feat, onChange }: {
   );
 }
 
-function BentoFeaturePreview({ feat, resolved, linkable, stockPreviewUrl }: {
+function BentoFeaturePreview({ feat, resolved, linkable, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl }: {
   feat: BentoGrid01Feature;
   resolved: ArticleResult | null | undefined;
   linkable?: boolean;
   stockPreviewUrl?: string;
+  forexPreviewUrl?: string;
+  marketMoversPreviewUrl?: string;
 }) {
   if (feat.header_type === 'card') {
     if (resolved) {
@@ -1351,6 +1553,34 @@ function BentoFeaturePreview({ feat, resolved, linkable, stockPreviewUrl }: {
         barsLimit={feat.stock_bars_limit ?? 180}
         stockPreviewUrl={stockPreviewUrl ?? ''}
       />
+    );
+  }
+
+  if (feat.header_type === 'forex_strip') {
+    if (linkable && forexPreviewUrl) {
+      return <BentoForexStripPreview forexPreviewUrl={forexPreviewUrl} />;
+    }
+    return (
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+        <span>FX pairs (live on site)</span>
+      </div>
+    );
+  }
+
+  if (feat.header_type === 'market_movers') {
+    if (linkable && marketMoversPreviewUrl) {
+      const region = feat.market_region ?? 'US';
+      return (
+        <BentoMarketMoversPreview
+          marketMoversPreviewUrl={marketMoversPreviewUrl}
+          marketRegion={region}
+        />
+      );
+    }
+    return (
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+        <span>Market movers ({feat.market_region ?? 'US'})</span>
+      </div>
     );
   }
 
@@ -1431,6 +1661,11 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, onPatch
                     stock_symbols: feat.stock_symbols?.length ? feat.stock_symbols : ['AAPL'],
                     stock_bars_cadence: feat.stock_bars_cadence ?? 'day',
                     stock_bars_limit: feat.stock_bars_limit ?? 180,
+                  });
+                } else if (v === 'market_movers') {
+                  onPatch({
+                    header_type: v,
+                    market_region: feat.market_region ?? 'US',
                   });
                 } else {
                   onPatch({ header_type: v });
@@ -1519,6 +1754,22 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, onPatch
           {feat.header_type === 'richtext' && (
             <BentoTileRichTextEditor feat={feat} onChange={html => onPatch({ html })} />
           )}
+          {feat.header_type === 'market_movers' && (
+            <label className="flex flex-col gap-1.5 min-w-0">
+              <span className="text-muted-foreground text-sm">Default region</span>
+              <select
+                className="scn-bento-editor__region-select"
+                value={feat.market_region ?? 'US'}
+                onChange={(e) => {
+                  onPatch({ market_region: e.target.value as BentoGrid01Feature['market_region'] });
+                }}
+              >
+                {MARKET_REGION_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </label>
+          )}
           {feat.header_type === 'stock_bars' && (
             <div className="flex flex-col gap-3">
               <div className="grid grid-cols-2 gap-3 items-end">
@@ -1553,7 +1804,7 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, onPatch
               <span className="text-muted-foreground text-xs">Right-click the tile for quick ticker edit.</span>
             </div>
           )}
-          {feat.header_type !== 'card' && (
+          {feat.header_type !== 'card' && !BENTO_WIDGET_TILE_TYPES.has(feat.header_type) && (
             <>
               <Input value={feat.title} placeholder="Title"
                 onChange={e => onPatch({ title: e.target.value })} />
@@ -1667,8 +1918,7 @@ function BentoGrid01BlockHeaderFields({
               onChange={e => onChange({ ...block, theme: e.target.value as BentoGrid01Block['theme'] })}
             >
               <option value="default">Default</option>
-              <option value="dark">Dark</option>
-              <option value="muted">Muted</option>
+              <option value="inverted">Inverted</option>
               <option value="accent">Accent</option>
             </Select>
           </div>
@@ -1684,17 +1934,16 @@ function BentoGrid01BlockHeaderFields({
             </Select>
           </div>
           <div className="scn-bento-editor__theme-field">
-            <label>Padding</label>
+            <label>Block background</label>
             <Select
-              value={block.section_padding ?? 'default'}
+              value={block.block_background ?? 'default'}
               onChange={e => onChange({
                 ...block,
-                section_padding: e.target.value as BentoGrid01Block['section_padding'],
+                block_background: e.target.value as BentoGrid01Block['block_background'],
               })}
             >
-              <option value="default">Default</option>
-              <option value="compact">Compact</option>
-              <option value="spacious">Spacious</option>
+              <option value="default">Default (contained)</option>
+              <option value="edge_to_edge">Edge to edge</option>
             </Select>
           </div>
           <label className="scn-bento-editor__size-auto-row">
@@ -1870,7 +2119,16 @@ function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, termId, onChange
   }, [block, onChange]);
 
   return (
-    <div className="scn-bento-editor">
+    <div
+      className={cn(
+        'scn-bento-editor',
+        bentoGrid01SectionClassName({
+          theme: block.theme,
+          blockBackground: block.block_background,
+          tileStyle: block.tile_style,
+        }),
+      )}
+    >
       <BentoResizableLayout
         features={block.features}
         resolvedRandom={resolvedRandom}
@@ -2181,7 +2439,7 @@ function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl,
         {block.type === 'paragraph' && <ParagraphEditor block={block} uploadUrl={uploadUrl} onChange={onChange as (b: ParagraphBlock) => void} />}
         {block.type === 'image'     && <ImageEditor     block={block} uploadUrl={uploadUrl} onChange={onChange as (b: ImageBlock) => void} />}
         {block.type === 'embed'     && <EmbedEditor     block={block} onChange={onChange as (b: EmbedBlock) => void} />}
-        {block.type === 'separator' && <SeparatorEditor block={block} onChange={onChange as (b: SeparatorBlock) => void} />}
+        {block.type === 'separator' && <SeparatorEditor />}
         {block.type === 'bento_grid_01' && (
           <BentoGrid01Editor
             block={block}
@@ -2217,7 +2475,7 @@ function AddBlockMenu({ onAdd }: { onAdd: (type: TaxonomyBlock['type']) => void 
     { type: 'paragraph', desc: 'Rich text block' },
     { type: 'image',     desc: 'Uploaded image' },
     { type: 'embed',     desc: 'YouTube, Twitter…' },
-    { type: 'separator', desc: 'Horizontal or vertical rule' },
+    { type: 'separator', desc: 'Horizontal rule' },
     { type: 'bento_grid_01', desc: 'Feature showcase bento grid' },
     { type: 'carousel',  desc: 'Infinite article carousel' },
   ];
@@ -2252,7 +2510,19 @@ function bentoCardFeaturesToSlots(features: BentoGrid01Feature[]): CarouselSlot[
     }));
 }
 
-function ReadOnlyBlock({ block, termId, stockPreviewUrl }: { block: TaxonomyBlock; termId: number; stockPreviewUrl: string }) {
+function ReadOnlyBlock({
+  block,
+  termId,
+  stockPreviewUrl,
+  forexPreviewUrl,
+  marketMoversPreviewUrl,
+}: {
+  block: TaxonomyBlock;
+  termId: number;
+  stockPreviewUrl: string;
+  forexPreviewUrl: string;
+  marketMoversPreviewUrl: string;
+}) {
   const previewSlots = React.useMemo(() => {
     if (block.type === 'carousel') return bentoCardFeaturesToSlots(block.features);
     if (block.type === 'bento_grid_01') return bentoCardFeaturesToSlots(block.features);
@@ -2289,7 +2559,7 @@ function ReadOnlyBlock({ block, termId, stockPreviewUrl }: { block: TaxonomyBloc
   }
 
   if (block.type === 'separator') {
-    return <hr className={`scn-taxonomy-content__sep scn-taxonomy-content__sep--${block.orientation}`} />;
+    return <hr className="scn-taxonomy-content__sep scn-taxonomy-content__sep--horizontal" />;
   }
 
   if (block.type === 'bento_grid_01') {
@@ -2301,7 +2571,14 @@ function ReadOnlyBlock({ block, termId, stockPreviewUrl }: { block: TaxonomyBloc
     function renderReadOnlyPanel(f: BentoGrid01Feature) {
       return (
         <div key={f.id} className="scn-bento-readonly__panel">
-          <BentoFeaturePreview feat={f} resolved={resolvedRandom[f.id]} linkable stockPreviewUrl={stockPreviewUrl} />
+          <BentoFeaturePreview
+            feat={f}
+            resolved={resolvedRandom[f.id]}
+            linkable
+            stockPreviewUrl={stockPreviewUrl}
+            forexPreviewUrl={forexPreviewUrl}
+            marketMoversPreviewUrl={marketMoversPreviewUrl}
+          />
         </div>
       );
     }
@@ -2353,10 +2630,28 @@ function ReadOnlyBlock({ block, termId, stockPreviewUrl }: { block: TaxonomyBloc
     }
 
     return (
-      <div className={`scn-taxonomy-content__bento-preview${block.theme === 'dark' ? ' scn-taxonomy-content__bento-preview--dark' : block.theme === 'muted' ? ' scn-taxonomy-content__bento-preview--muted' : block.theme === 'accent' ? ' scn-taxonomy-content__bento-preview--accent' : ''}`}>
-        {block.show_badge !== false && block.badge_text && <div className="scn-taxonomy-content__bento-badge">{block.badge_text}</div>}
-        {block.heading && <h2 className="scn-taxonomy-content__heading">{block.heading}</h2>}
-        {gridContent}
+      <div
+        className={cn(
+          'scn-taxonomy-content__bento-preview',
+          'scn-bento-readonly-surface',
+          bentoGrid01SectionClassName({
+            theme: block.theme,
+            blockBackground: block.block_background,
+            tileStyle: block.tile_style,
+          }),
+        )}
+      >
+        <div className="scn-bentogrid01__inner">
+          {((block.show_badge !== false && block.badge_text) || block.heading) ? (
+            <div className="scn-bentogrid01__intro">
+              {block.heading ? <h2 className="scn-bentogrid01__heading">{block.heading}</h2> : null}
+              {block.show_badge !== false && block.badge_text ? (
+                <div className="scn-taxonomy-content__bento-badge scn-bentogrid01__badge">{block.badge_text}</div>
+              ) : null}
+            </div>
+          ) : null}
+          {gridContent}
+        </div>
       </div>
     );
   }
@@ -2415,7 +2710,14 @@ function ReadOnlyBlock({ block, termId, stockPreviewUrl }: { block: TaxonomyBloc
             {features.map((feat) => (
               <CarouselItem key={feat.id} className={cn('scn-taxonomy-content__carousel-item', 'carousel-slides__item')}>
                 <div className="scn-carousel-readonly__tile">
-                  <BentoFeaturePreview feat={feat} resolved={resolvedRandom[feat.id]} linkable stockPreviewUrl={stockPreviewUrl} />
+                  <BentoFeaturePreview
+                    feat={feat}
+                    resolved={resolvedRandom[feat.id]}
+                    linkable
+                    stockPreviewUrl={stockPreviewUrl}
+                    forexPreviewUrl={forexPreviewUrl}
+                    marketMoversPreviewUrl={marketMoversPreviewUrl}
+                  />
                 </div>
               </CarouselItem>
             ))}
@@ -2475,7 +2777,17 @@ function TaxonomyEditorSaveBar({
 
 // ─── Root component ───────────────────────────────────────────────────────────
 
-function TaxonomyEditor({ termId, initialJson, canEdit, saveUrl, uploadUrl, articleSearchUrl, stockPreviewUrl }: {
+function TaxonomyEditor({
+  termId,
+  initialJson,
+  canEdit,
+  saveUrl,
+  uploadUrl,
+  articleSearchUrl,
+  stockPreviewUrl,
+  forexPreviewUrl,
+  marketMoversPreviewUrl,
+}: {
   termId: number;
   initialJson: object | null;
   canEdit: boolean;
@@ -2483,6 +2795,8 @@ function TaxonomyEditor({ termId, initialJson, canEdit, saveUrl, uploadUrl, arti
   uploadUrl: string;
   articleSearchUrl: string;
   stockPreviewUrl: string;
+  forexPreviewUrl: string;
+  marketMoversPreviewUrl: string;
 }) {
   const [blocks, setBlocks] = React.useState<TaxonomyBlock[]>(() => jsonToBlocks(initialJson));
   const [saving, setSaving] = React.useState(false);
@@ -2513,7 +2827,7 @@ function TaxonomyEditor({ termId, initialJson, canEdit, saveUrl, uploadUrl, arti
         case 'paragraph': return { id, type: 'paragraph', html: '' };
         case 'image':     return { id, type: 'image',     imageId: null, imageUrl: null };
         case 'embed':     return { id, type: 'embed',     url: '' };
-        case 'separator': return { id, type: 'separator', orientation: 'horizontal' };
+        case 'separator': return { id, type: 'separator' };
         case 'bento_grid_01': return {
           id,
           type: 'bento_grid_01',
@@ -2522,7 +2836,7 @@ function TaxonomyEditor({ termId, initialJson, canEdit, saveUrl, uploadUrl, arti
           features: [],
           theme: 'default',
           tile_style: 'bordered',
-          section_padding: 'default',
+          block_background: 'default',
           show_badge: true,
         };
         case 'carousel': return {
@@ -2550,7 +2864,16 @@ function TaxonomyEditor({ termId, initialJson, canEdit, saveUrl, uploadUrl, arti
   if (!canEdit) {
     return (
       <div className="scn-taxonomy-content">
-        {blocks.map(block => <ReadOnlyBlock key={block.id} block={block} termId={termId} stockPreviewUrl={stockPreviewUrl} />)}
+        {blocks.map(block => (
+          <ReadOnlyBlock
+            key={block.id}
+            block={block}
+            termId={termId}
+            stockPreviewUrl={stockPreviewUrl}
+            forexPreviewUrl={forexPreviewUrl}
+            marketMoversPreviewUrl={marketMoversPreviewUrl}
+          />
+        ))}
       </div>
     );
   }
@@ -2599,6 +2922,8 @@ export function mountTaxonomyEditor(): void {
     const uploadUrl = host.dataset['uploadUrl'] ?? '';
     const articleSearchUrl = host.dataset['articleSearchUrl'] ?? '';
     const stockPreviewUrl = host.dataset['stockPreviewUrl'] ?? '';
+    const forexPreviewUrl = host.dataset['forexPreviewUrl'] ?? '';
+    const marketMoversPreviewUrl = host.dataset['marketMoversPreviewUrl'] ?? '';
     if (!termId) return;
 
     let initialJson: object | null = null;
@@ -2621,6 +2946,8 @@ export function mountTaxonomyEditor(): void {
         uploadUrl={uploadUrl}
         articleSearchUrl={articleSearchUrl}
         stockPreviewUrl={stockPreviewUrl}
+        forexPreviewUrl={forexPreviewUrl}
+        marketMoversPreviewUrl={marketMoversPreviewUrl}
       />
     );
   });

@@ -37,7 +37,7 @@ type ParagraphBlock = { id: string; type: 'paragraph'; html: string };
 type MarkdownBlock  = { id: string; type: 'markdown'; markdown: string };
 type ImageBlock     = { id: string; type: 'image';     imageId: number | null; imageUrl: string | null };
 type EmbedBlock     = { id: string; type: 'embed';     url: string };
-type SeparatorBlock = { id: string; type: 'separator'; orientation: 'horizontal' | 'vertical' };
+type SeparatorBlock = { id: string; type: 'separator' };
 type PerforationBlock = { id: string; type: 'perforation_separator' };
 type BodyBlock =
   | HeadingBlock
@@ -118,8 +118,7 @@ function apiToEditor(apiBlocks: ArticleApiData['body']): BodyBlock[] {
       const v = b.value as { url?: string } | null;
       out.push({ id, type: 'embed', url: v?.url || '' });
     } else if (b.type === 'separator') {
-      const v = b.value as { orientation?: string } | null;
-      out.push({ id, type: 'separator', orientation: (v?.orientation as 'horizontal' | 'vertical') || 'horizontal' });
+      out.push({ id, type: 'separator' });
     } else if (b.type === 'perforation_separator') {
       out.push({ id, type: 'perforation_separator' });
     }
@@ -148,7 +147,7 @@ function editorToApi(blocks: BodyBlock[]): unknown[] {
     if (b.type === 'image')     return { id: b.id, type: 'image',     value: b.imageId };
     if (b.type === 'embed')     return { id: b.id, type: 'embed',     value: { url: b.url } };
     if (b.type === 'perforation_separator') return { id: b.id, type: 'perforation_separator', value: null };
-    return { id: b.id, type: 'separator', value: { orientation: b.orientation } };
+    return { id: b.id, type: 'separator', value: null };
   });
 }
 
@@ -884,14 +883,10 @@ function EmbedEditor({ block, onChange }: { block: EmbedBlock; onChange: (b: Emb
   );
 }
 
-function SeparatorEditor({ block, onChange }: { block: SeparatorBlock; onChange: (b: SeparatorBlock) => void }) {
+function SeparatorEditor() {
   return (
-    <div className="scn-editor-block__fields">
-      <Select value={block.orientation}
-        onChange={e => onChange({ ...block, orientation: e.target.value as 'horizontal' | 'vertical' })}>
-        <option value="horizontal">Horizontal</option>
-        <option value="vertical">Vertical</option>
-      </Select>
+    <div className="scn-editor-block__fields scn-editor-separator-preview" aria-hidden>
+      <hr className="scn-taxonomy-content__sep scn-taxonomy-content__sep--horizontal" />
     </div>
   );
 }
@@ -973,7 +968,7 @@ function BlockEditor({ block, index, total, articleId, apiBase, onChange, onRemo
         {block.type === 'markdown'  && <MarkdownEditor  block={block} onChange={onChange as (b: MarkdownBlock) => void} />}
         {block.type === 'image'     && <ImageEditor     block={block} articleId={articleId} apiBase={apiBase} onChange={onChange as (b: ImageBlock) => void} />}
         {block.type === 'embed'     && <EmbedEditor     block={block} onChange={onChange as (b: EmbedBlock) => void} />}
-        {block.type === 'separator' && <SeparatorEditor block={block} onChange={onChange as (b: SeparatorBlock) => void} />}
+        {block.type === 'separator' && <SeparatorEditor />}
         {block.type === 'perforation_separator' && <PerforationSeparatorEditor />}
       </div>
     </div>
@@ -988,7 +983,7 @@ function AddBlockMenu({ onAdd }: { onAdd: (type: BodyBlock['type']) => void }) {
     { type: 'markdown',  desc: 'Markdown body text' },
     { type: 'image',     desc: 'Uploaded image' },
     { type: 'embed',     desc: 'YouTube, Twitter…' },
-    { type: 'separator', desc: 'Horizontal or vertical rule' },
+    { type: 'separator', desc: 'Horizontal rule' },
     { type: 'perforation_separator', desc: 'Dotted perforation (decorative)' },
   ];
   return (
@@ -1329,7 +1324,7 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
         case 'markdown':  return { id, type: 'markdown',  markdown: '' };
         case 'image':     return { id, type: 'image',     imageId: null, imageUrl: null };
         case 'embed':     return { id, type: 'embed',     url: '' };
-        case 'separator': return { id, type: 'separator', orientation: 'horizontal' };
+        case 'separator': return { id, type: 'separator' };
         case 'perforation_separator': return { id, type: 'perforation_separator' };
       }
     })();

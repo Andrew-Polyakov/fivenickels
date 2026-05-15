@@ -16,6 +16,7 @@ from django.utils.formats import date_format
 from home.blocks import _resolve_universal_tile_state
 from home.alpaca_bars_client import fetch_recent_stock_bars
 from home.alpaca_market_client import fetch_snapshots
+from home.market_widgets import build_forex_quotes_payload, build_market_movers_payload
 from home.models import MarketTickerRow, TaggedContentPage
 from home.ticker_utils import chip_json_payload
 
@@ -149,16 +150,16 @@ def _card_entry_from_block_value(
 
 
 def _normalize_row_items(row_items: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Drop redundant vertical separators at row edges; collapse doubles."""
+    """Drop leading separators and collapse consecutive doubles."""
     out: list[dict[str, Any]] = []
     for item in row_items:
-        if item.get("type") == "separator" and item.get("orientation") == "vertical":
+        if item.get("type") == "separator":
             if not out:
                 continue
             if out and out[-1].get("type") == "separator":
                 continue
         out.append(item)
-    while out and out[-1].get("type") == "separator" and out[-1].get("orientation") == "vertical":
+    while out and out[-1].get("type") == "separator":
         out.pop()
     return out
 
@@ -170,8 +171,7 @@ def build_rows_from_card_buffer(
     """
     Turn consecutive card/separator stream blocks into row descriptors for React.
 
-    Horizontal separator ends the current row (and emits a full-width horizontal rule row).
-    Vertical separators become divider entries between cards within a row.
+    Each separator ends the current row and emits a full-width horizontal rule row.
     """
     rows: list[dict[str, Any]] = []
     current_row: list[dict[str, Any]] = []
@@ -188,12 +188,8 @@ def build_rows_from_card_buffer(
 
     for block in buffer_blocks:
         if block.block_type == "separator":
-            orient = (block.value.get("orientation") or "horizontal").strip().lower()
-            if orient == "horizontal":
-                flush_row()
-                rows.append({"kind": "separator", "orientation": "horizontal"})
-            else:
-                current_row.append({"type": "separator", "orientation": "vertical"})
+            flush_row()
+            rows.append({"kind": "separator", "orientation": "horizontal"})
         elif block.block_type == "card":
             current_row.append(_card_entry_from_block_value(block.value, parent_context, used_page_ids))
         else:
@@ -438,6 +434,22 @@ def serialize_stock_bars_tile_payload(
     return out
 
 
+def _normalize_bento_theme(raw: Any) -> str:
+    t = str(raw or "default").lower().strip()
+    if t in ("default", "inverted", "accent"):
+        return t
+    if t == "dark":
+        return "inverted"
+    return "default"
+
+
+def _normalize_bento_block_background(raw: Any) -> str:
+    bg = str(raw or "default").lower().strip()
+    if bg in ("default", "edge_to_edge"):
+        return bg
+    return "default"
+
+
 def _serialize_bentogrid01(block_value: dict, parent_context: dict | None = None) -> dict[str, Any]:
     """Convert a BentoGrid01Block value dict to a JSON-safe payload."""
     request = (parent_context or {}).get("request")
@@ -497,13 +509,31 @@ def _serialize_bentogrid01(block_value: dict, parent_context: dict | None = None
             entry["bars_as_of_utc"] = stock_payload["bars_as_of_utc"]
             if stock_payload.get("bars_error"):
                 entry["bars_error"] = stock_payload["bars_error"]
+        if header_type == "forex_strip":
+            entry["forex_quotes"] = build_forex_quotes_payload()
+        if header_type == "market_movers":
+            rows = list(
+                MarketTickerRow.objects.filter(enabled=True).order_by("sort_order", "symbol")
+            )
+            block_region = val.get("market_region")
+            movers_payload = build_market_movers_payload(
+                rows,
+                request,
+                block_region=str(block_region) if block_region else None,
+            )
+            entry["market_movers"] = movers_payload["market_movers"]
+            entry["market_mover_tabs"] = movers_payload["market_mover_tabs"]
+            entry["selected_region"] = movers_payload["selected_region"]
         features.append(entry)
+    block_bg_raw = block_value.get("block_background")
+    if block_bg_raw is None and "section_padding" in block_value:
+        block_bg_raw = "default"
     return {
         "badge_text": str(block_value.get("badge_text") or "Features"),
         "heading": str(block_value.get("heading") or ""),
-        "theme": str(block_value.get("theme") or "default"),
+        "theme": _normalize_bento_theme(block_value.get("theme")),
         "tile_style": str(block_value.get("tile_style") or "bordered"),
-        "section_padding": str(block_value.get("section_padding") or "default"),
+        "block_background": _normalize_bento_block_background(block_bg_raw),
         "show_badge": bool(block_value.get("show_badge", True)),
         "features": features,
     }

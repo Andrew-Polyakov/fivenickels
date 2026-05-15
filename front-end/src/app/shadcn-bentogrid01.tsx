@@ -1,9 +1,9 @@
 /**
  * BentoGrid01 — CMS-driven bento grid block.
  *
- * Reads a JSON payload from a Django json_script tag and renders the
- * @shadcn-space/bentogrid-01 component with editable badge, heading, and
- * feature tiles. Each tile may use a built-in animation or light/dark images.
+ * Reads a JSON payload from a Django json_script tag and renders badge, heading,
+ * and feature tiles. Theme and tile chrome use `.scn-bentogrid01*` CSS (bundled
+ * in `styles.css`), not Tailwind color utilities.
  */
 
 import * as React from 'react';
@@ -12,6 +12,13 @@ import { createRoot, type Root } from 'react-dom/client';
 import { Badge } from '../components/ui/badge';
 import AnimatedUiBlock from '../components/shadcn-space/blocks/bento-grid-01/AnimatedUiBlock';
 import ReminderAnimation from '../components/shadcn-space/blocks/bento-grid-01/ReminderAnimation';
+import ForexStripTile, {
+  type ForexQuotePayload,
+} from '../components/shadcn-space/blocks/bento-grid-01/ForexStripTile';
+import MarketMoversTile, {
+  type MarketMoverTabPayload,
+  type MarketMoversGroupPayload,
+} from '../components/shadcn-space/blocks/bento-grid-01/MarketMoversTile';
 import StockBarsTile from '../components/shadcn-space/blocks/bento-grid-01/StockBarsTile';
 import { CarouselCard } from './shadcn-taxonomy-editor';
 import type {
@@ -19,6 +26,13 @@ import type {
   CarouselCardImageScale,
   CarouselCardTextImageLayout,
 } from './carousel-slide-packing';
+import {
+  bentoBlockBackgroundFromPayload,
+  bentoGrid01SectionClassName,
+  type BentoBlockBackground,
+  type BentoTheme,
+  type BentoTileStyle,
+} from './bento-grid01-theme';
 
 // ── Types (mirror the Django BentoGrid01Block fields) ─────────────────────
 
@@ -52,7 +66,15 @@ export interface StockChipPayload {
 }
 
 export interface BentoGrid01FeaturePayload {
-  header_type: 'reminder_animation' | 'animated_ui_block' | 'image' | 'card' | 'richtext' | 'stock_bars';
+  header_type:
+    | 'reminder_animation'
+    | 'animated_ui_block'
+    | 'image'
+    | 'card'
+    | 'richtext'
+    | 'stock_bars'
+    | 'forex_strip'
+    | 'market_movers';
   image_url_light?: string;
   image_url_dark?: string;
   title: string;
@@ -68,18 +90,27 @@ export interface BentoGrid01FeaturePayload {
   bars_error?: string;
   bars_timeframe?: string;
   bars_as_of_utc?: string;
+  forex_quotes?: ForexQuotePayload[];
+  market_movers?: MarketMoversGroupPayload;
+  market_mover_tabs?: MarketMoverTabPayload[];
 }
 
-export type BentoTheme = 'default' | 'dark' | 'muted' | 'accent';
-export type BentoTileStyle = 'bordered' | 'shadow' | 'flat';
-export type BentoSectionPadding = 'default' | 'compact' | 'spacious';
+const BENTO_TILES_WITHOUT_FOOTER = new Set([
+  'stock_bars',
+  'forex_strip',
+  'market_movers',
+]);
+
+export type { BentoTheme, BentoTileStyle, BentoBlockBackground };
 
 export interface BentoGrid01Payload {
   badge_text: string;
   heading: string;
-  theme?: BentoTheme;
-  tile_style?: BentoTileStyle;
-  section_padding?: BentoSectionPadding;
+  theme?: string;
+  tile_style?: string;
+  block_background?: string;
+  /** @deprecated Removed server-side; ignored except to imply contained background. */
+  section_padding?: string;
   show_badge?: boolean;
   features: BentoGrid01FeaturePayload[];
 }
@@ -102,7 +133,7 @@ function cardVmLayoutFromBentoFeature(feature: BentoGrid01FeaturePayload): Parti
   ) {
     return { textImageLayout: lay, imageScale: sc ?? 'bleed_under' };
   }
-  return { textImageLayout: 'text_on_top', imageScale: 'bleed_under' };
+  return { textImageLayout: 'text_on_top', imageScale: sc ?? 'bleed_under' };
 }
 
 // ── Feature tile header ───────────────────────────────────────────────────
@@ -136,7 +167,7 @@ function FeatureHeader({ feature }: { feature: BentoGrid01FeaturePayload }) {
   }
   if (feature.header_type === 'richtext' && feature.html) {
     return (
-      <div className="scn-taxonomy-content__paragraph"
+      <div className="scn-taxonomy-content__paragraph scn-bentogrid01__richtext"
         dangerouslySetInnerHTML={{ __html: feature.html }} />
     );
   }
@@ -151,24 +182,35 @@ function FeatureHeader({ feature }: { feature: BentoGrid01FeaturePayload }) {
       />
     );
   }
+  if (feature.header_type === 'forex_strip') {
+    return <ForexStripTile quotes={feature.forex_quotes ?? []} />;
+  }
+  if (feature.header_type === 'market_movers' && feature.market_movers) {
+    return (
+      <MarketMoversTile
+        marketMovers={feature.market_movers}
+        tabs={feature.market_mover_tabs ?? []}
+      />
+    );
+  }
   return (
     <>
       {feature.image_url_light && (
         <img
           src={feature.image_url_light}
           alt={feature.title}
-          className="dark:hidden"
+          className="scn-bentogrid01__feat-img scn-bentogrid01__feat-img--light"
         />
       )}
       {feature.image_url_dark && (
         <img
           src={feature.image_url_dark}
           alt={feature.title}
-          className="hidden dark:block"
+          className="scn-bentogrid01__feat-img scn-bentogrid01__feat-img--dark"
         />
       )}
       {!feature.image_url_light && !feature.image_url_dark && (
-        <div className="min-h-[120px] flex items-center justify-center text-muted-foreground text-sm">
+        <div className="scn-bentogrid01__img-placeholder">
           No image
         </div>
       )}
@@ -176,115 +218,52 @@ function FeatureHeader({ feature }: { feature: BentoGrid01FeaturePayload }) {
   );
 }
 
-// ── Theme helpers ─────────────────────────────────────────────────────────
-
-const SECTION_PADDING: Record<BentoSectionPadding, string> = {
-  default: 'py-11 md:py-20',
-  compact: 'py-6 md:py-10',
-  spacious: 'py-16 md:py-28',
-};
-
-const SECTION_BG: Record<BentoTheme, string> = {
-  default: '',
-  dark: 'bg-zinc-950 text-zinc-50',
-  muted: 'bg-muted/50',
-  accent: 'bg-primary/5',
-};
-
-const TILE_WRAPPER: Record<BentoTileStyle, string> = {
-  bordered: 'rounded-xl border border-border',
-  shadow: 'rounded-xl shadow-md',
-  flat: 'rounded-xl',
-};
-
-const TILE_HEADER_BG: Record<BentoTheme, string> = {
-  default: 'bg-muted',
-  dark: 'bg-zinc-900',
-  muted: 'bg-muted/60',
-  accent: 'bg-primary/10',
-};
-
-const TILE_DIVIDER: Record<BentoTileStyle, string> = {
-  bordered: 'border-t border-border',
-  shadow: 'border-t border-border/50',
-  flat: '',
-};
-
-const HEADING_COLOR: Record<BentoTheme, string> = {
-  default: 'text-foreground',
-  dark: 'text-zinc-50',
-  muted: 'text-foreground',
-  accent: 'text-foreground',
-};
-
-const DESCRIPTION_COLOR: Record<BentoTheme, string> = {
-  default: 'text-muted-foreground',
-  dark: 'text-zinc-400',
-  muted: 'text-muted-foreground',
-  accent: 'text-muted-foreground',
-};
-
-const BADGE_VARIANT: Record<BentoTheme, string> = {
-  default: '',
-  dark: 'border-zinc-700 text-zinc-300',
-  muted: '',
-  accent: 'border-primary/30 text-primary',
-};
-
 // ── Root component ────────────────────────────────────────────────────────
 
 function BentoGrid01Root({ payload }: { payload: BentoGrid01Payload }) {
-  const theme: BentoTheme = payload.theme ?? 'default';
-  const tileStyle: BentoTileStyle = payload.tile_style ?? 'bordered';
-  const padding: BentoSectionPadding = payload.section_padding ?? 'default';
   const showBadge = payload.show_badge !== false;
 
+  const sectionClass = bentoGrid01SectionClassName({
+    theme: payload.theme,
+    blockBackground: bentoBlockBackgroundFromPayload(payload),
+    tileStyle: payload.tile_style,
+  });
+
   return (
-    <section className={SECTION_BG[theme]}>
-      <div className={SECTION_PADDING[padding]}>
-        <div className="max-w-7xl xl:px-16 lg:px-8 px-4 mx-auto flex flex-col gap-12">
-          <div className="flex flex-col gap-4 items-center justify-center max-w-3xl mx-auto">
-            {showBadge && (
-              <Badge
-                variant="outline"
-                className={`px-3 py-1 h-auto text-sm font-normal ${BADGE_VARIANT[theme]}`}
-              >
-                {payload.badge_text}
-              </Badge>
-            )}
-            <h2 className={`text-center md:text-5xl text-3xl mx-auto font-medium ${HEADING_COLOR[theme]}`}>
-              {payload.heading}
-            </h2>
-          </div>
-          <div className="grid grid-cols-12 gap-5">
-            {payload.features.map((feature, i) => {
-              const span = feature.col_span === '8' ? 'lg:col-span-8' : 'lg:col-span-4';
-              const headerClip =
-                feature.header_type === 'card' ? '' : ' overflow-hidden';
-              const showTextFooter = feature.header_type !== 'stock_bars';
-              return (
-                <div key={i} className={`${span} col-span-12`}>
-                  <div className={`${TILE_WRAPPER[tileStyle]} h-full flex flex-col`}>
-                    <div
-                      className={`${TILE_HEADER_BG[theme]} rounded-t-xl py-8 px-9 relative flex-1 flex items-center justify-center min-h-[200px]${headerClip}${
-                        showTextFooter ? '' : ' rounded-b-xl'
-                      }`}
-                    >
-                      <FeatureHeader feature={feature} />
-                    </div>
-                    {showTextFooter ? (
-                      <div className={`flex flex-col gap-0.5 p-8 ${TILE_DIVIDER[tileStyle]}`}>
-                        <h3 className={`text-xl font-medium ${HEADING_COLOR[theme]}`}>{feature.title}</h3>
-                        <p className={`text-base font-normal ${DESCRIPTION_COLOR[theme]}`}>
-                          {feature.description}
-                        </p>
-                      </div>
-                    ) : null}
+    <section className={sectionClass}>
+      <div className="scn-bentogrid01__inner">
+        <div className="scn-bentogrid01__intro">
+          <h2 className="scn-bentogrid01__heading">{payload.heading}</h2>
+          {showBadge && (
+            <Badge variant="outline" className="scn-bentogrid01__badge">
+              {payload.badge_text}
+            </Badge>
+          )}
+        </div>
+        <div className="scn-bentogrid01__grid">
+          {payload.features.map((feature, i) => {
+            const span = feature.col_span === '8' ? 'scn-bentogrid01__cell--span-8' : 'scn-bentogrid01__cell--span-4';
+            const headerClip = feature.header_type === 'card' ? '' : ' scn-bentogrid01__tile-header--clip';
+            const showTextFooter = !BENTO_TILES_WITHOUT_FOOTER.has(feature.header_type);
+            const tileHeaderRound = showTextFooter ? '' : ' scn-bentogrid01__tile-header--round-bottom';
+            return (
+              <div key={i} className={`scn-bentogrid01__cell ${span}`}>
+                <div className="scn-bentogrid01__tile">
+                  <div
+                    className={`scn-bentogrid01__tile-header${headerClip}${tileHeaderRound}`}
+                  >
+                    <FeatureHeader feature={feature} />
                   </div>
+                  {showTextFooter ? (
+                    <div className="scn-bentogrid01__tile-footer">
+                      <h3 className="scn-bentogrid01__tile-title">{feature.title}</h3>
+                      <p className="scn-bentogrid01__tile-desc">{feature.description}</p>
+                    </div>
+                  ) : null}
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>

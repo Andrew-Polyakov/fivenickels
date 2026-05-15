@@ -217,6 +217,8 @@ class BentoGridFeatureBlock(blocks.StructBlock):
             ("card", "Article card"),
             ("richtext", "Rich text"),
             ("stock_bars", "Stock bars"),
+            ("forex_strip", "FX pairs"),
+            ("market_movers", "Market movers"),
         ],
         default="image",
     )
@@ -294,6 +296,17 @@ class BentoGridFeatureBlock(blocks.StructBlock):
         max_value=360,
         label="Number of bars (stock bars)",
     )
+    market_region = blocks.ChoiceBlock(
+        choices=[
+            ("US", "US"),
+            ("ASIA", "Asia"),
+            ("EUROPE", "Europe"),
+        ],
+        default="US",
+        required=False,
+        label="Market region",
+        help_text="Market movers tile only. Used when ?market_region= is absent on the page URL.",
+    )
 
     class Meta:
         icon = "image"
@@ -308,13 +321,12 @@ class BentoGrid01Block(blocks.StructBlock):
     theme = blocks.ChoiceBlock(
         choices=[
             ("default", "Default"),
-            ("dark", "Dark"),
-            ("muted", "Muted"),
+            ("inverted", "Inverted"),
             ("accent", "Accent"),
         ],
         default="default",
         required=False,
-        help_text="Overall colour scheme for the bento section.",
+        help_text="Default: site palette. Inverted: light section (white/black). Accent: dark blue and orange.",
     )
     tile_style = blocks.ChoiceBlock(
         choices=[
@@ -326,15 +338,14 @@ class BentoGrid01Block(blocks.StructBlock):
         required=False,
         help_text="Visual style applied to each feature tile.",
     )
-    section_padding = blocks.ChoiceBlock(
+    block_background = blocks.ChoiceBlock(
         choices=[
-            ("default", "Default"),
-            ("compact", "Compact"),
-            ("spacious", "Spacious"),
+            ("default", "Default (contained)"),
+            ("edge_to_edge", "Edge to edge"),
         ],
         default="default",
         required=False,
-        help_text="Vertical padding around the section.",
+        help_text="Edge to edge: section background spans full viewport width; content stays centered.",
     )
     show_badge = blocks.BooleanBlock(
         default=True,
@@ -348,19 +359,13 @@ class BentoGrid01Block(blocks.StructBlock):
         label = "Bento block"
 
 
-class LayoutSeparatorBlock(blocks.StructBlock):
-    orientation = blocks.ChoiceBlock(
-        choices=[
-            ("horizontal", "Horizontal"),
-            ("vertical", "Vertical"),
-        ],
-        default="horizontal",
-        label="Orientation",
-    )
+class LayoutSeparatorBlock(blocks.StaticBlock):
+    """Full-width horizontal rule between sections (or between card rows)."""
 
     class Meta:
         icon = "horizontalrule"
-        label = "Layout separator"
+        label = "Separator"
+        admin_text = "Horizontal rule"
 
 
 class PerforationSeparatorBlock(blocks.StaticBlock):

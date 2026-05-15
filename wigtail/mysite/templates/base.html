@@ -79,33 +79,7 @@
             </nav>
         </header>
 
-        <div class="site-page{% if current_site %} site-page--has-rail{% endif %}">
-            {% if current_site %}
-            <aside class="site-page__rail" aria-label="Logo and FX snapshot">
-                <div class="site-header__logo-rail">
-                    <div class="site-header__logo-row">
-                        <span class="site-header__logo-sep" aria-hidden="true"></span>
-                        <a
-                            class="site-header__logo"
-                            href="{% if current_site.root_page %}{% pageurl current_site.root_page %}{% else %}/{% endif %}"
-                        >
-                            <img
-                                class="site-header__logo-img"
-                                src="{% static 'images/logo.png' %}"
-                                alt="{% firstof current_site.site_name 'Home' %}"
-                                width="120"
-                                height="120"
-                                decoding="async"
-                                fetchpriority="high"
-                            />
-                        </a>
-                        <span class="site-header__logo-sep" aria-hidden="true"></span>
-                    </div>
-                    {% include "components/forex_strip.html" with forex_strip_modifier="compact" %}
-                    {% include "components/market_movers.html" %}
-                </div>
-            </aside>
-            {% endif %}
+        <div class="site-page">
             <div class="site-page__column">
                 <div class="site-header__tools site-page__search">
                     <div class="site-header__upper site-header__masthead-strip">
