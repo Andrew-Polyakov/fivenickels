@@ -1571,6 +1571,32 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, onPatch
   );
 }
 
+function BentoAddTilePopoverContent({
+  onPick,
+}: {
+  onPick: (type: BentoGrid01Feature['header_type']) => void;
+}) {
+  return (
+    <div className="scn-bento-editor__add-tile-cards">
+      {BENTO_TILE_TYPES.map(bt => (
+        <button
+          key={bt.type}
+          type="button"
+          className="scn-bento-editor__add-tile-card-btn"
+          onClick={() => onPick(bt.type)}
+        >
+          <Card className="scn-bento-editor__add-tile-card">
+            <CardContent className="p-2.5">
+              <p className="scn-bento-editor__add-tile-card-label">{BENTO_TILE_LABEL[bt.type]}</p>
+              <p className="scn-bento-editor__add-tile-card-desc">{bt.desc}</p>
+            </CardContent>
+          </Card>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function BentoGrid01BlockHeaderFields({
   block,
   onChange,
@@ -1585,20 +1611,22 @@ function BentoGrid01BlockHeaderFields({
   onAddTile: (headerType: BentoGrid01Feature['header_type']) => void;
 }) {
   return (
-    <div className="scn-editor-block__header-fields">
-      <Input
-        value={block.badge_text}
-        placeholder="Badge"
-        className="scn-editor-block__header-field"
-        onChange={e => onChange({ ...block, badge_text: e.target.value })}
-      />
-      <Input
-        value={block.heading}
-        placeholder="Heading"
-        className="scn-editor-block__header-field scn-editor-block__header-field--wide"
-        onChange={e => onChange({ ...block, heading: e.target.value })}
-      />
-      <div className="scn-editor-block__header-height">
+    <div className="scn-editor-block__header-fields scn-editor-block__header-fields--bento-toolbar">
+      <div className="scn-editor-block__bento-text-fields">
+        <Input
+          value={block.badge_text}
+          placeholder="Badge"
+          className="scn-editor-block__header-field"
+          onChange={e => onChange({ ...block, badge_text: e.target.value })}
+        />
+        <Input
+          value={block.heading}
+          placeholder="Heading"
+          className="scn-editor-block__header-field scn-editor-block__header-field--wide"
+          onChange={e => onChange({ ...block, heading: e.target.value })}
+        />
+      </div>
+      <div className="scn-editor-block__header-height scn-editor-block__bento-size">
         <label className="scn-bento-editor__size-auto-row">
           <Checkbox
             checked={!block.height || block.height === 'auto'}
@@ -1621,9 +1649,15 @@ function BentoGrid01BlockHeaderFields({
       </div>
       <Popover>
         <PopoverTrigger asChild>
-          <button type="button" className="scn-bento-editor__size-btn" title="Theme settings" aria-label="Theme settings">
+          <Button
+            type="button"
+            variant="outline"
+            className="scn-bento-editor__toolbar-icon-btn"
+            title="Theme settings"
+            aria-label="Theme settings"
+          >
             <Settings2 size={14} />
-          </button>
+          </Button>
         </PopoverTrigger>
         <PopoverContent className="scn-popover-content scn-bento-editor__theme-popover" align="end">
           <div className="scn-bento-editor__theme-field">
@@ -1674,22 +1708,17 @@ function BentoGrid01BlockHeaderFields({
       </Popover>
       <Popover open={addOpen} onOpenChange={onAddOpenChange}>
         <PopoverTrigger asChild>
-          <button type="button" className="scn-bento-editor__add-col" aria-label="Add tile">
+          <Button type="button" variant="outline" className="scn-bento-editor__toolbar-icon-btn" aria-label="Add tile">
             +
-          </button>
+          </Button>
         </PopoverTrigger>
-        <PopoverContent className="scn-popover-content scn-editor-add-block-menu" align="end">
-          {BENTO_TILE_TYPES.map(bt => (
-            <button
-              key={bt.type}
-              type="button"
-              className="scn-editor-add-block-item"
-              onClick={() => { onAddTile(bt.type); }}
-            >
-              <span className="scn-editor-add-block-item__label">{BENTO_TILE_LABEL[bt.type]}</span>
-              <span className="scn-editor-add-block-item__desc">{bt.desc}</span>
-            </button>
-          ))}
+        <PopoverContent className="scn-popover-content" align="end">
+          <BentoAddTilePopoverContent
+            onPick={type => {
+              onAddTile(type);
+              onAddOpenChange(false);
+            }}
+          />
         </PopoverContent>
       </Popover>
     </div>
@@ -1719,18 +1748,13 @@ function BentoResizableLayout({ features, resolvedRandom, searchUrl, stockPrevie
               +
             </button>
           </PopoverTrigger>
-          <PopoverContent className="scn-popover-content scn-editor-add-block-menu" align="center">
-            {BENTO_TILE_TYPES.map(bt => (
-              <button
-                key={bt.type}
-                type="button"
-                className="scn-editor-add-block-item"
-                onClick={() => { onAddTile(bt.type); }}
-              >
-                <span className="scn-editor-add-block-item__label">{BENTO_TILE_LABEL[bt.type]}</span>
-                <span className="scn-editor-add-block-item__desc">{bt.desc}</span>
-              </button>
-            ))}
+          <PopoverContent className="scn-popover-content" align="center">
+            <BentoAddTilePopoverContent
+              onPick={type => {
+                onAddTile(type);
+                onAddTileOpenChange(false);
+              }}
+            />
           </PopoverContent>
         </Popover>
       </div>
@@ -2140,7 +2164,10 @@ function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl,
             onAddTile={addBentoTile}
           />
         ) : null}
-        <div className="scn-editor-block__controls">
+        <div className={cn(
+          'scn-editor-block__controls',
+          block.type === 'bento_grid_01' && 'scn-editor-block__controls--bento-toolbar',
+        )}>
           <button className="scn-editor-block__ctrl-btn" onClick={() => onMove(-1)}
             disabled={index === 0} aria-label="Move up" title="Move up">↑</button>
           <button className="scn-editor-block__ctrl-btn" onClick={() => onMove(1)}

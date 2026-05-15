@@ -7546,6 +7546,61 @@ body.page-article-editor .site-content {
     min-width: 2.75rem;
 }
 
+.scn-editor-block__header-fields--bento-toolbar {
+    --scn-bento-toolbar-btn-size: 2.125rem;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.scn-editor-block__bento-text-fields {
+    flex: 0 1 50%;
+    max-width: 50%;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.scn-editor-block__bento-text-fields .scn-editor-block__header-field {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+}
+
+.scn-editor-block__bento-text-fields .scn-editor-block__header-field--wide {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: none;
+}
+
+.scn-editor-block__header-fields--bento-toolbar .scn-editor-block__bento-size {
+    flex: 1 1 auto;
+    min-width: 11rem;
+    max-width: none;
+}
+
+.scn-editor-block__header-fields--bento-toolbar .scn-editor-block__bento-size .scn-bento-editor__size-slider-row {
+    flex: 1;
+    min-width: 7rem;
+    max-width: none;
+}
+
+.scn-editor-block__controls--bento-toolbar {
+    --scn-bento-toolbar-btn-size: 2.125rem;
+}
+
+.scn-editor-block__controls--bento-toolbar .scn-editor-block__ctrl-btn {
+    width: var(--scn-bento-toolbar-btn-size);
+    height: var(--scn-bento-toolbar-btn-size);
+    min-width: var(--scn-bento-toolbar-btn-size);
+    min-height: var(--scn-bento-toolbar-btn-size);
+    border-radius: 6px;
+    font-size: 0.8125rem;
+}
+
 .scn-editor-block__controls {
     margin-left: auto;
     flex-shrink: 0;
@@ -8277,6 +8332,100 @@ img[src*='bear.png'].scn-catalyst-toggle__icon {
     font-size: 1.35rem;
     line-height: 1;
     padding: 0;
+}
+
+.scn-bento-editor__toolbar-icon-btn {
+    flex-shrink: 0;
+    align-self: center;
+    width: var(--scn-bento-toolbar-btn-size, 2.125rem);
+    height: var(--scn-bento-toolbar-btn-size, 2.125rem);
+    min-width: var(--scn-bento-toolbar-btn-size, 2.125rem);
+    min-height: var(--scn-bento-toolbar-btn-size, 2.125rem);
+    padding: 0;
+    border-radius: 6px;
+    border-color: rgba(var(--sc-rgb-accent), 0.45);
+    background: #0a0a0a;
+    color: #fafafa;
+    font-size: 0.8125rem;
+    line-height: 1;
+    box-shadow:
+        0 0 0 1px rgba(var(--sc-rgb-glow), 0.28),
+        0 0 10px rgba(var(--sc-rgb-glow), 0.22);
+}
+
+.scn-bento-editor__toolbar-icon-btn:hover,
+.scn-bento-editor__toolbar-icon-btn:focus-visible {
+    border-color: rgba(var(--sc-rgb-accent), 0.65);
+    color: var(--sc-accent-hex);
+    background: #141414;
+    box-shadow:
+        0 0 0 1px rgba(var(--sc-rgb-glow), 0.42),
+        0 0 18px rgba(var(--sc-rgb-glow), 0.38),
+        0 0 38px rgba(var(--sc-rgb-glow), 0.14);
+}
+
+.scn-bento-editor__add-tile-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.35rem;
+    min-width: 14rem;
+    max-width: 18rem;
+}
+
+.scn-bento-editor__add-tile-card-btn {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+    border-radius: 6px;
+}
+
+.scn-bento-editor__add-tile-card-btn:hover .scn-bento-editor__add-tile-card,
+.scn-bento-editor__add-tile-card-btn:focus-visible .scn-bento-editor__add-tile-card {
+    border-color: rgba(var(--sc-rgb-accent), 0.55);
+    background: rgba(var(--sc-rgb-glow), 0.08);
+}
+
+.scn-bento-editor__add-tile-card {
+    border-color: var(--color-border-subtle);
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.scn-bento-editor__add-tile-card-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    margin: 0 0 0.15rem;
+    color: #fafafa;
+}
+
+.scn-bento-editor__add-tile-card-desc {
+    margin: 0;
+    font-size: 0.72rem;
+    color: var(--color-text-muted, #888);
+    line-height: 1.35;
+}
+
+.scn-bento-editor__theme-popover {
+    width: 240px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.scn-bento-editor__theme-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.scn-bento-editor__theme-field > label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-text-muted, #888);
 }
 
 .scn-bento-editor__size-auto-row {
