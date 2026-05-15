@@ -663,6 +663,161 @@
   height: 100%;
 }
 
+.scn-bento-editor__panel-content--widget {
+  padding: 0;
+}
+
+.scn-bento-editor__panel-content--widget .scn-bento-widget-tile {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.scn-bento-readonly__panel--widget {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.scn-bento-readonly__panel--widget .scn-bento-widget-tile {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+.scn-bento-widget-tile {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.scn-bento-widget-tile--fill .scn-bento-widget-tile__content {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.scn-bento-widget-tile__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.scn-bento-widget-tile__scroll .scn-scroll-area__viewport {
+  height: 100%;
+}
+
+.scn-bento-widget-tile__content {
+  width: 100%;
+  min-height: min-content;
+  box-sizing: border-box;
+  padding: 0.35rem;
+}
+
+.scn-bento-widget-tile__content .forex-strip,
+.scn-bento-widget-tile__content .market-movers {
+  width: 100%;
+}
+
+.scn-bento-widget-tile__content:has(.market-movers--tile) {
+  padding: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Bento tile: fill card width/height (overrides rail max-width from mysite.css) */
+.market-movers--tile {
+  margin: 0;
+  max-width: none;
+  width: 100%;
+  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.market-movers--tile .market-movers__card {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.market-movers--tile .market-movers__header {
+  flex: 0 0 auto;
+}
+
+.market-movers--tile .market-movers__body-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+.market-movers--tile .market-movers__body-scroll .scn-scroll-area__viewport {
+  height: 100%;
+}
+
+.market-movers--tile .market-movers__body {
+  padding: 0 0.2rem 0.4rem;
+}
+
+.market-movers--tile .market-movers__empty {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 4rem;
+}
+
+.scn-bento-readonly__panel--widget,
+.scn-bento-readonly__hero .scn-bento-readonly__panel--widget,
+.scn-bento-readonly__right-stack .scn-bento-readonly__panel--widget {
+  height: 100%;
+}
+
+.scn-carousel-editor__hetero-tile,
+.scn-carousel-readonly__tile {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.scn-carousel-editor__hetero-tile .scn-bento-editor__panel-content,
+.scn-carousel-readonly__tile .scn-bento-readonly__panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+.scn-bento-editor__panel-content--widget .scn-bento-editor__placeholder-card,
+.scn-bento-readonly__panel--widget .scn-bento-editor__placeholder-card {
+  min-height: 100%;
+}
+
+.scn-bentogrid01__tile-header--widget {
+  padding: 0;
+  align-items: stretch;
+  justify-content: stretch;
+  min-height: 0;
+}
+
+.scn-bentogrid01__tile-header--widget .scn-bento-widget-tile {
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+}
+
 .scn-bento-editor__placeholder-card {
   height: 100%;
   display: flex;
@@ -2157,13 +2312,16 @@ turbo-frame#site-nav.site-nav {
 
 /* Root taxonomy row: glowing green rule band + flat triggers (scoped so other nav rows unchanged). */
 .site-nav__row.scn-taxonomy-site-nav__unified {
+  position: sticky;
+  top: 0;
+  z-index: 75;
   width: 100%;
   margin: 0;
   padding: 0.45rem 0;
   box-sizing: border-box;
   border-top: 1px solid rgba(var(--sc-rgb-glow), 0.55);
   border-bottom: 1px solid rgba(var(--sc-rgb-glow), 0.55);
-  background: transparent;
+  background: var(--color-bg, #070b12);
   box-shadow:
     0 -2px 18px rgba(var(--sc-rgb-glow), 0.42),
     0 2px 18px rgba(var(--sc-rgb-glow), 0.42);

@@ -33,6 +33,7 @@ import {
   type BentoTheme,
   type BentoTileStyle,
 } from './bento-grid01-theme';
+import { BentoWidgetTileFrame } from './bento-widget-tile-frame';
 
 // ── Types (mirror the Django BentoGrid01Block fields) ─────────────────────
 
@@ -173,24 +174,32 @@ function FeatureHeader({ feature }: { feature: BentoGrid01FeaturePayload }) {
   }
   if (feature.header_type === 'stock_bars') {
     return (
-      <StockBarsTile
-        bars={feature.bars ?? []}
-        chips={feature.chips ?? []}
-        chartSymbol={feature.chart_symbol ?? ''}
-        barsError={feature.bars_error}
-        barsTimeframe={feature.bars_timeframe}
-      />
+      <BentoWidgetTileFrame>
+        <StockBarsTile
+          bars={feature.bars ?? []}
+          chips={feature.chips ?? []}
+          chartSymbol={feature.chart_symbol ?? ''}
+          barsError={feature.bars_error}
+          barsTimeframe={feature.bars_timeframe}
+        />
+      </BentoWidgetTileFrame>
     );
   }
   if (feature.header_type === 'forex_strip') {
-    return <ForexStripTile quotes={feature.forex_quotes ?? []} />;
+    return (
+      <BentoWidgetTileFrame>
+        <ForexStripTile quotes={feature.forex_quotes ?? []} />
+      </BentoWidgetTileFrame>
+    );
   }
   if (feature.header_type === 'market_movers' && feature.market_movers) {
     return (
-      <MarketMoversTile
-        marketMovers={feature.market_movers}
-        tabs={feature.market_mover_tabs ?? []}
-      />
+      <BentoWidgetTileFrame scrollable={false}>
+        <MarketMoversTile
+          marketMovers={feature.market_movers}
+          tabs={feature.market_mover_tabs ?? []}
+        />
+      </BentoWidgetTileFrame>
     );
   }
   return (
@@ -244,13 +253,15 @@ function BentoGrid01Root({ payload }: { payload: BentoGrid01Payload }) {
           {payload.features.map((feature, i) => {
             const span = feature.col_span === '8' ? 'scn-bentogrid01__cell--span-8' : 'scn-bentogrid01__cell--span-4';
             const headerClip = feature.header_type === 'card' ? '' : ' scn-bentogrid01__tile-header--clip';
-            const showTextFooter = !BENTO_TILES_WITHOUT_FOOTER.has(feature.header_type);
+            const isWidgetTile = BENTO_TILES_WITHOUT_FOOTER.has(feature.header_type);
+            const widgetHeader = isWidgetTile ? ' scn-bentogrid01__tile-header--widget' : '';
+            const showTextFooter = !isWidgetTile;
             const tileHeaderRound = showTextFooter ? '' : ' scn-bentogrid01__tile-header--round-bottom';
             return (
               <div key={i} className={`scn-bentogrid01__cell ${span}`}>
                 <div className="scn-bentogrid01__tile">
                   <div
-                    className={`scn-bentogrid01__tile-header${headerClip}${tileHeaderRound}`}
+                    className={`scn-bentogrid01__tile-header${headerClip}${tileHeaderRound}${widgetHeader}`}
                   >
                     <FeatureHeader feature={feature} />
                   </div>

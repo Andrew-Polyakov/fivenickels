@@ -59,6 +59,7 @@ import MarketMoversTile, {
 } from '../components/shadcn-space/blocks/bento-grid-01/MarketMoversTile';
 import StockBarsTile from '../components/shadcn-space/blocks/bento-grid-01/StockBarsTile';
 import type { StockBarPoint, StockChipPayload } from '../components/shadcn-space/blocks/bento-grid-01/StockBarsTile';
+import { BentoWidgetTileFrame } from './bento-widget-tile-frame';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -779,6 +780,8 @@ function renderPackedCarouselEditorBentoSlide(
   cardFeaturesById: Record<string, BentoGrid01Feature>,
   searchUrl: string,
   stockPreviewUrl: string,
+  forexPreviewUrl: string,
+  marketMoversPreviewUrl: string,
   resolvedRandom: Record<string, ArticleResult | null>,
   onPatch: (featId: string, patch: Partial<BentoGrid01Feature>) => void,
   onRemove: (featId: string) => void,
@@ -791,6 +794,8 @@ function renderPackedCarouselEditorBentoSlide(
         resolved={resolvedRandom[feat.id]}
         searchUrl={searchUrl}
         stockPreviewUrl={stockPreviewUrl}
+        forexPreviewUrl={forexPreviewUrl}
+        marketMoversPreviewUrl={marketMoversPreviewUrl}
         onPatch={patch => onPatch(feat.id, patch)}
         onRemove={() => onRemove(feat.id)}
       />
@@ -1547,40 +1552,48 @@ function BentoFeaturePreview({ feat, resolved, linkable, stockPreviewUrl, forexP
 
   if (feat.header_type === 'stock_bars') {
     return (
-      <BentoStockBarsPreview
-        symbols={feat.stock_symbols ?? []}
-        cadence={feat.stock_bars_cadence ?? 'day'}
-        barsLimit={feat.stock_bars_limit ?? 180}
-        stockPreviewUrl={stockPreviewUrl ?? ''}
-      />
+      <BentoWidgetTileFrame>
+        <BentoStockBarsPreview
+          symbols={feat.stock_symbols ?? []}
+          cadence={feat.stock_bars_cadence ?? 'day'}
+          barsLimit={feat.stock_bars_limit ?? 180}
+          stockPreviewUrl={stockPreviewUrl ?? ''}
+        />
+      </BentoWidgetTileFrame>
     );
   }
 
   if (feat.header_type === 'forex_strip') {
-    if (linkable && forexPreviewUrl) {
-      return <BentoForexStripPreview forexPreviewUrl={forexPreviewUrl} />;
-    }
     return (
-      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
-        <span>FX pairs (live on site)</span>
-      </div>
+      <BentoWidgetTileFrame>
+        {forexPreviewUrl
+          ? <BentoForexStripPreview forexPreviewUrl={forexPreviewUrl} />
+          : (
+            <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+              <span className="scn-taxonomy-content__bento-desc">Configure FX preview URL.</span>
+            </div>
+          )}
+      </BentoWidgetTileFrame>
     );
   }
 
   if (feat.header_type === 'market_movers') {
-    if (linkable && marketMoversPreviewUrl) {
-      const region = feat.market_region ?? 'US';
-      return (
-        <BentoMarketMoversPreview
-          marketMoversPreviewUrl={marketMoversPreviewUrl}
-          marketRegion={region}
-        />
-      );
-    }
+    const region = feat.market_region ?? 'US';
     return (
-      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
-        <span>Market movers ({feat.market_region ?? 'US'})</span>
-      </div>
+      <BentoWidgetTileFrame scrollable={false}>
+        {marketMoversPreviewUrl
+          ? (
+            <BentoMarketMoversPreview
+              marketMoversPreviewUrl={marketMoversPreviewUrl}
+              marketRegion={region}
+            />
+          )
+          : (
+            <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+              <span className="scn-taxonomy-content__bento-desc">Configure market movers preview URL.</span>
+            </div>
+          )}
+      </BentoWidgetTileFrame>
     );
   }
 
@@ -1603,15 +1616,18 @@ function BentoFeaturePreview({ feat, resolved, linkable, stockPreviewUrl, forexP
   );
 }
 
-function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, onPatch, onRemove }: {
+function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, onPatch, onRemove }: {
   feat: BentoGrid01Feature;
   resolved: ArticleResult | null | undefined;
   searchUrl: string;
   stockPreviewUrl: string;
+  forexPreviewUrl: string;
+  marketMoversPreviewUrl: string;
   onPatch: (patch: Partial<BentoGrid01Feature>) => void;
   onRemove: () => void;
 }) {
   const [open, setOpen] = React.useState(false);
+  const isWidgetTile = BENTO_WIDGET_TILE_TYPES.has(feat.header_type);
 
   function onStockTileContextMenu(e: React.MouseEvent) {
     if (feat.header_type !== 'stock_bars') return;
@@ -1634,13 +1650,22 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, onPatch
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <div
-          className="scn-bento-editor__panel-content"
+          className={cn(
+            'scn-bento-editor__panel-content',
+            isWidgetTile && 'scn-bento-editor__panel-content--widget',
+          )}
           role="button"
           tabIndex={0}
           onContextMenu={feat.header_type === 'stock_bars' ? onStockTileContextMenu : undefined}
         >
           <span className="scn-bento-editor__panel-label">{BENTO_TILE_LABEL[feat.header_type] ?? 'Tile'}</span>
-          <BentoFeaturePreview feat={feat} resolved={resolved} stockPreviewUrl={stockPreviewUrl} />
+          <BentoFeaturePreview
+            feat={feat}
+            resolved={resolved}
+            stockPreviewUrl={stockPreviewUrl}
+            forexPreviewUrl={forexPreviewUrl}
+            marketMoversPreviewUrl={marketMoversPreviewUrl}
+          />
         </div>
       </PopoverTrigger>
       <PopoverContent
@@ -1974,11 +1999,13 @@ function BentoGrid01BlockHeaderFields({
   );
 }
 
-function BentoResizableLayout({ features, resolvedRandom, searchUrl, stockPreviewUrl, onPatch, onRemove, panelSizes, onLayoutChange, height, addTileOpen, onAddTileOpenChange, onAddTile }: {
+function BentoResizableLayout({ features, resolvedRandom, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, onPatch, onRemove, panelSizes, onLayoutChange, height, addTileOpen, onAddTileOpenChange, onAddTile }: {
   features: BentoGrid01Feature[];
   resolvedRandom: Record<string, ArticleResult | null>;
   searchUrl: string;
   stockPreviewUrl: string;
+  forexPreviewUrl: string;
+  marketMoversPreviewUrl: string;
   onPatch: (featId: string, patch: Partial<BentoGrid01Feature>) => void;
   onRemove: (featId: string) => void;
   panelSizes?: number[];
@@ -2020,6 +2047,8 @@ function BentoResizableLayout({ features, resolvedRandom, searchUrl, stockPrevie
         resolved={resolvedRandom[feat.id]}
         searchUrl={searchUrl}
         stockPreviewUrl={stockPreviewUrl}
+        forexPreviewUrl={forexPreviewUrl}
+        marketMoversPreviewUrl={marketMoversPreviewUrl}
         onPatch={patch => onPatch(feat.id, patch)}
         onRemove={() => onRemove(feat.id)}
       />
@@ -2084,10 +2113,12 @@ function BentoResizableLayout({ features, resolvedRandom, searchUrl, stockPrevie
   );
 }
 
-function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, termId, onChange, addTileOpen, onAddTileOpenChange, onAddTile }: {
+function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, termId, onChange, addTileOpen, onAddTileOpenChange, onAddTile }: {
   block: BentoGrid01Block;
   searchUrl: string;
   stockPreviewUrl: string;
+  forexPreviewUrl: string;
+  marketMoversPreviewUrl: string;
   termId: number;
   onChange: (b: BentoGrid01Block) => void;
   addTileOpen: boolean;
@@ -2134,6 +2165,8 @@ function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, termId, onChange
         resolvedRandom={resolvedRandom}
         searchUrl={searchUrl}
         stockPreviewUrl={stockPreviewUrl}
+        forexPreviewUrl={forexPreviewUrl}
+        marketMoversPreviewUrl={marketMoversPreviewUrl}
         onPatch={patchFeature}
         onRemove={removeFeature}
         panelSizes={block.panelSizes}
@@ -2168,10 +2201,12 @@ function carouselAutoplayOpts(infiniteScroll: boolean) {
   return { loop: Boolean(infiniteScroll) };
 }
 
-function CarouselEditor({ block, searchUrl, stockPreviewUrl, termId, onChange }: {
+function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, termId, onChange }: {
   block: CarouselBlock;
   searchUrl: string;
   stockPreviewUrl: string;
+  forexPreviewUrl: string;
+  marketMoversPreviewUrl: string;
   termId: number;
   onChange: (b: CarouselBlock) => void;
 }) {
@@ -2358,6 +2393,8 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, termId, onChange }:
                 cardFeaturesById,
                 searchUrl,
                 stockPreviewUrl,
+                forexPreviewUrl,
+                marketMoversPreviewUrl,
                 resolvedRandom,
                 patchFeature,
                 removeFeature,
@@ -2370,6 +2407,8 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, termId, onChange }:
                       resolved={resolvedRandom[feat.id]}
                       searchUrl={searchUrl}
                       stockPreviewUrl={stockPreviewUrl}
+                      forexPreviewUrl={forexPreviewUrl}
+                      marketMoversPreviewUrl={marketMoversPreviewUrl}
                       onPatch={patch => patchFeature(feat.id, patch)}
                       onRemove={() => removeFeature(feat.id)}
                     />
@@ -2392,10 +2431,11 @@ const BLOCK_LABEL: Record<string, string> = {
   separator: 'Separator', bento_grid_01: 'Bento block', carousel: 'Carousel',
 };
 
-function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl, stockPreviewUrl, onChange, onRemove, onMove }: {
+function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, onChange, onRemove, onMove }: {
   block: TaxonomyBlock; index: number; total: number;
   termId: number;
   uploadUrl: string; articleSearchUrl: string; stockPreviewUrl: string;
+  forexPreviewUrl: string; marketMoversPreviewUrl: string;
   onChange: (b: TaxonomyBlock) => void; onRemove: () => void; onMove: (dir: -1 | 1) => void;
 }) {
   const [bentoAddTileOpen, setBentoAddTileOpen] = React.useState(false);
@@ -2445,6 +2485,8 @@ function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl,
             block={block}
             searchUrl={articleSearchUrl}
             stockPreviewUrl={stockPreviewUrl}
+            forexPreviewUrl={forexPreviewUrl}
+            marketMoversPreviewUrl={marketMoversPreviewUrl}
             termId={termId}
             onChange={onChange as (b: BentoGrid01Block) => void}
             addTileOpen={bentoAddTileOpen}
@@ -2457,6 +2499,8 @@ function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl,
             block={block}
             searchUrl={articleSearchUrl}
             stockPreviewUrl={stockPreviewUrl}
+            forexPreviewUrl={forexPreviewUrl}
+            marketMoversPreviewUrl={marketMoversPreviewUrl}
             termId={termId}
             onChange={onChange as (b: CarouselBlock) => void}
           />
@@ -2569,8 +2613,15 @@ function ReadOnlyBlock({
     const blockHeight = block.height && block.height !== 'auto' ? block.height : undefined;
 
     function renderReadOnlyPanel(f: BentoGrid01Feature) {
+      const isWidgetTile = BENTO_WIDGET_TILE_TYPES.has(f.header_type);
       return (
-        <div key={f.id} className="scn-bento-readonly__panel">
+        <div
+          key={f.id}
+          className={cn(
+            'scn-bento-readonly__panel',
+            isWidgetTile && 'scn-bento-readonly__panel--widget',
+          )}
+        >
           <BentoFeaturePreview
             feat={f}
             resolved={resolvedRandom[f.id]}
@@ -2893,6 +2944,8 @@ function TaxonomyEditor({
             uploadUrl={uploadUrl}
             articleSearchUrl={articleSearchUrl}
             stockPreviewUrl={stockPreviewUrl}
+            forexPreviewUrl={forexPreviewUrl}
+            marketMoversPreviewUrl={marketMoversPreviewUrl}
             onChange={updated => setBlocks(prev => prev.map((b, j) => j === i ? updated : b))}
             onRemove={() => setBlocks(prev => prev.filter((_, j) => j !== i))}
             onMove={dir => moveBlock(i, dir)}

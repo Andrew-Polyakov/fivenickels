@@ -1,5 +1,7 @@
 import * as React from 'react';
 
+import { ScrollArea } from '../../../ui/scroll-area';
+
 export interface MarketMoverChipPayload {
   symbol: string;
   label: string;
@@ -45,9 +47,36 @@ function MoverChip({ chip }: { chip: MarketMoverChipPayload }) {
   );
 }
 
+function MarketMoversBody({ marketMovers }: { marketMovers: MarketMoversGroupPayload }) {
+  return (
+    <div className="market-movers__body">
+      <div className="market-movers__group">
+        <p className="market-movers__group-title">Winners:</p>
+        <ul className="market-movers__chip-list">
+          {marketMovers.winners.map((chip) => (
+            <MoverChip key={chip.symbol} chip={chip} />
+          ))}
+        </ul>
+      </div>
+      <div className="market-movers__group">
+        <p className="market-movers__group-title">Loosers:</p>
+        <ul className="market-movers__chip-list">
+          {marketMovers.loosers.map((chip) => (
+            <MoverChip key={chip.symbol} chip={chip} />
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
 export default function MarketMoversTile({ marketMovers, tabs }: MarketMoversTileProps) {
   return (
-    <section className="market-movers" data-market-movers-root aria-label="Market movers">
+    <section
+      className="market-movers market-movers--tile"
+      data-market-movers-root
+      aria-label="Market movers"
+    >
       <div className="market-movers__card">
         <header className="market-movers__header">
           <h2 className="market-movers__title">MARKET MOVERS</h2>
@@ -72,24 +101,9 @@ export default function MarketMoversTile({ marketMovers, tabs }: MarketMoversTil
         </header>
 
         {marketMovers.has_data ? (
-          <>
-            <div className="market-movers__group">
-              <p className="market-movers__group-title">Winners:</p>
-              <ul className="market-movers__chip-list">
-                {marketMovers.winners.map((chip) => (
-                  <MoverChip key={chip.symbol} chip={chip} />
-                ))}
-              </ul>
-            </div>
-            <div className="market-movers__group">
-              <p className="market-movers__group-title">Loosers:</p>
-              <ul className="market-movers__chip-list">
-                {marketMovers.loosers.map((chip) => (
-                  <MoverChip key={chip.symbol} chip={chip} />
-                ))}
-              </ul>
-            </div>
-          </>
+          <ScrollArea className="market-movers__body-scroll">
+            <MarketMoversBody marketMovers={marketMovers} />
+          </ScrollArea>
         ) : (
           <p className="market-movers__empty">No market mover data yet.</p>
         )}
