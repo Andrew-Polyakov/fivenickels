@@ -104,6 +104,7 @@ urlpatterns = [
         inline_edit_views.preview_market_movers_tile,
         name="market_movers_preview",
     ),
+    path("inline/brokers/list/", broker_views.broker_list_json, name="broker_list_json"),
     path("rating/forex/", broker_views.forex_ratings, name="forex_ratings"),
     path("rating/forex/<int:pk>/update/", broker_views.broker_rating_update, name="broker_rating_update"),
     path("search/suggest/", search_views.search_suggest, name="search_suggest"),

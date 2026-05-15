@@ -10160,24 +10160,29 @@ body.template-forex-ratings .site-content {
     width: 28px;
     height: 28px;
     padding: 0;
-    border: 1px solid transparent;
+    border: 1px solid rgba(var(--sc-rgb-accent), 0.45);
     border-radius: 6px;
-    background: transparent;
-    color: var(--color-text-muted);
+    background: #0a0a0a;
+    color: #fafafa;
     cursor: pointer;
     transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
 
 .scn-broker-edit-trigger:hover {
-    background: var(--color-surface-raised, rgba(0,0,0,0.06));
-    color: var(--color-text);
+    border-color: rgba(var(--sc-rgb-accent), 0.65);
+    background: #141414;
+    color: var(--sc-accent-hex);
 }
 
 .scn-broker-edit-trigger:focus-visible,
 .scn-broker-edit-trigger[data-state='open'] {
     outline: none;
     border-color: rgba(var(--sc-rgb-accent), 0.9);
-    box-shadow: 0 0 0 2px rgba(var(--sc-rgb-glow), 0.32);
+    color: var(--sc-accent-hex);
+    box-shadow:
+        0 0 0 1px rgba(var(--sc-rgb-glow), 0.52),
+        0 0 22px rgba(var(--sc-rgb-glow), 0.48),
+        0 0 44px rgba(var(--sc-rgb-glow), 0.18);
 }
 
 .scn-popover-content {
@@ -10460,4 +10465,245 @@ body.template-forex-ratings .site-content {
     cursor: default;
 
 }
+
+/* ── FxBrokerCarousel ─────────────────────────────────────────── */
+.scn-broker-carousel {
+    margin-bottom: 2rem;
+    position: relative;
+}
+
+.scn-broker-carousel .carousel {
+    padding: 0 2rem;
+}
+
+.scn-broker-carousel__item {
+    flex: 0 0 260px;
+    padding-right: 1rem;
+}
+
+.scn-broker-carousel__card-wrap {
+    position: relative;
+    height: 100%;
+}
+
+.scn-broker-carousel__remove {
+    position: absolute;
+    top: 0.4rem;
+    right: 0.4rem;
+    width: 1.4rem;
+    height: 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    line-height: 1;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 50%;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.15s, border-color 0.15s;
+    z-index: 1;
+}
+
+.scn-broker-carousel__remove:hover {
+    color: var(--color-text);
+    border-color: var(--color-text-muted);
+}
+
+.scn-broker-carousel__item--add {
+    flex: 0 0 160px;
+}
+
+.scn-empty-add-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    height: 100%;
+    min-height: 140px;
+    background: transparent;
+    border: 2px dashed var(--color-border-subtle);
+    border-radius: 0.5rem;
+    color: var(--color-text-muted);
+    font-size: 0.8125rem;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+    padding: 1rem;
+}
+
+.scn-empty-add-btn:hover:not(:disabled) {
+    border-color: var(--color-slime);
+    color: var(--color-slime);
+}
+
+.scn-empty-add-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.scn-broker-carousel__add-icon {
+    font-size: 1.75rem;
+    font-weight: 300;
+    line-height: 1;
+}
+
+/* ── Broker Picker Dialog ─────────────────────────────────────── */
+.scn-broker-picker-dialog {
+    max-width: 420px;
+}
+
+.scn-broker-picker__list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    max-height: 360px;
+    overflow-y: auto;
+    margin-top: 0.5rem;
+}
+
+.scn-broker-picker__item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: var(--color-text);
+    font-size: 0.875rem;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.12s, border-color 0.12s;
+}
+
+.scn-broker-picker__item:hover {
+    background: var(--color-surface);
+    border-color: var(--color-border-subtle);
+}
+
+.scn-broker-picker__favicon {
+    border-radius: 4px;
+    flex-shrink: 0;
+    object-fit: contain;
+}
+
+.scn-broker-picker__name {
+    flex: 1;
+    font-weight: 500;
+}
+
+.scn-broker-picker__rating {
+    font-size: 0.8125rem;
+    color: var(--color-slime);
+    white-space: nowrap;
+}
+
+.scn-broker-picker__empty {
+    padding: 1rem 0.5rem;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    text-align: center;
+}
+
+/* ── FxBrokerCard ──────────────────────────────────────────────── */
+.scn-fx-broker-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.scn-fx-broker-card__identity {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.scn-fx-broker-card__logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    object-fit: contain;
+    background: var(--color-surface);
+}
+
+.scn-fx-broker-card__name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--color-text);
+}
+
+.scn-fx-broker-card__body {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.scn-fx-broker-card__rating {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.scn-fx-broker-card__score {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-text);
+    line-height: 1;
+}
+
+.scn-fx-broker-card__stars {
+    display: flex;
+    gap: 2px;
+}
+
+.scn-fx-broker-card__star {
+    width: 16px;
+    height: 16px;
+    color: var(--color-slime);
+}
+
+.scn-fx-broker-card__star--empty {
+    color: var(--color-text-muted);
+}
+
+.scn-fx-broker-card__review-link {
+    font-size: 0.8125rem;
+    color: var(--color-link);
+    text-decoration: none;
+    margin-left: auto;
+}
+
+.scn-fx-broker-card__review-link:hover {
+    color: var(--color-link-hover);
+    text-decoration: underline;
+}
+
+.scn-fx-broker-card__footer {
+    border-top: 1px solid var(--color-border-subtle);
+    padding-top: 0.75rem;
+}
+
+.scn-fx-broker-card__visit-btn {
+    display: inline-block;
+    padding: 0.4rem 1rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-bg);
+    background: var(--color-slime);
+    border-radius: 6px;
+    text-decoration: none;
+    transition: opacity 0.15s;
+}
+
+.scn-fx-broker-card__visit-btn:hover { opacity: 0.85; }
 

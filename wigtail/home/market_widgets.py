@@ -23,7 +23,7 @@ def resolve_market_region_key(
     *,
     block_region: str | None = None,
 ) -> str:
-    """Block field wins, then ``?market_region=``, then US."""
+    """Block field wins, then ``?market_region=``, then middleware-detected region, then US."""
     if block_region:
         normalized = normalize_market_region_key(block_region)
         if normalized in MARKET_REGION_KEYS:
@@ -32,6 +32,9 @@ def resolve_market_region_key(
         q = (request.GET.get("market_region") or "").strip().upper()
         if q in MARKET_REGION_KEYS:
             return q
+        detected = getattr(request, "market_region", None)
+        if detected in MARKET_REGION_KEYS:
+            return detected
     return "US"
 
 

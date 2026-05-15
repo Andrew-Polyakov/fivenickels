@@ -394,6 +394,9 @@
     }
 
     function remountShadcnWidgets() {
+        if (window.mountShadcnBrokerCarousel && typeof window.mountShadcnBrokerCarousel === "function") {
+            window.mountShadcnBrokerCarousel();
+        }
         if (window.mountShadcnBrokerTable && typeof window.mountShadcnBrokerTable === "function") {
             window.mountShadcnBrokerTable();
         }
@@ -426,6 +429,12 @@
             if (!href) {
                 return;
             }
+            try {
+                var regionParam = new URL(href, window.location.origin).searchParams.get("market_region");
+                if (regionParam) {
+                    document.cookie = "market_region=" + regionParam + "; path=/; max-age=31536000; SameSite=Lax";
+                }
+            } catch (_) {}
             fetch(href, {
                 credentials: "same-origin",
                 headers: { Accept: "text/html" },

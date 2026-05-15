@@ -488,6 +488,18 @@ def _serialize_bentogrid01(block_value: dict, parent_context: dict | None = None
             scale_raw = val.get("card_image_scale")
             if scale_raw in _BENTO_CARD_IMAGE_SCALE_CHOICES:
                 entry["card_image_scale"] = scale_raw
+        if header_type == "fxbroker":
+            broker = val.get("broker")
+            if broker:
+                entry["fxbroker"] = {
+                    "kind": "fxbroker",
+                    "brokerName": broker.broker_name,
+                    "overallRating": float(broker.overall_rating),
+                    "faviconUrl": broker.favicon_url or "",
+                    "pageUrl": broker.page_url or "",
+                }
+            else:
+                entry["fxbroker"] = {"kind": "empty"}
         if header_type == "richtext":
             from wagtail.rich_text import expand_db_html
 

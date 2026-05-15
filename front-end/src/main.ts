@@ -12,7 +12,7 @@ import { mountShadcnArticleCards, mountSimilarArticleCarousels, mountRecentArtic
 import { mountShadcnBento2 } from './app/shadcn-bento2';
 import { mountShadcnBentoGrid01 } from './app/shadcn-bentogrid01';
 import { mountShadcnTaxonomySiteNav } from './app/shadcn-taxonomy-site-nav';
-import { mountShadcnBrokerTable } from './app/shadcn-broker-data-table';
+import { mountShadcnBrokerTable, mountShadcnBrokerCarousel } from './app/shadcn-broker-data-table';
 import { mountShadcnProfileArticlesTable } from './app/shadcn-profile-articles-table';
 import { mountShadcnArticleEditor } from './app/shadcn-article-editor';
 import { mountShadcnReadingThemeToggle } from './app/shadcn-reading-theme-toggle';
@@ -38,6 +38,7 @@ declare global {
     mountShadcnBreadcrumbs?: () => void;
     mountShadcnTaxonomySiteNav?: () => void;
     mountShadcnBrokerTable?: () => void;
+    mountShadcnBrokerCarousel?: () => void;
     mountShadcnProfileArticlesTable?: () => void;
     mountShadcnArticleEditor?: () => void;
     mountTaxonomyEditor?: () => void;
@@ -105,6 +106,7 @@ createApplication({
     window.mountShadcnBreadcrumbs = mountShadcnBreadcrumbs;
     window.mountShadcnTaxonomySiteNav = mountShadcnTaxonomySiteNav;
     window.mountShadcnBrokerTable = mountShadcnBrokerTable;
+    window.mountShadcnBrokerCarousel = mountShadcnBrokerCarousel;
     window.mountShadcnProfileArticlesTable = mountShadcnProfileArticlesTable;
     window.mountShadcnArticleEditor = mountShadcnArticleEditor;
     window.mountTaxonomyEditor = mountTaxonomyEditor;

@@ -60,6 +60,7 @@ import MarketMoversTile, {
 import StockBarsTile from '../components/shadcn-space/blocks/bento-grid-01/StockBarsTile';
 import type { StockBarPoint, StockChipPayload } from '../components/shadcn-space/blocks/bento-grid-01/StockBarsTile';
 import { BentoWidgetTileFrame } from './bento-widget-tile-frame';
+import { FxBrokerCardView, type FxBrokerPayload } from './shadcn-fx-broker-card';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -76,6 +77,7 @@ type BentoGrid01Feature = {
     | 'animated_ui_block'
     | 'image'
     | 'card'
+    | 'fxbroker'
     | 'richtext'
     | 'stock_bars'
     | 'forex_strip'
@@ -101,12 +103,19 @@ type BentoGrid01Feature = {
   stock_bars_limit?: number;
   /** Market movers tile: default region when no ?market_region= on the page. */
   market_region?: 'US' | 'ASIA' | 'EUROPE';
+  /** FX Broker card tile fields (stored inline for public rendering). */
+  brokerId?: number | null;
+  brokerName?: string | null;
+  brokerFaviconUrl?: string | null;
+  brokerOverallRating?: number | null;
+  brokerPageUrl?: string | null;
 };
 
 const BENTO_WIDGET_TILE_TYPES = new Set<BentoGrid01Feature['header_type']>([
   'stock_bars',
   'forex_strip',
   'market_movers',
+  'fxbroker',
 ]);
 type BentoGrid01Block  = {
   id: string; type: 'bento_grid_01'; badge_text: string; heading: string; features: BentoGrid01Feature[];
@@ -782,6 +791,7 @@ function renderPackedCarouselEditorBentoSlide(
   stockPreviewUrl: string,
   forexPreviewUrl: string,
   marketMoversPreviewUrl: string,
+  brokerListUrl: string,
   resolvedRandom: Record<string, ArticleResult | null>,
   onPatch: (featId: string, patch: Partial<BentoGrid01Feature>) => void,
   onRemove: (featId: string) => void,
@@ -796,6 +806,7 @@ function renderPackedCarouselEditorBentoSlide(
         stockPreviewUrl={stockPreviewUrl}
         forexPreviewUrl={forexPreviewUrl}
         marketMoversPreviewUrl={marketMoversPreviewUrl}
+        brokerListUrl={brokerListUrl}
         onPatch={patch => onPatch(feat.id, patch)}
         onRemove={() => onRemove(feat.id)}
       />
@@ -1035,6 +1046,7 @@ const BENTO_TILE_LABEL: Record<string, string> = {
   reminder_animation: 'Reminder Animation',
   animated_ui_block: 'Animated UI Block',
   card: 'Article card',
+  fxbroker: 'FX Broker card',
   richtext: 'Rich text',
   stock_bars: 'Stock bars',
   forex_strip: 'FX pairs',
@@ -1046,6 +1058,7 @@ const BENTO_TILE_TYPES: Array<{ type: BentoGrid01Feature['header_type']; desc: s
   { type: 'reminder_animation', desc: 'Built-in reminder animation' },
   { type: 'animated_ui_block',  desc: 'Built-in animated UI block' },
   { type: 'card',               desc: 'Resolved article card' },
+  { type: 'fxbroker',           desc: 'FX broker rating card' },
   { type: 'richtext',           desc: 'Formatted rich text content' },
   { type: 'stock_bars',         desc: 'OHLC chart + ticker chips (cadence & bar count)' },
   { type: 'forex_strip',        desc: 'Live major FX pairs' },
@@ -1057,6 +1070,7 @@ const BENTO_TILE_TYPE_OPTIONS: Array<{ value: BentoGrid01Feature['header_type'];
   { value: 'reminder_animation', label: 'Reminder Animation' },
   { value: 'animated_ui_block', label: 'Animated UI Block' },
   { value: 'card', label: 'Article card' },
+  { value: 'fxbroker', label: 'FX Broker card' },
   { value: 'richtext', label: 'Rich text' },
   { value: 'stock_bars', label: 'Stock bars' },
   { value: 'forex_strip', label: 'FX pairs' },
@@ -1183,6 +1197,71 @@ function StockBarsCadenceCombobox({
   );
 }
 
+type BrokerListItem = {
+  id: number;
+  broker_name: string;
+  favicon_url: string;
+  overall_rating: number;
+  page_url: string;
+};
+
+function BrokerPickerCombobox({
+  brokerId,
+  brokerName,
+  brokerListUrl,
+  onChange,
+}: {
+  brokerId?: number | null;
+  brokerName?: string | null;
+  brokerListUrl: string;
+  onChange: (broker: BrokerListItem) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [brokers, setBrokers] = React.useState<BrokerListItem[]>([]);
+
+  React.useEffect(() => {
+    if (!brokerListUrl) return;
+    fetch(brokerListUrl, { credentials: 'same-origin' })
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then((data: { brokers: BrokerListItem[] }) => setBrokers(data.brokers ?? []))
+      .catch(() => {});
+  }, [brokerListUrl]);
+
+  const label = brokerName ?? 'Select broker…';
+
+  return (
+    <Popover modal={false} open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="outline" className="w-full justify-between" aria-expanded={open}>
+          <span className="truncate text-left">{label}</span>
+          <ChevronsUpDown size={14} className="shrink-0 opacity-60" aria-hidden />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="scn-popover-content" align="start" sideOffset={4} collisionPadding={12}>
+        <Command>
+          <CommandList>
+            <CommandGroup>
+              {brokers.length === 0 && (
+                <CommandItem disabled value="_loading">Loading…</CommandItem>
+              )}
+              {brokers.map((b) => (
+                <CommandItem
+                  key={b.id}
+                  value={String(b.id)}
+                  onSelect={() => { onChange(b); setOpen(false); }}
+                >
+                  <Check size={14} className={cn(brokerId === b.id ? 'opacity-100' : 'opacity-0')} aria-hidden />
+                  {b.broker_name}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function createBentoFeatureOfType(headerType: BentoGrid01Feature['header_type']): BentoGrid01Feature {
   const base = { id: uid(), image_url_light: '', image_url_dark: '', title: '', description: '', col_span: '4' as const };
   if (headerType === 'card') {
@@ -1211,6 +1290,9 @@ function createBentoFeatureOfType(headerType: BentoGrid01Feature['header_type'])
   }
   if (headerType === 'forex_strip') {
     return { ...base, header_type: 'forex_strip' };
+  }
+  if (headerType === 'fxbroker') {
+    return { ...base, header_type: 'fxbroker', brokerId: null, brokerName: null, brokerFaviconUrl: null, brokerOverallRating: null, brokerPageUrl: null };
   }
   return { ...base, header_type: headerType };
 }
@@ -1597,6 +1679,24 @@ function BentoFeaturePreview({ feat, resolved, linkable, stockPreviewUrl, forexP
     );
   }
 
+  if (feat.header_type === 'fxbroker') {
+    if (feat.brokerName && feat.brokerOverallRating != null) {
+      const brokerPayload: FxBrokerPayload = {
+        kind: 'fxbroker',
+        brokerName: feat.brokerName,
+        faviconUrl: feat.brokerFaviconUrl ?? undefined,
+        overallRating: feat.brokerOverallRating,
+        pageUrl: feat.brokerPageUrl ?? undefined,
+      };
+      return <FxBrokerCardView data={brokerPayload} />;
+    }
+    return (
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+        <span>+<br />Add item</span>
+      </div>
+    );
+  }
+
   if (feat.header_type === 'image') {
     const src = feat.image_url_dark || feat.image_url_light;
     if (src) {
@@ -1616,13 +1716,14 @@ function BentoFeaturePreview({ feat, resolved, linkable, stockPreviewUrl, forexP
   );
 }
 
-function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, onPatch, onRemove }: {
+function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, onPatch, onRemove }: {
   feat: BentoGrid01Feature;
   resolved: ArticleResult | null | undefined;
   searchUrl: string;
   stockPreviewUrl: string;
   forexPreviewUrl: string;
   marketMoversPreviewUrl: string;
+  brokerListUrl: string;
   onPatch: (patch: Partial<BentoGrid01Feature>) => void;
   onRemove: () => void;
 }) {
@@ -1775,6 +1876,23 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPr
                 </div>
               </div>
             </>
+          )}
+          {feat.header_type === 'fxbroker' && (
+            <label className="flex flex-col gap-1.5 min-w-0">
+              <span className="text-muted-foreground text-sm">Broker</span>
+              <BrokerPickerCombobox
+                brokerId={feat.brokerId}
+                brokerName={feat.brokerName}
+                brokerListUrl={brokerListUrl}
+                onChange={(b) => onPatch({
+                  brokerId: b.id,
+                  brokerName: b.broker_name,
+                  brokerFaviconUrl: b.favicon_url || null,
+                  brokerOverallRating: b.overall_rating,
+                  brokerPageUrl: b.page_url || null,
+                })}
+              />
+            </label>
           )}
           {feat.header_type === 'richtext' && (
             <BentoTileRichTextEditor feat={feat} onChange={html => onPatch({ html })} />
@@ -1999,13 +2117,14 @@ function BentoGrid01BlockHeaderFields({
   );
 }
 
-function BentoResizableLayout({ features, resolvedRandom, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, onPatch, onRemove, panelSizes, onLayoutChange, height, addTileOpen, onAddTileOpenChange, onAddTile }: {
+function BentoResizableLayout({ features, resolvedRandom, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, onPatch, onRemove, panelSizes, onLayoutChange, height, addTileOpen, onAddTileOpenChange, onAddTile }: {
   features: BentoGrid01Feature[];
   resolvedRandom: Record<string, ArticleResult | null>;
   searchUrl: string;
   stockPreviewUrl: string;
   forexPreviewUrl: string;
   marketMoversPreviewUrl: string;
+  brokerListUrl: string;
   onPatch: (featId: string, patch: Partial<BentoGrid01Feature>) => void;
   onRemove: (featId: string) => void;
   panelSizes?: number[];
@@ -2015,22 +2134,25 @@ function BentoResizableLayout({ features, resolvedRandom, searchUrl, stockPrevie
   onAddTileOpenChange: (open: boolean) => void;
   onAddTile: (headerType: BentoGrid01Feature['header_type']) => void;
 }) {
+  const [emptyAddOpen, setEmptyAddOpen] = React.useState(false);
+
   if (features.length === 0) {
     return (
       <div className="scn-bento-editor__empty">
-        <Popover open={addTileOpen} onOpenChange={onAddTileOpenChange}>
+        <Popover open={emptyAddOpen} onOpenChange={setEmptyAddOpen}>
           <PopoverTrigger asChild>
-            <button type="button" className="scn-bento-editor__add-col scn-bento-editor__add-col--empty" aria-label="Add tile">
-              +
+            <button type="button" className="scn-empty-add-btn" aria-label="Add tile">
+              <span className="scn-broker-carousel__add-icon">+</span>
             </button>
           </PopoverTrigger>
-          <PopoverContent className="scn-popover-content" align="center">
-            <BentoAddTilePopoverContent
-              onPick={type => {
-                onAddTile(type);
-                onAddTileOpenChange(false);
-              }}
-            />
+          <PopoverContent className="scn-popover-content scn-editor-add-block-menu" align="center">
+            {BENTO_TILE_TYPES.map(bt => (
+              <button key={bt.type} type="button" className="scn-editor-add-block-item"
+                onClick={() => { onAddTile(bt.type); setEmptyAddOpen(false); }}>
+                <span className="scn-editor-add-block-item__label">{BENTO_TILE_LABEL[bt.type]}</span>
+                <span className="scn-editor-add-block-item__desc">{bt.desc}</span>
+              </button>
+            ))}
           </PopoverContent>
         </Popover>
       </div>
@@ -2049,6 +2171,7 @@ function BentoResizableLayout({ features, resolvedRandom, searchUrl, stockPrevie
         stockPreviewUrl={stockPreviewUrl}
         forexPreviewUrl={forexPreviewUrl}
         marketMoversPreviewUrl={marketMoversPreviewUrl}
+        brokerListUrl={brokerListUrl}
         onPatch={patch => onPatch(feat.id, patch)}
         onRemove={() => onRemove(feat.id)}
       />
@@ -2113,12 +2236,13 @@ function BentoResizableLayout({ features, resolvedRandom, searchUrl, stockPrevie
   );
 }
 
-function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, termId, onChange, addTileOpen, onAddTileOpenChange, onAddTile }: {
+function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, termId, onChange, addTileOpen, onAddTileOpenChange, onAddTile }: {
   block: BentoGrid01Block;
   searchUrl: string;
   stockPreviewUrl: string;
   forexPreviewUrl: string;
   marketMoversPreviewUrl: string;
+  brokerListUrl: string;
   termId: number;
   onChange: (b: BentoGrid01Block) => void;
   addTileOpen: boolean;
@@ -2167,6 +2291,7 @@ function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl,
         stockPreviewUrl={stockPreviewUrl}
         forexPreviewUrl={forexPreviewUrl}
         marketMoversPreviewUrl={marketMoversPreviewUrl}
+        brokerListUrl={brokerListUrl}
         onPatch={patchFeature}
         onRemove={removeFeature}
         panelSizes={block.panelSizes}
@@ -2201,18 +2326,17 @@ function carouselAutoplayOpts(infiniteScroll: boolean) {
   return { loop: Boolean(infiniteScroll) };
 }
 
-function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, termId, onChange }: {
+function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, termId, onChange }: {
   block: CarouselBlock;
   searchUrl: string;
   stockPreviewUrl: string;
   forexPreviewUrl: string;
   marketMoversPreviewUrl: string;
+  brokerListUrl: string;
   termId: number;
   onChange: (b: CarouselBlock) => void;
 }) {
-  const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [addOpen, setAddOpen] = React.useState(false);
-  const [stackDepthComboOpen, setStackDepthComboOpen] = React.useState(false);
   const features = block.features;
   const cardSlots = React.useMemo(() => bentoCardFeaturesToSlots(features), [features]);
   const resolvedRandom = useResolvedCarouselPreviews(cardSlots, termId);
@@ -2265,100 +2389,6 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, ma
         <span className="scn-carousel-editor__count">
           {features.length} tile{features.length !== 1 ? 's' : ''}
         </span>
-        <Popover open={settingsOpen} onOpenChange={setSettingsOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" className="scn-carousel-editor__settings-btn" aria-label="Carousel settings">
-              <Settings2 size={16} />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent
-            className="scn-popover-content scn-carousel-editor__popover scn-carousel-editor__settings-popover"
-            align="end"
-            collisionPadding={12}
-          >
-            <div className="scn-carousel-editor__settings-popover-body">
-              <Button
-                type="button"
-                variant="outline"
-                className={cn(
-                  'scn-carousel-editor__infinite-btn',
-                  infiniteScroll && 'scn-carousel-editor__infinite-btn--active'
-                )}
-                onClick={() => onChange({ ...block, infiniteScroll: !infiniteScroll })}
-                aria-pressed={infiniteScroll}
-              >
-                <InfinityIcon size={14} />
-                Infinite scroll
-              </Button>
-              <p className="scn-carousel-editor__settings-hint text-muted-foreground text-xs">
-                On: auto-advance and loop. Off: arrows only (no auto-play, no wrap).
-              </p>
-              <label className="scn-bento-editor__size-auto-row">
-                <Checkbox checked={!block.height || block.height === 'auto'}
-                  onCheckedChange={checked => onChange({ ...block, height: checked ? undefined : '320px' })} />
-                <span>Auto height</span>
-              </label>
-              {block.height && block.height !== 'auto' && (
-                <div className="scn-bento-editor__size-slider-row">
-                  <Slider min={320} max={1000} step={10}
-                    value={[parseInt(block.height, 10) || 320]}
-                    onValueChange={([v]) => onChange({ ...block, height: `${v}px` })} />
-                  <span className="scn-bento-editor__size-value">{block.height}</span>
-                </div>
-              )}
-              <div className="scn-carousel-editor__stack-depth">
-                <span className="scn-bento-editor__style-label">Cards per stacked slide</span>
-                <p className="text-muted-foreground text-xs mb-1.5">When several imageless article tiles sit together, pack up to this many per slide (1 = never stack).</p>
-                <Popover open={stackDepthComboOpen} onOpenChange={setStackDepthComboOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="scn-carousel-editor__stack-combobox-trigger"
-                      aria-expanded={stackDepthComboOpen}
-                      aria-label="Cards per stacked slide"
-                    >
-                      <span className="scn-carousel-editor__stack-combobox-trigger-label">
-                        {stackDepth === 1 ? '1 (never stack)' : `${stackDepth} cards`}
-                      </span>
-                      <ChevronsUpDown size={14} className="shrink-0 opacity-60" aria-hidden />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    className="scn-popover-content scn-carousel-editor__stack-combobox-popover"
-                    align="start"
-                    sideOffset={4}
-                    collisionPadding={12}
-                  >
-                    <Command shouldFilter={false}>
-                      <CommandList>
-                        <CommandGroup>
-                          {[1, 2, 3, 4].map((n) => (
-                            <CommandItem
-                              key={n}
-                              value={`stack-depth-${n}`}
-                              onSelect={() => {
-                                onChange({ ...block, stackDepth: n });
-                                setStackDepthComboOpen(false);
-                              }}
-                            >
-                              <Check
-                                size={14}
-                                className={cn(stackDepth === n ? 'opacity-100' : 'opacity-0')}
-                                aria-hidden
-                              />
-                              {n === 1 ? '1 — never stack' : `${n} cards per slide`}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
         <Popover open={addOpen} onOpenChange={setAddOpen}>
           <PopoverTrigger asChild>
             <button type="button" className="scn-bento-editor__add-col" aria-label="Add tile">+</button>
@@ -2374,6 +2404,27 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, ma
           </PopoverContent>
         </Popover>
       </div>
+
+      {features.length === 0 && (
+        <div className="scn-bento-editor__empty">
+          <Popover open={addOpen} onOpenChange={setAddOpen}>
+            <PopoverTrigger asChild>
+              <button type="button" className="scn-empty-add-btn" aria-label="Add tile">
+                <span className="scn-broker-carousel__add-icon">+</span>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="scn-popover-content scn-editor-add-block-menu" align="end">
+              {BENTO_TILE_TYPES.map(bt => (
+                <button key={bt.type} type="button" className="scn-editor-add-block-item"
+                  onClick={() => { addCarouselFeature(bt.type); setAddOpen(false); }}>
+                  <span className="scn-editor-add-block-item__label">{BENTO_TILE_LABEL[bt.type]}</span>
+                  <span className="scn-editor-add-block-item__desc">{bt.desc}</span>
+                </button>
+              ))}
+            </PopoverContent>
+          </Popover>
+        </div>
+      )}
 
       {features.length > 0 && (
         <Carousel
@@ -2395,6 +2446,7 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, ma
                 stockPreviewUrl,
                 forexPreviewUrl,
                 marketMoversPreviewUrl,
+                brokerListUrl,
                 resolvedRandom,
                 patchFeature,
                 removeFeature,
@@ -2409,6 +2461,7 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, ma
                       stockPreviewUrl={stockPreviewUrl}
                       forexPreviewUrl={forexPreviewUrl}
                       marketMoversPreviewUrl={marketMoversPreviewUrl}
+                      brokerListUrl={brokerListUrl}
                       onPatch={patch => patchFeature(feat.id, patch)}
                       onRemove={() => removeFeature(feat.id)}
                     />
@@ -2424,6 +2477,92 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, ma
   );
 }
 
+// ─── Carousel settings popover (rendered in BlockEditor header) ──────────────
+
+function CarouselSettingsPopover({ block, onChange }: {
+  block: CarouselBlock;
+  onChange: (b: CarouselBlock) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [stackDepthComboOpen, setStackDepthComboOpen] = React.useState(false);
+  const infiniteScroll = Boolean(block.infiniteScroll);
+  const sd = carouselStackDepth(block);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" className="scn-carousel-editor__settings-btn" aria-label="Carousel settings">
+          <Settings2 size={16} />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="scn-popover-content scn-carousel-editor__popover scn-carousel-editor__settings-popover"
+        align="end"
+        collisionPadding={12}
+      >
+        <div className="scn-carousel-editor__settings-popover-body">
+          <Button
+            type="button"
+            variant="outline"
+            className={cn('scn-carousel-editor__infinite-btn', infiniteScroll && 'scn-carousel-editor__infinite-btn--active')}
+            onClick={() => onChange({ ...block, infiniteScroll: !infiniteScroll })}
+            aria-pressed={infiniteScroll}
+          >
+            <InfinityIcon size={14} />
+            Infinite scroll
+          </Button>
+          <p className="scn-carousel-editor__settings-hint text-muted-foreground text-xs">
+            On: auto-advance and loop. Off: arrows only (no auto-play, no wrap).
+          </p>
+          <label className="scn-bento-editor__size-auto-row">
+            <Checkbox checked={!block.height || block.height === 'auto'}
+              onCheckedChange={checked => onChange({ ...block, height: checked ? undefined : '320px' })} />
+            <span>Auto height</span>
+          </label>
+          {block.height && block.height !== 'auto' && (
+            <div className="scn-bento-editor__size-slider-row">
+              <Slider min={320} max={1000} step={10}
+                value={[parseInt(block.height, 10) || 320]}
+                onValueChange={([v]) => onChange({ ...block, height: `${v}px` })} />
+              <span className="scn-bento-editor__size-value">{block.height}</span>
+            </div>
+          )}
+          <div className="scn-carousel-editor__stack-depth">
+            <span className="scn-bento-editor__style-label">Cards per stacked slide</span>
+            <p className="text-muted-foreground text-xs mb-1.5">When several imageless article tiles sit together, pack up to this many per slide (1 = never stack).</p>
+            <Popover open={stackDepthComboOpen} onOpenChange={setStackDepthComboOpen}>
+              <PopoverTrigger asChild>
+                <Button type="button" variant="outline" className="scn-carousel-editor__stack-combobox-trigger"
+                  aria-expanded={stackDepthComboOpen} aria-label="Cards per stacked slide">
+                  <span className="scn-carousel-editor__stack-combobox-trigger-label">
+                    {sd === 1 ? '1 (never stack)' : `${sd} cards`}
+                  </span>
+                  <ChevronsUpDown size={14} className="shrink-0 opacity-60" aria-hidden />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="scn-popover-content scn-carousel-editor__stack-combobox-popover"
+                align="start" sideOffset={4} collisionPadding={12}>
+                <Command shouldFilter={false}>
+                  <CommandList>
+                    <CommandGroup>
+                      {[1, 2, 3, 4].map(n => (
+                        <CommandItem key={n} value={`stack-depth-${n}`}
+                          onSelect={() => { onChange({ ...block, stackDepth: n }); setStackDepthComboOpen(false); }}>
+                          <Check size={14} className={cn(sd === n ? 'opacity-100' : 'opacity-0')} aria-hidden />
+                          {n === 1 ? '1 — never stack' : `${n} cards per slide`}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 // ─── Block wrapper ────────────────────────────────────────────────────────────
 
 const BLOCK_LABEL: Record<string, string> = {
@@ -2431,11 +2570,11 @@ const BLOCK_LABEL: Record<string, string> = {
   separator: 'Separator', bento_grid_01: 'Bento block', carousel: 'Carousel',
 };
 
-function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, onChange, onRemove, onMove }: {
+function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, onChange, onRemove, onMove }: {
   block: TaxonomyBlock; index: number; total: number;
   termId: number;
   uploadUrl: string; articleSearchUrl: string; stockPreviewUrl: string;
-  forexPreviewUrl: string; marketMoversPreviewUrl: string;
+  forexPreviewUrl: string; marketMoversPreviewUrl: string; brokerListUrl: string;
   onChange: (b: TaxonomyBlock) => void; onRemove: () => void; onMove: (dir: -1 | 1) => void;
 }) {
   const [bentoAddTileOpen, setBentoAddTileOpen] = React.useState(false);
@@ -2466,6 +2605,12 @@ function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl,
           'scn-editor-block__controls',
           block.type === 'bento_grid_01' && 'scn-editor-block__controls--bento-toolbar',
         )}>
+          {block.type === 'carousel' && (
+            <CarouselSettingsPopover
+              block={block}
+              onChange={onChange as (b: CarouselBlock) => void}
+            />
+          )}
           <button className="scn-editor-block__ctrl-btn" onClick={() => onMove(-1)}
             disabled={index === 0} aria-label="Move up" title="Move up">↑</button>
           <button className="scn-editor-block__ctrl-btn" onClick={() => onMove(1)}
@@ -2487,6 +2632,7 @@ function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl,
             stockPreviewUrl={stockPreviewUrl}
             forexPreviewUrl={forexPreviewUrl}
             marketMoversPreviewUrl={marketMoversPreviewUrl}
+            brokerListUrl={brokerListUrl}
             termId={termId}
             onChange={onChange as (b: BentoGrid01Block) => void}
             addTileOpen={bentoAddTileOpen}
@@ -2501,6 +2647,7 @@ function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl,
             stockPreviewUrl={stockPreviewUrl}
             forexPreviewUrl={forexPreviewUrl}
             marketMoversPreviewUrl={marketMoversPreviewUrl}
+            brokerListUrl={brokerListUrl}
             termId={termId}
             onChange={onChange as (b: CarouselBlock) => void}
           />
@@ -2838,6 +2985,7 @@ function TaxonomyEditor({
   stockPreviewUrl,
   forexPreviewUrl,
   marketMoversPreviewUrl,
+  brokerListUrl,
 }: {
   termId: number;
   initialJson: object | null;
@@ -2848,6 +2996,7 @@ function TaxonomyEditor({
   stockPreviewUrl: string;
   forexPreviewUrl: string;
   marketMoversPreviewUrl: string;
+  brokerListUrl: string;
 }) {
   const [blocks, setBlocks] = React.useState<TaxonomyBlock[]>(() => jsonToBlocks(initialJson));
   const [saving, setSaving] = React.useState(false);
@@ -2946,6 +3095,7 @@ function TaxonomyEditor({
             stockPreviewUrl={stockPreviewUrl}
             forexPreviewUrl={forexPreviewUrl}
             marketMoversPreviewUrl={marketMoversPreviewUrl}
+            brokerListUrl={brokerListUrl}
             onChange={updated => setBlocks(prev => prev.map((b, j) => j === i ? updated : b))}
             onRemove={() => setBlocks(prev => prev.filter((_, j) => j !== i))}
             onMove={dir => moveBlock(i, dir)}
@@ -2977,6 +3127,7 @@ export function mountTaxonomyEditor(): void {
     const stockPreviewUrl = host.dataset['stockPreviewUrl'] ?? '';
     const forexPreviewUrl = host.dataset['forexPreviewUrl'] ?? '';
     const marketMoversPreviewUrl = host.dataset['marketMoversPreviewUrl'] ?? '';
+    const brokerListUrl = host.dataset['brokerListUrl'] ?? '';
     if (!termId) return;
 
     let initialJson: object | null = null;
@@ -3001,6 +3152,7 @@ export function mountTaxonomyEditor(): void {
         stockPreviewUrl={stockPreviewUrl}
         forexPreviewUrl={forexPreviewUrl}
         marketMoversPreviewUrl={marketMoversPreviewUrl}
+        brokerListUrl={brokerListUrl}
       />
     );
   });

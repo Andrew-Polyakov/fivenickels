@@ -577,13 +577,22 @@
   cursor: default;
 }
 
+.scn-editor-block__ctrl-btn--danger {
+  border-color: rgba(248, 113, 113, 0.45);
+  color: #fca5a5;
+  box-shadow:
+    0 0 0 1px rgba(248, 113, 113, 0.28),
+    0 0 10px rgba(239, 68, 68, 0.22);
+}
+
 .scn-editor-block__ctrl-btn--danger:hover:not(:disabled) {
   border-color: #fecaca;
   color: #fecaca;
   background: #171717 !important;
   box-shadow:
-    0 0 0 1px rgba(248, 113, 113, 0.4),
-    0 0 14px rgba(239, 68, 68, 0.32);
+    0 0 0 1px rgba(248, 113, 113, 0.5),
+    0 0 18px rgba(239, 68, 68, 0.42),
+    0 0 38px rgba(239, 68, 68, 0.16);
 }
 
 .scn-editor-add-block.scn-button--outline {
@@ -861,12 +870,20 @@
   width: 100%;
   margin-top: 0.25rem;
   color: #fca5a5;
-  border-color: rgba(252, 165, 165, 0.5);
+  border-color: rgba(248, 113, 113, 0.45);
+  box-shadow:
+    0 0 0 1px rgba(248, 113, 113, 0.28),
+    0 0 10px rgba(239, 68, 68, 0.22);
 }
 
 .scn-bento-editor__remove-btn:hover {
   background: rgba(239, 68, 68, 0.15);
-  border-color: #fca5a5;
+  border-color: #fecaca;
+  color: #fecaca;
+  box-shadow:
+    0 0 0 1px rgba(248, 113, 113, 0.5),
+    0 0 18px rgba(239, 68, 68, 0.42),
+    0 0 38px rgba(239, 68, 68, 0.16);
 }
 
 .scn-bento-editor__empty {
@@ -4396,10 +4413,13 @@ img[src*='bear.png'].scn-catalyst-toggle__icon {
 
 .bento2-context-menu__item--danger {
   color: #fca5a5;
+  text-shadow: 0 0 8px rgba(239, 68, 68, 0.45);
 }
 
 .bento2-context-menu__item--danger:hover {
   background: rgba(239, 68, 68, 0.15);
+  color: #fecaca;
+  text-shadow: 0 0 12px rgba(239, 68, 68, 0.65);
 }
 
 .bento2-context-menu__item--save {
@@ -4480,4 +4500,120 @@ html[data-reading-theme="day"] .scn-bentogrid01--theme-inverted .scn-bentogrid01
   border-color: rgba(249, 115, 22, 0.72);
   background: rgba(249, 115, 22, 0.1);
   box-shadow: 0 0 14px rgba(249, 115, 22, 0.22);
+}
+
+/* ── FxBroker Card ───────────────────────────────────────────────────────────── */
+
+.scn-fx-broker-card.scn-card {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.scn-fx-broker-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1rem 0.5rem;
+}
+
+.scn-fx-broker-card__identity {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.scn-fx-broker-card__logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.scn-fx-broker-card__name {
+  font-weight: 700;
+  font-size: 1.05rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--color-text);
+}
+
+.scn-fx-broker-card__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 1rem 1rem;
+  flex: 1 1 auto;
+}
+
+.scn-fx-broker-card__rating {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.scn-fx-broker-card__score {
+  font-weight: 700;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--color-text);
+}
+
+.scn-fx-broker-card__stars {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.scn-fx-broker-card__star {
+  width: 18px;
+  height: 18px;
+  color: var(--sc-accent-hex);
+  flex-shrink: 0;
+}
+
+.scn-fx-broker-card__star--empty {
+  color: rgba(148, 163, 184, 0.4);
+}
+
+.scn-fx-broker-card__review-link {
+  color: var(--sc-accent-hex);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  transition: opacity 0.15s;
+}
+
+.scn-fx-broker-card__review-link:hover {
+  opacity: 0.75;
+}
+
+.scn-fx-broker-card__footer {
+  padding: 0.75rem 1rem 1rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.scn-fx-broker-card__visit-btn {
+  display: block;
+  width: 100%;
+  padding: 0.65rem 1rem;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  border: 1.5px solid #f59e0b;
+  border-radius: 9999px;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.scn-fx-broker-card__visit-btn:hover {
+  background: rgba(245, 158, 11, 0.1);
 }

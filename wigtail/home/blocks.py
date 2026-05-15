@@ -215,12 +215,18 @@ class BentoGridFeatureBlock(blocks.StructBlock):
             ("animated_ui_block", "Animated UI Block"),
             ("image", "Image (light/dark)"),
             ("card", "Article card"),
+            ("fxbroker", "FX Broker card"),
             ("richtext", "Rich text"),
             ("stock_bars", "Stock bars"),
             ("forex_strip", "FX pairs"),
             ("market_movers", "Market movers"),
         ],
         default="image",
+    )
+    broker = SnippetChooserBlock(
+        "home.BrokerRating",
+        required=False,
+        label="Broker (FX Broker card only)",
     )
     image_url_light = blocks.URLBlock(required=False, label="Image URL (light mode)")
     image_url_dark = blocks.URLBlock(required=False, label="Image URL (dark mode)")

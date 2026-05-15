@@ -34,6 +34,7 @@ import {
   type BentoTileStyle,
 } from './bento-grid01-theme';
 import { BentoWidgetTileFrame } from './bento-widget-tile-frame';
+import { FxBrokerCardView, type FxBrokerPayload } from './shadcn-fx-broker-card';
 
 // ── Types (mirror the Django BentoGrid01Block fields) ─────────────────────
 
@@ -72,6 +73,7 @@ export interface BentoGrid01FeaturePayload {
     | 'animated_ui_block'
     | 'image'
     | 'card'
+    | 'fxbroker'
     | 'richtext'
     | 'stock_bars'
     | 'forex_strip'
@@ -94,6 +96,7 @@ export interface BentoGrid01FeaturePayload {
   forex_quotes?: ForexQuotePayload[];
   market_movers?: MarketMoversGroupPayload;
   market_mover_tabs?: MarketMoverTabPayload[];
+  fxbroker?: FxBrokerPayload | { kind: 'empty' };
 }
 
 const BENTO_TILES_WITHOUT_FOOTER = new Set([
@@ -165,6 +168,9 @@ function FeatureHeader({ feature }: { feature: BentoGrid01FeaturePayload }) {
         }}
       />
     );
+  }
+  if (feature.header_type === 'fxbroker' && feature.fxbroker && feature.fxbroker.kind === 'fxbroker') {
+    return <FxBrokerCardView data={feature.fxbroker} />;
   }
   if (feature.header_type === 'richtext' && feature.html) {
     return (
@@ -252,7 +258,7 @@ function BentoGrid01Root({ payload }: { payload: BentoGrid01Payload }) {
         <div className="scn-bentogrid01__grid">
           {payload.features.map((feature, i) => {
             const span = feature.col_span === '8' ? 'scn-bentogrid01__cell--span-8' : 'scn-bentogrid01__cell--span-4';
-            const headerClip = feature.header_type === 'card' ? '' : ' scn-bentogrid01__tile-header--clip';
+            const headerClip = (feature.header_type === 'card' || feature.header_type === 'fxbroker') ? '' : ' scn-bentogrid01__tile-header--clip';
             const isWidgetTile = BENTO_TILES_WITHOUT_FOOTER.has(feature.header_type);
             const widgetHeader = isWidgetTile ? ' scn-bentogrid01__tile-header--widget' : '';
             const showTextFooter = !isWidgetTile;

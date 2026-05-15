@@ -8,6 +8,7 @@ import {
   packCarouselSlides,
   type CarouselCardViewModel,
 } from './carousel-slide-packing';
+import { FxBrokerCardView, type FxBrokerPayload } from './shadcn-fx-broker-card';
 
 // ── Shared types ──────────────────────────────────────────────────────────────
 
@@ -21,6 +22,7 @@ type ContentSourceConfig = {
 };
 
 export type ArticleCardPayload =
+  | FxBrokerPayload
   | {
       kind: 'article';
       title: string;
@@ -162,6 +164,9 @@ export function ArticleCardView({
 }): React.JSX.Element {
   void onDelete;
 
+  if (data.kind === 'fxbroker') {
+    return <FxBrokerCardView data={data} />;
+  }
   if (data.kind === 'empty') {
     return (
       <Card className="scn-article-card scn-article-card--empty">
@@ -404,6 +409,16 @@ type TileCarouselPackedSlide =
   | { kind: 'stack'; key: string; payloads: ArticleCardPayload[] };
 
 function articlePayloadToCarouselViewModel(card: ArticleCardPayload, index: number): CarouselCardViewModel | null {
+  if (card.kind === 'fxbroker') {
+    return {
+      key: `tile-fxbroker-${index}`,
+      imageUrl: null,
+      tags: [],
+      title: card.brokerName,
+      excerpt: '',
+      url: card.pageUrl ?? null,
+    };
+  }
   if (card.kind !== 'article') {
     return null;
   }

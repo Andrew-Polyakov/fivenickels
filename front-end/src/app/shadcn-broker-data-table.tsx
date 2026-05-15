@@ -17,6 +17,10 @@ import { PenIcon } from '../components/ui/pen-icon';
 import { Dialog, DialogContent, DialogTrigger, DialogClose, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { RteEditor } from '../components/ui/rte-editor';
+import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../components/ui/command';
+import { FxBrokerCardView, type FxBrokerPayload } from './shadcn-fx-broker-card';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '../components/ui/carousel';
 
 export type BrokerRow = {
   id: number;
@@ -100,6 +104,13 @@ function EditPopover({ row, updateUrl, onSaved }: EditPopoverProps) {
           <DialogTitle>Edit broker</DialogTitle>
         </DialogHeader>
         <DialogClose className="scn-dialog-close">✕</DialogClose>
+        <FxBrokerCardView data={{
+          kind: 'fxbroker',
+          brokerName: draft.broker_name,
+          faviconUrl: draft.favicon_url || undefined,
+          overallRating: draft.overall_rating,
+          pageUrl: draft.page_url || undefined,
+        } satisfies FxBrokerPayload} />
         <div className="scn-broker-edit__grid">
           {field('Name', 'broker_name')}
           {field('Favicon URL', 'favicon_url')}
@@ -166,7 +177,7 @@ function buildColumns(
       ),
       cell: ({ row }) => (
         <span className="scn-broker-name">
-          {isAdmin && !countryCode && (
+          {isAdmin && (
             <EditPopover row={row.original} updateUrl={updateUrl} onSaved={onRowUpdate} />
           )}
           {row.original.favicon_url && (
@@ -225,21 +236,50 @@ function buildColumns(
   ];
 }
 
-function CountrySelect({ countries, currentCountry }: { countries: Country[]; currentCountry: string }) {
-  function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const code = e.target.value;
+function CountryCombobox({ countries, currentCountry }: { countries: Country[]; currentCountry: string }) {
+  const [open, setOpen] = React.useState(false);
+
+  function select(code: string) {
+    setOpen(false);
     const url = new URL(window.location.href);
     if (code) url.searchParams.set('country', code);
     else url.searchParams.delete('country');
     window.location.href = url.toString();
   }
+
+  const label = currentCountry
+    ? (countries.find(c => c.code === currentCountry)?.name ?? currentCountry)
+    : 'All countries';
+
   return (
-    <select className="scn-broker-country-select" value={currentCountry} onChange={handleChange}>
-      <option value="">Global (all countries)</option>
-      {countries.map(c => (
-        <option key={c.code} value={c.code}>{c.name} ({c.code})</option>
-      ))}
-    </select>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" className="scn-broker-country-btn" aria-expanded={open}>
+          {label}
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ marginLeft: 4 }}>
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="scn-broker-country-popover">
+        <Command>
+          <CommandInput placeholder="Search country…" />
+          <CommandList>
+            <CommandEmpty>No country found.</CommandEmpty>
+            <CommandGroup>
+              <CommandItem value="" onSelect={() => select('')}>
+                All countries
+              </CommandItem>
+              {countries.map(c => (
+                <CommandItem key={c.code} value={`${c.name} ${c.code}`} onSelect={() => select(c.code)}>
+                  {c.name} ({c.code})
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -298,7 +338,7 @@ function BrokerDataTable({
           <Input className="scn-search-wrap__input" placeholder="Search brokers, regulation, type…"
             value={globalFilter} onChange={(e) => setGlobalFilter(e.target.value)} />
         </div>
-        {isAdmin && <CountrySelect countries={countries} currentCountry={currentCountry} />}
+        <CountryCombobox countries={countries} currentCountry={currentCountry} />
         <span className="scn-broker-table__count">
           {table.getFilteredRowModel().rows.length} broker{table.getFilteredRowModel().rows.length !== 1 ? 's' : ''}
         </span>
@@ -349,6 +389,121 @@ function BrokerDataTable({
   );
 }
 
+// ── FxBrokerCarousel ──────────────────────────────────────────────────────────
+
+function brokerToFxPayload(broker: BrokerRow): FxBrokerPayload {
+  return {
+    kind: 'fxbroker',
+    brokerName: broker.broker_name,
+    faviconUrl: broker.favicon_url || undefined,
+    overallRating: broker.overall_rating,
+    pageUrl: broker.page_url || undefined,
+  };
+}
+
+function FxBrokerCarousel({
+  allBrokers,
+  isAdmin,
+}: {
+  allBrokers: BrokerRow[];
+  isAdmin: boolean;
+}): React.JSX.Element {
+  const [featuredIds, setFeaturedIds] = React.useState<number[]>([]);
+  const [pickerOpen, setPickerOpen] = React.useState(false);
+
+  const featured = featuredIds
+    .map((id) => allBrokers.find((b) => b.id === id))
+    .filter((b): b is BrokerRow => b !== undefined);
+
+  const available = allBrokers.filter((b) => !featuredIds.includes(b.id));
+
+  function add(broker: BrokerRow) {
+    setFeaturedIds((prev) => [...prev, broker.id]);
+    setPickerOpen(false);
+  }
+
+  function remove(id: number) {
+    setFeaturedIds((prev) => prev.filter((x) => x !== id));
+  }
+
+  if (featured.length === 0 && !isAdmin) return <></>;
+
+  return (
+    <div className="scn-broker-carousel">
+      <Carousel opts={{ align: 'start', dragFree: true }}>
+        <CarouselContent>
+          {featured.map((broker) => (
+            <CarouselItem key={broker.id} className="scn-broker-carousel__item">
+              <div className="scn-broker-carousel__card-wrap">
+                <FxBrokerCardView data={brokerToFxPayload(broker)} />
+                {isAdmin && (
+                  <button
+                    className="scn-broker-carousel__remove"
+                    aria-label="Remove from carousel"
+                    onClick={() => remove(broker.id)}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </CarouselItem>
+          ))}
+          {isAdmin && (
+            <CarouselItem className="scn-broker-carousel__item scn-broker-carousel__item--add">
+              <button
+                className="scn-empty-add-btn"
+                onClick={() => setPickerOpen(true)}
+                disabled={available.length === 0}
+                aria-label="Add broker to carousel"
+              >
+                <span className="scn-broker-carousel__add-icon">+</span>
+                <span>Add broker</span>
+              </button>
+            </CarouselItem>
+          )}
+        </CarouselContent>
+        <CarouselPrevious />
+        <CarouselNext />
+      </Carousel>
+
+      {isAdmin && (
+        <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
+          <DialogContent className="scn-broker-picker-dialog">
+            <DialogHeader>
+              <DialogTitle>Add broker to carousel</DialogTitle>
+            </DialogHeader>
+            <DialogClose className="scn-dialog-close">✕</DialogClose>
+            <div className="scn-broker-picker__list">
+              {available.map((broker) => (
+                <button
+                  key={broker.id}
+                  className="scn-broker-picker__item"
+                  onClick={() => add(broker)}
+                >
+                  {broker.favicon_url && (
+                    <img
+                      src={broker.favicon_url}
+                      width={24}
+                      height={24}
+                      alt=""
+                      className="scn-broker-picker__favicon"
+                    />
+                  )}
+                  <span className="scn-broker-picker__name">{broker.broker_name}</span>
+                  <span className="scn-broker-picker__rating">{broker.overall_rating.toFixed(1)} ★</span>
+                </button>
+              ))}
+              {available.length === 0 && (
+                <p className="scn-broker-picker__empty">All brokers are already in the carousel.</p>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
+  );
+}
+
 const brokerTableRoots = new WeakMap<HTMLElement, Root>();
 
 export function mountShadcnBrokerTable(): void {
@@ -382,5 +537,22 @@ export function mountShadcnBrokerTable(): void {
         countries={countries} currentCountry={currentCountry}
         ctaLabel={ctaLabel} ctaButtonText={ctaButtonText} ctaUrl={ctaUrl} />
     );
+  });
+}
+
+export function mountShadcnBrokerCarousel(): void {
+  document.querySelectorAll<HTMLElement>('[data-shadcn-broker-carousel]').forEach((host) => {
+    if (host.dataset['shadcnBrokerCarouselBound'] === '1') return;
+    const jsonId = host.dataset['brokerJsonId'];
+    if (!jsonId) return;
+    const el = document.getElementById(jsonId);
+    if (!el?.textContent?.trim()) return;
+    let data: BrokerRow[] = [];
+    try { data = JSON.parse(el.textContent) as BrokerRow[]; } catch { return; }
+    const isAdmin = host.dataset['brokerIsAdmin'] === '1';
+    host.dataset['shadcnBrokerCarouselBound'] = '1';
+    let root = brokerTableRoots.get(host);
+    if (!root) { root = createRoot(host); brokerTableRoots.set(host, root); }
+    root.render(<FxBrokerCarousel allBrokers={data} isAdmin={isAdmin} />);
   });
 }

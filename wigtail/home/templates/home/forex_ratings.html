@@ -11,6 +11,12 @@
     {{ brokers|json_script:"broker-ratings-data" }}
     {{ countries|json_script:"broker-countries-data" }}
     <div
+        class="forex-ratings__carousel-host"
+        data-shadcn-broker-carousel
+        data-broker-json-id="broker-ratings-data"
+        {% if is_admin %}data-broker-is-admin="1"{% endif %}
+    ></div>
+    <div
         class="forex-ratings__table-host"
         data-shadcn-broker-table
         data-broker-json-id="broker-ratings-data"
@@ -24,3 +30,4 @@
     ></div>
 </div>
 {% endblock %}
+

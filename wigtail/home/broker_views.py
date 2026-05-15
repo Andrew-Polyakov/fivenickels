@@ -14,7 +14,8 @@ _EDITABLE_FIELDS = {
 
 
 def forex_ratings(request: HttpRequest) -> HttpResponse:
-    country_code = request.GET.get("country", "").upper()
+    explicit_country = request.GET.get("country", "").upper()
+    country_code = explicit_country or getattr(request, "country_code", "")
 
     brokers = list(
         BrokerRating.objects.values(
@@ -47,7 +48,7 @@ def forex_ratings(request: HttpRequest) -> HttpResponse:
     cta_button_text = cta.cta_button_text if cta else ""
     cta_url = cta.cta_page.url if (cta and cta.cta_page_id) else ""
 
-    return render(request, "home/forex_ratings.html", {
+    response = render(request, "home/forex_ratings.html", {
         "brokers": brokers,
         "countries": countries,
         "current_country": country_code,
@@ -56,6 +57,22 @@ def forex_ratings(request: HttpRequest) -> HttpResponse:
         "cta_button_text": cta_button_text,
         "cta_url": cta_url,
     })
+    if explicit_country:
+        response.set_cookie("region", explicit_country, max_age=365 * 24 * 3600, samesite="Lax")
+    return response
+
+
+def broker_list_json(request: HttpRequest) -> JsonResponse:
+    brokers = list(
+        BrokerRating.objects.values(
+            "id", "broker_name", "favicon_url", "overall_rating", "page_url"
+        ).order_by("rank")
+    )
+    for b in brokers:
+        b["overall_rating"] = float(b["overall_rating"])
+        b["favicon_url"] = b["favicon_url"] or ""
+        b["page_url"] = b["page_url"] or ""
+    return JsonResponse({"brokers": brokers})
 
 
 @require_POST

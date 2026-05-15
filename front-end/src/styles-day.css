@@ -566,12 +566,17 @@ html[data-reading-theme='day'] .scn-taxonomy-site-nav__rename-inline:hover {
   background: rgba(0, 0, 0, 0.06);
 }
 
-html[data-reading-theme='day'] .scn-broker-edit-trigger {
+html[data-reading-theme='day'] .scn-broker-edit-trigger,
+html[data-reading-theme='day'] .scn-broker-edit-trigger:hover {
+  border-color: rgba(0, 0, 0, 0.18);
+  background: #ffffff;
   color: #000000;
 }
 
-html[data-reading-theme='day'] .scn-broker-edit-trigger:hover {
-  color: #000000;
+html[data-reading-theme='day'] .scn-broker-edit-trigger:focus-visible,
+html[data-reading-theme='day'] .scn-broker-edit-trigger[data-state='open'] {
+  border-color: rgba(0, 153, 77, 0.75);
+  box-shadow: 0 0 0 2px rgba(0, 153, 77, 0.28), 0 0 12px rgba(0, 153, 77, 0.22);
 }
 
 html[data-reading-theme='day'] .scn-profile-action-edit,
@@ -651,4 +656,25 @@ html[data-reading-theme='day'] .scn-popover-content .scn-command-list::-webkit-s
 html[data-reading-theme='day'] .scn-popover-content .scn-scroll-area__thumb {
   background: rgba(0, 153, 77, 0.58);
   box-shadow: 0 0 12px rgba(0, 153, 77, 0.38);
+}
+
+/* ── FxBroker Card — day theme ── */
+
+html[data-reading-theme='day'] .scn-fx-broker-card.scn-card {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+html[data-reading-theme='day'] .scn-fx-broker-card__name,
+html[data-reading-theme='day'] .scn-fx-broker-card__score,
+html[data-reading-theme='day'] .scn-fx-broker-card__visit-btn {
+  color: #0f172a;
+}
+
+html[data-reading-theme='day'] .scn-fx-broker-card__star--empty {
+  color: rgba(100, 116, 139, 0.3);
+}
+
+html[data-reading-theme='day'] .scn-fx-broker-card__footer {
+  border-top-color: rgba(0, 0, 0, 0.08);
 }
