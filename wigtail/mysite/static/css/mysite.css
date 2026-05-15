@@ -742,6 +742,12 @@ body.template-homepage {
 
 .site-content turbo-frame#site-nav.site-nav {
 
+    position: sticky;
+
+    top: 0;
+
+    z-index: 75;
+
     width: 100%;
 
     min-width: 0;
@@ -749,6 +755,12 @@ body.template-homepage {
     margin-bottom: 0.35rem;
 
     overflow: visible;
+
+    flex-shrink: 0;
+
+    align-self: flex-start;
+
+    box-sizing: border-box;
 
 }
 
@@ -865,6 +877,8 @@ body.template-homepage {
     display: flex;
 
     flex-direction: column;
+
+    overflow: visible;
 
 }
 
@@ -2255,9 +2269,46 @@ body.template-homepage {
 
 /* --- Taxonomy nav (turbo frame #site-nav): centered slime pills (tile taxonomy style) --- */
 
+.site-nav__row.scn-taxonomy-site-nav__unified {
+
+    position: sticky;
+
+    top: 0;
+
+    z-index: 76;
+
+    width: 100%;
+
+    margin: 0;
+
+    padding: 0.45rem 0;
+
+    box-sizing: border-box;
+
+    border-top: 1px solid rgba(var(--sc-rgb-glow), 0.55);
+
+    border-bottom: 1px solid rgba(var(--sc-rgb-glow), 0.55);
+
+    background: var(--color-bg, #070b12);
+
+    box-shadow:
+
+        0 -2px 18px rgba(var(--sc-rgb-glow), 0.42),
+
+        0 2px 18px rgba(var(--sc-rgb-glow), 0.42);
+
+}
+
 .site-content--has-masthead turbo-frame#site-nav.site-nav .site-nav__row.scn-taxonomy-site-nav__unified {
 
     border-top: none;
+
+}
+
+body.template-taxonomy-drilldown .site-content > turbo-frame#site-nav.site-nav,
+body.template-taxonomy-root .site-content > turbo-frame#site-nav.site-nav {
+
+    flex: 0 0 auto;
 
 }
 

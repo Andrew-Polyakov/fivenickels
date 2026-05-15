@@ -2295,7 +2295,7 @@ html[data-reading-theme="day"] .scn-bentogrid01--theme-inverted .carousel-articl
 .scn-taxonomy-site-nav {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   width: 100%;
   gap: 0;
   overflow: visible;
@@ -2307,7 +2307,14 @@ html[data-reading-theme="day"] .scn-bentogrid01--theme-inverted .carousel-articl
 }
 
 turbo-frame#site-nav.site-nav {
+  position: sticky;
+  top: 0;
+  z-index: 75;
   overflow: visible;
+  flex-shrink: 0;
+  align-self: flex-start;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Root taxonomy row: glowing green rule band + flat triggers (scoped so other nav rows unchanged). */
