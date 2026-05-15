@@ -14,7 +14,11 @@ import AnimatedUiBlock from '../components/shadcn-space/blocks/bento-grid-01/Ani
 import ReminderAnimation from '../components/shadcn-space/blocks/bento-grid-01/ReminderAnimation';
 import StockBarsTile from '../components/shadcn-space/blocks/bento-grid-01/StockBarsTile';
 import { CarouselCard } from './shadcn-taxonomy-editor';
-import type { CarouselCardImageLayout } from './carousel-slide-packing';
+import type {
+  CarouselCardImageLayoutLegacy,
+  CarouselCardImageScale,
+  CarouselCardTextImageLayout,
+} from './carousel-slide-packing';
 
 // ── Types (mirror the Django BentoGrid01Block fields) ─────────────────────
 
@@ -56,7 +60,8 @@ export interface BentoGrid01FeaturePayload {
   col_span: '4' | '8';
   article?: ArticlePayload;
   html?: string;
-  card_image_layout?: CarouselCardImageLayout;
+  card_image_layout?: CarouselCardTextImageLayout | Extract<CarouselCardImageLayoutLegacy, 'fit_under' | 'scales_fit_top'>;
+  card_image_scale?: CarouselCardImageScale;
   chart_symbol?: string;
   bars?: StockBarPointPayload[];
   chips?: StockChipPayload[];
@@ -71,6 +76,27 @@ export interface BentoGrid01Payload {
   features: BentoGrid01FeaturePayload[];
 }
 
+function cardVmLayoutFromBentoFeature(feature: BentoGrid01FeaturePayload): Partial<{
+  textImageLayout: CarouselCardTextImageLayout;
+  imageScale: CarouselCardImageScale;
+  imageLayout: CarouselCardImageLayoutLegacy;
+}> {
+  const lay = feature.card_image_layout;
+  const sc = feature.card_image_scale;
+  if (lay === 'fit_under' || lay === 'scales_fit_top') {
+    return sc != null ? { imageLayout: lay, imageScale: sc } : { imageLayout: lay };
+  }
+  if (
+    lay === 'text_on_top'
+    || lay === 'text_on_left'
+    || lay === 'text_on_right'
+    || lay === 'text_only'
+  ) {
+    return { textImageLayout: lay, imageScale: sc ?? 'bleed_under' };
+  }
+  return { textImageLayout: 'text_on_top', imageScale: 'bleed_under' };
+}
+
 // ── Feature tile header ───────────────────────────────────────────────────
 
 function FeatureHeader({ feature }: { feature: BentoGrid01FeaturePayload }) {
@@ -82,6 +108,7 @@ function FeatureHeader({ feature }: { feature: BentoGrid01FeaturePayload }) {
   }
   if (feature.header_type === 'card' && feature.article && feature.article.kind === 'article') {
     const a = feature.article;
+    const layout = cardVmLayoutFromBentoFeature(feature);
     return (
       <CarouselCard
         {...{
@@ -94,7 +121,7 @@ function FeatureHeader({ feature }: { feature: BentoGrid01FeaturePayload }) {
           authorName: a.authorName,
           publishedAt: a.publishedAt,
           catalyst: a.catalyst,
-          imageLayout: feature.card_image_layout ?? 'fit_under',
+          ...layout,
         }}
       />
     );

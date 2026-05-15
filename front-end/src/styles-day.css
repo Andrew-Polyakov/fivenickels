@@ -482,6 +482,10 @@ html[data-reading-theme='day'] .carousel-article-card__excerpt {
   opacity: 1;
 }
 
+html[data-reading-theme='day'] .carousel-article-card__author {
+  color: #000000;
+}
+
 html[data-reading-theme='day'] .carousel-article-card__published {
   color: #000000;
   opacity: 1;

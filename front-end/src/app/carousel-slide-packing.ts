@@ -1,12 +1,23 @@
 export type CarouselCardFontColorKey = 'white' | 'black' | 'slime' | 'gray';
 
-export type CarouselCardImageLayout =
-  | 'fit_under'
-  | 'scales_fit_top'
+/** Bento / taxonomy: geometry of text vs hero (four choices). */
+export type CarouselCardTextImageLayout =
   | 'text_on_top'
   | 'text_on_left'
   | 'text_on_right'
   | 'text_only';
+
+/** Bento / taxonomy: how the hero fills its slot for underlay vs stacked vs split. */
+export type CarouselCardImageScale = 'scales_to_fit' | 'bleed_under';
+
+/**
+ * Legacy single-select values still accepted on payloads / older JSON.
+ * Prefer `textImageLayout` + `imageScale`.
+ */
+export type CarouselCardImageLayoutLegacy =
+  | 'fit_under'
+  | 'scales_fit_top'
+  | CarouselCardTextImageLayout;
 
 export type CarouselCardViewModel = {
   key: string;
@@ -20,9 +31,18 @@ export type CarouselCardViewModel = {
   catalyst?: string | null;
   bgOpacity?: number;
   fontColor?: CarouselCardFontColorKey;
-  /** Omitted = legacy column layout (body, footer, image fills bottom). Bento usually sets this. */
-  imageLayout?: CarouselCardImageLayout;
+  /** Preferred: layout + scale from bento / taxonomy. */
+  textImageLayout?: CarouselCardTextImageLayout;
+  imageScale?: CarouselCardImageScale;
+  /**
+   * Legacy combined field (carousel slots, old saves).
+   * Ignored when `textImageLayout` is set.
+   */
+  imageLayout?: CarouselCardImageLayoutLegacy;
 };
+
+/** @deprecated use CarouselCardTextImageLayout + CarouselCardImageScale */
+export type CarouselCardImageLayout = CarouselCardImageLayoutLegacy;
 
 export type CarouselPackedSingleSlide = {
   kind: 'single';
@@ -44,15 +64,82 @@ export type PackCarouselSlidesOptions = {
   stackDepth?: number;
 };
 
+export type CarouselCardRenderMode =
+  | 'imageless'
+  | 'fit_under'
+  | 'stack_bottom_contain'
+  | 'split_left_cover'
+  | 'split_left_contain'
+  | 'split_right_cover'
+  | 'split_right_contain'
+  | 'legacy_bottom_cover';
+
 export function hasCarouselCardImage(card: Pick<CarouselCardViewModel, 'imageUrl'>): boolean {
   return Boolean(card.imageUrl?.trim());
 }
 
+function legacyCombinedToMode(
+  leg: CarouselCardImageLayoutLegacy | undefined,
+  imageScale: CarouselCardImageScale | undefined,
+): CarouselCardRenderMode | null {
+  if (!leg) return null;
+  const sc = imageScale ?? 'bleed_under';
+  if (leg === 'text_only') return 'imageless';
+  if (leg === 'fit_under') return 'fit_under';
+  if (leg === 'scales_fit_top') return 'stack_bottom_contain';
+  if (leg === 'text_on_top') {
+    return sc === 'scales_to_fit' ? 'stack_bottom_contain' : 'fit_under';
+  }
+  if (leg === 'text_on_left') {
+    return sc === 'scales_to_fit' ? 'split_left_contain' : 'split_left_cover';
+  }
+  if (leg === 'text_on_right') {
+    return sc === 'scales_to_fit' ? 'split_right_contain' : 'split_right_cover';
+  }
+  return null;
+}
+
+/**
+ * Resolved DOM/visual mode for `CarouselCard`.
+ * Carousel slots omit layout fields → stacked text + cover hero under (legacy).
+ */
+export function resolveCarouselCardRenderMode(
+  vm: Pick<CarouselCardViewModel, 'imageUrl' | 'textImageLayout' | 'imageScale' | 'imageLayout'>,
+): CarouselCardRenderMode {
+  if (vm.textImageLayout === 'text_only') {
+    return 'imageless';
+  }
+  if (!hasCarouselCardImage(vm)) {
+    return 'imageless';
+  }
+
+  const scale = vm.imageScale ?? 'bleed_under';
+
+  if (vm.textImageLayout != null) {
+    if (vm.textImageLayout === 'text_on_top') {
+      return scale === 'scales_to_fit' ? 'stack_bottom_contain' : 'fit_under';
+    }
+    if (vm.textImageLayout === 'text_on_left') {
+      return scale === 'scales_to_fit' ? 'split_left_contain' : 'split_left_cover';
+    }
+    if (vm.textImageLayout === 'text_on_right') {
+      return scale === 'scales_to_fit' ? 'split_right_contain' : 'split_right_cover';
+    }
+  }
+
+  const fromLegacy = legacyCombinedToMode(vm.imageLayout, vm.imageScale);
+  if (fromLegacy != null) {
+    return fromLegacy;
+  }
+
+  return 'legacy_bottom_cover';
+}
+
 /** True when the card should render a hero image (excludes `text_only` even if `imageUrl` is set). */
-export function carouselCardShowsHeroImage(
-  card: Pick<CarouselCardViewModel, 'imageUrl' | 'imageLayout'>,
-): boolean {
-  if (card.imageLayout === 'text_only') return false;
+export function carouselCardShowsHeroImage(card: Pick<CarouselCardViewModel, 'imageUrl' | 'textImageLayout' | 'imageLayout'>): boolean {
+  if (card.textImageLayout === 'text_only' || card.imageLayout === 'text_only') {
+    return false;
+  }
   return hasCarouselCardImage(card);
 }
 

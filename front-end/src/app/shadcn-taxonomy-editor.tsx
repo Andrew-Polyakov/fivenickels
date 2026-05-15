@@ -8,7 +8,18 @@ import StarterKit from '@tiptap/starter-kit';
 import TiptapLink from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 
-import { Check, ChevronsUpDown, Infinity as InfinityIcon, Settings2 } from 'lucide-react';
+import {
+  Check,
+  ChevronsUpDown,
+  Infinity as InfinityIcon,
+  Maximize2,
+  PanelLeft,
+  PanelRight,
+  PanelTop,
+  Settings2,
+  Shrink,
+  Type,
+} from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardTitle } from '../components/ui/card';
@@ -25,8 +36,10 @@ import { Checkbox } from '../components/ui/checkbox';
 import {
   carouselCardShowsHeroImage,
   packCarouselSlides,
+  resolveCarouselCardRenderMode,
   type CarouselCardFontColorKey,
-  type CarouselCardImageLayout,
+  type CarouselCardImageScale,
+  type CarouselCardTextImageLayout,
   type CarouselCardViewModel,
   type CarouselPackedSlide,
 } from './carousel-slide-packing';
@@ -56,7 +69,8 @@ type BentoGrid01Feature = {
   html?: string;
   cardBgOpacity?: number;
   cardFontColor?: CarouselCardFontColorKey;
-  cardImageLayout?: CarouselCardImageLayout;
+  cardImageLayout?: CarouselCardTextImageLayout;
+  cardImageScale?: CarouselCardImageScale;
   /** Stock bars tile: first symbol → chart; all symbols → chips (persisted JSON). */
   stock_symbols?: string[];
   /** Alpaca cadence: day = 1Day bars, week = 1Week, month = 1Month. */
@@ -208,16 +222,61 @@ function legacyCarouselSlotsToFeatures(cards: CarouselSlot[]): BentoGrid01Featur
   }));
 }
 
+/** Migrate legacy single `card_image_layout` / camelCase into layout + scale (in place). */
+export function normalizeBentoCardFeatureFields(feat: Record<string, unknown>): void {
+  if (feat['header_type'] !== 'card') {
+    return;
+  }
+  const rawLay = feat['cardImageLayout'] ?? feat['card_image_layout'];
+  const rawScale = feat['cardImageScale'] ?? feat['card_image_scale'];
+  const layout = typeof rawLay === 'string' ? rawLay : undefined;
+  const scale =
+    rawScale === 'scales_to_fit' || rawScale === 'bleed_under' ? rawScale : undefined;
+
+  delete feat['card_image_layout'];
+  delete feat['card_image_scale'];
+
+  if (layout === 'fit_under') {
+    feat['cardImageLayout'] = 'text_on_top';
+    feat['cardImageScale'] = 'bleed_under';
+    return;
+  }
+  if (layout === 'scales_fit_top') {
+    feat['cardImageLayout'] = 'text_on_top';
+    feat['cardImageScale'] = 'scales_to_fit';
+    return;
+  }
+  if (
+    layout === 'text_on_top'
+    || layout === 'text_on_left'
+    || layout === 'text_on_right'
+    || layout === 'text_only'
+  ) {
+    feat['cardImageLayout'] = layout;
+    feat['cardImageScale'] = scale ?? 'bleed_under';
+    return;
+  }
+  feat['cardImageLayout'] = 'text_on_top';
+  feat['cardImageScale'] = scale ?? 'bleed_under';
+}
+
+function normalizeBentoFeatureFromUnknown(raw: unknown): BentoGrid01Feature | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const o = { ...(raw as Record<string, unknown>) } as Record<string, unknown>;
+  if (typeof o['id'] !== 'string' || typeof o['header_type'] !== 'string') return null;
+  normalizeBentoCardFeatureFields(o);
+  return o as unknown as BentoGrid01Feature;
+}
+
 /** Exported for tests — normalize a carousel block from persisted JSON (legacy `cards` → `features`). */
 export function normalizeCarouselBlockFromJson(raw: Record<string, unknown>): CarouselBlock | null {
   if (raw['type'] !== 'carousel' || typeof raw['id'] !== 'string') return null;
   const rawFeatures = raw['features'];
   let features: BentoGrid01Feature[] = [];
   if (Array.isArray(rawFeatures) && rawFeatures.length > 0) {
-    features = rawFeatures.filter((f): f is BentoGrid01Feature =>
-      typeof f === 'object' && f !== null && typeof (f as BentoGrid01Feature).id === 'string'
-        && typeof (f as BentoGrid01Feature).header_type === 'string',
-    ) as BentoGrid01Feature[];
+    features = rawFeatures
+      .map((item) => normalizeBentoFeatureFromUnknown(item))
+      .filter((f): f is BentoGrid01Feature => f !== null);
   }
   if (features.length === 0 && Array.isArray(raw['cards'])) {
     const cards = raw['cards'].filter((c): c is CarouselSlot =>
@@ -247,6 +306,23 @@ function normalizeTaxonomyBlock(raw: Record<string, unknown>): TaxonomyBlock | n
   if (typeof t !== 'string') return null;
   if (t === 'carousel') {
     return normalizeCarouselBlockFromJson(raw);
+  }
+  if (t === 'bento_grid_01' && typeof raw['id'] === 'string') {
+    const rawFeats = raw['features'];
+    const features: BentoGrid01Feature[] = Array.isArray(rawFeats)
+      ? rawFeats
+          .map((item) => normalizeBentoFeatureFromUnknown(item))
+          .filter((f): f is BentoGrid01Feature => f !== null)
+      : [];
+    return {
+      id: raw['id'],
+      type: 'bento_grid_01',
+      badge_text: typeof raw['badge_text'] === 'string' ? raw['badge_text'] : 'Features',
+      heading: typeof raw['heading'] === 'string' ? raw['heading'] : '',
+      features,
+      ...(Array.isArray(raw['panelSizes']) ? { panelSizes: raw['panelSizes'] as number[] } : {}),
+      ...(typeof raw['height'] === 'string' ? { height: raw['height'] } : {}),
+    };
   }
   return raw as TaxonomyBlock;
 }
@@ -377,10 +453,13 @@ export function CarouselCard(props: CarouselCardViewModel) {
     catalyst,
     bgOpacity,
     fontColor,
+    textImageLayout,
+    imageScale,
     imageLayout,
   } = props;
   const publishedLabel = publishedAt?.trim() || '';
-  const showHero = carouselCardShowsHeroImage({ imageUrl, imageLayout });
+  const showHero = carouselCardShowsHeroImage({ imageUrl, textImageLayout, imageLayout });
+  const renderMode = resolveCarouselCardRenderMode({ imageUrl, textImageLayout, imageScale, imageLayout });
   const sentimentIconSrc = carouselCatalystIconSrc(catalyst);
   const tagList = (tags ?? []).slice(0, 5);
   const opacityPct = bgOpacity ?? 100;
@@ -430,9 +509,21 @@ export function CarouselCard(props: CarouselCardViewModel) {
     </div>
   ) : null;
 
-  const splitMediaEl = showHero ? (
+  const bottomContainMediaEl = showHero ? (
+    <div className="carousel-article-card__media carousel-article-card__media--bottom-contain">
+      <img src={imageUrl ?? ''} alt={title} className="carousel-article-card__img carousel-article-card__img--contain" />
+    </div>
+  ) : null;
+
+  const splitMediaCoverEl = showHero ? (
     <div className="carousel-article-card__media carousel-article-card__media--split">
       <img src={imageUrl ?? ''} alt={title} className="carousel-article-card__img carousel-article-card__img--cover" />
+    </div>
+  ) : null;
+
+  const splitMediaContainEl = showHero ? (
+    <div className="carousel-article-card__media carousel-article-card__media--split carousel-article-card__media--split-contain">
+      <img src={imageUrl ?? ''} alt={title} className="carousel-article-card__img carousel-article-card__img--contain" />
     </div>
   ) : null;
 
@@ -446,7 +537,7 @@ export function CarouselCard(props: CarouselCardViewModel) {
   let layoutModClass: string;
   let cardChildren: React.ReactNode;
 
-  if (!showHero) {
+  if (!showHero || renderMode === 'imageless') {
     layoutModClass = 'carousel-article-card--imageless';
     cardChildren = (
       <>
@@ -454,7 +545,7 @@ export function CarouselCard(props: CarouselCardViewModel) {
         {footerEl}
       </>
     );
-  } else if (imageLayout === 'fit_under') {
+  } else if (renderMode === 'fit_under') {
     layoutModClass = 'carousel-article-card--fit-under';
     cardChildren = (
       <>
@@ -467,30 +558,44 @@ export function CarouselCard(props: CarouselCardViewModel) {
         </div>
       </>
     );
-  } else if (imageLayout === 'scales_fit_top') {
-    layoutModClass = 'carousel-article-card--scales-top';
+  } else if (renderMode === 'stack_bottom_contain') {
+    layoutModClass = 'carousel-article-card--with-bottom-image carousel-article-card--bottom-image-contain';
     cardChildren = (
       <>
-        <div className="carousel-article-card__media carousel-article-card__media--contain-slot">
-          <img src={imageUrl ?? ''} alt={title} className="carousel-article-card__img carousel-article-card__img--contain" />
-        </div>
         {bodyEl}
         {footerEl}
+        {bottomContainMediaEl}
       </>
     );
-  } else if (imageLayout === 'text_on_left') {
+  } else if (renderMode === 'split_left_cover') {
     layoutModClass = 'carousel-article-card--split-text-left';
     cardChildren = (
       <>
         {textStackEl}
-        {splitMediaEl}
+        {splitMediaCoverEl}
       </>
     );
-  } else if (imageLayout === 'text_on_right') {
+  } else if (renderMode === 'split_left_contain') {
+    layoutModClass = 'carousel-article-card--split-text-left';
+    cardChildren = (
+      <>
+        {textStackEl}
+        {splitMediaContainEl}
+      </>
+    );
+  } else if (renderMode === 'split_right_cover') {
     layoutModClass = 'carousel-article-card--split-text-right';
     cardChildren = (
       <>
-        {splitMediaEl}
+        {splitMediaCoverEl}
+        {textStackEl}
+      </>
+    );
+  } else if (renderMode === 'split_right_contain') {
+    layoutModClass = 'carousel-article-card--split-text-right';
+    cardChildren = (
+      <>
+        {splitMediaContainEl}
         {textStackEl}
       </>
     );
@@ -591,8 +696,8 @@ function resolveCarouselCardFeatureViewModel(
   return {
     ...base,
     bgOpacity: feat.cardBgOpacity,
-    fontColor: feat.cardFontColor,
-    imageLayout: feat.cardImageLayout ?? 'fit_under',
+    textImageLayout: feat.cardImageLayout ?? 'text_on_top',
+    imageScale: feat.cardImageScale ?? 'bleed_under',
   };
 }
 
@@ -901,10 +1006,79 @@ const BENTO_TILE_TYPES: Array<{ type: BentoGrid01Feature['header_type']; desc: s
   { type: 'stock_bars',         desc: 'OHLC chart + ticker chips (cadence & bar count)' },
 ];
 
+const BENTO_TILE_TYPE_OPTIONS: Array<{ value: BentoGrid01Feature['header_type']; label: string }> = [
+  { value: 'image', label: 'Image (light/dark)' },
+  { value: 'reminder_animation', label: 'Reminder Animation' },
+  { value: 'animated_ui_block', label: 'Animated UI Block' },
+  { value: 'card', label: 'Article card' },
+  { value: 'richtext', label: 'Rich text' },
+  { value: 'stock_bars', label: 'Stock bars' },
+];
+
+function BentoTileTypeCombobox({
+  value,
+  onChange,
+}: {
+  value: BentoGrid01Feature['header_type'];
+  onChange: (v: BentoGrid01Feature['header_type']) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const label = BENTO_TILE_TYPE_OPTIONS.find((o) => o.value === value)?.label ?? 'Tile type';
+
+  return (
+    <Popover modal={false} open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className="scn-bento-editor__tile-type-trigger w-full"
+          aria-expanded={open}
+          aria-label="Tile type"
+        >
+          <span className="scn-bento-editor__tile-type-trigger-label truncate text-left">{label}</span>
+          <ChevronsUpDown size={14} className="shrink-0 opacity-60" aria-hidden />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="scn-popover-content scn-bento-editor__tile-type-combobox-popover"
+        align="start"
+        sideOffset={4}
+        collisionPadding={12}
+      >
+        <Command shouldFilter={false}>
+          <CommandList>
+            <CommandGroup>
+              {BENTO_TILE_TYPE_OPTIONS.map((opt) => (
+                <CommandItem
+                  key={opt.value}
+                  value={opt.value}
+                  onSelect={() => {
+                    onChange(opt.value);
+                    setOpen(false);
+                  }}
+                >
+                  <Check size={14} className={cn(value === opt.value ? 'opacity-100' : 'opacity-0')} aria-hidden />
+                  {opt.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function createBentoFeatureOfType(headerType: BentoGrid01Feature['header_type']): BentoGrid01Feature {
   const base = { id: uid(), image_url_light: '', image_url_dark: '', title: '', description: '', col_span: '4' as const };
   if (headerType === 'card') {
-    return { ...base, header_type: 'card', mode: 'random' };
+    return {
+      ...base,
+      header_type: 'card',
+      mode: 'random',
+      cardImageLayout: 'text_on_top',
+      cardImageScale: 'bleed_under',
+    };
   }
   if (headerType === 'richtext') {
     return { ...base, header_type: 'richtext', html: '' };
@@ -1081,8 +1255,8 @@ function BentoFeaturePreview({ feat, resolved, linkable, stockPreviewUrl }: {
             publishedAt: resolved.publishedAt,
             catalyst: resolved.catalyst,
             bgOpacity: feat.cardBgOpacity,
-            fontColor: feat.cardFontColor,
-            imageLayout: feat.cardImageLayout ?? 'fit_under',
+            textImageLayout: feat.cardImageLayout ?? 'text_on_top',
+            imageScale: feat.cardImageScale ?? 'bleed_under',
           }}
         />
       );
@@ -1175,12 +1349,18 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, onPatch
           <BentoFeaturePreview feat={feat} resolved={resolved} stockPreviewUrl={stockPreviewUrl} />
         </div>
       </PopoverTrigger>
-      <PopoverContent className="scn-popover-content scn-bento-editor__feat-popover" align="center" side="bottom">
+      <PopoverContent
+        className="scn-popover-content scn-bento-editor__feat-popover"
+        align="start"
+        side="top"
+        sideOffset={4}
+        collisionPadding={12}
+      >
         <div className="scn-bento-editor__feat-popover-body">
           <div className="scn-bento-editor__card-row">
-            <Select value={feat.header_type}
-              onChange={e => {
-                const v = e.target.value as BentoGrid01Feature['header_type'];
+            <BentoTileTypeCombobox
+              value={feat.header_type}
+              onChange={(v) => {
                 if (v === 'stock_bars') {
                   onPatch({
                     header_type: v,
@@ -1191,14 +1371,8 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, onPatch
                 } else {
                   onPatch({ header_type: v });
                 }
-              }}>
-              <option value="image">Image (light/dark)</option>
-              <option value="reminder_animation">Reminder Animation</option>
-              <option value="animated_ui_block">Animated UI Block</option>
-              <option value="card">Article card</option>
-              <option value="richtext">Rich text</option>
-              <option value="stock_bars">Stock bars</option>
-            </Select>
+              }}
+            />
           </div>
           {feat.header_type === 'image' && (
             <>
@@ -1229,19 +1403,45 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, onPatch
               )}
               <div className="scn-bento-editor__card-style">
                 <span className="scn-bento-editor__style-label">Text &amp; image layout</span>
-                <Select
-                  value={feat.cardImageLayout ?? 'fit_under'}
-                  onChange={(e) => {
-                    onPatch({ cardImageLayout: e.target.value as CarouselCardImageLayout });
+                <ToggleGroup
+                  className="scn-bento-editor__icon-toggle-group"
+                  value={feat.cardImageLayout ?? 'text_on_top'}
+                  onValueChange={(v) => {
+                    if (v) onPatch({ cardImageLayout: v as CarouselCardTextImageLayout });
                   }}
                 >
-                  <option value="fit_under">Fit under (full-bleed behind text)</option>
-                  <option value="scales_fit_top">Scales to fit (image above text)</option>
-                  <option value="text_on_top">Text above image</option>
-                  <option value="text_on_left">Text on the left, image on the right</option>
-                  <option value="text_on_right">Image on the left, text on the right</option>
-                  <option value="text_only">Text only (no hero image)</option>
-                </Select>
+                  <ToggleGroupItem value="text_on_top" title="Text above image" aria-label="Text above image">
+                    <PanelTop size={16} strokeWidth={1.75} aria-hidden />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="text_on_left" title="Text on the left, image on the right" aria-label="Text on the left, image on the right">
+                    <PanelLeft size={16} strokeWidth={1.75} aria-hidden />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="text_on_right" title="Text on the right, image on the left" aria-label="Text on the right, image on the left">
+                    <PanelRight size={16} strokeWidth={1.75} aria-hidden />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="text_only" title="Text only (no hero)" aria-label="Text only (no hero)">
+                    <Type size={16} strokeWidth={1.75} aria-hidden />
+                  </ToggleGroupItem>
+                </ToggleGroup>
+                {feat.cardImageLayout !== 'text_only' && (
+                  <>
+                    <span className="scn-bento-editor__style-label">Image scale</span>
+                    <ToggleGroup
+                      className="scn-bento-editor__icon-toggle-group"
+                      value={feat.cardImageScale ?? 'bleed_under'}
+                      onValueChange={(v) => {
+                        if (v) onPatch({ cardImageScale: v as CarouselCardImageScale });
+                      }}
+                    >
+                      <ToggleGroupItem value="scales_to_fit" title="Scales to fit" aria-label="Scales to fit">
+                        <Shrink size={16} strokeWidth={1.75} aria-hidden />
+                      </ToggleGroupItem>
+                      <ToggleGroupItem value="bleed_under" title="Bleed under" aria-label="Bleed under">
+                        <Maximize2 size={16} strokeWidth={1.75} aria-hidden />
+                      </ToggleGroupItem>
+                    </ToggleGroup>
+                  </>
+                )}
                 <span className="scn-bento-editor__style-label">Background opacity</span>
                 <div className="scn-bento-editor__size-slider-row">
                   <Slider min={0} max={100} step={5}
@@ -1249,26 +1449,6 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, onPatch
                     onValueChange={([v]) => onPatch({ cardBgOpacity: v })} />
                   <span className="scn-bento-editor__size-value">{feat.cardBgOpacity ?? 100}%</span>
                 </div>
-                <span className="scn-bento-editor__style-label">Font color</span>
-                <ToggleGroup value={feat.cardFontColor ?? 'white'}
-                  onValueChange={v => { if (v) onPatch({ cardFontColor: v as CarouselCardFontColorKey }); }}>
-                  <ToggleGroupItem value="white">
-                    <span className="scn-bento-editor__color-swatch" style={{ background: '#ffffff' }} />
-                    White
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="black">
-                    <span className="scn-bento-editor__color-swatch" style={{ background: '#0a0a0a' }} />
-                    Black
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="slime">
-                    <span className="scn-bento-editor__color-swatch scn-bento-editor__color-swatch--slime" />
-                    Green
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="gray">
-                    <span className="scn-bento-editor__color-swatch" style={{ background: 'rgba(226,232,240,0.7)' }} />
-                    Gray
-                  </ToggleGroupItem>
-                </ToggleGroup>
               </div>
             </>
           )}

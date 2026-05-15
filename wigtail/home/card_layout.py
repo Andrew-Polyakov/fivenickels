@@ -31,12 +31,16 @@ def card_visible_for_sector(card_value: dict, sector_slug: str | None) -> bool:
 
 _BENTO_CARD_IMAGE_LAYOUT_CHOICES = frozenset(
     {
-        "fit_under",
-        "scales_fit_top",
         "text_on_top",
         "text_on_left",
         "text_on_right",
         "text_only",
+    }
+)
+_BENTO_CARD_IMAGE_SCALE_CHOICES = frozenset(
+    {
+        "scales_to_fit",
+        "bleed_under",
     }
 )
 
@@ -469,6 +473,9 @@ def _serialize_bentogrid01(block_value: dict, parent_context: dict | None = None
             layout_raw = val.get("card_image_layout")
             if layout_raw in _BENTO_CARD_IMAGE_LAYOUT_CHOICES:
                 entry["card_image_layout"] = layout_raw
+            scale_raw = val.get("card_image_scale")
+            if scale_raw in _BENTO_CARD_IMAGE_SCALE_CHOICES:
+                entry["card_image_scale"] = scale_raw
         if header_type == "richtext":
             from wagtail.rich_text import expand_db_html
 

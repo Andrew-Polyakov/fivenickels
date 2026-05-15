@@ -250,16 +250,23 @@ class BentoGridFeatureBlock(blocks.StructBlock):
     )
     card_image_layout = blocks.ChoiceBlock(
         choices=[
-            ("fit_under", "Fit under (full-bleed behind text)"),
-            ("scales_fit_top", "Scales to fit (image above text)"),
             ("text_on_top", "Text above image"),
             ("text_on_left", "Text on the left, image on the right"),
-            ("text_on_right", "Image on the left, text on the right"),
-            ("text_only", "Text only (no hero image)"),
+            ("text_on_right", "Text on the right, image on the left"),
+            ("text_only", "Text only (No Hero)"),
         ],
-        default="fit_under",
+        default="text_on_top",
         required=False,
         label="Article card: text & image layout",
+    )
+    card_image_scale = blocks.ChoiceBlock(
+        choices=[
+            ("scales_to_fit", "Scales to Fit"),
+            ("bleed_under", "Bleed under"),
+        ],
+        default="bleed_under",
+        required=False,
+        label="Article card: image scale",
     )
     stock_symbols = blocks.ListBlock(
         blocks.CharBlock(max_length=16),

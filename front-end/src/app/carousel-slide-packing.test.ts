@@ -117,10 +117,18 @@ describe('hasCarouselCardImage', () => {
 
 describe('carouselCardShowsHeroImage', () => {
   it('hides hero for text_only even when URL is set', () => {
-    expect(carouselCardShowsHeroImage({ imageUrl: 'https://x.example/x.jpg', imageLayout: 'text_only' })).toBe(false);
+    expect(
+      carouselCardShowsHeroImage({ imageUrl: 'https://x.example/x.jpg', imageLayout: 'text_only' }),
+    ).toBe(false);
+    expect(
+      carouselCardShowsHeroImage({ imageUrl: 'https://x.example/x.jpg', textImageLayout: 'text_only' }),
+    ).toBe(false);
   });
 
   it('shows hero for other layouts when URL is set', () => {
     expect(carouselCardShowsHeroImage({ imageUrl: 'https://x.example/x.jpg', imageLayout: 'text_on_left' })).toBe(true);
+    expect(
+      carouselCardShowsHeroImage({ imageUrl: 'https://x.example/x.jpg', textImageLayout: 'text_on_left' }),
+    ).toBe(true);
   });
 });
