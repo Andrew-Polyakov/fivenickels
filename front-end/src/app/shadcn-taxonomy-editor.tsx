@@ -1069,6 +1069,66 @@ function BentoTileTypeCombobox({
   );
 }
 
+const STOCK_BARS_CADENCE_OPTIONS: Array<{ value: 'day' | 'week' | 'month'; label: string }> = [
+  { value: 'day', label: 'Day' },
+  { value: 'week', label: 'Week' },
+  { value: 'month', label: 'Month' },
+];
+
+function StockBarsCadenceCombobox({
+  value,
+  onChange,
+}: {
+  value: 'day' | 'week' | 'month';
+  onChange: (v: 'day' | 'week' | 'month') => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const label = STOCK_BARS_CADENCE_OPTIONS.find((o) => o.value === value)?.label ?? 'Day';
+
+  return (
+    <Popover modal={false} open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className="scn-bento-editor__tile-type-trigger w-full"
+          aria-expanded={open}
+          aria-label="Cadence"
+        >
+          <span className="scn-bento-editor__tile-type-trigger-label truncate text-left">{label}</span>
+          <ChevronsUpDown size={14} className="shrink-0 opacity-60" aria-hidden />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="scn-popover-content scn-bento-editor__tile-type-combobox-popover"
+        align="start"
+        sideOffset={4}
+        collisionPadding={12}
+      >
+        <Command shouldFilter={false}>
+          <CommandList>
+            <CommandGroup>
+              {STOCK_BARS_CADENCE_OPTIONS.map((opt) => (
+                <CommandItem
+                  key={opt.value}
+                  value={opt.value}
+                  onSelect={() => {
+                    onChange(opt.value);
+                    setOpen(false);
+                  }}
+                >
+                  <Check size={14} className={cn(value === opt.value ? 'opacity-100' : 'opacity-0')} aria-hidden />
+                  {opt.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function createBentoFeatureOfType(headerType: BentoGrid01Feature['header_type']): BentoGrid01Feature {
   const base = { id: uid(), image_url_light: '', image_url_dark: '', title: '', description: '', col_span: '4' as const };
   if (headerType === 'card') {
@@ -1468,18 +1528,10 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, onPatch
                 </label>
                 <label className="flex flex-col gap-1.5 min-w-0">
                   <span className="text-muted-foreground text-sm">Cadence</span>
-                  <Select
+                  <StockBarsCadenceCombobox
                     value={feat.stock_bars_cadence ?? 'day'}
-                    onChange={e => {
-                      const v = e.target.value;
-                      if (v === 'week' || v === 'month' || v === 'day') {
-                        onPatch({ stock_bars_cadence: v });
-                      }
-                    }}>
-                    <option value="day">Day</option>
-                    <option value="week">Week</option>
-                    <option value="month">Month</option>
-                  </Select>
+                    onChange={(v) => onPatch({ stock_bars_cadence: v })}
+                  />
                 </label>
               </div>
               <div className="flex flex-col gap-1.5">
@@ -1515,7 +1567,79 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, onPatch
   );
 }
 
-function BentoResizableLayout({ features, resolvedRandom, searchUrl, stockPreviewUrl, onPatch, onRemove, panelSizes, onLayoutChange, height }: {
+function BentoGrid01BlockHeaderFields({
+  block,
+  onChange,
+  addOpen,
+  onAddOpenChange,
+  onAddTile,
+}: {
+  block: BentoGrid01Block;
+  onChange: (b: BentoGrid01Block) => void;
+  addOpen: boolean;
+  onAddOpenChange: (open: boolean) => void;
+  onAddTile: (headerType: BentoGrid01Feature['header_type']) => void;
+}) {
+  return (
+    <div className="scn-editor-block__header-fields">
+      <Input
+        value={block.badge_text}
+        placeholder="Badge"
+        className="scn-editor-block__header-field"
+        onChange={e => onChange({ ...block, badge_text: e.target.value })}
+      />
+      <Input
+        value={block.heading}
+        placeholder="Heading"
+        className="scn-editor-block__header-field scn-editor-block__header-field--wide"
+        onChange={e => onChange({ ...block, heading: e.target.value })}
+      />
+      <div className="scn-editor-block__header-height">
+        <label className="scn-bento-editor__size-auto-row">
+          <Checkbox
+            checked={!block.height || block.height === 'auto'}
+            onCheckedChange={checked => onChange({ ...block, height: checked ? undefined : '320px' })}
+          />
+          <span>Auto</span>
+        </label>
+        {block.height && block.height !== 'auto' ? (
+          <div className="scn-bento-editor__size-slider-row">
+            <Slider
+              min={320}
+              max={1000}
+              step={10}
+              value={[parseInt(block.height, 10) || 320]}
+              onValueChange={([v]) => onChange({ ...block, height: `${v}px` })}
+            />
+            <span className="scn-bento-editor__size-value">{block.height}</span>
+          </div>
+        ) : null}
+      </div>
+      <Popover open={addOpen} onOpenChange={onAddOpenChange}>
+        <PopoverTrigger asChild>
+          <button type="button" className="scn-bento-editor__add-col" aria-label="Add tile">
+            +
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="scn-popover-content scn-editor-add-block-menu" align="end">
+          {BENTO_TILE_TYPES.map(bt => (
+            <button
+              key={bt.type}
+              type="button"
+              className="scn-editor-add-block-item"
+              onClick={() => { onAddTile(bt.type); }}
+            >
+              <span className="scn-editor-add-block-item__label">{BENTO_TILE_LABEL[bt.type]}</span>
+              <span className="scn-editor-add-block-item__desc">{bt.desc}</span>
+            </button>
+          ))}
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+
+function BentoResizableLayout({ features, resolvedRandom, searchUrl, stockPreviewUrl, onPatch, onRemove, panelSizes, onLayoutChange, height, addTileOpen, onAddTileOpenChange, onAddTile }: {
   features: BentoGrid01Feature[];
   resolvedRandom: Record<string, ArticleResult | null>;
   searchUrl: string;
@@ -1525,9 +1649,35 @@ function BentoResizableLayout({ features, resolvedRandom, searchUrl, stockPrevie
   panelSizes?: number[];
   onLayoutChange?: (sizes: number[]) => void;
   height?: string;
+  addTileOpen: boolean;
+  onAddTileOpenChange: (open: boolean) => void;
+  onAddTile: (headerType: BentoGrid01Feature['header_type']) => void;
 }) {
   if (features.length === 0) {
-    return <div className="scn-bento-editor__empty">Add tiles with the + button</div>;
+    return (
+      <div className="scn-bento-editor__empty">
+        <Popover open={addTileOpen} onOpenChange={onAddTileOpenChange}>
+          <PopoverTrigger asChild>
+            <button type="button" className="scn-bento-editor__add-col scn-bento-editor__add-col--empty" aria-label="Add tile">
+              +
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="scn-popover-content scn-editor-add-block-menu" align="center">
+            {BENTO_TILE_TYPES.map(bt => (
+              <button
+                key={bt.type}
+                type="button"
+                className="scn-editor-add-block-item"
+                onClick={() => { onAddTile(bt.type); }}
+              >
+                <span className="scn-editor-add-block-item__label">{BENTO_TILE_LABEL[bt.type]}</span>
+                <span className="scn-editor-add-block-item__desc">{bt.desc}</span>
+              </button>
+            ))}
+          </PopoverContent>
+        </Popover>
+      </div>
+    );
   }
 
   const layoutStyle: React.CSSProperties | undefined = height && height !== 'auto'
@@ -1604,16 +1754,18 @@ function BentoResizableLayout({ features, resolvedRandom, searchUrl, stockPrevie
   );
 }
 
-function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, termId, onChange }: {
-  block: BentoGrid01Block; searchUrl: string; stockPreviewUrl: string; termId: number; onChange: (b: BentoGrid01Block) => void;
+function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, termId, onChange, addTileOpen, onAddTileOpenChange, onAddTile }: {
+  block: BentoGrid01Block;
+  searchUrl: string;
+  stockPreviewUrl: string;
+  termId: number;
+  onChange: (b: BentoGrid01Block) => void;
+  addTileOpen: boolean;
+  onAddTileOpenChange: (open: boolean) => void;
+  onAddTile: (headerType: BentoGrid01Feature['header_type']) => void;
 }) {
-  const [addOpen, setAddOpen] = React.useState(false);
   const cardSlots = React.useMemo(() => bentoCardFeaturesToSlots(block.features), [block.features]);
   const resolvedRandom = useResolvedCarouselPreviews(cardSlots, termId);
-
-  function addFeature(headerType: BentoGrid01Feature['header_type']) {
-    onChange({ ...block, features: [...block.features, createBentoFeatureOfType(headerType)] });
-  }
 
   function patchFeature(featId: string, patch: Partial<BentoGrid01Feature>) {
     onChange({
@@ -1638,47 +1790,6 @@ function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, termId, onChange
 
   return (
     <div className="scn-bento-editor">
-      <div className="scn-bento-editor__col-header">
-        <Input value={block.badge_text} placeholder="Badge text"
-          onChange={e => onChange({ ...block, badge_text: e.target.value })} />
-        <Input value={block.heading} placeholder="Section heading"
-          onChange={e => onChange({ ...block, heading: e.target.value })} />
-        <Popover>
-          <PopoverTrigger asChild>
-            <button className="scn-bento-editor__size-btn">Size</button>
-          </PopoverTrigger>
-          <PopoverContent className="scn-popover-content scn-bento-editor__size-popover" align="end">
-            <label className="scn-bento-editor__size-auto-row">
-              <Checkbox checked={!block.height || block.height === 'auto'}
-                onCheckedChange={checked => onChange({ ...block, height: checked ? undefined : '320px' })} />
-              <span>Auto</span>
-            </label>
-            {block.height && block.height !== 'auto' && (
-              <div className="scn-bento-editor__size-slider-row">
-                <Slider min={320} max={1000} step={10}
-                  value={[parseInt(block.height) || 320]}
-                  onValueChange={([v]) => onChange({ ...block, height: `${v}px` })} />
-                <span className="scn-bento-editor__size-value">{block.height}</span>
-              </div>
-            )}
-          </PopoverContent>
-        </Popover>
-        <Popover open={addOpen} onOpenChange={setAddOpen}>
-          <PopoverTrigger asChild>
-            <button className="scn-bento-editor__add-col">+</button>
-          </PopoverTrigger>
-          <PopoverContent className="scn-popover-content scn-editor-add-block-menu" align="end">
-            {BENTO_TILE_TYPES.map(bt => (
-              <button key={bt.type} className="scn-editor-add-block-item"
-                onClick={() => { addFeature(bt.type); setAddOpen(false); }}>
-                <span className="scn-editor-add-block-item__label">{BENTO_TILE_LABEL[bt.type]}</span>
-                <span className="scn-editor-add-block-item__desc">{bt.desc}</span>
-              </button>
-            ))}
-          </PopoverContent>
-        </Popover>
-      </div>
-
       <BentoResizableLayout
         features={block.features}
         resolvedRandom={resolvedRandom}
@@ -1689,6 +1800,9 @@ function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, termId, onChange
         panelSizes={block.panelSizes}
         onLayoutChange={handleLayoutChange}
         height={block.height}
+        addTileOpen={addTileOpen}
+        onAddTileOpenChange={onAddTileOpenChange}
+        onAddTile={onAddTile}
       />
     </div>
   );
@@ -1945,10 +2059,30 @@ function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl,
   uploadUrl: string; articleSearchUrl: string; stockPreviewUrl: string;
   onChange: (b: TaxonomyBlock) => void; onRemove: () => void; onMove: (dir: -1 | 1) => void;
 }) {
+  const [bentoAddTileOpen, setBentoAddTileOpen] = React.useState(false);
+
+  function addBentoTile(headerType: BentoGrid01Feature['header_type']) {
+    if (block.type !== 'bento_grid_01') return;
+    onChange({
+      ...block,
+      features: [...block.features, createBentoFeatureOfType(headerType)],
+    });
+    setBentoAddTileOpen(false);
+  }
+
   return (
     <div className="scn-editor-block">
       <div className="scn-editor-block__header">
         <span className="scn-editor-block__type">{BLOCK_LABEL[block.type] ?? block.type}</span>
+        {block.type === 'bento_grid_01' ? (
+          <BentoGrid01BlockHeaderFields
+            block={block}
+            onChange={onChange as (b: BentoGrid01Block) => void}
+            addOpen={bentoAddTileOpen}
+            onAddOpenChange={setBentoAddTileOpen}
+            onAddTile={addBentoTile}
+          />
+        ) : null}
         <div className="scn-editor-block__controls">
           <button className="scn-editor-block__ctrl-btn" onClick={() => onMove(-1)}
             disabled={index === 0} aria-label="Move up" title="Move up">↑</button>
@@ -1964,7 +2098,18 @@ function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl,
         {block.type === 'image'     && <ImageEditor     block={block} uploadUrl={uploadUrl} onChange={onChange as (b: ImageBlock) => void} />}
         {block.type === 'embed'     && <EmbedEditor     block={block} onChange={onChange as (b: EmbedBlock) => void} />}
         {block.type === 'separator' && <SeparatorEditor block={block} onChange={onChange as (b: SeparatorBlock) => void} />}
-        {block.type === 'bento_grid_01' && <BentoGrid01Editor block={block} searchUrl={articleSearchUrl} stockPreviewUrl={stockPreviewUrl} termId={termId} onChange={onChange as (b: BentoGrid01Block) => void} />}
+        {block.type === 'bento_grid_01' && (
+          <BentoGrid01Editor
+            block={block}
+            searchUrl={articleSearchUrl}
+            stockPreviewUrl={stockPreviewUrl}
+            termId={termId}
+            onChange={onChange as (b: BentoGrid01Block) => void}
+            addTileOpen={bentoAddTileOpen}
+            onAddTileOpenChange={setBentoAddTileOpen}
+            onAddTile={addBentoTile}
+          />
+        )}
         {block.type === 'carousel' && (
           <CarouselEditor
             block={block}

@@ -34,6 +34,18 @@
     {% endif %}
 </nav>
 {% elif search_query %}
-<p class="search-results__empty">No results found</p>
+<aside class="search-results__google-fallback search-result" role="complementary" aria-label="Search on Google">
+    <p class="search-results__google-lead">
+        No pages on this site match <strong class="search-results__google-query">{{ search_query }}</strong>.
+    </p>
+    <a
+        class="btn btn--raised search-results__google-link"
+        href="https://www.google.com/search?q={{ search_query|urlencode }}"
+        target="_blank"
+        rel="noopener noreferrer"
+    >
+        Search “{{ search_query }}” on Google
+    </a>
+</aside>
 {% endif %}
 {% endblock %}

@@ -74,3 +74,11 @@ class SearchSuggestApiTests(WagtailPageTestCase):
         self.assertLessEqual(len(data["results"]), 3)
         if data["total"] > 0:
             self.assertEqual(len(data["results"]), min(3, data["total"]))
+
+    def test_search_page_empty_shows_google_fallback(self):
+        r = self.client.get(reverse("search"), {"query": "sdf-nonexistent-xyz"})
+        self.assertEqual(r.status_code, 200)
+        self.assertNotContains(r, "No results found")
+        self.assertContains(r, "google.com/search?q=")
+        self.assertContains(r, "search-results__google-fallback")
+        self.assertContains(r, "on Google")
