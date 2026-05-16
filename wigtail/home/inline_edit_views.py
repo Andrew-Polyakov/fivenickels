@@ -215,6 +215,36 @@ def set_taxonomy_term_nav(request: HttpRequest) -> JsonResponse:
     return JsonResponse({"updated": True, "id": term.pk, "is_nav": term.is_nav})
 
 
+@require_POST
+@user_passes_test(_admin_inline_access)
+def set_taxonomy_term_sitemap(request: HttpRequest) -> JsonResponse:
+    payload = _json_payload(request)
+    try:
+        term_id = int(payload.get("term_id"))
+    except (TypeError, ValueError):
+        return JsonResponse({"error": "Category id is required."}, status=400)
+
+    raw = payload.get("is_sitemap")
+    if isinstance(raw, bool):
+        is_sitemap = raw
+    else:
+        text = str(raw or "").strip().lower()
+        if text in ("1", "true", "yes", "on"):
+            is_sitemap = True
+        elif text in ("0", "false", "no", "off"):
+            is_sitemap = False
+        else:
+            return JsonResponse({"error": "Site map flag is required."}, status=400)
+
+    term = TaxonomyTerm.objects.filter(pk=term_id).first()
+    if term is None:
+        return JsonResponse({"error": "Category not found."}, status=404)
+
+    term.is_sitemap = is_sitemap
+    term.save(update_fields=["is_sitemap"])
+    return JsonResponse({"updated": True, "id": term.pk, "is_sitemap": term.is_sitemap})
+
+
 def _normalize_master_layout_payload(layout: object) -> dict | None:
     """Normalize layout payload. Accepts v1 (legacy), v2 (taxonomy), and v3 (bento resizable)."""
     if not isinstance(layout, dict):

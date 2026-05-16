@@ -2,10 +2,23 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+from pathlib import Path
+
+_venv_python = Path(__file__).resolve().parent / '.venv' / 'bin' / 'python'
+if _venv_python.exists() and sys.prefix == sys.base_prefix:
+    os.execv(str(_venv_python), [str(_venv_python)] + sys.argv)
 
 
 def main():
     """Run administrative tasks."""
+    env_file = Path(__file__).resolve().parent.parent / '.env'
+    if env_file.exists():
+        try:
+            from dotenv import load_dotenv
+            load_dotenv(env_file)
+        except ImportError:
+            pass
+
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mysite.settings.dev")
     try:
         from django.core.management import execute_from_command_line

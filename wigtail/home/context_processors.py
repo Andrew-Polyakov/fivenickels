@@ -5,6 +5,7 @@ from __future__ import annotations
 from home.ticker_utils import chip_context_for_row
 from home.taxonomy import (
     MARKET_NEWS_SLUG,
+    build_hamburger_nav_payload,
     build_site_nav_menu_payload,
     get_site_nav_template_context,
     resolve_page_for_nav,
@@ -68,12 +69,18 @@ def market_header(request):
     )
     header_tickers = [chip_context_for_row(row) for row in rows]
 
+    try:
+        hamburger_nav_payload = build_hamburger_nav_payload(home) if home else {"terms": []}
+    except Exception:
+        hamburger_nav_payload = {"terms": []}
+
     out = {
         "header_tickers": header_tickers,
         "header_home": home,
         "site_footer_roots": site_footer_roots,
         "footer_careers_page": CareersPage.objects.live().public().first(),
         "footer_cookies_page": CookiesPolicyPage.objects.live().public().first(),
+        "hamburger_nav_payload": hamburger_nav_payload,
     }
     if nav_ctx:
         page = resolve_page_for_nav(request)

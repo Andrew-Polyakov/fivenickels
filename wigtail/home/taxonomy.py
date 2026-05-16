@@ -495,6 +495,54 @@ def build_site_nav_menu_payload(
     return out
 
 
+def build_hamburger_nav_payload(home_page) -> dict:
+    """Build JSON payload for the hamburger navigation menu.
+
+    Returns all visible taxonomy terms as a tree with ``inNav`` / ``inSitemap`` flags.
+    """
+    from home.models import TaxonomyTerm
+
+    all_terms = list(TaxonomyTerm.objects.filter(is_visible=True).order_by("path"))
+    steplen = TaxonomyTerm.steplen
+    by_path = {t.path: t for t in all_terms}
+
+    def slug_path_for(term) -> list[str]:
+        slugs: list[str] = []
+        path = term.path
+        for i in range(0, len(path), steplen):
+            t = by_path.get(path[: i + steplen])
+            if t:
+                slugs.append(t.slug)
+        return slugs
+
+    def term_href(term) -> str:
+        if home_page:
+            return _taxonomy_href(home_page, slug_path_for(term))
+        return "/" + "/".join(slug_path_for(term)) + "/"
+
+    def build_node(term) -> dict:
+        children = [
+            build_node(c)
+            for c in all_terms
+            if c.depth == term.depth + 1
+            and c.path.startswith(term.path)
+            and len(c.path) == len(term.path) + steplen
+        ]
+        return {
+            "id": str(term.pk),
+            "name": term.name,
+            "slug": term.slug,
+            "href": term_href(term),
+            "inNav": bool(getattr(term, "is_nav", True)),
+            "inSitemap": bool(getattr(term, "is_sitemap", False)),
+            "removable": True,
+            "children": children,
+        }
+
+    roots = [t for t in all_terms if t.depth == 1]
+    return {"terms": [build_node(t) for t in roots]}
+
+
 def resolve_page_for_nav(request):
     """Best-effort current page for nav-active matching (non-taxonomy URLs)."""
     try:

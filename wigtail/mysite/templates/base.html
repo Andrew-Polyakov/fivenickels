@@ -85,9 +85,22 @@
                     <div class="site-header__upper site-header__masthead-strip">
                         <div class="site-header__row site-header__row--top site-header__row--masthead">
                             <div class="site-header__masthead-left">
-                                <button type="button" class="btn btn--icon site-header__icon-btn" aria-label="Menu" disabled title="Coming soon">
-                                    <span class="material-symbols-outlined" aria-hidden="true">menu</span>
-                                </button>
+                                {% if hamburger_nav_payload %}{{ hamburger_nav_payload|json_script:"hamburger-nav-payload" }}{% endif %}
+                                <div
+                                    class="site-hamburger-nav__host"
+                                    data-shadcn-hamburger-nav
+                                    data-json-id="hamburger-nav-payload"
+                                    data-can-edit="{% if request.user.is_authenticated and request.user.is_staff or request.user.is_authenticated and request.user.is_superuser %}1{% else %}0{% endif %}"
+                                    data-create-url="{% url 'inline_create_taxonomy_term' %}"
+                                    data-delete-url="{% url 'inline_delete_taxonomy_term' %}"
+                                    data-rename-url="{% url 'inline_rename_taxonomy_term' %}"
+                                    data-set-nav-url="{% url 'inline_set_taxonomy_term_nav' %}"
+                                    data-set-sitemap-url="{% url 'inline_set_taxonomy_term_sitemap' %}"
+                                >
+                                    <button type="button" class="btn btn--icon site-header__icon-btn" aria-label="Menu" disabled>
+                                        <span class="material-symbols-outlined" aria-hidden="true">menu</span>
+                                    </button>
+                                </div>
                                 <div
                                     class="site-search-live site-header__masthead-search"
                                     data-site-search-live

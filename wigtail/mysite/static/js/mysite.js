@@ -350,6 +350,9 @@
     }
 
     function initTaxonomySiteNavAndChips() {
+        if (window.mountShadcnHamburgerNav && typeof window.mountShadcnHamburgerNav === "function") {
+            window.mountShadcnHamburgerNav();
+        }
         if (window.mountShadcnTaxonomySiteNav && typeof window.mountShadcnTaxonomySiteNav === "function") {
             window.mountShadcnTaxonomySiteNav();
         }

@@ -55,6 +55,11 @@ urlpatterns = [
         name="inline_set_taxonomy_term_nav",
     ),
     path(
+        "inline/taxonomy/set-sitemap/",
+        inline_edit_views.set_taxonomy_term_sitemap,
+        name="inline_set_taxonomy_term_sitemap",
+    ),
+    path(
         "inline/taxonomy/save-master-layout/",
         inline_edit_views.save_taxonomy_master_layout,
         name="save_taxonomy_master_layout",

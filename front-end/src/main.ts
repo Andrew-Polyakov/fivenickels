@@ -17,6 +17,7 @@ import { mountShadcnProfileArticlesTable } from './app/shadcn-profile-articles-t
 import { mountShadcnArticleEditor } from './app/shadcn-article-editor';
 import { mountShadcnReadingThemeToggle } from './app/shadcn-reading-theme-toggle';
 import { mountTaxonomyEditor } from './app/shadcn-taxonomy-editor';
+import { mountShadcnHamburgerNav } from './app/shadcn-hamburger-nav';
 import {
   ConfirmDialogComponent,
   MessageDialogComponent,
@@ -44,6 +45,7 @@ declare global {
     mountTaxonomyEditor?: () => void;
     mountShadcnBentoGrid01?: () => void;
     mountShadcnReadingThemeToggle?: () => void;
+    mountShadcnHamburgerNav?: () => void;
   }
 }
 
@@ -112,6 +114,7 @@ createApplication({
     window.mountTaxonomyEditor = mountTaxonomyEditor;
     window.mountShadcnBentoGrid01 = mountShadcnBentoGrid01;
     window.mountShadcnReadingThemeToggle = mountShadcnReadingThemeToggle;
+    window.mountShadcnHamburgerNav = mountShadcnHamburgerNav;
     window.showMaterialConfirm = (message: string, title?: string) =>
       new Promise<boolean>((resolve) => {
         dialog
