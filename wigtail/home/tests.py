@@ -459,6 +459,27 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         self.assertContains(r2, "Materials")
         self.assertNotContains(r2, "Utilities")
 
+    def test_taxonomy_nav_level3_row_when_level2_selected(self):
+        from home.taxonomy import taxonomy_prefix_path
+
+        child = TaxonomyTerm(
+            name="Oil nav child",
+            slug="oil-nav-child-test",
+            is_visible=True,
+            is_nav=True,
+        )
+        self.energy.add_child(instance=child)
+        prefix = taxonomy_prefix_path(self.homepage)
+        url = prefix + "market-news/energy/"
+        response = self.client.get(url, HTTP_TURBO_FRAME="site-nav")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '"depth": 3')
+        self.assertContains(response, "oil-nav-child-test")
+        self.assertContains(response, "site-nav__row--depth-3")
+        self.assertContains(response, "scn-taxonomy-site-nav__depth-row")
+        self.assertContains(response, "scn-navigation-menu__trigger--link")
+        self.assertNotContains(response, "site-nav__row--depth-2")
+
     def test_taxonomy_nav_market_news_energy_returns_200(self):
         from home.taxonomy import taxonomy_prefix_path
 
@@ -1009,12 +1030,13 @@ class InlineEditingApiTests(WagtailPageTestCase):
         self.client.force_login(self.admin_user)
         response = self.client.get(self.homepage.url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "data-taxonomy-chip-widget")
+        self.assertContains(response, "data-shadcn-taxonomy-site-nav")
         self.assertContains(response, 'data-can-edit="1"')
         self.assertContains(response, "data-create-url")
         self.assertContains(response, "data-delete-url")
         self.assertContains(response, "data-rename-url")
-        self.assertContains(response, "data-after-create-visit=")
+        self.assertContains(response, "site-nav-menu-payload")
+        self.assertNotContains(response, "site-nav__row--depth-3")
 
     def _seed_taxonomy_card_widget(self, slug="market-news"):
         term = TaxonomyTerm.objects.get(slug=slug)
