@@ -313,6 +313,29 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         self.assertContains(r, "SUMM")
 
     @patch("home.ticker_serve.fetch_asset_meta", return_value=None)
+    def test_ticker_page_shows_upcoming_dividends_section(self, _mock_asset):
+        import uuid
+        from datetime import timedelta
+
+        from home.market_events import market_today_eastern
+        from home.models import CorporateActionEvent
+
+        MarketTickerRow.objects.create(symbol="DIV", enabled=True, sort_order=0)
+        today = market_today_eastern()
+        CorporateActionEvent.objects.create(
+            alpaca_id=uuid.uuid4(),
+            symbol="DIV",
+            action_type=CorporateActionEvent.ACTION_CASH,
+            ex_date=today + timedelta(days=5),
+            rate=Decimal("0.42"),
+        )
+        url = reverse("ticker_page", kwargs={"ticker_slug": "div"})
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "Upcoming dividends")
+        self.assertContains(r, "$0.42")
+
+    @patch("home.ticker_serve.fetch_asset_meta", return_value=None)
     def test_ticker_page_shows_unsynced_notice_without_fetched_at(self, _mock_asset):
         MarketTickerRow.objects.create(
             symbol="NOSYNC",
@@ -1490,18 +1513,23 @@ class BentoForexMarketMoversSerializationTests(WagtailPageTestCase):
             {
                 "badge_text": "Features",
                 "heading": "Markets",
+                "grid_columns": 4,
                 "features": [
                     {
                         "header_type": "forex_strip",
                         "title": "",
                         "description": "",
                         "col_span": "4",
+                        "row_span": 2,
                     }
                 ],
             },
             {"request": None},
         )
+        self.assertEqual(payload["grid_columns"], 4)
         self.assertEqual(payload["features"][0]["header_type"], "forex_strip")
+        self.assertEqual(payload["features"][0]["col_span"], 1)
+        self.assertEqual(payload["features"][0]["row_span"], 2)
         self.assertEqual(len(payload["features"][0]["forex_quotes"]), 1)
         self.assertEqual(payload["features"][0]["forex_quotes"][0]["label"], "EUR/USD")
 
@@ -1534,13 +1562,17 @@ class BentoForexMarketMoversSerializationTests(WagtailPageTestCase):
                         "title": "",
                         "description": "",
                         "col_span": "8",
+                        "row_span": 1,
                     }
                 ],
             },
             {"request": request},
         )
+        self.assertEqual(payload["grid_columns"], 3)
         feat = payload["features"][0]
         self.assertEqual(feat["header_type"], "market_movers")
+        self.assertEqual(feat["col_span"], 2)
+        self.assertEqual(feat["row_span"], 1)
         self.assertTrue(feat["market_movers"]["has_data"])
         self.assertEqual(len(feat["market_movers"]["winners"]), 1)
         self.assertEqual(feat["market_movers"]["winners"][0]["symbol"], "WIN")

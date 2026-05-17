@@ -925,7 +925,7 @@ function MarkdownEditor({ block, onChange }: { block: MarkdownBlock; onChange: (
     <div className="scn-editor-block__fields">
       <ScrollArea className="scn-editor-block-scroll scn-editor-block-scroll--markdown">
         <textarea
-          className="scn-editor-tile-preview scn-editor-markdown"
+          className="scn-editor-markdown"
           placeholder="Markdown body content…"
           value={block.markdown}
           onChange={e => onChange({ ...block, markdown: e.target.value })}

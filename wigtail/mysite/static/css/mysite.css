@@ -2549,6 +2549,14 @@ body.template-taxonomy-drilldown .scn-taxonomy-content__carousel-wrap {
 
 }
 
+/* Bento block: match carousel full master-pane width (widget styles.css has the same rules). */
+body.template-taxonomy-drilldown .scn-bentogrid01__inner,
+.scn-taxonomy-content__bento-preview .scn-bentogrid01__inner,
+.home-stream .scn-bentogrid01-root .scn-bentogrid01__inner {
+    max-width: none;
+    width: 100%;
+}
+
 body.template-taxonomy-drilldown .scn-taxonomy-content__carousel-wrap .carousel {
 
     flex: 1 1 auto;
@@ -5210,9 +5218,147 @@ taxonomy-chip-widget {
 
 
 
+.ticker-dividends {
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.ticker-dividends__heading {
+    margin: 0 0 1rem;
+    font-size: 1.15rem;
+    font-weight: 600;
+    font-family: var(--font-sans);
+    color: var(--neon-white);
+}
+
+.ticker-dividends__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    font-family: var(--font-sans);
+}
+
+.ticker-dividends__table th,
+.ticker-dividends__table td {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.ticker-dividends__table th {
+    font-weight: 600;
+    color: var(--color-text-muted, rgba(255, 255, 255, 0.65));
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.ticker-dividends__th-rate,
+.ticker-dividends__rate {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
 .ticker-page__chart-section {
 
     margin-bottom: 2.5rem;
+
+}
+
+
+
+.ticker-dividends {
+
+    margin-bottom: 2.5rem;
+
+}
+
+
+
+.ticker-dividends__heading {
+
+    margin: 0 0 1rem;
+
+    font-size: 1.125rem;
+
+    font-weight: 600;
+
+    color: var(--color-text);
+
+}
+
+
+
+.ticker-dividends__table-wrap {
+
+    overflow-x: auto;
+
+    border: 1px solid var(--color-border-subtle);
+
+    border-radius: 0.5rem;
+
+    background: var(--color-bg-elevated);
+
+}
+
+
+
+.ticker-dividends__table {
+
+    width: 100%;
+
+    border-collapse: collapse;
+
+    font-size: 0.875rem;
+
+}
+
+
+
+.ticker-dividends__table th,
+
+.ticker-dividends__table td {
+
+    padding: 0.65rem 1rem;
+
+    text-align: left;
+
+    border-bottom: 1px solid var(--color-border-subtle);
+
+}
+
+
+
+.ticker-dividends__table th {
+
+    font-weight: 600;
+
+    color: var(--color-text-muted);
+
+    font-size: 0.75rem;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.04em;
+
+}
+
+
+
+.ticker-dividends__table tbody tr:last-child td {
+
+    border-bottom: none;
+
+}
+
+
+
+.ticker-dividends__num {
+
+    text-align: right;
+
+    font-variant-numeric: tabular-nums;
 
 }
 
@@ -6949,6 +7095,17 @@ body.page-article-editor .site-content {
     max-width: none;
     margin: 0;
     padding: 0;
+    width: 100%;
+}
+
+body.page-article-editor .site-page {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+body.page-article-editor #shadcn-article-editor-root {
+    width: 100%;
+    max-width: none;
 }
 
 .page-profile .profile-card {
@@ -7232,6 +7389,8 @@ body.page-article-editor .site-content {
 /* ─── Article Editor ─────────────────────────────────────────────────────── */
 .scn-editor {
     min-height: 100vh;
+    width: 100%;
+    max-width: none;
 }
 
 .scn-editor-loading {
@@ -7262,6 +7421,8 @@ body.page-article-editor .site-content {
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    width: 100%;
+    box-sizing: border-box;
     padding: 0.625rem 1.25rem;
     background: var(--color-bg-elevated);
     border-bottom: 1px solid var(--color-border-subtle);
@@ -7333,10 +7494,12 @@ body.page-article-editor .site-content {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
     gap: 1.5rem;
-    padding: 1rem clamp(1rem, 3vw, 2rem) 5rem;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 1rem 1.25rem 5rem;
     align-items: start;
-    max-width: 1600px;
-    margin: 0 auto;
+    box-sizing: border-box;
 }
 
 .scn-editor-sidebar {
@@ -7638,6 +7801,8 @@ body.page-article-editor .site-content {
     display: flex;
     align-items: center;
     gap: 0.45rem;
+    width: 100%;
+    box-sizing: border-box;
     padding: 0.4rem 0.65rem;
     background: #525252;
     border-bottom: 1px solid rgba(0, 0, 0, 0.35);
@@ -7821,7 +7986,11 @@ body.page-article-editor .site-content {
     box-shadow: none;
 }
 
-.scn-editor-block__body { padding: 0.65rem; }
+.scn-editor-block__body {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.65rem;
+}
 
 .scn-editor-block__fields { display: flex; flex-direction: column; gap: 0.5rem; }
 
@@ -7858,15 +8027,22 @@ body.page-article-editor .site-content {
 
 .scn-editor-block-scroll--markdown {
     height: min(65vh, 40rem);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 0.375rem;
+    background: var(--color-bg);
 }
 
 .scn-editor-block-scroll--markdown .scn-scroll-area__viewport > div {
-    min-height: 100%;
-    display: flex;
+    display: block;
 }
 
-.scn-editor-block-scroll--markdown .scn-scroll-area__viewport > div > .scn-editor-markdown {
-    flex: 1;
+.scn-editor-block-scroll--markdown .scn-scroll-area__scrollbar--vertical {
+    border-left-color: rgba(var(--sc-rgb-accent), 0.32);
+}
+
+.scn-editor-block-scroll--markdown .scn-scroll-area__thumb {
+    background: rgba(var(--sc-rgb-accent), 0.55);
+    box-shadow: 0 0 12px rgba(var(--sc-rgb-glow), 0.42);
 }
 
 /* RTE toolbar */
@@ -8170,11 +8346,31 @@ img[src*='bear.png'].scn-catalyst-toggle__icon {
 .scn-editor-markdown {
     display: block;
     width: 100%;
-    height: 100%;
-    min-height: 100%;
-    max-height: none;
+    min-height: min(65vh, 40rem);
+    padding: 0.5rem 0.65rem;
+    border: 0;
+    border-radius: 0.375rem;
+    background: transparent;
+    color: var(--color-text);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    outline: none;
+    box-sizing: border-box;
     resize: none;
-    overflow: auto;
+    overflow: hidden;
+}
+
+.scn-editor-markdown:focus {
+    box-shadow: inset 0 0 0 2px var(--color-slime-soft);
+}
+
+/* Legacy bundle may still pair tile-preview with markdown inside ScrollArea */
+.scn-editor-block-scroll--markdown .scn-editor-markdown.scn-editor-tile-preview {
+    border: 0;
+    resize: none;
+    overflow: hidden;
+    background: transparent;
 }
 
 /* SEO card */
@@ -8915,6 +9111,23 @@ img[src*='bear.png'].scn-catalyst-toggle__icon {
 
 .scn-carousel-editor__header--tools .scn-carousel-editor__count {
     margin-right: auto;
+}
+
+.scn-carousel-editor__header-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-shrink: 0;
+}
+
+.scn-carousel-editor__header--tools .carousel__nav-btn,
+.scn-carousel-editor__header-controls .carousel__nav-btn {
+    position: static;
+    transform: none;
+    top: auto;
+    left: auto;
+    right: auto;
+    flex-shrink: 0;
 }
 
 .scn-carousel-editor__popover--narrow {

@@ -16,6 +16,15 @@ from django.utils.formats import date_format
 from home.blocks import _resolve_universal_tile_state
 from home.alpaca_bars_client import fetch_recent_stock_bars
 from home.alpaca_market_client import fetch_snapshots
+from home.market_events import (
+    calendar_max_rows_clamped,
+    calendar_payload_for_bento,
+    dividend_max_rows_clamped,
+    dividends_payload_for_bento,
+    resolve_dividend_symbols_from_bento,
+    upcoming_calendar_days,
+    upcoming_dividends,
+)
 from home.market_widgets import build_forex_quotes_payload, build_market_movers_payload
 from home.models import MarketTickerRow, TaggedContentPage
 from home.ticker_utils import chip_json_payload
@@ -450,22 +459,72 @@ def _normalize_bento_block_background(raw: Any) -> str:
     return "default"
 
 
+def _normalize_bento_grid_columns(raw: Any) -> int:
+    try:
+        n = int(raw if raw is not None else 3)
+    except (TypeError, ValueError):
+        n = 3
+    return max(1, min(6, n))
+
+
+def _normalize_bento_col_span(raw: Any, grid_columns: int) -> int:
+    """Map legacy string 4/8 or integers to 1..grid_columns."""
+    if raw is None:
+        return 1
+    if isinstance(raw, int):
+        return max(1, min(int(raw), grid_columns))
+    s = str(raw).strip()
+    if s == "8":
+        return min(2, grid_columns)
+    if s == "4":
+        return 1
+    try:
+        return max(1, min(int(s), grid_columns))
+    except (TypeError, ValueError):
+        return 1
+
+
+def _normalize_bento_row_span(raw: Any) -> int:
+    try:
+        n = int(raw if raw is not None else 1)
+    except (TypeError, ValueError):
+        n = 1
+    return max(1, min(3, n))
+
+
+def _normalize_bento_row(raw: Any) -> int | None:
+    if raw is None or raw == "":
+        return None
+    try:
+        n = int(raw)
+    except (TypeError, ValueError):
+        return None
+    return n if n >= 1 else None
+
+
 def _serialize_bentogrid01(block_value: dict, parent_context: dict | None = None) -> dict[str, Any]:
     """Convert a BentoGrid01Block value dict to a JSON-safe payload."""
     request = (parent_context or {}).get("request")
+    grid_columns = _normalize_bento_grid_columns(block_value.get("grid_columns"))
     used_page_ids: list[int] = []
     features: list[dict[str, Any]] = []
     for feat in block_value.get("features") or []:
         val = feat.value if hasattr(feat, "value") else feat
         header_type = str(val.get("header_type") or "image")
+        if header_type == "animated_ui_block":
+            continue
         entry: dict[str, Any] = {
             "header_type": header_type,
             "image_url_light": str(val.get("image_url_light") or ""),
             "image_url_dark": str(val.get("image_url_dark") or ""),
             "title": str(val.get("title") or ""),
             "description": str(val.get("description") or ""),
-            "col_span": str(val.get("col_span") or "4"),
+            "col_span": _normalize_bento_col_span(val.get("col_span"), grid_columns),
+            "row_span": _normalize_bento_row_span(val.get("row_span")),
         }
+        row_n = _normalize_bento_row(val.get("row"))
+        if row_n is not None:
+            entry["row"] = row_n
         if header_type == "card":
             art = {
                 "mode": val.get("mode") or "random",
@@ -536,6 +595,16 @@ def _serialize_bentogrid01(block_value: dict, parent_context: dict | None = None
             entry["market_movers"] = movers_payload["market_movers"]
             entry["market_mover_tabs"] = movers_payload["market_mover_tabs"]
             entry["selected_region"] = movers_payload["selected_region"]
+        if header_type == "upcoming_dividends":
+            syms = resolve_dividend_symbols_from_bento(val.get("dividend_symbols"))
+            lim = dividend_max_rows_clamped(val.get("dividend_max_rows"))
+            div_rows = list(upcoming_dividends(symbols=syms, limit=lim))
+            entry["dividend_rows"] = dividends_payload_for_bento(div_rows)
+        if header_type == "market_calendar":
+            mkt = str(val.get("calendar_market") or "NASDAQ").strip().upper()
+            lim = calendar_max_rows_clamped(val.get("calendar_max_rows"))
+            cal_rows = list(upcoming_calendar_days(market=mkt, limit=lim))
+            entry["calendar_rows"] = calendar_payload_for_bento(cal_rows)
         features.append(entry)
     block_bg_raw = block_value.get("block_background")
     if block_bg_raw is None and "section_padding" in block_value:
@@ -547,6 +616,7 @@ def _serialize_bentogrid01(block_value: dict, parent_context: dict | None = None
         "tile_style": str(block_value.get("tile_style") or "bordered"),
         "block_background": _normalize_bento_block_background(block_bg_raw),
         "show_badge": bool(block_value.get("show_badge", True)),
+        "grid_columns": grid_columns,
         "features": features,
     }
 

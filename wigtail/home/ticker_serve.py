@@ -15,6 +15,7 @@ from home.market_format import (
     format_percent_change,
     percent_change_css_class,
 )
+from home.market_events import dividends_payload_for_bento, upcoming_dividends
 from home.models import MarketTickerRow
 from home.query import get_related_pages_for_ticker
 from home.ticker_utils import default_tradingview_symbol_for_row
@@ -97,12 +98,16 @@ def build_ticker_template_context(ticker_slug: str) -> dict:
         "snapshot_synced": row.fetched_at is not None,
     }
 
+    div_rows = upcoming_dividends(symbols=[row.symbol], limit=20)
+    dividend_rows = dividends_payload_for_bento(div_rows)
+
     return {
         "ticker_row": row,
         "chart_symbol": chart_symbol,
         "ticker_slug": slug_clean.lower(),
         "related_pages": related_pages,
         "ticker_info": ticker_info,
+        "dividend_rows": dividend_rows,
     }
 
 

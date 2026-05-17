@@ -211,8 +211,6 @@ class SiteCardBlock(blocks.StructBlock):
 class BentoGridFeatureBlock(blocks.StructBlock):
     header_type = blocks.ChoiceBlock(
         choices=[
-            ("reminder_animation", "Reminder Animation"),
-            ("animated_ui_block", "Animated UI Block"),
             ("image", "Image (light/dark)"),
             ("card", "Article card"),
             ("fxbroker", "FX Broker card"),
@@ -220,6 +218,8 @@ class BentoGridFeatureBlock(blocks.StructBlock):
             ("stock_bars", "Stock bars"),
             ("forex_strip", "FX pairs"),
             ("market_movers", "Market movers"),
+            ("upcoming_dividends", "Upcoming dividends"),
+            ("market_calendar", "Market calendar"),
         ],
         default="image",
     )
@@ -252,9 +252,22 @@ class BentoGridFeatureBlock(blocks.StructBlock):
     html = blocks.RichTextBlock(required=False, label="Rich text content")
     title = blocks.CharBlock()
     description = blocks.CharBlock()
-    col_span = blocks.ChoiceBlock(
-        choices=[("4", "4/12 cols"), ("8", "8/12 cols")],
-        default="4",
+    col_span = blocks.IntegerBlock(
+        default=1,
+        min_value=1,
+        max_value=6,
+        help_text="Width in columns (of the block grid column count).",
+    )
+    row_span = blocks.IntegerBlock(
+        default=1,
+        min_value=1,
+        max_value=3,
+        help_text="Height in grid rows.",
+    )
+    row = blocks.IntegerBlock(
+        required=False,
+        min_value=1,
+        help_text="Force tile onto row N (leave blank for auto-flow).",
     )
     card_image_layout = blocks.ChoiceBlock(
         choices=[
@@ -313,6 +326,53 @@ class BentoGridFeatureBlock(blocks.StructBlock):
         label="Market region",
         help_text="Market movers tile only. Used when ?market_region= is absent on the page URL.",
     )
+    dividend_symbols = blocks.ListBlock(
+        blocks.CharBlock(max_length=16),
+        required=False,
+        label="Dividend symbols",
+        help_text=(
+            "Upcoming dividends tile only. Leave blank to use all enabled market ticker rows."
+        ),
+    )
+    dividend_lookahead_days = blocks.IntegerBlock(
+        required=False,
+        default=60,
+        min_value=7,
+        max_value=365,
+        label="Dividend lookahead (days)",
+        help_text="Used when syncing data; display reads stored upcoming rows.",
+    )
+    dividend_max_rows = blocks.IntegerBlock(
+        required=False,
+        default=25,
+        min_value=1,
+        max_value=100,
+        label="Max dividend rows",
+    )
+    calendar_market = blocks.ChoiceBlock(
+        choices=[
+            ("NASDAQ", "NASDAQ"),
+            ("NYSE", "NYSE"),
+        ],
+        default="NASDAQ",
+        required=False,
+        label="Calendar market",
+        help_text="Market calendar tile only.",
+    )
+    calendar_lookahead_days = blocks.IntegerBlock(
+        required=False,
+        default=60,
+        min_value=7,
+        max_value=365,
+        label="Calendar lookahead (days)",
+    )
+    calendar_max_rows = blocks.IntegerBlock(
+        required=False,
+        default=30,
+        min_value=1,
+        max_value=90,
+        label="Max calendar rows",
+    )
 
     class Meta:
         icon = "image"
@@ -357,6 +417,20 @@ class BentoGrid01Block(blocks.StructBlock):
         default=True,
         required=False,
         help_text="Uncheck to hide the badge above the heading.",
+    )
+    grid_columns = blocks.IntegerBlock(
+        default=3,
+        min_value=1,
+        max_value=6,
+        label="Grid columns",
+        help_text="Number of columns in the bento grid (1–6).",
+    )
+    grid_rows = blocks.IntegerBlock(
+        default=3,
+        min_value=1,
+        max_value=3,
+        label="Grid rows",
+        help_text="Number of rows in the bento grid (1–3).",
     )
     features = blocks.ListBlock(BentoGridFeatureBlock())
 

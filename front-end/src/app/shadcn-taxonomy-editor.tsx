@@ -30,7 +30,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popove
 import { Command, CommandGroup, CommandItem, CommandList } from '../components/ui/command';
 import { RteToolbar, TABLE_EXTENSIONS } from '../components/ui/rte-editor';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '../components/ui/carousel';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '../components/ui/resizable';
 import { Slider } from '../components/ui/slider';
 import { Checkbox } from '../components/ui/checkbox';
 import {
@@ -60,6 +59,20 @@ import MarketMoversTile, {
 import StockBarsTile from '../components/shadcn-space/blocks/bento-grid-01/StockBarsTile';
 import type { StockBarPoint, StockChipPayload } from '../components/shadcn-space/blocks/bento-grid-01/StockBarsTile';
 import { BentoWidgetTileFrame } from './bento-widget-tile-frame';
+import {
+  BentoGridEditorLayout,
+  spansFromLegacyPanelSizes,
+  tilesHaveDefaultSpans,
+} from './bento-grid-editor-layout';
+import {
+  BentoGridLayout,
+  normalizeCol,
+  normalizeColSpan,
+  normalizeGridColumns,
+  normalizeGridRows,
+  normalizeRow,
+  normalizeRowSpan,
+} from './bento-grid-layout';
 import { FxBrokerCardView, type FxBrokerPayload } from './shadcn-fx-broker-card';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -73,8 +86,6 @@ type SeparatorBlock = { id: string; type: 'separator' };
 type BentoGrid01Feature = {
   id: string;
   header_type:
-    | 'reminder_animation'
-    | 'animated_ui_block'
     | 'image'
     | 'card'
     | 'fxbroker'
@@ -86,7 +97,11 @@ type BentoGrid01Feature = {
   image_url_dark: string;
   title: string;
   description: string;
-  col_span: '4' | '8';
+  col_span?: number;
+  row_span?: number;
+  row?: number | null;
+  /** 1-based start column (editor placement). */
+  col?: number | null;
   mode?: 'random' | 'priority' | 'specific';
   articleId?: number | null;
   articleTitle?: string | null;
@@ -123,6 +138,9 @@ type BentoGrid01Block  = {
   tile_style?: 'bordered' | 'shadow' | 'flat';
   block_background?: 'default' | 'edge_to_edge';
   show_badge?: boolean;
+  grid_columns?: number;
+  grid_rows?: number;
+  /** @deprecated Layout uses CSS grid; kept for JSON compatibility. */
   panelSizes?: number[];
   height?: string;
 };
@@ -258,7 +276,8 @@ function legacyCarouselSlotsToFeatures(cards: CarouselSlot[]): BentoGrid01Featur
     image_url_dark: '',
     title: '',
     description: '',
-    col_span: '4' as const,
+    col_span: 1,
+    row_span: 1,
     mode: slot.mode,
     articleId: slot.articleId,
     articleTitle: slot.articleTitle,
@@ -303,11 +322,30 @@ export function normalizeBentoCardFeatureFields(feat: Record<string, unknown>): 
   feat['cardImageScale'] = scale ?? 'bleed_under';
 }
 
-function normalizeBentoFeatureFromUnknown(raw: unknown): BentoGrid01Feature | null {
+function normalizeBentoFeatureFromUnknown(
+  raw: unknown,
+  gridColumns = 3,
+): BentoGrid01Feature | null {
   if (typeof raw !== 'object' || raw === null) return null;
   const o = { ...(raw as Record<string, unknown>) } as Record<string, unknown>;
   if (typeof o['id'] !== 'string' || typeof o['header_type'] !== 'string') return null;
+  if (o['header_type'] === 'animated_ui_block' || o['header_type'] === 'reminder_animation') return null;
   normalizeBentoCardFeatureFields(o);
+  const cols = normalizeGridColumns(gridColumns);
+  o['col_span'] = normalizeColSpan(o['col_span'], cols);
+  o['row_span'] = normalizeRowSpan(o['row_span']);
+  const rowN = normalizeRow(o['row']);
+  if (rowN !== undefined) {
+    o['row'] = rowN;
+  } else {
+    delete o['row'];
+  }
+  const colN = normalizeCol(o['col'], cols);
+  if (colN !== undefined) {
+    o['col'] = colN;
+  } else {
+    delete o['col'];
+  }
   return o as unknown as BentoGrid01Feature;
 }
 
@@ -355,22 +393,26 @@ function normalizeTaxonomyBlock(raw: Record<string, unknown>): TaxonomyBlock | n
   }
   if (t === 'bento_grid_01' && typeof raw['id'] === 'string') {
     const rawFeats = raw['features'];
-    const features: BentoGrid01Feature[] = Array.isArray(rawFeats)
+    const block_background = normalizeBentoBlockBackground(raw['block_background']);
+    const grid_columns = normalizeGridColumns(raw['grid_columns']);
+    const grid_rows = normalizeGridRows(raw['grid_rows']);
+    const featuresNormalized: BentoGrid01Feature[] = Array.isArray(rawFeats)
       ? rawFeats
-          .map((item) => normalizeBentoFeatureFromUnknown(item))
+          .map((item) => normalizeBentoFeatureFromUnknown(item, grid_columns))
           .filter((f): f is BentoGrid01Feature => f !== null)
       : [];
-    const block_background = normalizeBentoBlockBackground(raw['block_background']);
     return {
       id: raw['id'],
       type: 'bento_grid_01',
       badge_text: typeof raw['badge_text'] === 'string' ? raw['badge_text'] : 'Features',
       heading: typeof raw['heading'] === 'string' ? raw['heading'] : '',
-      features,
+      features: featuresNormalized,
       theme: normalizeBentoTheme(raw['theme']),
       tile_style: normalizeBentoTileStyle(raw['tile_style']),
       block_background,
       show_badge: typeof raw['show_badge'] === 'boolean' ? raw['show_badge'] : true,
+      grid_columns,
+      grid_rows,
       ...(Array.isArray(raw['panelSizes']) ? { panelSizes: raw['panelSizes'] as number[] } : {}),
       ...(typeof raw['height'] === 'string' ? { height: raw['height'] } : {}),
     };
@@ -807,6 +849,7 @@ function renderPackedCarouselEditorBentoSlide(
         forexPreviewUrl={forexPreviewUrl}
         marketMoversPreviewUrl={marketMoversPreviewUrl}
         brokerListUrl={brokerListUrl}
+        gridColumns={3}
         onPatch={patch => onPatch(feat.id, patch)}
         onRemove={() => onRemove(feat.id)}
       />
@@ -1043,8 +1086,6 @@ function SeparatorEditor() {
 
 const BENTO_TILE_LABEL: Record<string, string> = {
   image: 'Image tile',
-  reminder_animation: 'Reminder Animation',
-  animated_ui_block: 'Animated UI Block',
   card: 'Article card',
   fxbroker: 'FX Broker card',
   richtext: 'Rich text',
@@ -1055,8 +1096,6 @@ const BENTO_TILE_LABEL: Record<string, string> = {
 
 const BENTO_TILE_TYPES: Array<{ type: BentoGrid01Feature['header_type']; desc: string }> = [
   { type: 'image',              desc: 'Light / dark image pair' },
-  { type: 'reminder_animation', desc: 'Built-in reminder animation' },
-  { type: 'animated_ui_block',  desc: 'Built-in animated UI block' },
   { type: 'card',               desc: 'Resolved article card' },
   { type: 'fxbroker',           desc: 'FX broker rating card' },
   { type: 'richtext',           desc: 'Formatted rich text content' },
@@ -1067,8 +1106,6 @@ const BENTO_TILE_TYPES: Array<{ type: BentoGrid01Feature['header_type']; desc: s
 
 const BENTO_TILE_TYPE_OPTIONS: Array<{ value: BentoGrid01Feature['header_type']; label: string }> = [
   { value: 'image', label: 'Image (light/dark)' },
-  { value: 'reminder_animation', label: 'Reminder Animation' },
-  { value: 'animated_ui_block', label: 'Animated UI Block' },
   { value: 'card', label: 'Article card' },
   { value: 'fxbroker', label: 'FX Broker card' },
   { value: 'richtext', label: 'Rich text' },
@@ -1263,7 +1300,7 @@ function BrokerPickerCombobox({
 }
 
 function createBentoFeatureOfType(headerType: BentoGrid01Feature['header_type']): BentoGrid01Feature {
-  const base = { id: uid(), image_url_light: '', image_url_dark: '', title: '', description: '', col_span: '4' as const };
+  const base = { id: uid(), image_url_light: '', image_url_dark: '', title: '', description: '', col_span: 1, row_span: 1 };
   if (headerType === 'card') {
     return {
       ...base,
@@ -1716,7 +1753,60 @@ function BentoFeaturePreview({ feat, resolved, linkable, stockPreviewUrl, forexP
   );
 }
 
-function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, onPatch, onRemove }: {
+function BentoTileLayoutFields({
+  feat,
+  gridColumns,
+  onPatch,
+}: {
+  feat: BentoGrid01Feature;
+  gridColumns: number;
+  onPatch: (patch: Partial<BentoGrid01Feature>) => void;
+}) {
+  const cols = normalizeGridColumns(gridColumns);
+  const colSpan = normalizeColSpan(feat.col_span, cols);
+  const rowSpan = normalizeRowSpan(feat.row_span);
+  return (
+    <div className="scn-bento-editor__layout-fields grid grid-cols-3 gap-2">
+      <label className="flex flex-col gap-1 min-w-0">
+        <span className="text-muted-foreground text-xs">Columns</span>
+        <Select
+          value={String(colSpan)}
+          onChange={(e) => onPatch({ col_span: parseInt(e.target.value, 10) })}
+        >
+          {Array.from({ length: cols }, (_, i) => i + 1).map((n) => (
+            <option key={n} value={String(n)}>{n}</option>
+          ))}
+        </Select>
+      </label>
+      <label className="flex flex-col gap-1 min-w-0">
+        <span className="text-muted-foreground text-xs">Rows</span>
+        <Select
+          value={String(rowSpan)}
+          onChange={(e) => onPatch({ row_span: parseInt(e.target.value, 10) })}
+        >
+          {[1, 2, 3].map((n) => (
+            <option key={n} value={String(n)}>{n}</option>
+          ))}
+        </Select>
+      </label>
+      <label className="flex flex-col gap-1 min-w-0">
+        <span className="text-muted-foreground text-xs">Row #</span>
+        <Input
+          type="number"
+          min={1}
+          placeholder="Auto"
+          value={feat.row ?? ''}
+          onChange={(e) => {
+            const v = e.target.value.trim();
+            onPatch({ row: v ? Math.max(1, parseInt(v, 10) || 1) : null });
+          }}
+        />
+      </label>
+    </div>
+  );
+}
+
+function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, gridColumns, onPatch, onRemove }: {
   feat: BentoGrid01Feature;
   resolved: ArticleResult | null | undefined;
   searchUrl: string;
@@ -1724,6 +1814,7 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPr
   forexPreviewUrl: string;
   marketMoversPreviewUrl: string;
   brokerListUrl: string;
+  gridColumns: number;
   onPatch: (patch: Partial<BentoGrid01Feature>) => void;
   onRemove: () => void;
 }) {
@@ -1777,6 +1868,7 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPr
         collisionPadding={12}
       >
         <div className="scn-bento-editor__feat-popover-body">
+          <BentoTileLayoutFields feat={feat} gridColumns={gridColumns} onPatch={onPatch} />
           <div className="scn-bento-editor__card-row">
             <BentoTileTypeCombobox
               value={feat.header_type}
@@ -1965,6 +2057,34 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPr
   );
 }
 
+function BentoEditorEmptySlot({
+  onPick,
+}: {
+  onPick: (type: BentoGrid01Feature['header_type']) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <div className="scn-bento-editor__empty-column">
+      <span className="scn-bento-editor__empty-column-label">Empty</span>
+      <Popover open={open} onOpenChange={setOpen} modal={false}>
+        <PopoverTrigger asChild>
+          <button type="button" className="scn-empty-add-btn scn-bento-editor__empty-column-btn" aria-label="Add tile to column">
+            <span className="scn-broker-carousel__add-icon">+</span>
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="scn-popover-content scn-editor-add-block-menu" align="center">
+          <BentoAddTilePopoverContent
+            onPick={type => {
+              onPick(type);
+              setOpen(false);
+            }}
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+
 function BentoAddTilePopoverContent({
   onPick,
 }: {
@@ -2004,6 +2124,8 @@ function BentoGrid01BlockHeaderFields({
   onAddOpenChange: (open: boolean) => void;
   onAddTile: (headerType: BentoGrid01Feature['header_type']) => void;
 }) {
+  const [themeOpen, setThemeOpen] = React.useState(false);
+
   return (
     <div className="scn-editor-block__header-fields scn-editor-block__header-fields--bento-toolbar">
       <div className="scn-editor-block__bento-text-fields">
@@ -2041,7 +2163,7 @@ function BentoGrid01BlockHeaderFields({
           </div>
         ) : null}
       </div>
-      <Popover>
+      <Popover open={themeOpen} onOpenChange={setThemeOpen} modal={false}>
         <PopoverTrigger asChild>
           <Button
             type="button"
@@ -2053,7 +2175,12 @@ function BentoGrid01BlockHeaderFields({
             <Settings2 size={14} />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="scn-popover-content scn-bento-editor__theme-popover" align="end">
+        <PopoverContent
+          className="scn-popover-content scn-carousel-editor__popover scn-carousel-editor__settings-popover"
+          align="end"
+          collisionPadding={12}
+        >
+          <div className="scn-carousel-editor__settings-popover-body">
           <div className="scn-bento-editor__theme-field">
             <label>Theme</label>
             <Select
@@ -2063,6 +2190,34 @@ function BentoGrid01BlockHeaderFields({
               <option value="default">Default</option>
               <option value="inverted">Inverted</option>
               <option value="accent">Accent</option>
+            </Select>
+          </div>
+          <div className="scn-bento-editor__theme-field">
+            <label>Grid columns</label>
+            <Select
+              value={String(block.grid_columns ?? 3)}
+              onChange={e => onChange({
+                ...block,
+                grid_columns: normalizeGridColumns(parseInt(e.target.value, 10)),
+              })}
+            >
+              {[1, 2, 3, 4, 5, 6].map(n => (
+                <option key={n} value={String(n)}>{n}</option>
+              ))}
+            </Select>
+          </div>
+          <div className="scn-bento-editor__theme-field">
+            <label>Grid rows</label>
+            <Select
+              value={String(block.grid_rows ?? 3)}
+              onChange={e => onChange({
+                ...block,
+                grid_rows: normalizeGridRows(parseInt(e.target.value, 10)),
+              })}
+            >
+              {[1, 2, 3].map(n => (
+                <option key={n} value={String(n)}>{n}</option>
+              ))}
             </Select>
           </div>
           <div className="scn-bento-editor__theme-field">
@@ -2096,15 +2251,20 @@ function BentoGrid01BlockHeaderFields({
             />
             <span>Show badge</span>
           </label>
+          </div>
         </PopoverContent>
       </Popover>
-      <Popover open={addOpen} onOpenChange={onAddOpenChange}>
+      <Popover open={addOpen} onOpenChange={onAddOpenChange} modal={false}>
         <PopoverTrigger asChild>
-          <Button type="button" variant="outline" className="scn-bento-editor__toolbar-icon-btn" aria-label="Add tile">
+          <button type="button" className="scn-bento-editor__toolbar-icon-btn" aria-label="Add tile">
             +
-          </Button>
+          </button>
         </PopoverTrigger>
-        <PopoverContent className="scn-popover-content" align="end">
+        <PopoverContent
+          className="scn-popover-content scn-editor-add-block-menu scn-bento-editor__add-tile-popover"
+          align="end"
+          side="bottom"
+        >
           <BentoAddTilePopoverContent
             onPick={type => {
               onAddTile(type);
@@ -2117,126 +2277,7 @@ function BentoGrid01BlockHeaderFields({
   );
 }
 
-function BentoResizableLayout({ features, resolvedRandom, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, onPatch, onRemove, panelSizes, onLayoutChange, height, addTileOpen, onAddTileOpenChange, onAddTile }: {
-  features: BentoGrid01Feature[];
-  resolvedRandom: Record<string, ArticleResult | null>;
-  searchUrl: string;
-  stockPreviewUrl: string;
-  forexPreviewUrl: string;
-  marketMoversPreviewUrl: string;
-  brokerListUrl: string;
-  onPatch: (featId: string, patch: Partial<BentoGrid01Feature>) => void;
-  onRemove: (featId: string) => void;
-  panelSizes?: number[];
-  onLayoutChange?: (sizes: number[]) => void;
-  height?: string;
-  addTileOpen: boolean;
-  onAddTileOpenChange: (open: boolean) => void;
-  onAddTile: (headerType: BentoGrid01Feature['header_type']) => void;
-}) {
-  const [emptyAddOpen, setEmptyAddOpen] = React.useState(false);
-
-  if (features.length === 0) {
-    return (
-      <div className="scn-bento-editor__empty">
-        <Popover open={emptyAddOpen} onOpenChange={setEmptyAddOpen}>
-          <PopoverTrigger asChild>
-            <button type="button" className="scn-empty-add-btn" aria-label="Add tile">
-              <span className="scn-broker-carousel__add-icon">+</span>
-            </button>
-          </PopoverTrigger>
-          <PopoverContent className="scn-popover-content scn-editor-add-block-menu" align="center">
-            {BENTO_TILE_TYPES.map(bt => (
-              <button key={bt.type} type="button" className="scn-editor-add-block-item"
-                onClick={() => { onAddTile(bt.type); setEmptyAddOpen(false); }}>
-                <span className="scn-editor-add-block-item__label">{BENTO_TILE_LABEL[bt.type]}</span>
-                <span className="scn-editor-add-block-item__desc">{bt.desc}</span>
-              </button>
-            ))}
-          </PopoverContent>
-        </Popover>
-      </div>
-    );
-  }
-
-  const layoutStyle: React.CSSProperties | undefined = height && height !== 'auto'
-    ? { height } : undefined;
-
-  function renderPanel(feat: BentoGrid01Feature) {
-    return (
-      <BentoFeaturePanel
-        feat={feat}
-        resolved={resolvedRandom[feat.id]}
-        searchUrl={searchUrl}
-        stockPreviewUrl={stockPreviewUrl}
-        forexPreviewUrl={forexPreviewUrl}
-        marketMoversPreviewUrl={marketMoversPreviewUrl}
-        brokerListUrl={brokerListUrl}
-        onPatch={patch => onPatch(feat.id, patch)}
-        onRemove={() => onRemove(feat.id)}
-      />
-    );
-  }
-
-  const hLeft = panelSizes?.[0] ?? 50;
-
-  if (features.length === 1) {
-    return (
-      <ResizablePanelGroup orientation="horizontal" className="scn-bento-editor__layout" style={layoutStyle}>
-        <ResizablePanel defaultSize={100}>{renderPanel(features[0])}</ResizablePanel>
-      </ResizablePanelGroup>
-    );
-  }
-
-  if (features.length === 2) {
-    return (
-      <ResizablePanelGroup orientation="horizontal" className="scn-bento-editor__layout" style={layoutStyle}
-        onLayoutChanged={layout => {
-          if (!onLayoutChange) return;
-          const vals = Object.values(layout);
-          onLayoutChange(vals);
-        }}>
-        <ResizablePanel id="h0" defaultSize={hLeft}>{renderPanel(features[0])}</ResizablePanel>
-        <ResizableHandle withHandle />
-        <ResizablePanel id="h1" defaultSize={100 - hLeft}>{renderPanel(features[1])}</ResizablePanel>
-      </ResizablePanelGroup>
-    );
-  }
-
-  const rest = features.slice(1);
-  const verticalSizes = panelSizes?.slice(1);
-  const defaultVSize = Math.floor(100 / rest.length);
-
-  return (
-    <ResizablePanelGroup orientation="horizontal" className="scn-bento-editor__layout" style={layoutStyle}
-      onLayoutChanged={layout => {
-        if (!onLayoutChange) return;
-        const hSize = layout['h0'] ?? hLeft;
-        const savedVertical = panelSizes?.slice(1) ?? rest.map(() => defaultVSize);
-        onLayoutChange([hSize, ...savedVertical]);
-      }}>
-      <ResizablePanel id="h0" defaultSize={hLeft}>{renderPanel(features[0])}</ResizablePanel>
-      <ResizableHandle withHandle />
-      <ResizablePanel id="h1" defaultSize={100 - hLeft}>
-        <ResizablePanelGroup orientation="vertical"
-          onLayoutChanged={layout => {
-            if (!onLayoutChange) return;
-            const vSizes = rest.map((_, i) => layout[`v${i}`] ?? defaultVSize);
-            onLayoutChange([hLeft, ...vSizes]);
-          }}>
-          {rest.map((feat, i) => (
-            <React.Fragment key={feat.id}>
-              {i > 0 && <ResizableHandle withHandle />}
-              <ResizablePanel id={`v${i}`} defaultSize={verticalSizes?.[i] ?? defaultVSize}>{renderPanel(feat)}</ResizablePanel>
-            </React.Fragment>
-          ))}
-        </ResizablePanelGroup>
-      </ResizablePanel>
-    </ResizablePanelGroup>
-  );
-}
-
-function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, termId, onChange, addTileOpen, onAddTileOpenChange, onAddTile }: {
+function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, termId, onChange, onAddTileInColumn, onAddTileInRow }: {
   block: BentoGrid01Block;
   searchUrl: string;
   stockPreviewUrl: string;
@@ -2245,9 +2286,8 @@ function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl,
   brokerListUrl: string;
   termId: number;
   onChange: (b: BentoGrid01Block) => void;
-  addTileOpen: boolean;
-  onAddTileOpenChange: (open: boolean) => void;
-  onAddTile: (headerType: BentoGrid01Feature['header_type']) => void;
+  onAddTileInColumn: (colIndex: number, rowIndex: number, headerType: BentoGrid01Feature['header_type']) => void;
+  onAddTileInRow: (rowIndex: number, headerType: BentoGrid01Feature['header_type']) => void;
 }) {
   const cardSlots = React.useMemo(() => bentoCardFeaturesToSlots(block.features), [block.features]);
   const resolvedRandom = useResolvedCarouselPreviews(cardSlots, termId);
@@ -2263,15 +2303,31 @@ function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl,
     onChange({ ...block, features: block.features.filter(f => f.id !== featId) });
   }
 
-  const layoutRef = React.useRef(block.panelSizes);
-  layoutRef.current = block.panelSizes;
+  const gridColumns = normalizeGridColumns(block.grid_columns);
+  const gridRows = normalizeGridRows(block.grid_rows);
+  const layoutStyle: React.CSSProperties | undefined =
+    block.height && block.height !== 'auto' ? { height: block.height } : undefined;
 
-  const handleLayoutChange = React.useCallback((sizes: number[]) => {
-    const rounded = sizes.map(s => Math.round(s * 10) / 10);
-    const prev = layoutRef.current;
-    if (prev && prev.length === rounded.length && prev.every((v, i) => v === rounded[i])) return;
-    onChange({ ...block, panelSizes: rounded });
-  }, [block, onChange]);
+  const legacyPanelMigratedRef = React.useRef(false);
+  React.useLayoutEffect(() => {
+    if (legacyPanelMigratedRef.current) return;
+    if (!block.panelSizes?.length || !tilesHaveDefaultSpans(block.features, gridColumns)) return;
+    legacyPanelMigratedRef.current = true;
+    const spanPatches = spansFromLegacyPanelSizes(
+      block.panelSizes,
+      block.features.length,
+      gridColumns,
+    );
+    const { panelSizes: _removed, ...rest } = block;
+    onChange({
+      ...rest,
+      features: block.features.map((f, i) => ({
+        ...f,
+        col_span: spanPatches[i]?.col_span ?? f.col_span,
+        row_span: spanPatches[i]?.row_span ?? f.row_span,
+      })),
+    });
+  }, [block.id, block.panelSizes, block.features, gridColumns, onChange]);
 
   return (
     <div
@@ -2284,22 +2340,46 @@ function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl,
         }),
       )}
     >
-      <BentoResizableLayout
-        features={block.features}
-        resolvedRandom={resolvedRandom}
-        searchUrl={searchUrl}
-        stockPreviewUrl={stockPreviewUrl}
-        forexPreviewUrl={forexPreviewUrl}
-        marketMoversPreviewUrl={marketMoversPreviewUrl}
-        brokerListUrl={brokerListUrl}
-        onPatch={patchFeature}
-        onRemove={removeFeature}
-        panelSizes={block.panelSizes}
-        onLayoutChange={handleLayoutChange}
-        height={block.height}
-        addTileOpen={addTileOpen}
-        onAddTileOpenChange={onAddTileOpenChange}
-        onAddTile={onAddTile}
+      <BentoGridEditorLayout
+        gridColumns={gridColumns}
+        gridRows={gridRows}
+        tiles={block.features}
+        className="scn-bento-editor__layout-host"
+        style={layoutStyle}
+        getTileKey={(f) => f.id}
+        onTileSpansChange={(patches) => {
+          onChange({
+            ...block,
+            features: block.features.map((f) => {
+              const patch = patches.find((p) => p.id === f.id);
+              return patch ? { ...f, ...patch } : f;
+            }),
+          });
+        }}
+        renderEmptyColumn={(colIndex, rowIndex) => (
+          <BentoEditorEmptySlot
+            onPick={type => onAddTileInColumn(colIndex, rowIndex, type)}
+          />
+        )}
+        renderEmptyRow={(rowIndex) => (
+          <BentoEditorEmptySlot
+            onPick={type => onAddTileInRow(rowIndex, type)}
+          />
+        )}
+        renderTile={(feat) => (
+          <BentoFeaturePanel
+            feat={feat}
+            resolved={resolvedRandom[feat.id]}
+            searchUrl={searchUrl}
+            stockPreviewUrl={stockPreviewUrl}
+            forexPreviewUrl={forexPreviewUrl}
+            marketMoversPreviewUrl={marketMoversPreviewUrl}
+            brokerListUrl={brokerListUrl}
+            gridColumns={gridColumns}
+            onPatch={patch => patchFeature(feat.id, patch)}
+            onRemove={() => removeFeature(feat.id)}
+          />
+        )}
       />
     </div>
   );
@@ -2324,6 +2404,33 @@ function carouselAutoplayPlugins(infiniteScroll: boolean) {
 
 function carouselAutoplayOpts(infiniteScroll: boolean) {
   return { loop: Boolean(infiniteScroll) };
+}
+
+function CarouselAddTileMenu({
+  open,
+  onOpenChange,
+  onAdd,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onAdd: (headerType: BentoGrid01Feature['header_type']) => void;
+}) {
+  return (
+    <Popover open={open} onOpenChange={onOpenChange}>
+      <PopoverTrigger asChild>
+        <button type="button" className="scn-bento-editor__toolbar-icon-btn" aria-label="Add tile">+</button>
+      </PopoverTrigger>
+      <PopoverContent className="scn-popover-content scn-editor-add-block-menu" align="end">
+        {BENTO_TILE_TYPES.map(bt => (
+          <button key={bt.type} type="button" className="scn-editor-add-block-item"
+            onClick={() => { onAdd(bt.type); onOpenChange(false); }}>
+            <span className="scn-editor-add-block-item__label">{BENTO_TILE_LABEL[bt.type]}</span>
+            <span className="scn-editor-add-block-item__desc">{bt.desc}</span>
+          </button>
+        ))}
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, termId, onChange }: {
@@ -2383,27 +2490,32 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, ma
       ? { height: block.height, minHeight: 0 }
       : undefined;
 
+  const carouselHeaderTools = (
+    <div className="scn-carousel-editor__header-controls">
+      <CarouselAddTileMenu
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        onAdd={addCarouselFeature}
+      />
+      {features.length > 0 ? (
+        <>
+          <CarouselPrevious />
+          <CarouselNext />
+        </>
+      ) : null}
+    </div>
+  );
+
   return (
     <div className="scn-carousel-editor">
-      <div className="scn-carousel-editor__header scn-carousel-editor__header--tools">
-        <span className="scn-carousel-editor__count">
-          {features.length} tile{features.length !== 1 ? 's' : ''}
-        </span>
-        <Popover open={addOpen} onOpenChange={setAddOpen}>
-          <PopoverTrigger asChild>
-            <button type="button" className="scn-bento-editor__add-col" aria-label="Add tile">+</button>
-          </PopoverTrigger>
-          <PopoverContent className="scn-popover-content scn-editor-add-block-menu" align="end">
-            {BENTO_TILE_TYPES.map(bt => (
-              <button key={bt.type} type="button" className="scn-editor-add-block-item"
-                onClick={() => { addCarouselFeature(bt.type); setAddOpen(false); }}>
-                <span className="scn-editor-add-block-item__label">{BENTO_TILE_LABEL[bt.type]}</span>
-                <span className="scn-editor-add-block-item__desc">{bt.desc}</span>
-              </button>
-            ))}
-          </PopoverContent>
-        </Popover>
-      </div>
+      {features.length === 0 && (
+        <div className="scn-carousel-editor__header scn-carousel-editor__header--tools">
+          <span className="scn-carousel-editor__count">
+            {features.length} tiles
+          </span>
+          {carouselHeaderTools}
+        </div>
+      )}
 
       {features.length === 0 && (
         <div className="scn-bento-editor__empty">
@@ -2436,6 +2548,12 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, ma
           opts={carouselAutoplayOpts(infiniteScroll)}
           plugins={carouselAutoplayPlugins(infiniteScroll)}
         >
+          <div className="scn-carousel-editor__header scn-carousel-editor__header--tools">
+            <span className="scn-carousel-editor__count">
+              {features.length} tile{features.length !== 1 ? 's' : ''}
+            </span>
+            {carouselHeaderTools}
+          </div>
           <CarouselContent>
             {allCards
               ? packedSlides.map((slide) => renderPackedCarouselEditorBentoSlide(
@@ -2462,6 +2580,7 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, ma
                       forexPreviewUrl={forexPreviewUrl}
                       marketMoversPreviewUrl={marketMoversPreviewUrl}
                       brokerListUrl={brokerListUrl}
+                      gridColumns={3}
                       onPatch={patch => patchFeature(feat.id, patch)}
                       onRemove={() => removeFeature(feat.id)}
                     />
@@ -2469,8 +2588,6 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, ma
                 </CarouselItem>
               ))}
           </CarouselContent>
-          <CarouselPrevious />
-          <CarouselNext />
         </Carousel>
       )}
     </div>
@@ -2588,6 +2705,31 @@ function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl,
     setBentoAddTileOpen(false);
   }
 
+  function addBentoTileInColumn(colIndex: number, rowIndex: number, headerType: BentoGrid01Feature['header_type']) {
+    if (block.type !== 'bento_grid_01') return;
+    const feat = createBentoFeatureOfType(headerType);
+    feat.col = colIndex + 1;
+    feat.row = rowIndex + 1;
+    feat.col_span = 1;
+    feat.row_span = 1;
+    onChange({
+      ...block,
+      features: [...block.features, feat],
+    });
+  }
+
+  function addBentoTileInRow(rowIndex: number, headerType: BentoGrid01Feature['header_type']) {
+    if (block.type !== 'bento_grid_01') return;
+    const feat = createBentoFeatureOfType(headerType);
+    feat.row = rowIndex + 1;
+    feat.col_span = 1;
+    feat.row_span = 1;
+    onChange({
+      ...block,
+      features: [...block.features, feat],
+    });
+  }
+
   return (
     <div className="scn-editor-block">
       <div className="scn-editor-block__header">
@@ -2635,9 +2777,8 @@ function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl,
             brokerListUrl={brokerListUrl}
             termId={termId}
             onChange={onChange as (b: BentoGrid01Block) => void}
-            addTileOpen={bentoAddTileOpen}
-            onAddTileOpenChange={setBentoAddTileOpen}
-            onAddTile={addBentoTile}
+            onAddTileInColumn={addBentoTileInColumn}
+            onAddTileInRow={addBentoTileInRow}
           />
         )}
         {block.type === 'carousel' && (
@@ -2755,8 +2896,7 @@ function ReadOnlyBlock({
 
   if (block.type === 'bento_grid_01') {
     const features = block.features;
-    const sizes = block.panelSizes;
-    const hLeft = sizes?.[0] ?? 50;
+    const gridColumns = normalizeGridColumns(block.grid_columns);
     const blockHeight = block.height && block.height !== 'auto' ? block.height : undefined;
 
     function renderReadOnlyPanel(f: BentoGrid01Feature) {
@@ -2781,51 +2921,15 @@ function ReadOnlyBlock({
       );
     }
 
-    let gridContent: React.ReactNode;
-    if (features.length === 0) {
-      gridContent = null;
-    } else if (features.length === 1) {
-      gridContent = (
-        <div className="scn-bento-readonly__grid"
-          style={blockHeight ? { height: blockHeight } : undefined}>
-          {renderReadOnlyPanel(features[0])}
-        </div>
-      );
-    } else if (features.length === 2) {
-      gridContent = (
-        <div className="scn-bento-readonly__grid scn-bento-readonly__grid--two-col"
-          style={{
-            gridTemplateColumns: `${hLeft}fr ${100 - hLeft}fr`,
-            ...(blockHeight ? { height: blockHeight } : {}),
-          }}>
-          {renderReadOnlyPanel(features[0])}
-          {renderReadOnlyPanel(features[1])}
-        </div>
-      );
-    } else {
-      const rest = features.slice(1);
-      const verticalSizes = sizes?.slice(1);
-      const defaultVSize = 100 / rest.length;
-      const rowTemplate = rest
-        .map((_, i) => `${verticalSizes?.[i] ?? defaultVSize}fr`)
-        .join(' ');
-
-      gridContent = (
-        <div className="scn-bento-readonly__grid scn-bento-readonly__grid--hero"
-          style={{
-            gridTemplateColumns: `${hLeft}fr ${100 - hLeft}fr`,
-            ...(blockHeight ? { height: blockHeight } : {}),
-          }}>
-          <div className="scn-bento-readonly__hero">
-            {renderReadOnlyPanel(features[0])}
-          </div>
-          <div className="scn-bento-readonly__right-stack"
-            style={verticalSizes ? { display: 'grid', gridTemplateRows: rowTemplate, gap: '0.65rem' } : undefined}>
-            {features.slice(1).map(f => renderReadOnlyPanel(f))}
-          </div>
-        </div>
-      );
-    }
+    const gridContent = features.length > 0 ? (
+      <BentoGridLayout
+        gridColumns={gridColumns}
+        tiles={features}
+        style={blockHeight ? { height: blockHeight } : undefined}
+        getTileKey={(f) => f.id}
+        renderTile={(f) => renderReadOnlyPanel(f)}
+      />
+    ) : null;
 
     return (
       <div
@@ -3038,6 +3142,7 @@ function TaxonomyEditor({
           tile_style: 'bordered',
           block_background: 'default',
           show_badge: true,
+          grid_columns: 3,
         };
         case 'carousel': return {
           id,

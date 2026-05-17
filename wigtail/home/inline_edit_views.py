@@ -16,6 +16,15 @@ from home.card_layout import (
     stock_bars_limit_clamped,
     stock_bars_timeframe_from_cadence,
 )
+from home.market_events import (
+    calendar_max_rows_clamped,
+    calendar_payload_for_bento,
+    dividend_max_rows_clamped,
+    dividends_payload_for_bento,
+    resolve_dividend_symbols_from_bento,
+    upcoming_calendar_days,
+    upcoming_dividends,
+)
 from home.market_widgets import build_forex_quotes_payload, build_market_movers_payload
 from home.models import MarketTickerRow, SubsectionIndexPage, TaggedContentPage, TaxonomyTerm
 from home.query import _section_term_ids_for_taxonomy_scope
@@ -479,6 +488,28 @@ def preview_market_movers_tile(request: HttpRequest) -> JsonResponse:
         block_region=block_region,
     )
     return JsonResponse(payload)
+
+
+@require_GET
+def preview_upcoming_dividends_tile(request: HttpRequest) -> JsonResponse:
+    """Public JSON for taxonomy Bento upcoming dividends tile preview."""
+    raw_syms = request.GET.getlist("symbols") or []
+    if not raw_syms:
+        single = str(request.GET.get("symbols") or "")
+        raw_syms = [p.strip() for p in re.split(r"[\s,]+", single) if p.strip()]
+    syms = resolve_dividend_symbols_from_bento(raw_syms or None)
+    lim = dividend_max_rows_clamped(request.GET.get("max_rows"))
+    rows = upcoming_dividends(symbols=syms, limit=lim)
+    return JsonResponse({"dividend_rows": dividends_payload_for_bento(rows)})
+
+
+@require_GET
+def preview_market_calendar_tile(request: HttpRequest) -> JsonResponse:
+    """Public JSON for taxonomy Bento market calendar tile preview."""
+    mkt = str(request.GET.get("market") or "NASDAQ").strip().upper()
+    lim = calendar_max_rows_clamped(request.GET.get("max_rows"))
+    rows = upcoming_calendar_days(market=mkt, limit=lim)
+    return JsonResponse({"calendar_rows": calendar_payload_for_bento(rows)})
 
 
 @require_GET

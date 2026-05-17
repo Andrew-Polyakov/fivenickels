@@ -1,0 +1,22 @@
+<table class="ticker-dividends__table">
+    <thead>
+        <tr>
+            <th scope="col">Type</th>
+            <th scope="col">Ex-date</th>
+            <th scope="col">Record</th>
+            <th scope="col">Payable</th>
+            <th scope="col" class="ticker-dividends__th-rate">Rate</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in dividend_rows %}
+        <tr>
+            <td>{{ row.type_label }}</td>
+            <td>{{ row.ex_date_display }}</td>
+            <td>{{ row.record_date_display }}</td>
+            <td>{{ row.payable_date_display }}</td>
+            <td class="ticker-dividends__rate">{{ row.rate_display }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

@@ -10,8 +10,6 @@ import * as React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
 import { Badge } from '../components/ui/badge';
-import AnimatedUiBlock from '../components/shadcn-space/blocks/bento-grid-01/AnimatedUiBlock';
-import ReminderAnimation from '../components/shadcn-space/blocks/bento-grid-01/ReminderAnimation';
 import ForexStripTile, {
   type ForexQuotePayload,
 } from '../components/shadcn-space/blocks/bento-grid-01/ForexStripTile';
@@ -19,6 +17,12 @@ import MarketMoversTile, {
   type MarketMoverTabPayload,
   type MarketMoversGroupPayload,
 } from '../components/shadcn-space/blocks/bento-grid-01/MarketMoversTile';
+import MarketCalendarTile, {
+  type CalendarRowPayload,
+} from '../components/shadcn-space/blocks/bento-grid-01/MarketCalendarTile';
+import UpcomingDividendsTile, {
+  type DividendRowPayload,
+} from '../components/shadcn-space/blocks/bento-grid-01/UpcomingDividendsTile';
 import StockBarsTile from '../components/shadcn-space/blocks/bento-grid-01/StockBarsTile';
 import { CarouselCard } from './shadcn-taxonomy-editor';
 import type {
@@ -34,6 +38,7 @@ import {
   type BentoTileStyle,
 } from './bento-grid01-theme';
 import { BentoWidgetTileFrame } from './bento-widget-tile-frame';
+import { BentoGridLayout, normalizeGridColumns, normalizeGridRows } from './bento-grid-layout';
 import { FxBrokerCardView, type FxBrokerPayload } from './shadcn-fx-broker-card';
 
 // ── Types (mirror the Django BentoGrid01Block fields) ─────────────────────
@@ -69,20 +74,22 @@ export interface StockChipPayload {
 
 export interface BentoGrid01FeaturePayload {
   header_type:
-    | 'reminder_animation'
-    | 'animated_ui_block'
     | 'image'
     | 'card'
     | 'fxbroker'
     | 'richtext'
     | 'stock_bars'
     | 'forex_strip'
-    | 'market_movers';
+    | 'market_movers'
+    | 'upcoming_dividends'
+    | 'market_calendar';
   image_url_light?: string;
   image_url_dark?: string;
   title: string;
   description: string;
-  col_span: '4' | '8';
+  col_span?: number | string;
+  row_span?: number | string;
+  row?: number | null;
   article?: ArticlePayload;
   html?: string;
   card_image_layout?: CarouselCardTextImageLayout | Extract<CarouselCardImageLayoutLegacy, 'fit_under' | 'scales_fit_top'>;
@@ -96,6 +103,8 @@ export interface BentoGrid01FeaturePayload {
   forex_quotes?: ForexQuotePayload[];
   market_movers?: MarketMoversGroupPayload;
   market_mover_tabs?: MarketMoverTabPayload[];
+  dividend_rows?: DividendRowPayload[];
+  calendar_rows?: CalendarRowPayload[];
   fxbroker?: FxBrokerPayload | { kind: 'empty' };
 }
 
@@ -103,6 +112,8 @@ const BENTO_TILES_WITHOUT_FOOTER = new Set([
   'stock_bars',
   'forex_strip',
   'market_movers',
+  'upcoming_dividends',
+  'market_calendar',
 ]);
 
 export type { BentoTheme, BentoTileStyle, BentoBlockBackground };
@@ -116,6 +127,8 @@ export interface BentoGrid01Payload {
   /** @deprecated Removed server-side; ignored except to imply contained background. */
   section_padding?: string;
   show_badge?: boolean;
+  grid_columns?: number;
+  grid_rows?: number;
   features: BentoGrid01FeaturePayload[];
 }
 
@@ -143,12 +156,6 @@ function cardVmLayoutFromBentoFeature(feature: BentoGrid01FeaturePayload): Parti
 // ── Feature tile header ───────────────────────────────────────────────────
 
 function FeatureHeader({ feature }: { feature: BentoGrid01FeaturePayload }) {
-  if (feature.header_type === 'reminder_animation') {
-    return <ReminderAnimation />;
-  }
-  if (feature.header_type === 'animated_ui_block') {
-    return <AnimatedUiBlock />;
-  }
   if (feature.header_type === 'card' && feature.article && feature.article.kind === 'article') {
     const a = feature.article;
     const layout = cardVmLayoutFromBentoFeature(feature);
@@ -208,6 +215,20 @@ function FeatureHeader({ feature }: { feature: BentoGrid01FeaturePayload }) {
       </BentoWidgetTileFrame>
     );
   }
+  if (feature.header_type === 'upcoming_dividends') {
+    return (
+      <BentoWidgetTileFrame scrollable>
+        <UpcomingDividendsTile rows={feature.dividend_rows ?? []} />
+      </BentoWidgetTileFrame>
+    );
+  }
+  if (feature.header_type === 'market_calendar') {
+    return (
+      <BentoWidgetTileFrame scrollable>
+        <MarketCalendarTile rows={feature.calendar_rows ?? []} />
+      </BentoWidgetTileFrame>
+    );
+  }
   return (
     <>
       {feature.image_url_light && (
@@ -255,33 +276,34 @@ function BentoGrid01Root({ payload }: { payload: BentoGrid01Payload }) {
             </Badge>
           )}
         </div>
-        <div className="scn-bentogrid01__grid">
-          {payload.features.map((feature, i) => {
-            const span = feature.col_span === '8' ? 'scn-bentogrid01__cell--span-8' : 'scn-bentogrid01__cell--span-4';
+        <BentoGridLayout
+          gridColumns={normalizeGridColumns(payload.grid_columns)}
+          gridRows={normalizeGridRows(payload.grid_rows)}
+          tiles={payload.features}
+          getTileKey={(_, i) => i}
+          renderTile={(feature) => {
             const headerClip = (feature.header_type === 'card' || feature.header_type === 'fxbroker') ? '' : ' scn-bentogrid01__tile-header--clip';
             const isWidgetTile = BENTO_TILES_WITHOUT_FOOTER.has(feature.header_type);
             const widgetHeader = isWidgetTile ? ' scn-bentogrid01__tile-header--widget' : '';
             const showTextFooter = !isWidgetTile;
             const tileHeaderRound = showTextFooter ? '' : ' scn-bentogrid01__tile-header--round-bottom';
             return (
-              <div key={i} className={`scn-bentogrid01__cell ${span}`}>
-                <div className="scn-bentogrid01__tile">
-                  <div
-                    className={`scn-bentogrid01__tile-header${headerClip}${tileHeaderRound}${widgetHeader}`}
-                  >
-                    <FeatureHeader feature={feature} />
-                  </div>
-                  {showTextFooter ? (
-                    <div className="scn-bentogrid01__tile-footer">
-                      <h3 className="scn-bentogrid01__tile-title">{feature.title}</h3>
-                      <p className="scn-bentogrid01__tile-desc">{feature.description}</p>
-                    </div>
-                  ) : null}
+              <div className="scn-bentogrid01__tile">
+                <div
+                  className={`scn-bentogrid01__tile-header${headerClip}${tileHeaderRound}${widgetHeader}`}
+                >
+                  <FeatureHeader feature={feature} />
                 </div>
+                {showTextFooter ? (
+                  <div className="scn-bentogrid01__tile-footer">
+                    <h3 className="scn-bentogrid01__tile-title">{feature.title}</h3>
+                    <p className="scn-bentogrid01__tile-desc">{feature.description}</p>
+                  </div>
+                ) : null}
               </div>
             );
-          })}
-        </div>
+          }}
+        />
       </div>
     </section>
   );
