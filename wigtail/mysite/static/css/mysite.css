@@ -10456,7 +10456,7 @@ body.template-forex-ratings .site-content {
 .scn-hamburger-nav__dialog {
     width: 75vw;
     max-width: 75vw;
-    height: 80vh;
+    height: auto;
     max-height: 80vh;
     padding: 0;
     overflow: hidden;
@@ -10468,7 +10468,7 @@ body.template-forex-ratings .site-content {
     .scn-hamburger-nav__dialog {
         width: 100vw;
         max-width: 100vw;
-        height: 100dvh;
+        height: auto;
         max-height: 100dvh;
         top: 0;
         left: 0;

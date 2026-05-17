@@ -2456,6 +2456,11 @@ turbo-frame#site-nav.site-nav {
   transform: translateY(-50%);
 }
 
+#site-nav[data-can-edit='1'] .scn-taxonomy-site-nav__depth-item .scn-navigation-menu__trigger,
+#site-nav[data-can-edit='1'] .scn-taxonomy-site-nav__depth-item .scn-navigation-menu__trigger--link {
+  padding-right: 1.85rem;
+}
+
 .scn-taxonomy-site-nav__depth-add-input {
   width: min(12rem, 42vw);
   height: 2.25rem;
@@ -4730,8 +4735,10 @@ html[data-reading-theme="day"] .scn-bentogrid01--theme-inverted .scn-bentogrid01
 .scn-hamburger-nav__body {
   display: flex;
   flex-direction: column;
-  flex: 1 1 0;
-  overflow: hidden;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: visible;
+  overflow-y: auto;
 }
 
 .scn-hamburger-nav__section {
@@ -4740,8 +4747,8 @@ html[data-reading-theme="day"] .scn-bentogrid01--theme-inverted .scn-bentogrid01
 }
 
 .scn-hamburger-nav__section--sitemap {
-  flex: 1 1 0;
-  overflow: hidden;
+  flex: 1 1 auto;
+  overflow: visible;
   display: flex;
   flex-direction: column;
 }
@@ -4811,6 +4818,7 @@ html[data-reading-theme="day"] .scn-bentogrid01--theme-inverted .scn-bentogrid01
 }
 
 .scn-hamburger-nav__nav-item:hover .scn-hamburger-nav__pen-btn,
+.scn-hamburger-nav__sitemap-item-row:hover .scn-hamburger-nav__pen-btn,
 .scn-hamburger-nav__pen-btn:focus-visible {
   opacity: 1;
 }
@@ -4828,10 +4836,8 @@ html[data-reading-theme="day"] .scn-bentogrid01--theme-inverted .scn-bentogrid01
 /* sitemap columns — Safari-style Miller columns */
 .scn-hamburger-nav__sitemap-cols {
   display: flex;
-  flex: 1 1 0;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-behavior: smooth;
+  flex: 0 0 auto;
+  overflow: visible;
 }
 
 .scn-hamburger-nav__sitemap-vsep {
@@ -4845,9 +4851,29 @@ html[data-reading-theme="day"] .scn-bentogrid01--theme-inverted .scn-bentogrid01
   flex: 0 0 200px;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: visible;
+  align-self: flex-start;
   padding: 0.3rem 0.375rem;
   gap: 1px;
+}
+
+.scn-hamburger-nav__sitemap-item-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 6px;
+  padding: 0.125rem 0.25rem;
+  transition: background 0.12s;
+}
+
+.scn-hamburger-nav__sitemap-item-row:hover {
+  background: rgba(var(--sc-rgb-accent), 0.06);
+}
+
+.scn-hamburger-nav__sitemap-item-row .scn-hamburger-nav__sitemap-item {
+  flex: 1;
+  min-width: 0;
+  width: auto;
 }
 
 .scn-hamburger-nav__sitemap-item {

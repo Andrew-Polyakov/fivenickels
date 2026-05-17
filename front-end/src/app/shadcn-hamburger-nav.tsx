@@ -291,15 +291,47 @@ function CategoryEditPopover({
   );
 }
 
+function patchTermInTree(
+  nodes: HamburgerNavTerm[],
+  id: string,
+  patch: Partial<HamburgerNavTerm>,
+): HamburgerNavTerm[] {
+  return nodes.map(node => {
+    if (node.id === id) return { ...node, ...patch };
+    if (node.children.length) {
+      return { ...node, children: patchTermInTree(node.children, id, patch) };
+    }
+    return node;
+  });
+}
+
 // ── Sitemap Miller-column drilldown ───────────────────────────────────────────
+
+type SitemapColumnsProps = {
+  roots: HamburgerNavTerm[];
+  onNavigate: () => void;
+  canEdit: boolean;
+  renameUrl: string;
+  createUrl: string;
+  deleteUrl: string;
+  setNavUrl: string;
+  setSitemapUrl: string;
+  onNavChange: (id: string, inNav: boolean) => void;
+  onSitemapChange: (id: string, inSitemap: boolean) => void;
+};
 
 function SitemapColumns({
   roots,
   onNavigate,
-}: {
-  roots: HamburgerNavTerm[];
-  onNavigate: () => void;
-}) {
+  canEdit,
+  renameUrl,
+  createUrl,
+  deleteUrl,
+  setNavUrl,
+  setSitemapUrl,
+  onNavChange,
+  onSitemapChange,
+}: SitemapColumnsProps) {
   const [path, setPath] = React.useState<string[]>([]);
 
   function termsAtLevel(level: number): HamburgerNavTerm[] {
@@ -333,34 +365,47 @@ function SitemapColumns({
               <Separator orientation="vertical" className="scn-hamburger-nav__sitemap-vsep" />
             )}
             <div className="scn-hamburger-nav__sitemap-col">
-            {terms.map(term => {
-              const isSelected = path[level] === term.id;
-              const hasChildren = term.children.length > 0;
-              return hasChildren ? (
-                <button
-                  key={term.id}
-                  type="button"
-                  className={cn(
-                    'scn-hamburger-nav__sitemap-item',
-                    isSelected && 'scn-hamburger-nav__sitemap-item--selected',
-                  )}
-                  onMouseEnter={() => selectAtLevel(level, term.id)}
-                  onFocus={() => selectAtLevel(level, term.id)}
-                >
-                  <span>{term.name}</span>
-                  <ChevronRight size={14} aria-hidden />
-                </button>
-              ) : (
-                <a
-                  key={term.id}
-                  href={term.href}
-                  className="scn-hamburger-nav__sitemap-item"
-                  onClick={onNavigate}
-                >
-                  {term.name}
-                </a>
-              );
-            })}
+              {terms.map(term => {
+                const isSelected = path[level] === term.id;
+                const hasChildren = term.children.length > 0;
+                const itemClass = cn(
+                  'scn-hamburger-nav__sitemap-item',
+                  isSelected && 'scn-hamburger-nav__sitemap-item--selected',
+                );
+                const control = hasChildren ? (
+                  <button
+                    type="button"
+                    className={itemClass}
+                    onMouseEnter={() => selectAtLevel(level, term.id)}
+                    onFocus={() => selectAtLevel(level, term.id)}
+                  >
+                    <span>{term.name}</span>
+                    <ChevronRight size={14} aria-hidden />
+                  </button>
+                ) : (
+                  <a href={term.href} className={itemClass} onClick={onNavigate}>
+                    {term.name}
+                  </a>
+                );
+                return (
+                  <div key={term.id} className="scn-hamburger-nav__sitemap-item-row">
+                    {control}
+                    {canEdit && (
+                      <CategoryEditPopover
+                        target={term}
+                        canEdit={canEdit}
+                        renameUrl={renameUrl}
+                        createUrl={createUrl}
+                        deleteUrl={deleteUrl}
+                        setNavUrl={setNavUrl}
+                        setSitemapUrl={setSitemapUrl}
+                        onNavChange={onNavChange}
+                        onSitemapChange={onSitemapChange}
+                      />
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </React.Fragment>
         );
@@ -391,11 +436,10 @@ function HamburgerNav({
   const [open, setOpen] = React.useState(false);
   const [terms, setTerms] = React.useState<HamburgerNavTerm[]>(payload.terms);
 
-  const navTerms = terms.filter(t => t.inNav);
   const sitemapTerms = terms.filter(t => t.inSitemap);
 
   function patchTerm(id: string, patch: Partial<HamburgerNavTerm>) {
-    setTerms(prev => prev.map(t => t.id === id ? { ...t, ...patch } : t));
+    setTerms(prev => patchTermInTree(prev, id, patch));
   }
 
   return (
@@ -411,12 +455,10 @@ function HamburgerNav({
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="scn-hamburger-nav__dialog">
-          <DialogTitle className="sr-only">Navigation Menu</DialogTitle>
-
           <div className="scn-hamburger-nav__dialog-header">
-            <span className="scn-hamburger-nav__dialog-title">Menu</span>
+            <DialogTitle className="scn-hamburger-nav__dialog-title">Site map</DialogTitle>
             <DialogClose asChild>
-              <button type="button" className="scn-hamburger-nav__close-btn" aria-label="Close menu">
+              <button type="button" className="scn-hamburger-nav__close-btn" aria-label="Close site map">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <line x1="18" y1="6" x2="6" y2="18" />
@@ -427,44 +469,20 @@ function HamburgerNav({
           </div>
 
           <div className="scn-hamburger-nav__body">
-            {/* Navigation section */}
-            <div className="scn-hamburger-nav__section">
-              <div className="scn-hamburger-nav__section-heading">Navigation</div>
-              <div className="scn-hamburger-nav__nav-list">
-                {navTerms.map(term => (
-                  <div key={term.id} className="scn-hamburger-nav__nav-item">
-                    <a
-                      href={term.href}
-                      className="scn-hamburger-nav__nav-link"
-                      onClick={() => setOpen(false)}
-                    >
-                      {term.name}
-                    </a>
-                    {canEdit && (
-                      <CategoryEditPopover
-                        target={term}
-                        canEdit={canEdit}
-                        renameUrl={renameUrl}
-                        createUrl={createUrl}
-                        deleteUrl={deleteUrl}
-                        setNavUrl={setNavUrl}
-                        setSitemapUrl={setSitemapUrl}
-                        onNavChange={(id, inNav) => patchTerm(id, { inNav })}
-                        onSitemapChange={(id, inSitemap) => patchTerm(id, { inSitemap })}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <Separator className="scn-hamburger-nav__sep" />
-
-            {/* Site map section */}
             <div className="scn-hamburger-nav__section scn-hamburger-nav__section--sitemap">
-              <div className="scn-hamburger-nav__section-heading">Site map</div>
               {sitemapTerms.length > 0 ? (
-                <SitemapColumns roots={sitemapTerms} onNavigate={() => setOpen(false)} />
+                <SitemapColumns
+                  roots={sitemapTerms}
+                  onNavigate={() => setOpen(false)}
+                  canEdit={canEdit}
+                  renameUrl={renameUrl}
+                  createUrl={createUrl}
+                  deleteUrl={deleteUrl}
+                  setNavUrl={setNavUrl}
+                  setSitemapUrl={setSitemapUrl}
+                  onNavChange={(id, inNav) => patchTerm(id, { inNav })}
+                  onSitemapChange={(id, inSitemap) => patchTerm(id, { inSitemap })}
+                />
               ) : (
                 <p className="scn-hamburger-nav__sitemap-empty">
                   No site map categories yet.

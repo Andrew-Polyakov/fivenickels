@@ -614,10 +614,10 @@ class HomePage(RoutablePageMixin, Page):
 
         # Dev / partial DB copies may omit seeded nav roots; lazy-heal only when absent.
         if slugs:
-            from home.taxonomy import TOP_ROW_SLUGS_SET, ensure_top_row_taxonomy_terms
+            from home.taxonomy import TOP_ROW_SEED_SLUGS, ensure_top_row_taxonomy_terms
 
             if (
-                slugs[0] in TOP_ROW_SLUGS_SET
+                slugs[0] in TOP_ROW_SEED_SLUGS
                 and not TaxonomyTerm.objects.filter(slug=slugs[0]).exists()
             ):
                 ensure_top_row_taxonomy_terms()

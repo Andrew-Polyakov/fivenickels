@@ -86,8 +86,8 @@ def create_taxonomy_term(request: HttpRequest) -> JsonResponse:
         except (TypeError, ValueError, TaxonomyTerm.DoesNotExist):
             return JsonResponse({"error": "Selected parent not found."}, status=400)
 
-    # Top nav rows omit parent_id; only TOP_ROW_SLUGS roots appear there, so new
-    # roots would be invisible. Default to Market News so the chip shows under it.
+    # Depth-1 "Add new" without create_root defaults under Market News; use
+    # create_root=true to add a new top-level nav root (shown when depth=1 + visible).
     if parent is None and not create_root:
         parent = TaxonomyTerm.objects.filter(
             slug=MARKET_NEWS_SLUG, is_visible=True

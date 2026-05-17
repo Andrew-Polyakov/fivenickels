@@ -585,6 +585,79 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         self.assertIsNotNone(trail)
         self.assertEqual([t.slug for t in trail], ["market-news", "forex"])
 
+    def test_taxonomy_roots_for_nav_includes_custom_root(self):
+        from django.utils.crypto import get_random_string
+
+        from home.taxonomy import taxonomy_roots_for_nav
+
+        slug = f"custom-nav-root-{get_random_string(6).lower()}"
+        term = TaxonomyTerm(
+            name="Custom Nav Root",
+            slug=slug,
+            is_visible=True,
+            is_nav=True,
+            sort_order=99,
+        )
+        last = TaxonomyTerm.get_last_root_node()
+        if last is not None:
+            last.add_sibling("sorted-sibling", instance=term)
+        else:
+            TaxonomyTerm.add_root(instance=term)
+        TaxonomyTerm.fix_tree()
+
+        roots = taxonomy_roots_for_nav(self.homepage)
+        self.assertIn(slug, [t.slug for t in roots])
+
+    def test_resolve_taxonomy_trail_custom_root(self):
+        from django.utils.crypto import get_random_string
+
+        from home.taxonomy import resolve_taxonomy_trail
+
+        slug = f"custom-trail-root-{get_random_string(6).lower()}"
+        term = TaxonomyTerm(
+            name="Custom Trail Root",
+            slug=slug,
+            is_visible=True,
+            is_nav=True,
+            sort_order=98,
+        )
+        last = TaxonomyTerm.get_last_root_node()
+        if last is not None:
+            last.add_sibling("sorted-sibling", instance=term)
+        else:
+            TaxonomyTerm.add_root(instance=term)
+        TaxonomyTerm.fix_tree()
+
+        trail = resolve_taxonomy_trail(
+            [slug],
+            home_page=self.homepage,
+            require_content=False,
+        )
+        self.assertIsNotNone(trail)
+        self.assertEqual([t.slug for t in trail], [slug])
+
+    def test_resolve_taxonomy_trail_rejects_gics_at_root(self):
+        from home.taxonomy import resolve_taxonomy_trail
+
+        trail = resolve_taxonomy_trail(
+            ["energy"],
+            home_page=self.homepage,
+            require_content=False,
+        )
+        self.assertIsNone(trail)
+
+    def test_market_header_footer_includes_market_news(self):
+        from django.test import RequestFactory
+
+        from home.taxonomy import MARKET_NEWS_SLUG
+
+        factory = RequestFactory()
+        request = factory.get("/")
+        request.site = Site.objects.filter(is_default_site=True).first()
+        ctx = market_header(request)
+        footer_slugs = [t.slug for t in ctx["site_footer_roots"]]
+        self.assertIn(MARKET_NEWS_SLUG, footer_slugs)
+
     def test_taxonomy_nav_market_news_forex_returns_200(self):
         from home.taxonomy import taxonomy_prefix_path
 

@@ -11,14 +11,8 @@ from django.template.loader import render_to_string
 if TYPE_CHECKING:
     from home.models import HomePage, TaxonomyTerm
 
-# Top header row: fixed three roots (DB siblings; GICS sectors appear under Market News in UI only).
+# Market News hosts GICS sectors in nav UI only (not as separate top-level tabs).
 MARKET_NEWS_SLUG = "market-news"
-TOP_ROW_SLUGS: tuple[str, ...] = (
-    MARKET_NEWS_SLUG,
-    "opinions",
-    "personal-finance",
-)
-TOP_ROW_SLUGS_SET = frozenset(TOP_ROW_SLUGS)
 
 # Seed rows for migrations and ``ensure_top_row_taxonomy_terms`` (slug, display name, sort_order).
 TOP_ROW_SEED: tuple[tuple[str, str, int], ...] = (
@@ -26,6 +20,7 @@ TOP_ROW_SEED: tuple[tuple[str, str, int], ...] = (
     ("opinions", "Opinions", 8),
     ("personal-finance", "Personal Finance", 9),
 )
+TOP_ROW_SEED_SLUGS = frozenset(slug for slug, _, _ in TOP_ROW_SEED)
 
 
 def taxonomy_display_name_for_slug(slug: str) -> str:
@@ -49,7 +44,8 @@ def resolve_import_section_slug(raw_slug: str | None) -> str:
     if not normalized:
         return ""
 
-    known = set(GICS_SECTOR_SLUGS) | TOP_ROW_SLUGS_SET
+    known = set(GICS_SECTOR_SLUGS) | TOP_ROW_SEED_SLUGS
+    known.update(taxonomy_nav_root_queryset().values_list("slug", flat=True))
     if normalized in known:
         return normalized
 
@@ -191,13 +187,21 @@ def taxonomy_prefix_path(home_page: HomePage) -> str:
     return wagtail_serve_taxonomy_url(home_page, "")
 
 
-def taxonomy_roots_for_nav(home_page: HomePage | None):
-    """Nav top row: Market News, Opinions, Personal Finance (order fixed; not content-gated)."""
+def taxonomy_nav_root_queryset():
+    """Visible depth-1 roots for header/footer nav (GICS sectors excluded from top row)."""
+    from home.gics_sectors import GICS_SECTOR_SLUGS
     from home.models import TaxonomyTerm
 
-    qs = TaxonomyTerm.objects.filter(slug__in=TOP_ROW_SLUGS_SET, is_visible=True)
-    by_slug = {t.slug: t for t in qs}
-    return [by_slug[s] for s in TOP_ROW_SLUGS if s in by_slug]
+    return (
+        TaxonomyTerm.objects.filter(depth=1, is_visible=True)
+        .exclude(slug__in=GICS_SECTOR_SLUGS)
+        .order_by("sort_order", "name")
+    )
+
+
+def taxonomy_roots_for_nav(home_page: HomePage | None):
+    """Nav top row: configurable via depth-1 ``TaxonomyTerm`` rows (not content-gated)."""
+    return list(taxonomy_nav_root_queryset())
 
 
 def virtual_children_for(
@@ -280,7 +284,7 @@ def resolve_taxonomy_trail(
     if not slugs:
         return None
     first = slugs[0]
-    if first not in TOP_ROW_SLUGS_SET:
+    if first in GICS_SECTOR_SLUGS:
         return None
     # Match inline_create_taxonomy_term: top-row sections are identified by slug,
     # not strictly tree roots (reparented terms must still resolve).
@@ -486,8 +490,11 @@ def build_site_nav_menu_payload(
                 "createRoot": True,
             }
             if not trail_slugs:
-                entry["afterCreateVisit"] = wagtail_serve_taxonomy_url(
-                    home_page, MARKET_NEWS_SLUG
+                first_root = taxonomy_nav_root_queryset().first()
+                entry["afterCreateVisit"] = (
+                    wagtail_serve_taxonomy_url(home_page, first_root.slug)
+                    if first_root
+                    else None
                 )
             else:
                 entry["afterCreateVisit"] = None

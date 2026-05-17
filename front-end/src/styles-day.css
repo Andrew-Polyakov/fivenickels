@@ -428,6 +428,11 @@ html[data-reading-theme='day']
     0 -1px 10px rgba(var(--sc-rgb-glow), 0.3);
 }
 
+html[data-reading-theme='day'] #site-nav[data-can-edit='1'] .scn-taxonomy-site-nav__depth-item .scn-navigation-menu__trigger,
+html[data-reading-theme='day'] #site-nav[data-can-edit='1'] .scn-taxonomy-site-nav__depth-item .scn-navigation-menu__trigger--link {
+  padding-right: 1.85rem;
+}
+
 html[data-reading-theme='day'] .scn-navigation-menu__viewport {
   background: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.12);
