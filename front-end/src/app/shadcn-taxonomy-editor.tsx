@@ -63,9 +63,18 @@ import {
   BentoGridEditorLayout,
   spansFromLegacyPanelSizes,
   tilesHaveDefaultSpans,
+  type BentoLayoutPersistPatch,
 } from './bento-grid-editor-layout';
 import {
-  BentoGridLayout,
+  bentoEditorLayoutStorageKey,
+  bentoSectionHasFixedHeight,
+  bentoSectionSizeStyles,
+  normalizeColPanelSizesByRow,
+  normalizePanelSizePctArray,
+  parseBentoSectionDimension,
+  serializeBentoFeaturePlacement,
+} from './bento-block-persist';
+import {
   normalizeCol,
   normalizeColSpan,
   normalizeGridColumns,
@@ -142,7 +151,14 @@ type BentoGrid01Block  = {
   grid_rows?: number;
   /** @deprecated Layout uses CSS grid; kept for JSON compatibility. */
   panelSizes?: number[];
+  /** Section height (e.g. `480px`). Omit or `auto` for intrinsic height. */
   height?: string;
+  /** Section max width (e.g. `1200px`). Omit for full column width. */
+  width?: string;
+  /** Vertical row band sizes (%), from resize handles. */
+  row_panel_sizes?: number[];
+  /** Horizontal segment sizes (%), keyed by row index. */
+  col_panel_sizes_by_row?: Record<string, number[]>;
 };
 
 type CarouselSlot  = {
@@ -414,10 +430,79 @@ function normalizeTaxonomyBlock(raw: Record<string, unknown>): TaxonomyBlock | n
       grid_columns,
       grid_rows,
       ...(Array.isArray(raw['panelSizes']) ? { panelSizes: raw['panelSizes'] as number[] } : {}),
-      ...(typeof raw['height'] === 'string' ? { height: raw['height'] } : {}),
+      ...(() => {
+        const height = parseBentoSectionDimension(raw['height']);
+        const width = parseBentoSectionDimension(raw['width']);
+        const row_panel_sizes = normalizePanelSizePctArray(raw['row_panel_sizes'], grid_rows);
+        const col_panel_sizes_by_row = normalizeColPanelSizesByRow(
+          raw['col_panel_sizes_by_row'],
+          grid_rows,
+        );
+        return {
+          ...(height ? { height } : {}),
+          ...(width ? { width } : {}),
+          ...(row_panel_sizes ? { row_panel_sizes } : {}),
+          ...(col_panel_sizes_by_row ? { col_panel_sizes_by_row } : {}),
+        };
+      })(),
     };
   }
   return raw as TaxonomyBlock;
+}
+
+function serializeBentoGrid01BlockForSave(block: BentoGrid01Block): BentoGrid01Block {
+  const grid_columns = normalizeGridColumns(block.grid_columns);
+  const grid_rows = normalizeGridRows(block.grid_rows);
+  const height = parseBentoSectionDimension(block.height);
+  const width = parseBentoSectionDimension(block.width);
+  const row_panel_sizes = normalizePanelSizePctArray(block.row_panel_sizes, grid_rows);
+  const col_panel_sizes_by_row = normalizeColPanelSizesByRow(
+    block.col_panel_sizes_by_row,
+    grid_rows,
+  );
+  return {
+    id: block.id,
+    type: 'bento_grid_01',
+    badge_text: block.badge_text,
+    heading: block.heading,
+    features: block.features.map((f) => serializeBentoFeaturePlacement(f, grid_columns)),
+    theme: block.theme,
+    tile_style: block.tile_style,
+    block_background: block.block_background,
+    show_badge: block.show_badge,
+    grid_columns,
+    grid_rows,
+    ...(height ? { height } : {}),
+    ...(width ? { width } : {}),
+    ...(row_panel_sizes ? { row_panel_sizes } : {}),
+    ...(col_panel_sizes_by_row ? { col_panel_sizes_by_row } : {}),
+  };
+}
+
+function applyBentoLayoutPersistPatch(
+  block: BentoGrid01Block,
+  patch: BentoLayoutPersistPatch,
+): BentoGrid01Block {
+  let features = block.features;
+  if (patch.tileSpanPatches?.length) {
+    features = features.map((f) => {
+      const p = patch.tileSpanPatches!.find((x) => x.id === f.id);
+      return p ? { ...f, ...p } : f;
+    });
+  }
+  return {
+    ...block,
+    features,
+    ...(patch.row_panel_sizes ? { row_panel_sizes: patch.row_panel_sizes } : {}),
+    ...(patch.col_panel_sizes_by_row
+      ? {
+          col_panel_sizes_by_row: {
+            ...(block.col_panel_sizes_by_row ?? {}),
+            ...patch.col_panel_sizes_by_row,
+          },
+        }
+      : {}),
+  };
 }
 
 function jsonToBlocks(json: object | null): TaxonomyBlock[] {
@@ -430,7 +515,12 @@ function jsonToBlocks(json: object | null): TaxonomyBlock[] {
 }
 
 function blocksToJson(blocks: TaxonomyBlock[]): TaxonomyContentJson {
-  return { version: 1, blocks };
+  return {
+    version: 1,
+    blocks: blocks.map((b) =>
+      b.type === 'bento_grid_01' ? serializeBentoGrid01BlockForSave(b) : b,
+    ),
+  };
 }
 
 // ─── Article Search Input ─────────────────────────────────────────────────────
@@ -2111,6 +2201,27 @@ function BentoAddTilePopoverContent({
   );
 }
 
+/** Live preview of badge + heading (matches public bento intro). */
+function BentoBlockIntroHeader({
+  block,
+}: {
+  block: Pick<BentoGrid01Block, 'heading' | 'badge_text' | 'show_badge'>;
+}) {
+  const showIntro =
+    (block.show_badge !== false && block.badge_text) || Boolean(block.heading?.trim());
+  if (!showIntro) return null;
+  return (
+    <div className="scn-bentogrid01__intro scn-bento-editor__intro-preview">
+      {block.heading ? <h2 className="scn-bentogrid01__heading">{block.heading}</h2> : null}
+      {block.show_badge !== false && block.badge_text ? (
+        <div className="scn-taxonomy-content__bento-badge scn-bentogrid01__badge">
+          {block.badge_text}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function BentoGrid01BlockHeaderFields({
   block,
   onChange,
@@ -2148,7 +2259,7 @@ function BentoGrid01BlockHeaderFields({
             checked={!block.height || block.height === 'auto'}
             onCheckedChange={checked => onChange({ ...block, height: checked ? undefined : '320px' })}
           />
-          <span>Auto</span>
+          <span>H auto</span>
         </label>
         {block.height && block.height !== 'auto' ? (
           <div className="scn-bento-editor__size-slider-row">
@@ -2160,6 +2271,27 @@ function BentoGrid01BlockHeaderFields({
               onValueChange={([v]) => onChange({ ...block, height: `${v}px` })}
             />
             <span className="scn-bento-editor__size-value">{block.height}</span>
+          </div>
+        ) : null}
+      </div>
+      <div className="scn-editor-block__header-height scn-editor-block__bento-size">
+        <label className="scn-bento-editor__size-auto-row">
+          <Checkbox
+            checked={!block.width}
+            onCheckedChange={checked => onChange({ ...block, width: checked ? undefined : '1200px' })}
+          />
+          <span>W full</span>
+        </label>
+        {block.width ? (
+          <div className="scn-bento-editor__size-slider-row">
+            <Slider
+              min={480}
+              max={1600}
+              step={20}
+              value={[parseInt(block.width, 10) || 1200]}
+              onValueChange={([v]) => onChange({ ...block, width: `${v}px` })}
+            />
+            <span className="scn-bento-editor__size-value">{block.width}</span>
           </div>
         ) : null}
       </div>
@@ -2305,8 +2437,18 @@ function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl,
 
   const gridColumns = normalizeGridColumns(block.grid_columns);
   const gridRows = normalizeGridRows(block.grid_rows);
-  const layoutStyle: React.CSSProperties | undefined =
-    block.height && block.height !== 'auto' ? { height: block.height } : undefined;
+  const sectionSizes = bentoSectionSizeStyles({ height: block.height, width: block.width });
+  const hasFixedHeight = bentoSectionHasFixedHeight({ height: block.height });
+  const layoutStorageKey = bentoEditorLayoutStorageKey(
+    gridColumns,
+    gridRows,
+    { height: block.height, width: block.width },
+    block.features,
+    {
+      row_panel_sizes: block.row_panel_sizes,
+      col_panel_sizes_by_row: block.col_panel_sizes_by_row,
+    },
+  );
 
   const legacyPanelMigratedRef = React.useRef(false);
   React.useLayoutEffect(() => {
@@ -2339,23 +2481,23 @@ function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl,
           tileStyle: block.tile_style,
         }),
       )}
+      style={sectionSizes.shell}
     >
+      <BentoBlockIntroHeader block={block} />
       <BentoGridEditorLayout
         gridColumns={gridColumns}
         gridRows={gridRows}
         tiles={block.features}
-        className="scn-bento-editor__layout-host"
-        style={layoutStyle}
+        className={cn(
+          'scn-bento-editor__layout-host',
+          hasFixedHeight && 'scn-bento-editor__layout-host--fixed-h',
+        )}
+        style={sectionSizes.host}
+        layoutStorageKey={layoutStorageKey}
+        rowPanelSizes={block.row_panel_sizes}
+        colPanelSizesByRow={block.col_panel_sizes_by_row}
         getTileKey={(f) => f.id}
-        onTileSpansChange={(patches) => {
-          onChange({
-            ...block,
-            features: block.features.map((f) => {
-              const patch = patches.find((p) => p.id === f.id);
-              return patch ? { ...f, ...patch } : f;
-            }),
-          });
-        }}
+        onLayoutPersist={(patch) => onChange(applyBentoLayoutPersistPatch(block, patch))}
         renderEmptyColumn={(colIndex, rowIndex) => (
           <BentoEditorEmptySlot
             onPick={type => onAddTileInColumn(colIndex, rowIndex, type)}
@@ -2897,7 +3039,19 @@ function ReadOnlyBlock({
   if (block.type === 'bento_grid_01') {
     const features = block.features;
     const gridColumns = normalizeGridColumns(block.grid_columns);
-    const blockHeight = block.height && block.height !== 'auto' ? block.height : undefined;
+    const gridRows = normalizeGridRows(block.grid_rows);
+    const sectionSizes = bentoSectionSizeStyles({ height: block.height, width: block.width });
+    const hasFixedHeight = bentoSectionHasFixedHeight({ height: block.height });
+    const layoutStorageKey = bentoEditorLayoutStorageKey(
+      gridColumns,
+      gridRows,
+      { height: block.height, width: block.width },
+      features,
+      {
+        row_panel_sizes: block.row_panel_sizes,
+        col_panel_sizes_by_row: block.col_panel_sizes_by_row,
+      },
+    );
 
     function renderReadOnlyPanel(f: BentoGrid01Feature) {
       const isWidgetTile = BENTO_WIDGET_TILE_TYPES.has(f.header_type);
@@ -2906,6 +3060,7 @@ function ReadOnlyBlock({
           key={f.id}
           className={cn(
             'scn-bento-readonly__panel',
+            f.header_type === 'card' && 'scn-bento-readonly__panel--card',
             isWidgetTile && 'scn-bento-readonly__panel--widget',
           )}
         >
@@ -2922,11 +3077,22 @@ function ReadOnlyBlock({
     }
 
     const gridContent = features.length > 0 ? (
-      <BentoGridLayout
+      <BentoGridEditorLayout
         gridColumns={gridColumns}
+        gridRows={gridRows}
         tiles={features}
-        style={blockHeight ? { height: blockHeight } : undefined}
+        resizable={false}
+        layoutStorageKey={layoutStorageKey}
+        rowPanelSizes={block.row_panel_sizes}
+        colPanelSizesByRow={block.col_panel_sizes_by_row}
+        className={cn(
+          'scn-bento-editor__layout-host',
+          hasFixedHeight && 'scn-bento-editor__layout-host--fixed-h',
+        )}
+        style={sectionSizes.host}
         getTileKey={(f) => f.id}
+        renderEmptyColumn={() => null}
+        renderEmptyRow={() => null}
         renderTile={(f) => renderReadOnlyPanel(f)}
       />
     ) : null;
@@ -2942,6 +3108,7 @@ function ReadOnlyBlock({
             tileStyle: block.tile_style,
           }),
         )}
+        style={sectionSizes.shell}
       >
         <div className="scn-bentogrid01__inner">
           {((block.show_badge !== false && block.badge_text) || block.heading) ? (

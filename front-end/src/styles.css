@@ -484,15 +484,15 @@
 
 .scn-editor-block__header-fields--bento-toolbar {
   --scn-bento-toolbar-btn-size: 2.125rem;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem;
   min-width: 0;
 }
 
 .scn-editor-block__bento-text-fields {
-  flex: 0 1 50%;
-  max-width: 50%;
+  flex: 1 1 12rem;
+  max-width: 100%;
   min-width: 0;
   display: flex;
   align-items: center;
@@ -742,6 +742,49 @@
 }
 
 .scn-bento-editor__layout-host .scn-bento-editor__layout {
+  height: 100%;
+}
+
+.scn-bento-editor__intro-preview {
+  margin: 0 0 1rem;
+}
+
+.scn-bento-editor__layout-host--fixed-h .scn-bento-editor__row-stack {
+  min-height: 0;
+}
+
+.scn-bento-editor__layout--readonly .scn-bento-editor__row-stack {
+  min-height: 0;
+}
+
+.scn-taxonomy-content__bento-preview .scn-bento-editor__layout-host {
+  width: 100%;
+}
+
+.scn-taxonomy-content__bento-preview .scn-bento-editor__layout-host .scn-bento-editor__layout {
+  border: none;
+  min-height: 0;
+}
+
+.scn-taxonomy-content__bento-preview .scn-bento-editor__panel,
+.scn-taxonomy-content__bento-preview .scn-bento-editor__column-cell {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.scn-bento-readonly__panel--card {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+.scn-bento-readonly__panel--card .carousel-article-card {
+  flex: 1 1 auto;
+  min-height: 0;
   height: 100%;
 }
 

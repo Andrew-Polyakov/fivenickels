@@ -9097,39 +9097,6 @@ img[src*='bear.png'].scn-catalyst-toggle__icon {
 /* Carousel editor */
 .scn-carousel-editor { display: flex; flex-direction: column; gap: 0.75rem; }
 
-.scn-carousel-editor__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.scn-carousel-editor__header--tools {
-    flex-wrap: wrap;
-    gap: 0.35rem;
-    justify-content: flex-end;
-}
-
-.scn-carousel-editor__header--tools .scn-carousel-editor__count {
-    margin-right: auto;
-}
-
-.scn-carousel-editor__header-controls {
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-    flex-shrink: 0;
-}
-
-.scn-carousel-editor__header--tools .carousel__nav-btn,
-.scn-carousel-editor__header-controls .carousel__nav-btn {
-    position: static;
-    transform: none;
-    top: auto;
-    left: auto;
-    right: auto;
-    flex-shrink: 0;
-}
-
 .scn-carousel-editor__popover--narrow {
     width: auto;
     max-height: none;

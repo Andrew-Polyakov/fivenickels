@@ -10,6 +10,11 @@ import {
   ResizablePanelGroup,
 } from '../components/ui/resizable';
 import {
+  panelDefaultSizeAt,
+  type BentoColPanelSizesByRow,
+  type BentoRowPanelSizes,
+} from './bento-block-persist';
+import {
   BENTO_GRID_MIN_TILE_PX,
   BentoGridTilePlacement,
   normalizeGridColumns,
@@ -63,6 +68,12 @@ export interface BentoTileSpanPatch {
   col?: number;
 }
 
+export interface BentoLayoutPersistPatch {
+  row_panel_sizes?: BentoRowPanelSizes;
+  col_panel_sizes_by_row?: BentoColPanelSizesByRow;
+  tileSpanPatches?: BentoTileSpanPatch[];
+}
+
 type PanelLayout = { [panelId: string]: number };
 
 export interface BentoGridEditorLayoutProps<T extends BentoGridTilePlacement & { id: string }> {
@@ -72,11 +83,15 @@ export interface BentoGridEditorLayoutProps<T extends BentoGridTilePlacement & {
   className?: string;
   style?: React.CSSProperties;
   minTilePx?: number;
+  resizable?: boolean;
+  layoutStorageKey?: string;
+  rowPanelSizes?: BentoRowPanelSizes;
+  colPanelSizesByRow?: BentoColPanelSizesByRow;
   renderTile: (tile: T, index: number) => React.ReactNode;
   getTileKey?: (tile: T, index: number) => string | number;
   renderEmptyColumn: (colIndex: number, rowIndex: number) => React.ReactNode;
   renderEmptyRow: (rowIndex: number) => React.ReactNode;
-  onTileSpansChange?: (patches: BentoTileSpanPatch[]) => void;
+  onLayoutPersist?: (patch: BentoLayoutPersistPatch) => void;
 }
 
 function tilesStartingInRow<T extends BentoGridTilePlacement & { id: string }>(
@@ -101,6 +116,9 @@ function BentoEditorRowBand<T extends BentoGridTilePlacement & { id: string }>({
   placed,
   cols,
   containerWidth,
+  resizable,
+  layoutStorageKey,
+  savedColSizes,
   renderTile,
   renderEmptyColumn,
   onSegmentsChange,
@@ -109,9 +127,12 @@ function BentoEditorRowBand<T extends BentoGridTilePlacement & { id: string }>({
   placed: PlacedBentoTile<T>[];
   cols: number;
   containerWidth: number;
+  resizable: boolean;
+  layoutStorageKey?: string;
+  savedColSizes?: number[];
   renderTile: (tile: T, index: number) => React.ReactNode;
   renderEmptyColumn: (colIndex: number, rowIndex: number) => React.ReactNode;
-  onSegmentsChange: (segments: BentoRowSegment<T>[], sizes: number[]) => void;
+  onSegmentsChange?: (rowIndex: number, segments: BentoRowSegment<T>[], sizes: number[]) => void;
 }): React.JSX.Element {
   const segments = React.useMemo(
     () => computeRowSegments(placed, rowIndex, cols),
@@ -128,9 +149,15 @@ function BentoEditorRowBand<T extends BentoGridTilePlacement & { id: string }>({
     return <div className="scn-bento-editor__row-band" data-row={rowIndex + 1} />;
   }
 
+  const spanDerivedSizes = panelSizesFromColSpans(segments.map((s) => s.width));
+  const useSavedCol =
+    savedColSizes && savedColSizes.length === segments.length;
+
   const colChildren = segments.flatMap((seg, i) => {
-    const defaultSize =
-      panelSizesFromColSpans(segments.map((s) => s.width))[i] ?? 100 / segments.length;
+    const fallback = spanDerivedSizes[i] ?? 100 / segments.length;
+    const defaultSize = useSavedCol
+      ? panelDefaultSizeAt(savedColSizes, i, fallback)
+      : fallback;
     const panel = (
       <ResizablePanel
         key={panelIds[i]}
@@ -150,7 +177,7 @@ function BentoEditorRowBand<T extends BentoGridTilePlacement & { id: string }>({
         </div>
       </ResizablePanel>
     );
-    if (i === 0) return [panel];
+    if (i === 0 || !resizable) return [panel];
     return [
       <ResizableHandle key={`h-${panelIds[i]}`} className={COL_HANDLE_CLASS} withHandle />,
       panel,
@@ -160,11 +187,15 @@ function BentoEditorRowBand<T extends BentoGridTilePlacement & { id: string }>({
   return (
     <div className="scn-bento-editor__row-band" data-row={rowIndex + 1}>
       <ResizablePanelGroup
+        key={layoutStorageKey ? `${layoutStorageKey}-row-${rowIndex}` : undefined}
         orientation="horizontal"
         id={`bento-row-${rowIndex}`}
         className="scn-bento-editor__row"
-        onLayoutChanged={(layout) =>
-          onSegmentsChange(segments, layoutToSizes(layout, panelIds))}
+        onLayoutChanged={
+          resizable && onSegmentsChange
+            ? (layout) => onSegmentsChange(rowIndex, segments, layoutToSizes(layout, panelIds))
+            : undefined
+        }
       >
         {colChildren}
       </ResizablePanelGroup>
@@ -179,16 +210,29 @@ export function BentoGridEditorLayout<T extends BentoGridTilePlacement & { id: s
   className,
   style,
   minTilePx: _minTilePx = BENTO_GRID_MIN_TILE_PX,
+  resizable = true,
+  layoutStorageKey,
+  rowPanelSizes,
+  colPanelSizesByRow,
   renderTile,
   getTileKey: _getTileKey,
   renderEmptyColumn,
   renderEmptyRow,
-  onTileSpansChange,
+  onLayoutPersist,
 }: BentoGridEditorLayoutProps<T>): React.JSX.Element {
   const hostRef = React.useRef<HTMLDivElement>(null);
   const containerWidth = useContainerWidth(hostRef);
   const cols = normalizeGridColumns(gridColumns);
   const rowCount = normalizeGridRows(gridRowsProp);
+  const skipLayoutPersistRef = React.useRef(true);
+
+  React.useLayoutEffect(() => {
+    skipLayoutPersistRef.current = true;
+    const frame = requestAnimationFrame(() => {
+      skipLayoutPersistRef.current = false;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [layoutStorageKey]);
 
   const placed = React.useMemo(
     () => placeBentoTiles(tiles, cols, cols),
@@ -201,8 +245,8 @@ export function BentoGridEditorLayout<T extends BentoGridTilePlacement & { id: s
   );
 
   const handleSegmentsChange = React.useCallback(
-    (segments: BentoRowSegment<T>[], sizes: number[]) => {
-      if (!onTileSpansChange || segments.length === 0) return;
+    (rowIndex: number, segments: BentoRowSegment<T>[], sizes: number[]) => {
+      if (!onLayoutPersist || segments.length === 0 || skipLayoutPersistRef.current) return;
       const widths = colSpansFromPanelSizes(sizes, cols);
       const patches: BentoTileSpanPatch[] = [];
       segments.forEach((seg, i) => {
@@ -213,9 +257,12 @@ export function BentoGridEditorLayout<T extends BentoGridTilePlacement & { id: s
           col: seg.startCol + 1,
         });
       });
-      if (patches.length) onTileSpansChange(patches);
+      onLayoutPersist({
+        col_panel_sizes_by_row: { [String(rowIndex)]: sizes },
+        ...(patches.length ? { tileSpanPatches: patches } : {}),
+      });
     },
-    [cols, onTileSpansChange],
+    [cols, onLayoutPersist],
   );
 
   const rowPanelIds = React.useMemo(
@@ -230,7 +277,7 @@ export function BentoGridEditorLayout<T extends BentoGridTilePlacement & { id: s
 
   const handleRowSpansChange = React.useCallback(
     (layout: PanelLayout) => {
-      if (!onTileSpansChange) return;
+      if (!onLayoutPersist || skipLayoutPersistRef.current) return;
       const sizes = layoutToSizes(layout, rowPanelIds);
       const spans = rowSpansFromPanelSizes(sizes, rowCount);
       const patches: BentoTileSpanPatch[] = [];
@@ -241,19 +288,27 @@ export function BentoGridEditorLayout<T extends BentoGridTilePlacement & { id: s
           patches.push({ id: p.tile.id, row_span: span });
         }
       }
-      if (patches.length) onTileSpansChange(patches);
+      onLayoutPersist({
+        row_panel_sizes: sizes,
+        ...(patches.length ? { tileSpanPatches: patches } : {}),
+      });
     },
-    [onTileSpansChange, placed, rowCount, rowPanelIds],
+    [onLayoutPersist, placed, rowCount, rowPanelIds],
   );
 
   const rowBandSizes = React.useMemo(() => {
+    const saved =
+      rowPanelSizes && rowPanelSizes.length === rowCount ? rowPanelSizes : undefined;
     const weights = Array.from({ length: rowCount }, (_, r) => {
       const starters = tilesStartingInRow(placed, r);
       if (starters.length === 0) return 1;
       return Math.max(1, ...starters.map((p) => p.rowSpan));
     });
-    return panelSizesFromRowSpans(weights);
-  }, [placed, rowCount]);
+    const derived = panelSizesFromRowSpans(weights);
+    return Array.from({ length: rowCount }, (_, r) =>
+      panelDefaultSizeAt(saved, r, derived[r] ?? 100 / rowCount),
+    );
+  }, [placed, rowCount, rowPanelSizes]);
 
   const mpRow = minPanelPct(containerWidth, rowCount);
 
@@ -287,16 +342,19 @@ export function BentoGridEditorLayout<T extends BentoGridTilePlacement & { id: s
           placed={placed}
           cols={cols}
           containerWidth={containerWidth}
+          resizable={resizable}
+          layoutStorageKey={layoutStorageKey}
+          savedColSizes={colPanelSizesByRow?.[String(rowIndex)]}
           renderTile={renderTile}
           renderEmptyColumn={renderEmptyColumn}
-          onSegmentsChange={handleSegmentsChange}
+          onSegmentsChange={resizable ? handleSegmentsChange : undefined}
         />
       </ResizablePanel>
     );
   });
 
   const verticalChildren = rowBands.flatMap((panel, i) => {
-    if (i === 0) return [panel];
+    if (i === 0 || !resizable) return [panel];
     return [
       <ResizableHandle key={`row-handle-${i}`} className={ROW_HANDLE_CLASS} withHandle />,
       panel,
@@ -309,16 +367,20 @@ export function BentoGridEditorLayout<T extends BentoGridTilePlacement & { id: s
       className={cn('scn-bento-editor__layout-host', className)}
     >
       <div
-        className="scn-bento-editor__layout scn-bento-editor__layout--stacked"
+        className={cn(
+          'scn-bento-editor__layout scn-bento-editor__layout--stacked',
+          !resizable && 'scn-bento-editor__layout--readonly',
+        )}
         style={style}
         data-grid-columns={cols}
         data-grid-rows={rowCount}
       >
         <ResizablePanelGroup
+          key={layoutStorageKey ?? 'bento-editor-rows'}
           orientation="vertical"
           id="bento-editor-rows"
           className="scn-bento-editor__row-stack"
-          onLayoutChanged={handleRowSpansChange}
+          onLayoutChanged={resizable ? handleRowSpansChange : undefined}
         >
           {verticalChildren}
         </ResizablePanelGroup>
