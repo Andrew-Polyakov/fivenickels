@@ -1,7 +1,63 @@
 {% load wagtailcore_tags taxonomy_tags %}
 
 <footer class="site-footer" role="contentinfo">
-    {% if site_footer_roots %}
+    {% if hamburger_nav_payload %}
+    <nav class="sitemap-columns" aria-label="Site map" data-sitemap-columns>
+        <div class="sitemap-columns__col" data-sitemap-col="0"></div>
+        <div class="sitemap-columns__col" data-sitemap-col="1" hidden></div>
+        <div class="sitemap-columns__col" data-sitemap-col="2" hidden></div>
+        <div class="sitemap-columns__col" data-sitemap-col="3" hidden></div>
+    </nav>
+    <script>
+    (function () {
+        var payloadEl = document.getElementById('hamburger-nav-payload');
+        var nav = document.querySelector('[data-sitemap-columns]');
+        if (!payloadEl || !nav) return;
+        var payload = JSON.parse(payloadEl.textContent);
+        var tree = payload.terms || [];
+        if (!tree.length) { nav.hidden = true; return; }
+        var cols = Array.from(nav.querySelectorAll('[data-sitemap-col]'));
+
+        function clearFrom(idx) {
+            for (var i = idx; i < cols.length; i++) {
+                cols[i].innerHTML = '';
+                cols[i].hidden = true;
+            }
+        }
+
+        function renderCol(colIdx, items) {
+            var col = cols[colIdx];
+            if (!col || !items || !items.length) { clearFrom(colIdx); return; }
+            var ul = document.createElement('ul');
+            ul.className = 'sitemap-columns__list';
+            items.forEach(function (item) {
+                var li = document.createElement('li');
+                var a = document.createElement('a');
+                a.href = item.href;
+                a.textContent = item.name;
+                a.className = 'site-footer__link sitemap-columns__item' +
+                    (item.children && item.children.length ? ' sitemap-columns__item--has-children' : '');
+                a.dataset.turboFrame = colIdx === 0 ? 'site-nav' : 'main';
+                li.addEventListener('mouseenter', function () {
+                    col.querySelectorAll('.sitemap-columns__item--active').forEach(function (el) {
+                        el.classList.remove('sitemap-columns__item--active');
+                    });
+                    a.classList.add('sitemap-columns__item--active');
+                    if (item.children && item.children.length) { renderCol(colIdx + 1, item.children); }
+                    else { clearFrom(colIdx + 1); }
+                });
+                li.appendChild(a);
+                ul.appendChild(li);
+            });
+            col.innerHTML = '';
+            col.appendChild(ul);
+            col.hidden = false;
+        }
+
+        renderCol(0, tree);
+    }());
+    </script>
+    {% elif site_footer_roots %}
     <nav class="site-footer__roots" aria-label="Site map">
         {% for term in site_footer_roots %}
             {% if term.link_page %}

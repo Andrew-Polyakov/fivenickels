@@ -167,24 +167,27 @@
                             </div>
 
                             <div class="site-header__masthead-right">
-                                {% if request.user.is_authenticated %}
-                                <a href="{% url 'profile' %}" class="btn btn--raised site-header__signin">
-                                    <span class="material-symbols-outlined site-header__signin-icon" aria-hidden="true">account_circle</span>
-                                    Profile
-                                </a>
-                                {% else %}
-                                <button
-                                    type="button"
-                                    class="btn btn--raised site-header__signin"
-                                    data-auth-modal-open
-                                    data-auth-tab="login"
-                                >
-                                    <span class="material-symbols-outlined site-header__signin-icon" aria-hidden="true">person</span>
-                                    Sign in
-                                </button>
-                                {% endif %}
-                                <a href="#subscribe" class="btn btn--raised site-header__cta">Subscribe</a>
+
                                 <div id="site-reading-theme-mount"></div>
+                                <div class="site-header__masthead-right-ctas">
+                                    {% if request.user.is_authenticated %}
+                                    <a href="{% url 'profile' %}" class="btn btn--raised site-header__signin">
+                                        <span class="material-symbols-outlined site-header__signin-icon" aria-hidden="true">account_circle</span>
+                                        Profile
+                                    </a>
+                                    {% else %}
+                                    <button
+                                        type="button"
+                                        class="btn btn--raised site-header__signin"
+                                        data-auth-modal-open
+                                        data-auth-tab="login"
+                                    >
+                                        <span class="material-symbols-outlined site-header__signin-icon" aria-hidden="true">person</span>
+                                        Sign in
+                                    </button>
+                                    {% endif %}
+                                    <a href="#subscribe" class="btn btn--raised site-header__cta">Subscribe</a>
+                                </div>
                             </div>
                         </div>
                     </div>

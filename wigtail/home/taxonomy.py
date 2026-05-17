@@ -498,8 +498,10 @@ def build_site_nav_menu_payload(
 def build_hamburger_nav_payload(home_page) -> dict:
     """Build JSON payload for the hamburger navigation menu.
 
-    Returns all visible taxonomy terms as a tree with ``inNav`` / ``inSitemap`` flags.
+    GICS sectors are injected as children of Market News to match the header nav
+    UI convention (``GICS sectors appear under Market News in UI only``).
     """
+    from home.gics_sectors import GICS_SECTOR_SLUGS
     from home.models import TaxonomyTerm
 
     all_terms = list(TaxonomyTerm.objects.filter(is_visible=True).order_by("path"))
@@ -520,14 +522,15 @@ def build_hamburger_nav_payload(home_page) -> dict:
             return _taxonomy_href(home_page, slug_path_for(term))
         return "/" + "/".join(slug_path_for(term)) + "/"
 
-    def build_node(term) -> dict:
-        children = [
+    def build_node(term, extra_children: list | None = None) -> dict:
+        db_children = [
             build_node(c)
             for c in all_terms
             if c.depth == term.depth + 1
             and c.path.startswith(term.path)
             and len(c.path) == len(term.path) + steplen
         ]
+        children = db_children + (extra_children or [])
         return {
             "id": str(term.pk),
             "name": term.name,
@@ -540,7 +543,17 @@ def build_hamburger_nav_payload(home_page) -> dict:
         }
 
     roots = [t for t in all_terms if t.depth == 1]
-    return {"terms": [build_node(t) for t in roots]}
+    gics_roots = [t for t in roots if t.slug in GICS_SECTOR_SLUGS]
+    top_roots = [t for t in roots if t.slug not in GICS_SECTOR_SLUGS]
+
+    gics_nodes = [build_node(g) for g in gics_roots]
+
+    terms = []
+    for t in top_roots:
+        extra = gics_nodes if (t.slug == MARKET_NEWS_SLUG and gics_nodes) else None
+        terms.append(build_node(t, extra_children=extra))
+
+    return {"terms": terms}
 
 
 def resolve_page_for_nav(request):
