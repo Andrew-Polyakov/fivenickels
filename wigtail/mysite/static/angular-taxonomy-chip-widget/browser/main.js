@@ -124601,6 +124601,8 @@ var BENTO_WIDGET_TILE_TYPES = /* @__PURE__ */ new Set([
   "stock_bars",
   "forex_strip",
   "market_movers",
+  "upcoming_dividends",
+  "market_calendar",
   "fxbroker"
 ]);
 function getCsrf() {
@@ -125024,9 +125026,9 @@ function renderPackedTaxonomyCarouselSlide(slide, itemClassName) {
     return (0, import_jsx_runtime71.jsx)(CarouselCard, __spreadValues({}, cardProps), cardKey);
   }) }) }, slide.key);
 }
-function renderPackedCarouselEditorBentoSlide(slide, itemClassName, cardFeaturesById, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, resolvedRandom, onPatch, onRemove) {
+function renderPackedCarouselEditorBentoSlide(slide, itemClassName, cardFeaturesById, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, resolvedRandom, onPatch, onRemove) {
   function renderPanel(feat) {
-    return (0, import_jsx_runtime71.jsx)(BentoFeaturePanel, { feat, resolved: resolvedRandom[feat.id], searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, gridColumns: 3, onPatch: (patch) => onPatch(feat.id, patch), onRemove: () => onRemove(feat.id) }, feat.id);
+    return (0, import_jsx_runtime71.jsx)(BentoFeaturePanel, { feat, resolved: resolvedRandom[feat.id], searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, gridColumns: 3, onPatch: (patch) => onPatch(feat.id, patch), onRemove: () => onRemove(feat.id) }, feat.id);
   }
   if (slide.kind === "single") {
     const feat = cardFeaturesById[slide.card.key];
@@ -125188,7 +125190,9 @@ var BENTO_TILE_LABEL = {
   richtext: "Rich text",
   stock_bars: "Stock bars",
   forex_strip: "FX pairs",
-  market_movers: "Market movers"
+  market_movers: "Market movers",
+  upcoming_dividends: "Upcoming dividends",
+  market_calendar: "Market calendar"
 };
 var BENTO_TILE_TYPES = [
   { type: "image", desc: "Light / dark image pair" },
@@ -125197,7 +125201,9 @@ var BENTO_TILE_TYPES = [
   { type: "richtext", desc: "Formatted rich text content" },
   { type: "stock_bars", desc: "OHLC chart + ticker chips (cadence & bar count)" },
   { type: "forex_strip", desc: "Live major FX pairs" },
-  { type: "market_movers", desc: "Winners and losers by region" }
+  { type: "market_movers", desc: "Winners and losers by region" },
+  { type: "upcoming_dividends", desc: "Upcoming cash and stock dividends" },
+  { type: "market_calendar", desc: "Upcoming NASDAQ / NYSE sessions" }
 ];
 var BENTO_TILE_TYPE_OPTIONS = [
   { value: "image", label: "Image (light/dark)" },
@@ -125206,12 +125212,18 @@ var BENTO_TILE_TYPE_OPTIONS = [
   { value: "richtext", label: "Rich text" },
   { value: "stock_bars", label: "Stock bars" },
   { value: "forex_strip", label: "FX pairs" },
-  { value: "market_movers", label: "Market movers" }
+  { value: "market_movers", label: "Market movers" },
+  { value: "upcoming_dividends", label: "Upcoming dividends" },
+  { value: "market_calendar", label: "Market calendar" }
 ];
 var MARKET_REGION_OPTIONS = [
   { value: "US", label: "US" },
   { value: "ASIA", label: "Asia" },
   { value: "EUROPE", label: "Europe" }
+];
+var CALENDAR_MARKET_OPTIONS = [
+  { value: "NASDAQ", label: "NASDAQ" },
+  { value: "NYSE", label: "NYSE" }
 ];
 function BentoTileTypeCombobox({ value, onChange }) {
   const [open, setOpen] = React72.useState(false);
@@ -125275,6 +125287,20 @@ function createBentoFeatureOfType(headerType) {
   }
   if (headerType === "forex_strip") {
     return __spreadProps(__spreadValues({}, base2), { header_type: "forex_strip" });
+  }
+  if (headerType === "upcoming_dividends") {
+    return __spreadProps(__spreadValues({}, base2), {
+      header_type: "upcoming_dividends",
+      dividend_symbols: [],
+      dividend_max_rows: 25
+    });
+  }
+  if (headerType === "market_calendar") {
+    return __spreadProps(__spreadValues({}, base2), {
+      header_type: "market_calendar",
+      calendar_market: "NASDAQ",
+      calendar_max_rows: 30
+    });
   }
   if (headerType === "fxbroker") {
     return __spreadProps(__spreadValues({}, base2), { header_type: "fxbroker", brokerId: null, brokerName: null, brokerFaviconUrl: null, brokerOverallRating: null, brokerPageUrl: null });
@@ -125437,6 +125463,97 @@ function BentoMarketMoversPreview({ marketMoversPreviewUrl, marketRegion }) {
   }
   return (0, import_jsx_runtime71.jsx)("div", { onClickCapture: onRegionTabCapture, children: (0, import_jsx_runtime71.jsx)(MarketMoversTile, { marketMovers: data.market_movers, tabs: data.market_mover_tabs }) });
 }
+function BentoUpcomingDividendsPreview({ dividendsPreviewUrl, symbols, maxRows }) {
+  const symKey = symbols.join(",");
+  const safeMaxRows = Math.min(100, Math.max(1, maxRows));
+  const [data, setData] = React72.useState(null);
+  const [loading, setLoading] = React72.useState(true);
+  const [fetchErr, setFetchErr] = React72.useState(null);
+  React72.useEffect(() => {
+    if (!dividendsPreviewUrl) {
+      setLoading(false);
+      setFetchErr(null);
+      setData(null);
+      return;
+    }
+    const ac = new AbortController();
+    setLoading(true);
+    setFetchErr(null);
+    const q2 = new URLSearchParams({ max_rows: String(safeMaxRows) });
+    if (symKey)
+      q2.set("symbols", symKey);
+    fetch(`${dividendsPreviewUrl}?${q2}`, { signal: ac.signal, credentials: "same-origin" }).then(async (r2) => {
+      if (!r2.ok)
+        throw new Error(`HTTP ${r2.status}`);
+      return r2.json();
+    }).then((j) => {
+      setData(j);
+    }).catch((e) => {
+      if (e instanceof Error && e.name === "AbortError")
+        return;
+      setFetchErr(e instanceof Error ? e.message : "Failed to load");
+      setData(null);
+    }).finally(() => {
+      if (!ac.signal.aborted)
+        setLoading(false);
+    });
+    return () => ac.abort();
+  }, [dividendsPreviewUrl, symKey, safeMaxRows]);
+  if (!dividendsPreviewUrl) {
+    return (0, import_jsx_runtime71.jsx)("div", { className: "scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty", children: (0, import_jsx_runtime71.jsx)("span", { className: "scn-taxonomy-content__bento-desc", children: "Configure dividends preview URL." }) });
+  }
+  if (loading) {
+    return (0, import_jsx_runtime71.jsx)("div", { className: "scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty", children: (0, import_jsx_runtime71.jsx)("span", { className: "scn-taxonomy-content__bento-desc", children: "Loading dividends\u2026" }) });
+  }
+  if (fetchErr) {
+    return (0, import_jsx_runtime71.jsx)("div", { className: "scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty", children: (0, import_jsx_runtime71.jsx)("span", { className: "scn-taxonomy-content__bento-desc text-destructive", children: fetchErr }) });
+  }
+  return (0, import_jsx_runtime71.jsx)(UpcomingDividendsTile, { rows: data?.dividend_rows ?? [] });
+}
+function BentoMarketCalendarPreview({ calendarPreviewUrl, market, maxRows }) {
+  const safeMaxRows = Math.min(90, Math.max(1, maxRows));
+  const [data, setData] = React72.useState(null);
+  const [loading, setLoading] = React72.useState(true);
+  const [fetchErr, setFetchErr] = React72.useState(null);
+  React72.useEffect(() => {
+    if (!calendarPreviewUrl) {
+      setLoading(false);
+      setFetchErr(null);
+      setData(null);
+      return;
+    }
+    const ac = new AbortController();
+    setLoading(true);
+    setFetchErr(null);
+    const q2 = new URLSearchParams({ market, max_rows: String(safeMaxRows) });
+    fetch(`${calendarPreviewUrl}?${q2}`, { signal: ac.signal, credentials: "same-origin" }).then(async (r2) => {
+      if (!r2.ok)
+        throw new Error(`HTTP ${r2.status}`);
+      return r2.json();
+    }).then((j) => {
+      setData(j);
+    }).catch((e) => {
+      if (e instanceof Error && e.name === "AbortError")
+        return;
+      setFetchErr(e instanceof Error ? e.message : "Failed to load");
+      setData(null);
+    }).finally(() => {
+      if (!ac.signal.aborted)
+        setLoading(false);
+    });
+    return () => ac.abort();
+  }, [calendarPreviewUrl, market, safeMaxRows]);
+  if (!calendarPreviewUrl) {
+    return (0, import_jsx_runtime71.jsx)("div", { className: "scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty", children: (0, import_jsx_runtime71.jsx)("span", { className: "scn-taxonomy-content__bento-desc", children: "Configure calendar preview URL." }) });
+  }
+  if (loading) {
+    return (0, import_jsx_runtime71.jsx)("div", { className: "scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty", children: (0, import_jsx_runtime71.jsx)("span", { className: "scn-taxonomy-content__bento-desc", children: "Loading calendar\u2026" }) });
+  }
+  if (fetchErr) {
+    return (0, import_jsx_runtime71.jsx)("div", { className: "scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty", children: (0, import_jsx_runtime71.jsx)("span", { className: "scn-taxonomy-content__bento-desc text-destructive", children: fetchErr }) });
+  }
+  return (0, import_jsx_runtime71.jsx)(MarketCalendarTile, { rows: data?.calendar_rows ?? [] });
+}
 function BentoTileRichTextEditor({ feat, onChange }) {
   const [editing, setEditing] = React72.useState(false);
   const editor = useEditor({
@@ -125462,7 +125579,7 @@ function BentoTileRichTextEditor({ feat, onChange }) {
       setEditing(v === "edit");
   }, children: [(0, import_jsx_runtime71.jsx)(ToggleGroupItem, { value: "view", children: "View" }), (0, import_jsx_runtime71.jsx)(ToggleGroupItem, { value: "edit", children: "Edit" })] }) }), editing ? (0, import_jsx_runtime71.jsxs)("div", { className: "scn-rte-wrap scn-rte-wrap--active", children: [editor && (0, import_jsx_runtime71.jsx)(RteToolbar, { editor }), (0, import_jsx_runtime71.jsx)(EditorContent, { editor, className: "scn-rte-content" })] }) : (0, import_jsx_runtime71.jsx)("div", { className: "scn-taxonomy-content__paragraph", dangerouslySetInnerHTML: { __html: feat.html || '<p style="color:var(--muted-foreground)">Empty rich text tile</p>' } })] });
 }
-function BentoFeaturePreview({ feat, resolved: resolved2, linkable, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl }) {
+function BentoFeaturePreview({ feat, resolved: resolved2, linkable, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl }) {
   if (feat.header_type === "card") {
     if (resolved2) {
       return (0, import_jsx_runtime71.jsx)(CarouselCard, {
@@ -125495,6 +125612,12 @@ function BentoFeaturePreview({ feat, resolved: resolved2, linkable, stockPreview
     const region = feat.market_region ?? "US";
     return (0, import_jsx_runtime71.jsx)(BentoWidgetTileFrame, { scrollable: false, children: marketMoversPreviewUrl ? (0, import_jsx_runtime71.jsx)(BentoMarketMoversPreview, { marketMoversPreviewUrl, marketRegion: region }) : (0, import_jsx_runtime71.jsx)("div", { className: "scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty", children: (0, import_jsx_runtime71.jsx)("span", { className: "scn-taxonomy-content__bento-desc", children: "Configure market movers preview URL." }) }) });
   }
+  if (feat.header_type === "upcoming_dividends") {
+    return (0, import_jsx_runtime71.jsx)(BentoWidgetTileFrame, { scrollable: true, children: dividendsPreviewUrl ? (0, import_jsx_runtime71.jsx)(BentoUpcomingDividendsPreview, { dividendsPreviewUrl, symbols: feat.dividend_symbols ?? [], maxRows: feat.dividend_max_rows ?? 25 }) : (0, import_jsx_runtime71.jsx)("div", { className: "scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty", children: (0, import_jsx_runtime71.jsx)("span", { className: "scn-taxonomy-content__bento-desc", children: "Configure dividends preview URL." }) }) });
+  }
+  if (feat.header_type === "market_calendar") {
+    return (0, import_jsx_runtime71.jsx)(BentoWidgetTileFrame, { scrollable: true, children: calendarPreviewUrl ? (0, import_jsx_runtime71.jsx)(BentoMarketCalendarPreview, { calendarPreviewUrl, market: feat.calendar_market ?? "NASDAQ", maxRows: feat.calendar_max_rows ?? 30 }) : (0, import_jsx_runtime71.jsx)("div", { className: "scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty", children: (0, import_jsx_runtime71.jsx)("span", { className: "scn-taxonomy-content__bento-desc", children: "Configure calendar preview URL." }) }) });
+  }
   if (feat.header_type === "fxbroker") {
     if (feat.brokerName && feat.brokerOverallRating != null) {
       const brokerPayload = {
@@ -125526,7 +125649,7 @@ function BentoTileLayoutFields({ feat, gridColumns, onPatch }) {
     onPatch({ row: v ? Math.max(1, parseInt(v, 10) || 1) : null });
   } })] })] });
 }
-function BentoFeaturePanel({ feat, resolved: resolved2, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, gridColumns, onPatch, onRemove }) {
+function BentoFeaturePanel({ feat, resolved: resolved2, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, gridColumns, onPatch, onRemove }) {
   const [open, setOpen] = React72.useState(false);
   const isWidgetTile = BENTO_WIDGET_TILE_TYPES.has(feat.header_type);
   function onStockTileContextMenu(e) {
@@ -125546,7 +125669,7 @@ function BentoFeaturePanel({ feat, resolved: resolved2, searchUrl, stockPreviewU
       onPatch({ stock_symbols: parseCommaTickers(raw) });
     });
   }
-  return (0, import_jsx_runtime71.jsxs)(Popover2, { open, onOpenChange: setOpen, children: [(0, import_jsx_runtime71.jsx)(PopoverTrigger2, { asChild: true, children: (0, import_jsx_runtime71.jsxs)("div", { className: cn("scn-bento-editor__panel-content", isWidgetTile && "scn-bento-editor__panel-content--widget"), role: "button", tabIndex: 0, onContextMenu: feat.header_type === "stock_bars" ? onStockTileContextMenu : void 0, children: [(0, import_jsx_runtime71.jsx)("span", { className: "scn-bento-editor__panel-label", children: BENTO_TILE_LABEL[feat.header_type] ?? "Tile" }), (0, import_jsx_runtime71.jsx)(BentoFeaturePreview, { feat, resolved: resolved2, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl })] }) }), (0, import_jsx_runtime71.jsx)(PopoverContent2, { className: "scn-popover-content scn-bento-editor__feat-popover", align: "start", side: "top", sideOffset: 4, collisionPadding: 12, children: (0, import_jsx_runtime71.jsxs)("div", { className: "scn-bento-editor__feat-popover-body", children: [(0, import_jsx_runtime71.jsx)(BentoTileLayoutFields, { feat, gridColumns, onPatch }), (0, import_jsx_runtime71.jsx)("div", { className: "scn-bento-editor__card-row", children: (0, import_jsx_runtime71.jsx)(BentoTileTypeCombobox, { value: feat.header_type, onChange: (v) => {
+  return (0, import_jsx_runtime71.jsxs)(Popover2, { open, onOpenChange: setOpen, children: [(0, import_jsx_runtime71.jsx)(PopoverTrigger2, { asChild: true, children: (0, import_jsx_runtime71.jsxs)("div", { className: cn("scn-bento-editor__panel-content", isWidgetTile && "scn-bento-editor__panel-content--widget"), role: "button", tabIndex: 0, onContextMenu: feat.header_type === "stock_bars" ? onStockTileContextMenu : void 0, children: [(0, import_jsx_runtime71.jsx)("span", { className: "scn-bento-editor__panel-label", children: BENTO_TILE_LABEL[feat.header_type] ?? "Tile" }), (0, import_jsx_runtime71.jsx)(BentoFeaturePreview, { feat, resolved: resolved2, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl })] }) }), (0, import_jsx_runtime71.jsx)(PopoverContent2, { className: "scn-popover-content scn-bento-editor__feat-popover", align: "start", side: "top", sideOffset: 4, collisionPadding: 12, children: (0, import_jsx_runtime71.jsxs)("div", { className: "scn-bento-editor__feat-popover-body", children: [(0, import_jsx_runtime71.jsx)(BentoTileLayoutFields, { feat, gridColumns, onPatch }), (0, import_jsx_runtime71.jsx)("div", { className: "scn-bento-editor__card-row", children: (0, import_jsx_runtime71.jsx)(BentoTileTypeCombobox, { value: feat.header_type, onChange: (v) => {
     if (v === "stock_bars") {
       onPatch({
         header_type: v,
@@ -125558,6 +125681,18 @@ function BentoFeaturePanel({ feat, resolved: resolved2, searchUrl, stockPreviewU
       onPatch({
         header_type: v,
         market_region: feat.market_region ?? "US"
+      });
+    } else if (v === "upcoming_dividends") {
+      onPatch({
+        header_type: v,
+        dividend_symbols: feat.dividend_symbols ?? [],
+        dividend_max_rows: feat.dividend_max_rows ?? 25
+      });
+    } else if (v === "market_calendar") {
+      onPatch({
+        header_type: v,
+        calendar_market: feat.calendar_market ?? "NASDAQ",
+        calendar_max_rows: feat.calendar_max_rows ?? 30
       });
     } else {
       onPatch({ header_type: v });
@@ -125579,7 +125714,11 @@ function BentoFeaturePanel({ feat, resolved: resolved2, searchUrl, stockPreviewU
     brokerPageUrl: b.page_url || null
   }) })] }), feat.header_type === "richtext" && (0, import_jsx_runtime71.jsx)(BentoTileRichTextEditor, { feat, onChange: (html) => onPatch({ html }) }), feat.header_type === "market_movers" && (0, import_jsx_runtime71.jsxs)("label", { className: "flex flex-col gap-1.5 min-w-0", children: [(0, import_jsx_runtime71.jsx)("span", { className: "text-muted-foreground text-sm", children: "Default region" }), (0, import_jsx_runtime71.jsx)("select", { className: "scn-bento-editor__region-select", value: feat.market_region ?? "US", onChange: (e) => {
     onPatch({ market_region: e.target.value });
-  }, children: MARKET_REGION_OPTIONS.map((opt) => (0, import_jsx_runtime71.jsx)("option", { value: opt.value, children: opt.label }, opt.value)) })] }), feat.header_type === "stock_bars" && (0, import_jsx_runtime71.jsxs)("div", { className: "flex flex-col gap-3", children: [(0, import_jsx_runtime71.jsxs)("div", { className: "grid grid-cols-2 gap-3 items-end", children: [(0, import_jsx_runtime71.jsxs)("label", { className: "flex flex-col gap-1.5 min-w-0", children: [(0, import_jsx_runtime71.jsx)("span", { className: "text-muted-foreground text-sm", children: "Tickers" }), (0, import_jsx_runtime71.jsx)(Input2, { value: (feat.stock_symbols ?? []).join(", "), placeholder: "e.g. AAPL, MSFT", onChange: (e) => {
+  }, children: MARKET_REGION_OPTIONS.map((opt) => (0, import_jsx_runtime71.jsx)("option", { value: opt.value, children: opt.label }, opt.value)) })] }), feat.header_type === "upcoming_dividends" && (0, import_jsx_runtime71.jsxs)("div", { className: "flex flex-col gap-3", children: [(0, import_jsx_runtime71.jsxs)("label", { className: "flex flex-col gap-1.5 min-w-0", children: [(0, import_jsx_runtime71.jsx)("span", { className: "text-muted-foreground text-sm", children: "Tickers (optional)" }), (0, import_jsx_runtime71.jsx)(Input2, { value: (feat.dividend_symbols ?? []).join(", "), placeholder: "e.g. AAPL, MSFT (blank = all enabled tickers)", onChange: (e) => {
+    onPatch({ dividend_symbols: parseCommaTickers(e.target.value) });
+  } })] }), (0, import_jsx_runtime71.jsxs)("label", { className: "flex flex-col gap-1.5", children: [(0, import_jsx_runtime71.jsxs)("span", { className: "text-muted-foreground text-sm", children: ["Max rows: ", (0, import_jsx_runtime71.jsx)("span", { className: "tabular-nums text-foreground", children: feat.dividend_max_rows ?? 25 })] }), (0, import_jsx_runtime71.jsx)(Slider2, { min: 1, max: 100, step: 1, value: [feat.dividend_max_rows ?? 25], onValueChange: ([v]) => onPatch({ dividend_max_rows: v }) })] })] }), feat.header_type === "market_calendar" && (0, import_jsx_runtime71.jsxs)("div", { className: "flex flex-col gap-3", children: [(0, import_jsx_runtime71.jsxs)("label", { className: "flex flex-col gap-1.5 min-w-0", children: [(0, import_jsx_runtime71.jsx)("span", { className: "text-muted-foreground text-sm", children: "Market" }), (0, import_jsx_runtime71.jsx)("select", { className: "scn-bento-editor__region-select", value: feat.calendar_market ?? "NASDAQ", onChange: (e) => {
+    onPatch({ calendar_market: e.target.value });
+  }, children: CALENDAR_MARKET_OPTIONS.map((opt) => (0, import_jsx_runtime71.jsx)("option", { value: opt.value, children: opt.label }, opt.value)) })] }), (0, import_jsx_runtime71.jsxs)("label", { className: "flex flex-col gap-1.5", children: [(0, import_jsx_runtime71.jsxs)("span", { className: "text-muted-foreground text-sm", children: ["Max rows: ", (0, import_jsx_runtime71.jsx)("span", { className: "tabular-nums text-foreground", children: feat.calendar_max_rows ?? 30 })] }), (0, import_jsx_runtime71.jsx)(Slider2, { min: 1, max: 90, step: 1, value: [feat.calendar_max_rows ?? 30], onValueChange: ([v]) => onPatch({ calendar_max_rows: v }) })] })] }), feat.header_type === "stock_bars" && (0, import_jsx_runtime71.jsxs)("div", { className: "flex flex-col gap-3", children: [(0, import_jsx_runtime71.jsxs)("div", { className: "grid grid-cols-2 gap-3 items-end", children: [(0, import_jsx_runtime71.jsxs)("label", { className: "flex flex-col gap-1.5 min-w-0", children: [(0, import_jsx_runtime71.jsx)("span", { className: "text-muted-foreground text-sm", children: "Tickers" }), (0, import_jsx_runtime71.jsx)(Input2, { value: (feat.stock_symbols ?? []).join(", "), placeholder: "e.g. AAPL, MSFT", onChange: (e) => {
     onPatch({ stock_symbols: parseCommaTickers(e.target.value) });
   } })] }), (0, import_jsx_runtime71.jsxs)("label", { className: "flex flex-col gap-1.5 min-w-0", children: [(0, import_jsx_runtime71.jsx)("span", { className: "text-muted-foreground text-sm", children: "Cadence" }), (0, import_jsx_runtime71.jsx)(StockBarsCadenceCombobox, { value: feat.stock_bars_cadence ?? "day", onChange: (v) => onPatch({ stock_bars_cadence: v }) })] })] }), (0, import_jsx_runtime71.jsxs)("div", { className: "flex flex-col gap-1.5", children: [(0, import_jsx_runtime71.jsxs)("span", { className: "text-muted-foreground text-sm", children: ["Number of bars: ", (0, import_jsx_runtime71.jsx)("span", { className: "tabular-nums text-foreground", children: feat.stock_bars_limit ?? 180 })] }), (0, import_jsx_runtime71.jsx)(Slider2, { min: 90, max: 360, step: 1, value: [feat.stock_bars_limit ?? 180], onValueChange: ([v]) => onPatch({ stock_bars_limit: v }) })] }), (0, import_jsx_runtime71.jsx)("span", { className: "text-muted-foreground text-xs", children: "Right-click the tile for quick ticker edit." })] }), feat.header_type !== "card" && !BENTO_WIDGET_TILE_TYPES.has(feat.header_type) && (0, import_jsx_runtime71.jsxs)(import_jsx_runtime71.Fragment, { children: [(0, import_jsx_runtime71.jsx)(Input2, { value: feat.title, placeholder: "Title", onChange: (e) => onPatch({ title: e.target.value }) }), (0, import_jsx_runtime71.jsx)(Input2, { value: feat.description, placeholder: "Description", onChange: (e) => onPatch({ description: e.target.value }) })] }), (0, import_jsx_runtime71.jsx)(Button, { variant: "outline", className: "scn-editor-block__ctrl-btn--danger scn-bento-editor__remove-btn", onClick: () => {
     onRemove();
@@ -125611,7 +125750,7 @@ function BentoGrid01BlockHeaderFields({ block, onChange, addOpen, onAddOpenChang
     onAddOpenChange(false);
   } }) })] })] });
 }
-function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, termId, onChange, onAddTileInColumn, onAddTileInRow }) {
+function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, termId, onChange, onAddTileInColumn, onAddTileInRow }) {
   const cardSlots = React72.useMemo(() => bentoCardFeaturesToSlots(block.features), [block.features]);
   const resolvedRandom = useResolvedCarouselPreviews(cardSlots, termId);
   const blockRef = React72.useRef(block);
@@ -125649,7 +125788,7 @@ function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl,
     theme: block.theme,
     blockBackground: block.block_background,
     tileStyle: block.tile_style
-  })), style: sectionSizes.shell, children: [(0, import_jsx_runtime71.jsx)(BentoBlockIntroHeader, { block }), (0, import_jsx_runtime71.jsx)(BentoGridEditorLayout, { gridColumns, gridRows, tiles: block.features, className: cn("scn-bento-editor__layout-host", hasFixedHeight && "scn-bento-editor__layout-host--fixed-h"), style: sectionSizes.host, layoutStorageKey, rowPanelSizes: block.row_panel_sizes, colPanelSizesByRow: block.col_panel_sizes_by_row, getTileKey: (f) => f.id, onLayoutPersist: (patch) => onChange(applyBentoLayoutPersistPatch(blockRef.current, patch)), renderEmptyColumn: (colIndex, rowIndex) => (0, import_jsx_runtime71.jsx)(BentoEditorEmptySlot, { onPick: (type) => onAddTileInColumn(colIndex, rowIndex, type) }), renderEmptyRow: (rowIndex) => (0, import_jsx_runtime71.jsx)(BentoEditorEmptySlot, { onPick: (type) => onAddTileInRow(rowIndex, type) }), renderTile: (feat) => (0, import_jsx_runtime71.jsx)(BentoFeaturePanel, { feat, resolved: resolvedRandom[feat.id], searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, gridColumns, onPatch: (patch) => patchFeature(feat.id, patch), onRemove: () => removeFeature(feat.id) }) })] });
+  })), style: sectionSizes.shell, children: [(0, import_jsx_runtime71.jsx)(BentoBlockIntroHeader, { block }), (0, import_jsx_runtime71.jsx)(BentoGridEditorLayout, { gridColumns, gridRows, tiles: block.features, className: cn("scn-bento-editor__layout-host", hasFixedHeight && "scn-bento-editor__layout-host--fixed-h"), style: sectionSizes.host, layoutStorageKey, rowPanelSizes: block.row_panel_sizes, colPanelSizesByRow: block.col_panel_sizes_by_row, getTileKey: (f) => f.id, onLayoutPersist: (patch) => onChange(applyBentoLayoutPersistPatch(blockRef.current, patch)), renderEmptyColumn: (colIndex, rowIndex) => (0, import_jsx_runtime71.jsx)(BentoEditorEmptySlot, { onPick: (type) => onAddTileInColumn(colIndex, rowIndex, type) }), renderEmptyRow: (rowIndex) => (0, import_jsx_runtime71.jsx)(BentoEditorEmptySlot, { onPick: (type) => onAddTileInRow(rowIndex, type) }), renderTile: (feat) => (0, import_jsx_runtime71.jsx)(BentoFeaturePanel, { feat, resolved: resolvedRandom[feat.id], searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, gridColumns, onPatch: (patch) => patchFeature(feat.id, patch), onRemove: () => removeFeature(feat.id) }) })] });
 }
 var CAROUSEL_AUTOPLAY_DELAY_MS = 3500;
 function carouselStackDepth(block) {
@@ -125673,7 +125812,7 @@ function CarouselAddTileMenu({ open, onOpenChange, onAdd }) {
     onOpenChange(false);
   }, children: [(0, import_jsx_runtime71.jsx)("span", { className: "scn-editor-add-block-item__label", children: BENTO_TILE_LABEL[bt2.type] }), (0, import_jsx_runtime71.jsx)("span", { className: "scn-editor-add-block-item__desc", children: bt2.desc })] }, bt2.type)) })] });
 }
-function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, termId, onChange }) {
+function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, termId, onChange }) {
   const [addOpen, setAddOpen] = React72.useState(false);
   const features = block.features;
   const cardSlots = React72.useMemo(() => bentoCardFeaturesToSlots(features), [features]);
@@ -125711,7 +125850,7 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, ma
   return (0, import_jsx_runtime71.jsxs)("div", { className: "scn-carousel-editor", children: [features.length === 0 && (0, import_jsx_runtime71.jsxs)("div", { className: "scn-carousel-editor__header scn-carousel-editor__header--tools", children: [(0, import_jsx_runtime71.jsxs)("span", { className: "scn-carousel-editor__count", children: [features.length, " tiles"] }), carouselHeaderTools] }), features.length === 0 && (0, import_jsx_runtime71.jsx)("div", { className: "scn-bento-editor__empty", children: (0, import_jsx_runtime71.jsxs)(Popover2, { open: addOpen, onOpenChange: setAddOpen, children: [(0, import_jsx_runtime71.jsx)(PopoverTrigger2, { asChild: true, children: (0, import_jsx_runtime71.jsx)("button", { type: "button", className: "scn-empty-add-btn", "aria-label": "Add tile", children: (0, import_jsx_runtime71.jsx)("span", { className: "scn-broker-carousel__add-icon", children: "+" }) }) }), (0, import_jsx_runtime71.jsx)(PopoverContent2, { className: "scn-popover-content scn-editor-add-block-menu", align: "end", children: BENTO_TILE_TYPES.map((bt2) => (0, import_jsx_runtime71.jsxs)("button", { type: "button", className: "scn-editor-add-block-item", onClick: () => {
     addCarouselFeature(bt2.type);
     setAddOpen(false);
-  }, children: [(0, import_jsx_runtime71.jsx)("span", { className: "scn-editor-add-block-item__label", children: BENTO_TILE_LABEL[bt2.type] }), (0, import_jsx_runtime71.jsx)("span", { className: "scn-editor-add-block-item__desc", children: bt2.desc })] }, bt2.type)) })] }) }), features.length > 0 && (0, import_jsx_runtime71.jsxs)(Carousel, { className: cn("scn-carousel-editor__preview", block.height && block.height !== "auto" && "scn-carousel-editor__preview--fixed-h"), style: previewFixedHeightStyle, opts: carouselAutoplayOpts(infiniteScroll), plugins: carouselAutoplayPlugins(infiniteScroll), children: [(0, import_jsx_runtime71.jsxs)("div", { className: "scn-carousel-editor__header scn-carousel-editor__header--tools", children: [(0, import_jsx_runtime71.jsxs)("span", { className: "scn-carousel-editor__count", children: [features.length, " tile", features.length !== 1 ? "s" : ""] }), carouselHeaderTools] }), (0, import_jsx_runtime71.jsx)(CarouselContent, { children: allCards ? packedSlides.map((slide) => renderPackedCarouselEditorBentoSlide(slide, "scn-carousel-editor__preview-item", cardFeaturesById, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, resolvedRandom, patchFeature, removeFeature)) : features.map((feat) => (0, import_jsx_runtime71.jsx)(CarouselItem, { className: cn("scn-carousel-editor__preview-item", "carousel-slides__item"), children: (0, import_jsx_runtime71.jsx)("div", { className: "scn-carousel-editor__hetero-tile", children: (0, import_jsx_runtime71.jsx)(BentoFeaturePanel, { feat, resolved: resolvedRandom[feat.id], searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, gridColumns: 3, onPatch: (patch) => patchFeature(feat.id, patch), onRemove: () => removeFeature(feat.id) }) }) }, feat.id)) })] })] });
+  }, children: [(0, import_jsx_runtime71.jsx)("span", { className: "scn-editor-add-block-item__label", children: BENTO_TILE_LABEL[bt2.type] }), (0, import_jsx_runtime71.jsx)("span", { className: "scn-editor-add-block-item__desc", children: bt2.desc })] }, bt2.type)) })] }) }), features.length > 0 && (0, import_jsx_runtime71.jsxs)(Carousel, { className: cn("scn-carousel-editor__preview", block.height && block.height !== "auto" && "scn-carousel-editor__preview--fixed-h"), style: previewFixedHeightStyle, opts: carouselAutoplayOpts(infiniteScroll), plugins: carouselAutoplayPlugins(infiniteScroll), children: [(0, import_jsx_runtime71.jsxs)("div", { className: "scn-carousel-editor__header scn-carousel-editor__header--tools", children: [(0, import_jsx_runtime71.jsxs)("span", { className: "scn-carousel-editor__count", children: [features.length, " tile", features.length !== 1 ? "s" : ""] }), carouselHeaderTools] }), (0, import_jsx_runtime71.jsx)(CarouselContent, { children: allCards ? packedSlides.map((slide) => renderPackedCarouselEditorBentoSlide(slide, "scn-carousel-editor__preview-item", cardFeaturesById, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, resolvedRandom, patchFeature, removeFeature)) : features.map((feat) => (0, import_jsx_runtime71.jsx)(CarouselItem, { className: cn("scn-carousel-editor__preview-item", "carousel-slides__item"), children: (0, import_jsx_runtime71.jsx)("div", { className: "scn-carousel-editor__hetero-tile", children: (0, import_jsx_runtime71.jsx)(BentoFeaturePanel, { feat, resolved: resolvedRandom[feat.id], searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, gridColumns: 3, onPatch: (patch) => patchFeature(feat.id, patch), onRemove: () => removeFeature(feat.id) }) }) }, feat.id)) })] })] });
 }
 function CarouselSettingsPopover({ block, onChange }) {
   const [open, setOpen] = React72.useState(false);
@@ -125732,7 +125871,7 @@ var BLOCK_LABEL = {
   bento_grid_01: "Bento block",
   carousel: "Carousel"
 };
-function BlockEditor({ block, index: index2, total, termId, uploadUrl, articleSearchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, onChange, onRemove, onMove }) {
+function BlockEditor({ block, index: index2, total, termId, uploadUrl, articleSearchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, onChange, onRemove, onMove }) {
   const [bentoAddTileOpen, setBentoAddTileOpen] = React72.useState(false);
   function addBentoTile(headerType) {
     if (block.type !== "bento_grid_01")
@@ -125765,7 +125904,7 @@ function BlockEditor({ block, index: index2, total, termId, uploadUrl, articleSe
       features: [...block.features, feat]
     }));
   }
-  return (0, import_jsx_runtime71.jsxs)("div", { className: "scn-editor-block", children: [(0, import_jsx_runtime71.jsxs)("div", { className: "scn-editor-block__header", children: [(0, import_jsx_runtime71.jsx)("span", { className: "scn-editor-block__type", children: BLOCK_LABEL[block.type] ?? block.type }), block.type === "bento_grid_01" ? (0, import_jsx_runtime71.jsx)(BentoGrid01BlockHeaderFields, { block, onChange, addOpen: bentoAddTileOpen, onAddOpenChange: setBentoAddTileOpen, onAddTile: addBentoTile }) : null, (0, import_jsx_runtime71.jsxs)("div", { className: cn("scn-editor-block__controls", block.type === "bento_grid_01" && "scn-editor-block__controls--bento-toolbar"), children: [block.type === "carousel" && (0, import_jsx_runtime71.jsx)(CarouselSettingsPopover, { block, onChange }), (0, import_jsx_runtime71.jsx)("button", { className: "scn-editor-block__ctrl-btn", onClick: () => onMove(-1), disabled: index2 === 0, "aria-label": "Move up", title: "Move up", children: "\u2191" }), (0, import_jsx_runtime71.jsx)("button", { className: "scn-editor-block__ctrl-btn", onClick: () => onMove(1), disabled: index2 === total - 1, "aria-label": "Move down", title: "Move down", children: "\u2193" }), (0, import_jsx_runtime71.jsx)("button", { className: "scn-editor-block__ctrl-btn scn-editor-block__ctrl-btn--danger", onClick: onRemove, "aria-label": "Remove block", title: "Remove", children: "\xD7" })] })] }), (0, import_jsx_runtime71.jsxs)("div", { className: "scn-editor-block__body", children: [block.type === "heading" && (0, import_jsx_runtime71.jsx)(HeadingEditor, { block, onChange }), block.type === "paragraph" && (0, import_jsx_runtime71.jsx)(ParagraphEditor, { block, uploadUrl, onChange }), block.type === "image" && (0, import_jsx_runtime71.jsx)(ImageEditor, { block, uploadUrl, onChange }), block.type === "embed" && (0, import_jsx_runtime71.jsx)(EmbedEditor, { block, onChange }), block.type === "separator" && (0, import_jsx_runtime71.jsx)(SeparatorEditor, {}), block.type === "bento_grid_01" && (0, import_jsx_runtime71.jsx)(BentoGrid01Editor, { block, searchUrl: articleSearchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, termId, onChange, onAddTileInColumn: addBentoTileInColumn, onAddTileInRow: addBentoTileInRow }), block.type === "carousel" && (0, import_jsx_runtime71.jsx)(CarouselEditor, { block, searchUrl: articleSearchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, termId, onChange })] })] });
+  return (0, import_jsx_runtime71.jsxs)("div", { className: "scn-editor-block", children: [(0, import_jsx_runtime71.jsxs)("div", { className: "scn-editor-block__header", children: [(0, import_jsx_runtime71.jsx)("span", { className: "scn-editor-block__type", children: BLOCK_LABEL[block.type] ?? block.type }), block.type === "bento_grid_01" ? (0, import_jsx_runtime71.jsx)(BentoGrid01BlockHeaderFields, { block, onChange, addOpen: bentoAddTileOpen, onAddOpenChange: setBentoAddTileOpen, onAddTile: addBentoTile }) : null, (0, import_jsx_runtime71.jsxs)("div", { className: cn("scn-editor-block__controls", block.type === "bento_grid_01" && "scn-editor-block__controls--bento-toolbar"), children: [block.type === "carousel" && (0, import_jsx_runtime71.jsx)(CarouselSettingsPopover, { block, onChange }), (0, import_jsx_runtime71.jsx)("button", { className: "scn-editor-block__ctrl-btn", onClick: () => onMove(-1), disabled: index2 === 0, "aria-label": "Move up", title: "Move up", children: "\u2191" }), (0, import_jsx_runtime71.jsx)("button", { className: "scn-editor-block__ctrl-btn", onClick: () => onMove(1), disabled: index2 === total - 1, "aria-label": "Move down", title: "Move down", children: "\u2193" }), (0, import_jsx_runtime71.jsx)("button", { className: "scn-editor-block__ctrl-btn scn-editor-block__ctrl-btn--danger", onClick: onRemove, "aria-label": "Remove block", title: "Remove", children: "\xD7" })] })] }), (0, import_jsx_runtime71.jsxs)("div", { className: "scn-editor-block__body", children: [block.type === "heading" && (0, import_jsx_runtime71.jsx)(HeadingEditor, { block, onChange }), block.type === "paragraph" && (0, import_jsx_runtime71.jsx)(ParagraphEditor, { block, uploadUrl, onChange }), block.type === "image" && (0, import_jsx_runtime71.jsx)(ImageEditor, { block, uploadUrl, onChange }), block.type === "embed" && (0, import_jsx_runtime71.jsx)(EmbedEditor, { block, onChange }), block.type === "separator" && (0, import_jsx_runtime71.jsx)(SeparatorEditor, {}), block.type === "bento_grid_01" && (0, import_jsx_runtime71.jsx)(BentoGrid01Editor, { block, searchUrl: articleSearchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, termId, onChange, onAddTileInColumn: addBentoTileInColumn, onAddTileInRow: addBentoTileInRow }), block.type === "carousel" && (0, import_jsx_runtime71.jsx)(CarouselEditor, { block, searchUrl: articleSearchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, termId, onChange })] })] });
 }
 function AddBlockMenu({ onAdd }) {
   const [open, setOpen] = React72.useState(false);
@@ -125791,7 +125930,7 @@ function bentoCardFeaturesToSlots(features) {
     articleTitle: f.articleTitle ?? null
   }));
 }
-function ReadOnlyBlock({ block, termId, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl }) {
+function ReadOnlyBlock({ block, termId, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl }) {
   const previewSlots = React72.useMemo(() => {
     if (block.type === "carousel")
       return bentoCardFeaturesToSlots(block.features);
@@ -125819,7 +125958,7 @@ function ReadOnlyBlock({ block, termId, stockPreviewUrl, forexPreviewUrl, market
   if (block.type === "bento_grid_01") {
     let renderReadOnlyPanel2 = function(f) {
       const isWidgetTile = BENTO_WIDGET_TILE_TYPES.has(f.header_type);
-      return (0, import_jsx_runtime71.jsx)("div", { className: cn("scn-bento-readonly__panel", f.header_type === "card" && "scn-bento-readonly__panel--card", isWidgetTile && "scn-bento-readonly__panel--widget"), children: (0, import_jsx_runtime71.jsx)(BentoFeaturePreview, { feat: f, resolved: resolvedRandom[f.id], linkable: true, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl }) }, f.id);
+      return (0, import_jsx_runtime71.jsx)("div", { className: cn("scn-bento-readonly__panel", f.header_type === "card" && "scn-bento-readonly__panel--card", isWidgetTile && "scn-bento-readonly__panel--widget"), children: (0, import_jsx_runtime71.jsx)(BentoFeaturePreview, { feat: f, resolved: resolvedRandom[f.id], linkable: true, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl }) }, f.id);
     };
     var renderReadOnlyPanel = renderReadOnlyPanel2;
     const features = block.features;
@@ -125852,7 +125991,7 @@ function ReadOnlyBlock({ block, termId, stockPreviewUrl, forexPreviewUrl, market
       }
       return (0, import_jsx_runtime71.jsx)("div", { className: carouselWrapClass, style: wrapStyle, children: (0, import_jsx_runtime71.jsxs)(Carousel, { opts: carouselAutoplayOpts(infiniteScroll), plugins: carouselAutoplayPlugins(infiniteScroll), children: [(0, import_jsx_runtime71.jsx)(CarouselContent, { children: packedSlides.map((slide) => renderPackedTaxonomyCarouselSlide(slide, "scn-taxonomy-content__carousel-item")) }), (0, import_jsx_runtime71.jsx)(CarouselPrevious, {}), (0, import_jsx_runtime71.jsx)(CarouselNext, {})] }) });
     }
-    return (0, import_jsx_runtime71.jsx)("div", { className: carouselWrapClass, style: wrapStyle, children: (0, import_jsx_runtime71.jsxs)(Carousel, { opts: carouselAutoplayOpts(infiniteScroll), plugins: carouselAutoplayPlugins(infiniteScroll), children: [(0, import_jsx_runtime71.jsx)(CarouselContent, { children: features.map((feat) => (0, import_jsx_runtime71.jsx)(CarouselItem, { className: cn("scn-taxonomy-content__carousel-item", "carousel-slides__item"), children: (0, import_jsx_runtime71.jsx)("div", { className: "scn-carousel-readonly__tile", children: (0, import_jsx_runtime71.jsx)(BentoFeaturePreview, { feat, resolved: resolvedRandom[feat.id], linkable: true, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl }) }) }, feat.id)) }), (0, import_jsx_runtime71.jsx)(CarouselPrevious, {}), (0, import_jsx_runtime71.jsx)(CarouselNext, {})] }) });
+    return (0, import_jsx_runtime71.jsx)("div", { className: carouselWrapClass, style: wrapStyle, children: (0, import_jsx_runtime71.jsxs)(Carousel, { opts: carouselAutoplayOpts(infiniteScroll), plugins: carouselAutoplayPlugins(infiniteScroll), children: [(0, import_jsx_runtime71.jsx)(CarouselContent, { children: features.map((feat) => (0, import_jsx_runtime71.jsx)(CarouselItem, { className: cn("scn-taxonomy-content__carousel-item", "carousel-slides__item"), children: (0, import_jsx_runtime71.jsx)("div", { className: "scn-carousel-readonly__tile", children: (0, import_jsx_runtime71.jsx)(BentoFeaturePreview, { feat, resolved: resolvedRandom[feat.id], linkable: true, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl }) }) }, feat.id)) }), (0, import_jsx_runtime71.jsx)(CarouselPrevious, {}), (0, import_jsx_runtime71.jsx)(CarouselNext, {})] }) });
   }
   return null;
 }
@@ -125867,7 +126006,7 @@ function TaxonomyEditorSaveBar({ saving, lastSaved, onSave, variant = "top" }) {
   const barClass = variant === "bottom" ? "scn-taxonomy-editor__save-bar scn-taxonomy-editor__save-bar--footer" : "scn-taxonomy-editor__save-bar";
   return (0, import_jsx_runtime71.jsxs)("div", { className: barClass, children: [(0, import_jsx_runtime71.jsx)(Button, { onClick: onSave, disabled: saving, children: saving ? "Saving\u2026" : "Save" }), lastSaved && (0, import_jsx_runtime71.jsxs)("span", { className: "scn-taxonomy-editor__saved", children: ["Saved ", lastSaved.toLocaleTimeString()] })] });
 }
-function TaxonomyEditor({ termId, initialJson, canEdit, saveUrl, uploadUrl, articleSearchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl }) {
+function TaxonomyEditor({ termId, initialJson, canEdit, saveUrl, uploadUrl, articleSearchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl }) {
   const [blocks, setBlocks] = React72.useState(() => jsonToBlocks(initialJson));
   const [saving, setSaving] = React72.useState(false);
   const [lastSaved, setLastSaved] = React72.useState(null);
@@ -125943,9 +126082,9 @@ function TaxonomyEditor({ termId, initialJson, canEdit, saveUrl, uploadUrl, arti
     });
   }
   if (!canEdit) {
-    return (0, import_jsx_runtime71.jsx)("div", { className: "scn-taxonomy-content", children: blocks.map((block) => (0, import_jsx_runtime71.jsx)(ReadOnlyBlock, { block, termId, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl }, block.id)) });
+    return (0, import_jsx_runtime71.jsx)("div", { className: "scn-taxonomy-content", children: blocks.map((block) => (0, import_jsx_runtime71.jsx)(ReadOnlyBlock, { block, termId, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl }, block.id)) });
   }
-  return (0, import_jsx_runtime71.jsxs)("div", { className: "scn-taxonomy-editor", children: [(0, import_jsx_runtime71.jsx)(TaxonomyEditorSaveBar, { saving, lastSaved, onSave: handleSave }), (0, import_jsx_runtime71.jsxs)("div", { className: "scn-editor-body", children: [blocks.map((block, i) => (0, import_jsx_runtime71.jsx)(BlockEditor, { block, index: i, total: blocks.length, termId, uploadUrl, articleSearchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, onChange: (updated) => setBlocks((prev) => prev.map((b, j) => j === i ? updated : b)), onRemove: () => setBlocks((prev) => prev.filter((_, j) => j !== i)), onMove: (dir) => moveBlock(i, dir) }, block.id)), (0, import_jsx_runtime71.jsx)(AddBlockMenu, { onAdd: addBlock })] }), (0, import_jsx_runtime71.jsx)(TaxonomyEditorSaveBar, { saving, lastSaved, onSave: handleSave, variant: "bottom" }), toast2 && (0, import_jsx_runtime71.jsx)(Toast2, { message: toast2.message, type: toast2.type, onDismiss: () => setToast(null) })] });
+  return (0, import_jsx_runtime71.jsxs)("div", { className: "scn-taxonomy-editor", children: [(0, import_jsx_runtime71.jsx)(TaxonomyEditorSaveBar, { saving, lastSaved, onSave: handleSave }), (0, import_jsx_runtime71.jsxs)("div", { className: "scn-editor-body", children: [blocks.map((block, i) => (0, import_jsx_runtime71.jsx)(BlockEditor, { block, index: i, total: blocks.length, termId, uploadUrl, articleSearchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, onChange: (updated) => setBlocks((prev) => prev.map((b, j) => j === i ? updated : b)), onRemove: () => setBlocks((prev) => prev.filter((_, j) => j !== i)), onMove: (dir) => moveBlock(i, dir) }, block.id)), (0, import_jsx_runtime71.jsx)(AddBlockMenu, { onAdd: addBlock })] }), (0, import_jsx_runtime71.jsx)(TaxonomyEditorSaveBar, { saving, lastSaved, onSave: handleSave, variant: "bottom" }), toast2 && (0, import_jsx_runtime71.jsx)(Toast2, { message: toast2.message, type: toast2.type, onDismiss: () => setToast(null) })] });
 }
 var taxonomyEditorRoots = /* @__PURE__ */ new WeakMap();
 function mountTaxonomyEditor() {
@@ -125961,6 +126100,8 @@ function mountTaxonomyEditor() {
     const stockPreviewUrl = host.dataset["stockPreviewUrl"] ?? "";
     const forexPreviewUrl = host.dataset["forexPreviewUrl"] ?? "";
     const marketMoversPreviewUrl = host.dataset["marketMoversPreviewUrl"] ?? "";
+    const dividendsPreviewUrl = host.dataset["dividendsPreviewUrl"] ?? "";
+    const calendarPreviewUrl = host.dataset["calendarPreviewUrl"] ?? "";
     const brokerListUrl = host.dataset["brokerListUrl"] ?? "";
     if (!termId)
       return;
@@ -125980,7 +126121,7 @@ function mountTaxonomyEditor() {
       root = (0, import_client5.createRoot)(host);
       taxonomyEditorRoots.set(host, root);
     }
-    root.render((0, import_jsx_runtime71.jsx)(TaxonomyEditor, { termId, initialJson, canEdit, saveUrl, uploadUrl, articleSearchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl }));
+    root.render((0, import_jsx_runtime71.jsx)(TaxonomyEditor, { termId, initialJson, canEdit, saveUrl, uploadUrl, articleSearchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl }));
   });
 }
 

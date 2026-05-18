@@ -58,6 +58,12 @@ import MarketMoversTile, {
 } from '../components/shadcn-space/blocks/bento-grid-01/MarketMoversTile';
 import StockBarsTile from '../components/shadcn-space/blocks/bento-grid-01/StockBarsTile';
 import type { StockBarPoint, StockChipPayload } from '../components/shadcn-space/blocks/bento-grid-01/StockBarsTile';
+import UpcomingDividendsTile, {
+  type DividendRowPayload,
+} from '../components/shadcn-space/blocks/bento-grid-01/UpcomingDividendsTile';
+import MarketCalendarTile, {
+  type CalendarRowPayload,
+} from '../components/shadcn-space/blocks/bento-grid-01/MarketCalendarTile';
 import { BentoWidgetTileFrame } from './bento-widget-tile-frame';
 import {
   BentoGridEditorLayout,
@@ -102,7 +108,9 @@ export type BentoGrid01Feature = {
     | 'richtext'
     | 'stock_bars'
     | 'forex_strip'
-    | 'market_movers';
+    | 'market_movers'
+    | 'upcoming_dividends'
+    | 'market_calendar';
   image_url_light: string;
   image_url_dark: string;
   title: string;
@@ -128,6 +136,12 @@ export type BentoGrid01Feature = {
   stock_bars_limit?: number;
   /** Market movers tile: default region when no ?market_region= on the page. */
   market_region?: 'US' | 'ASIA' | 'EUROPE';
+  /** Upcoming dividends tile: optional symbol filter (blank = all enabled tickers). */
+  dividend_symbols?: string[];
+  dividend_max_rows?: number;
+  /** Market calendar tile: exchange and row cap. */
+  calendar_market?: 'NASDAQ' | 'NYSE';
+  calendar_max_rows?: number;
   /** FX Broker card tile fields (stored inline for public rendering). */
   brokerId?: number | null;
   brokerName?: string | null;
@@ -140,6 +154,8 @@ const BENTO_WIDGET_TILE_TYPES = new Set<BentoGrid01Feature['header_type']>([
   'stock_bars',
   'forex_strip',
   'market_movers',
+  'upcoming_dividends',
+  'market_calendar',
   'fxbroker',
 ]);
 export type BentoGrid01Block  = {
@@ -924,6 +940,8 @@ function renderPackedCarouselEditorBentoSlide(
   stockPreviewUrl: string,
   forexPreviewUrl: string,
   marketMoversPreviewUrl: string,
+  dividendsPreviewUrl: string,
+  calendarPreviewUrl: string,
   brokerListUrl: string,
   resolvedRandom: Record<string, ArticleResult | null>,
   onPatch: (featId: string, patch: Partial<BentoGrid01Feature>) => void,
@@ -939,6 +957,8 @@ function renderPackedCarouselEditorBentoSlide(
         stockPreviewUrl={stockPreviewUrl}
         forexPreviewUrl={forexPreviewUrl}
         marketMoversPreviewUrl={marketMoversPreviewUrl}
+        dividendsPreviewUrl={dividendsPreviewUrl}
+        calendarPreviewUrl={calendarPreviewUrl}
         brokerListUrl={brokerListUrl}
         gridColumns={3}
         onPatch={patch => onPatch(feat.id, patch)}
@@ -1183,6 +1203,8 @@ const BENTO_TILE_LABEL: Record<string, string> = {
   stock_bars: 'Stock bars',
   forex_strip: 'FX pairs',
   market_movers: 'Market movers',
+  upcoming_dividends: 'Upcoming dividends',
+  market_calendar: 'Market calendar',
 };
 
 const BENTO_TILE_TYPES: Array<{ type: BentoGrid01Feature['header_type']; desc: string }> = [
@@ -1193,6 +1215,8 @@ const BENTO_TILE_TYPES: Array<{ type: BentoGrid01Feature['header_type']; desc: s
   { type: 'stock_bars',         desc: 'OHLC chart + ticker chips (cadence & bar count)' },
   { type: 'forex_strip',        desc: 'Live major FX pairs' },
   { type: 'market_movers',      desc: 'Winners and losers by region' },
+  { type: 'upcoming_dividends', desc: 'Upcoming cash and stock dividends' },
+  { type: 'market_calendar',    desc: 'Upcoming NASDAQ / NYSE sessions' },
 ];
 
 const BENTO_TILE_TYPE_OPTIONS: Array<{ value: BentoGrid01Feature['header_type']; label: string }> = [
@@ -1203,12 +1227,19 @@ const BENTO_TILE_TYPE_OPTIONS: Array<{ value: BentoGrid01Feature['header_type'];
   { value: 'stock_bars', label: 'Stock bars' },
   { value: 'forex_strip', label: 'FX pairs' },
   { value: 'market_movers', label: 'Market movers' },
+  { value: 'upcoming_dividends', label: 'Upcoming dividends' },
+  { value: 'market_calendar', label: 'Market calendar' },
 ];
 
 const MARKET_REGION_OPTIONS: Array<{ value: 'US' | 'ASIA' | 'EUROPE'; label: string }> = [
   { value: 'US', label: 'US' },
   { value: 'ASIA', label: 'Asia' },
   { value: 'EUROPE', label: 'Europe' },
+];
+
+const CALENDAR_MARKET_OPTIONS: Array<{ value: 'NASDAQ' | 'NYSE'; label: string }> = [
+  { value: 'NASDAQ', label: 'NASDAQ' },
+  { value: 'NYSE', label: 'NYSE' },
 ];
 
 function BentoTileTypeCombobox({
@@ -1418,6 +1449,22 @@ function createBentoFeatureOfType(headerType: BentoGrid01Feature['header_type'])
   }
   if (headerType === 'forex_strip') {
     return { ...base, header_type: 'forex_strip' };
+  }
+  if (headerType === 'upcoming_dividends') {
+    return {
+      ...base,
+      header_type: 'upcoming_dividends',
+      dividend_symbols: [],
+      dividend_max_rows: 25,
+    };
+  }
+  if (headerType === 'market_calendar') {
+    return {
+      ...base,
+      header_type: 'market_calendar',
+      calendar_market: 'NASDAQ',
+      calendar_max_rows: 30,
+    };
   }
   if (headerType === 'fxbroker') {
     return { ...base, header_type: 'fxbroker', brokerId: null, brokerName: null, brokerFaviconUrl: null, brokerOverallRating: null, brokerPageUrl: null };
@@ -1667,6 +1714,146 @@ function BentoMarketMoversPreview({
   );
 }
 
+type UpcomingDividendsPreviewJson = {
+  dividend_rows: DividendRowPayload[];
+};
+
+function BentoUpcomingDividendsPreview({
+  dividendsPreviewUrl,
+  symbols,
+  maxRows,
+}: {
+  dividendsPreviewUrl: string;
+  symbols: string[];
+  maxRows: number;
+}) {
+  const symKey = symbols.join(',');
+  const safeMaxRows = Math.min(100, Math.max(1, maxRows));
+
+  const [data, setData] = React.useState<UpcomingDividendsPreviewJson | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [fetchErr, setFetchErr] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!dividendsPreviewUrl) {
+      setLoading(false);
+      setFetchErr(null);
+      setData(null);
+      return;
+    }
+    const ac = new AbortController();
+    setLoading(true);
+    setFetchErr(null);
+    const q = new URLSearchParams({ max_rows: String(safeMaxRows) });
+    if (symKey) q.set('symbols', symKey);
+    fetch(`${dividendsPreviewUrl}?${q}`, { signal: ac.signal, credentials: 'same-origin' })
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json() as Promise<UpcomingDividendsPreviewJson>;
+      })
+      .then((j) => { setData(j); })
+      .catch((e: unknown) => {
+        if (e instanceof Error && e.name === 'AbortError') return;
+        setFetchErr(e instanceof Error ? e.message : 'Failed to load');
+        setData(null);
+      })
+      .finally(() => { if (!ac.signal.aborted) setLoading(false); });
+    return () => ac.abort();
+  }, [dividendsPreviewUrl, symKey, safeMaxRows]);
+
+  if (!dividendsPreviewUrl) {
+    return (
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+        <span className="scn-taxonomy-content__bento-desc">Configure dividends preview URL.</span>
+      </div>
+    );
+  }
+  if (loading) {
+    return (
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+        <span className="scn-taxonomy-content__bento-desc">Loading dividends…</span>
+      </div>
+    );
+  }
+  if (fetchErr) {
+    return (
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+        <span className="scn-taxonomy-content__bento-desc text-destructive">{fetchErr}</span>
+      </div>
+    );
+  }
+  return <UpcomingDividendsTile rows={data?.dividend_rows ?? []} />;
+}
+
+type MarketCalendarPreviewJson = {
+  calendar_rows: CalendarRowPayload[];
+};
+
+function BentoMarketCalendarPreview({
+  calendarPreviewUrl,
+  market,
+  maxRows,
+}: {
+  calendarPreviewUrl: string;
+  market: 'NASDAQ' | 'NYSE';
+  maxRows: number;
+}) {
+  const safeMaxRows = Math.min(90, Math.max(1, maxRows));
+
+  const [data, setData] = React.useState<MarketCalendarPreviewJson | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [fetchErr, setFetchErr] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!calendarPreviewUrl) {
+      setLoading(false);
+      setFetchErr(null);
+      setData(null);
+      return;
+    }
+    const ac = new AbortController();
+    setLoading(true);
+    setFetchErr(null);
+    const q = new URLSearchParams({ market, max_rows: String(safeMaxRows) });
+    fetch(`${calendarPreviewUrl}?${q}`, { signal: ac.signal, credentials: 'same-origin' })
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json() as Promise<MarketCalendarPreviewJson>;
+      })
+      .then((j) => { setData(j); })
+      .catch((e: unknown) => {
+        if (e instanceof Error && e.name === 'AbortError') return;
+        setFetchErr(e instanceof Error ? e.message : 'Failed to load');
+        setData(null);
+      })
+      .finally(() => { if (!ac.signal.aborted) setLoading(false); });
+    return () => ac.abort();
+  }, [calendarPreviewUrl, market, safeMaxRows]);
+
+  if (!calendarPreviewUrl) {
+    return (
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+        <span className="scn-taxonomy-content__bento-desc">Configure calendar preview URL.</span>
+      </div>
+    );
+  }
+  if (loading) {
+    return (
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+        <span className="scn-taxonomy-content__bento-desc">Loading calendar…</span>
+      </div>
+    );
+  }
+  if (fetchErr) {
+    return (
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+        <span className="scn-taxonomy-content__bento-desc text-destructive">{fetchErr}</span>
+      </div>
+    );
+  }
+  return <MarketCalendarTile rows={data?.calendar_rows ?? []} />;
+}
+
 function BentoTileRichTextEditor({ feat, onChange }: {
   feat: BentoGrid01Feature; onChange: (html: string) => void;
 }) {
@@ -1713,13 +1900,15 @@ function BentoTileRichTextEditor({ feat, onChange }: {
   );
 }
 
-function BentoFeaturePreview({ feat, resolved, linkable, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl }: {
+function BentoFeaturePreview({ feat, resolved, linkable, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl }: {
   feat: BentoGrid01Feature;
   resolved: ArticleResult | null | undefined;
   linkable?: boolean;
   stockPreviewUrl?: string;
   forexPreviewUrl?: string;
   marketMoversPreviewUrl?: string;
+  dividendsPreviewUrl?: string;
+  calendarPreviewUrl?: string;
 }) {
   if (feat.header_type === 'card') {
     if (resolved) {
@@ -1801,6 +1990,46 @@ function BentoFeaturePreview({ feat, resolved, linkable, stockPreviewUrl, forexP
           : (
             <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
               <span className="scn-taxonomy-content__bento-desc">Configure market movers preview URL.</span>
+            </div>
+          )}
+      </BentoWidgetTileFrame>
+    );
+  }
+
+  if (feat.header_type === 'upcoming_dividends') {
+    return (
+      <BentoWidgetTileFrame scrollable>
+        {dividendsPreviewUrl
+          ? (
+            <BentoUpcomingDividendsPreview
+              dividendsPreviewUrl={dividendsPreviewUrl}
+              symbols={feat.dividend_symbols ?? []}
+              maxRows={feat.dividend_max_rows ?? 25}
+            />
+          )
+          : (
+            <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+              <span className="scn-taxonomy-content__bento-desc">Configure dividends preview URL.</span>
+            </div>
+          )}
+      </BentoWidgetTileFrame>
+    );
+  }
+
+  if (feat.header_type === 'market_calendar') {
+    return (
+      <BentoWidgetTileFrame scrollable>
+        {calendarPreviewUrl
+          ? (
+            <BentoMarketCalendarPreview
+              calendarPreviewUrl={calendarPreviewUrl}
+              market={feat.calendar_market ?? 'NASDAQ'}
+              maxRows={feat.calendar_max_rows ?? 30}
+            />
+          )
+          : (
+            <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+              <span className="scn-taxonomy-content__bento-desc">Configure calendar preview URL.</span>
             </div>
           )}
       </BentoWidgetTileFrame>
@@ -1897,13 +2126,15 @@ function BentoTileLayoutFields({
   );
 }
 
-function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, gridColumns, onPatch, onRemove }: {
+function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, gridColumns, onPatch, onRemove }: {
   feat: BentoGrid01Feature;
   resolved: ArticleResult | null | undefined;
   searchUrl: string;
   stockPreviewUrl: string;
   forexPreviewUrl: string;
   marketMoversPreviewUrl: string;
+  dividendsPreviewUrl: string;
+  calendarPreviewUrl: string;
   brokerListUrl: string;
   gridColumns: number;
   onPatch: (patch: Partial<BentoGrid01Feature>) => void;
@@ -1948,6 +2179,8 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPr
             stockPreviewUrl={stockPreviewUrl}
             forexPreviewUrl={forexPreviewUrl}
             marketMoversPreviewUrl={marketMoversPreviewUrl}
+            dividendsPreviewUrl={dividendsPreviewUrl}
+            calendarPreviewUrl={calendarPreviewUrl}
           />
         </div>
       </PopoverTrigger>
@@ -1975,6 +2208,18 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPr
                   onPatch({
                     header_type: v,
                     market_region: feat.market_region ?? 'US',
+                  });
+                } else if (v === 'upcoming_dividends') {
+                  onPatch({
+                    header_type: v,
+                    dividend_symbols: feat.dividend_symbols ?? [],
+                    dividend_max_rows: feat.dividend_max_rows ?? 25,
+                  });
+                } else if (v === 'market_calendar') {
+                  onPatch({
+                    header_type: v,
+                    calendar_market: feat.calendar_market ?? 'NASDAQ',
+                    calendar_max_rows: feat.calendar_max_rows ?? 30,
                   });
                 } else {
                   onPatch({ header_type: v });
@@ -2095,6 +2340,60 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPr
                 ))}
               </select>
             </label>
+          )}
+          {feat.header_type === 'upcoming_dividends' && (
+            <div className="flex flex-col gap-3">
+              <label className="flex flex-col gap-1.5 min-w-0">
+                <span className="text-muted-foreground text-sm">Tickers (optional)</span>
+                <Input
+                  value={(feat.dividend_symbols ?? []).join(', ')}
+                  placeholder="e.g. AAPL, MSFT (blank = all enabled tickers)"
+                  onChange={e => { onPatch({ dividend_symbols: parseCommaTickers(e.target.value) }); }}
+                />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-muted-foreground text-sm">
+                  Max rows: <span className="tabular-nums text-foreground">{feat.dividend_max_rows ?? 25}</span>
+                </span>
+                <Slider
+                  min={1}
+                  max={100}
+                  step={1}
+                  value={[feat.dividend_max_rows ?? 25]}
+                  onValueChange={([v]) => onPatch({ dividend_max_rows: v })}
+                />
+              </label>
+            </div>
+          )}
+          {feat.header_type === 'market_calendar' && (
+            <div className="flex flex-col gap-3">
+              <label className="flex flex-col gap-1.5 min-w-0">
+                <span className="text-muted-foreground text-sm">Market</span>
+                <select
+                  className="scn-bento-editor__region-select"
+                  value={feat.calendar_market ?? 'NASDAQ'}
+                  onChange={(e) => {
+                    onPatch({ calendar_market: e.target.value as BentoGrid01Feature['calendar_market'] });
+                  }}
+                >
+                  {CALENDAR_MARKET_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-muted-foreground text-sm">
+                  Max rows: <span className="tabular-nums text-foreground">{feat.calendar_max_rows ?? 30}</span>
+                </span>
+                <Slider
+                  min={1}
+                  max={90}
+                  step={1}
+                  value={[feat.calendar_max_rows ?? 30]}
+                  onValueChange={([v]) => onPatch({ calendar_max_rows: v })}
+                />
+              </label>
+            </div>
           )}
           {feat.header_type === 'stock_bars' && (
             <div className="flex flex-col gap-3">
@@ -2417,12 +2716,14 @@ function BentoGrid01BlockHeaderFields({
   );
 }
 
-function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, termId, onChange, onAddTileInColumn, onAddTileInRow }: {
+function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, termId, onChange, onAddTileInColumn, onAddTileInRow }: {
   block: BentoGrid01Block;
   searchUrl: string;
   stockPreviewUrl: string;
   forexPreviewUrl: string;
   marketMoversPreviewUrl: string;
+  dividendsPreviewUrl: string;
+  calendarPreviewUrl: string;
   brokerListUrl: string;
   termId: number;
   onChange: (b: BentoGrid01Block) => void;
@@ -2523,6 +2824,8 @@ function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl,
             stockPreviewUrl={stockPreviewUrl}
             forexPreviewUrl={forexPreviewUrl}
             marketMoversPreviewUrl={marketMoversPreviewUrl}
+            dividendsPreviewUrl={dividendsPreviewUrl}
+            calendarPreviewUrl={calendarPreviewUrl}
             brokerListUrl={brokerListUrl}
             gridColumns={gridColumns}
             onPatch={patch => patchFeature(feat.id, patch)}
@@ -2582,12 +2885,14 @@ function CarouselAddTileMenu({
   );
 }
 
-function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, termId, onChange }: {
+function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, termId, onChange }: {
   block: CarouselBlock;
   searchUrl: string;
   stockPreviewUrl: string;
   forexPreviewUrl: string;
   marketMoversPreviewUrl: string;
+  dividendsPreviewUrl: string;
+  calendarPreviewUrl: string;
   brokerListUrl: string;
   termId: number;
   onChange: (b: CarouselBlock) => void;
@@ -2713,6 +3018,8 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, ma
                 stockPreviewUrl,
                 forexPreviewUrl,
                 marketMoversPreviewUrl,
+                dividendsPreviewUrl,
+                calendarPreviewUrl,
                 brokerListUrl,
                 resolvedRandom,
                 patchFeature,
@@ -2728,6 +3035,8 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, ma
                       stockPreviewUrl={stockPreviewUrl}
                       forexPreviewUrl={forexPreviewUrl}
                       marketMoversPreviewUrl={marketMoversPreviewUrl}
+                      dividendsPreviewUrl={dividendsPreviewUrl}
+                      calendarPreviewUrl={calendarPreviewUrl}
                       brokerListUrl={brokerListUrl}
                       gridColumns={3}
                       onPatch={patch => patchFeature(feat.id, patch)}
@@ -2836,11 +3145,12 @@ const BLOCK_LABEL: Record<string, string> = {
   separator: 'Separator', bento_grid_01: 'Bento block', carousel: 'Carousel',
 };
 
-function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, onChange, onRemove, onMove }: {
+function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, onChange, onRemove, onMove }: {
   block: TaxonomyBlock; index: number; total: number;
   termId: number;
   uploadUrl: string; articleSearchUrl: string; stockPreviewUrl: string;
-  forexPreviewUrl: string; marketMoversPreviewUrl: string; brokerListUrl: string;
+  forexPreviewUrl: string; marketMoversPreviewUrl: string;
+  dividendsPreviewUrl: string; calendarPreviewUrl: string; brokerListUrl: string;
   onChange: (b: TaxonomyBlock) => void; onRemove: () => void; onMove: (dir: -1 | 1) => void;
 }) {
   const [bentoAddTileOpen, setBentoAddTileOpen] = React.useState(false);
@@ -2923,6 +3233,8 @@ function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl,
             stockPreviewUrl={stockPreviewUrl}
             forexPreviewUrl={forexPreviewUrl}
             marketMoversPreviewUrl={marketMoversPreviewUrl}
+            dividendsPreviewUrl={dividendsPreviewUrl}
+            calendarPreviewUrl={calendarPreviewUrl}
             brokerListUrl={brokerListUrl}
             termId={termId}
             onChange={onChange as (b: BentoGrid01Block) => void}
@@ -2937,6 +3249,8 @@ function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl,
             stockPreviewUrl={stockPreviewUrl}
             forexPreviewUrl={forexPreviewUrl}
             marketMoversPreviewUrl={marketMoversPreviewUrl}
+            dividendsPreviewUrl={dividendsPreviewUrl}
+            calendarPreviewUrl={calendarPreviewUrl}
             brokerListUrl={brokerListUrl}
             termId={termId}
             onChange={onChange as (b: CarouselBlock) => void}
@@ -2997,12 +3311,16 @@ function ReadOnlyBlock({
   stockPreviewUrl,
   forexPreviewUrl,
   marketMoversPreviewUrl,
+  dividendsPreviewUrl,
+  calendarPreviewUrl,
 }: {
   block: TaxonomyBlock;
   termId: number;
   stockPreviewUrl: string;
   forexPreviewUrl: string;
   marketMoversPreviewUrl: string;
+  dividendsPreviewUrl: string;
+  calendarPreviewUrl: string;
 }) {
   const previewSlots = React.useMemo(() => {
     if (block.type === 'carousel') return bentoCardFeaturesToSlots(block.features);
@@ -3074,6 +3392,8 @@ function ReadOnlyBlock({
             stockPreviewUrl={stockPreviewUrl}
             forexPreviewUrl={forexPreviewUrl}
             marketMoversPreviewUrl={marketMoversPreviewUrl}
+            dividendsPreviewUrl={dividendsPreviewUrl}
+            calendarPreviewUrl={calendarPreviewUrl}
           />
         </div>
       );
@@ -3189,6 +3509,8 @@ function ReadOnlyBlock({
                     stockPreviewUrl={stockPreviewUrl}
                     forexPreviewUrl={forexPreviewUrl}
                     marketMoversPreviewUrl={marketMoversPreviewUrl}
+                    dividendsPreviewUrl={dividendsPreviewUrl}
+                    calendarPreviewUrl={calendarPreviewUrl}
                   />
                 </div>
               </CarouselItem>
@@ -3259,6 +3581,8 @@ function TaxonomyEditor({
   stockPreviewUrl,
   forexPreviewUrl,
   marketMoversPreviewUrl,
+  dividendsPreviewUrl,
+  calendarPreviewUrl,
   brokerListUrl,
 }: {
   termId: number;
@@ -3270,6 +3594,8 @@ function TaxonomyEditor({
   stockPreviewUrl: string;
   forexPreviewUrl: string;
   marketMoversPreviewUrl: string;
+  dividendsPreviewUrl: string;
+  calendarPreviewUrl: string;
   brokerListUrl: string;
 }) {
   const [blocks, setBlocks] = React.useState<TaxonomyBlock[]>(() => jsonToBlocks(initialJson));
@@ -3348,6 +3674,8 @@ function TaxonomyEditor({
             stockPreviewUrl={stockPreviewUrl}
             forexPreviewUrl={forexPreviewUrl}
             marketMoversPreviewUrl={marketMoversPreviewUrl}
+            dividendsPreviewUrl={dividendsPreviewUrl}
+            calendarPreviewUrl={calendarPreviewUrl}
           />
         ))}
       </div>
@@ -3371,6 +3699,8 @@ function TaxonomyEditor({
             stockPreviewUrl={stockPreviewUrl}
             forexPreviewUrl={forexPreviewUrl}
             marketMoversPreviewUrl={marketMoversPreviewUrl}
+            dividendsPreviewUrl={dividendsPreviewUrl}
+            calendarPreviewUrl={calendarPreviewUrl}
             brokerListUrl={brokerListUrl}
             onChange={updated => setBlocks(prev => prev.map((b, j) => j === i ? updated : b))}
             onRemove={() => setBlocks(prev => prev.filter((_, j) => j !== i))}
@@ -3403,6 +3733,8 @@ export function mountTaxonomyEditor(): void {
     const stockPreviewUrl = host.dataset['stockPreviewUrl'] ?? '';
     const forexPreviewUrl = host.dataset['forexPreviewUrl'] ?? '';
     const marketMoversPreviewUrl = host.dataset['marketMoversPreviewUrl'] ?? '';
+    const dividendsPreviewUrl = host.dataset['dividendsPreviewUrl'] ?? '';
+    const calendarPreviewUrl = host.dataset['calendarPreviewUrl'] ?? '';
     const brokerListUrl = host.dataset['brokerListUrl'] ?? '';
     if (!termId) return;
 
@@ -3428,6 +3760,8 @@ export function mountTaxonomyEditor(): void {
         stockPreviewUrl={stockPreviewUrl}
         forexPreviewUrl={forexPreviewUrl}
         marketMoversPreviewUrl={marketMoversPreviewUrl}
+        dividendsPreviewUrl={dividendsPreviewUrl}
+        calendarPreviewUrl={calendarPreviewUrl}
         brokerListUrl={brokerListUrl}
       />
     );
