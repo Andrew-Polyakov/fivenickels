@@ -126942,8 +126942,8 @@ var NavigationMenuIndicator2 = React76.forwardRef((_a, ref) => {
 });
 NavigationMenuIndicator2.displayName = Indicator.displayName;
 var NavigationMenu2 = React76.forwardRef((_a, ref) => {
-  var _b = _a, { className, children } = _b, props = __objRest(_b, ["className", "children"]);
-  return (0, import_jsx_runtime75.jsxs)(Root25, __spreadProps(__spreadValues({ ref, className: cn("scn-navigation-menu", className) }, props), { children: [children, (0, import_jsx_runtime75.jsx)(NavigationMenuViewport2, {})] }));
+  var _b = _a, { className, children, viewport = true } = _b, props = __objRest(_b, ["className", "children", "viewport"]);
+  return (0, import_jsx_runtime75.jsxs)(Root25, __spreadProps(__spreadValues({ ref, className: cn("scn-navigation-menu", className) }, props), { children: [children, viewport ? (0, import_jsx_runtime75.jsx)(NavigationMenuViewport2, {}) : null] }));
 });
 NavigationMenu2.displayName = Root25.displayName;
 
@@ -127227,7 +127227,7 @@ function TaxonomySiteNavView({ rows, canEdit, createUrl, renameUrl, deleteUrl, s
   }
   const visibleTopItems = topRow.items.filter((item) => canEdit || item.inNav);
   const chipRows = chipRowsFromMenuRows(menuRows, canEdit);
-  return (0, import_jsx_runtime76.jsxs)("div", { className: "scn-taxonomy-site-nav", children: [(0, import_jsx_runtime76.jsx)("nav", { className: "site-nav__row scn-taxonomy-site-nav__unified", "aria-label": "Site taxonomy", children: (0, import_jsx_runtime76.jsx)(NavigationMenu2, { children: (0, import_jsx_runtime76.jsx)(NavigationMenuList2, { className: "scn-taxonomy-site-nav__menu-list", children: visibleTopItems.map((item) => {
+  return (0, import_jsx_runtime76.jsxs)("div", { className: "scn-taxonomy-site-nav", children: [(0, import_jsx_runtime76.jsx)("nav", { className: "site-nav__row scn-taxonomy-site-nav__unified", "aria-label": "Site taxonomy", children: (0, import_jsx_runtime76.jsx)(NavigationMenu2, { viewport: false, children: (0, import_jsx_runtime76.jsx)(NavigationMenuList2, { className: "scn-taxonomy-site-nav__menu-list", children: visibleTopItems.map((item) => {
     const hasChildren = item.children.length > 0;
     const variant = item.children.length >= LARGE_BRANCH_THRESHOLD ? "grid" : "simple";
     const branchClass = cn("scn-taxonomy-site-nav__menu-item", "scn-taxonomy-site-nav__menu-item--branch", !item.inNav && canEdit && "scn-taxonomy-site-nav__menu-item--off-nav");

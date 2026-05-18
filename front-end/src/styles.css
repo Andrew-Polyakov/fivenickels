@@ -2963,6 +2963,24 @@ turbo-frame#site-nav.site-nav {
   font-weight: 700;
 }
 
+/* Per-item dropdown (no shared viewport): anchor panel under hovered root category */
+.scn-taxonomy-site-nav__menu-item--branch > .scn-navigation-menu__content,
+.scn-taxonomy-site-nav__menu-item--branch > .scn-taxonomy-site-nav__content {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 0.35rem;
+  width: max-content;
+  max-width: min(100vw - 2rem, 38rem);
+  border-radius: 10px;
+  border: 1px solid rgba(var(--sc-rgb-accent), 0.45);
+  background: rgba(10, 15, 24, 0.97);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  z-index: 1501;
+}
+
 .scn-taxonomy-site-nav__menu-item--off-nav .scn-navigation-menu__trigger,
 .scn-taxonomy-site-nav__menu-item--off-nav .scn-navigation-menu__trigger--link {
   text-decoration: line-through;

@@ -679,7 +679,7 @@ function TaxonomySiteNavView({
   return (
     <div className="scn-taxonomy-site-nav">
       <nav className="site-nav__row scn-taxonomy-site-nav__unified" aria-label="Site taxonomy">
-        <NavigationMenu>
+        <NavigationMenu viewport={false}>
           <NavigationMenuList className="scn-taxonomy-site-nav__menu-list">
             {visibleTopItems.map((item) => {
               const hasChildren = item.children.length > 0;
