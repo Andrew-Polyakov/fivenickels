@@ -38,6 +38,7 @@ import {
   type BentoTileStyle,
 } from './bento-grid01-theme';
 import { BentoWidgetTileFrame } from './bento-widget-tile-frame';
+import { BentoGridEditorLayout } from './bento-grid-editor-layout';
 import { BentoGridLayout, normalizeGridColumns, normalizeGridRows } from './bento-grid-layout';
 import { FxBrokerCardView, type FxBrokerPayload } from './shadcn-fx-broker-card';
 
@@ -90,6 +91,7 @@ export interface BentoGrid01FeaturePayload {
   col_span?: number | string;
   row_span?: number | string;
   row?: number | null;
+  col?: number | null;
   article?: ArticlePayload;
   html?: string;
   card_image_layout?: CarouselCardTextImageLayout | Extract<CarouselCardImageLayoutLegacy, 'fit_under' | 'scales_fit_top'>;
@@ -129,6 +131,8 @@ export interface BentoGrid01Payload {
   show_badge?: boolean;
   grid_columns?: number;
   grid_rows?: number;
+  row_panel_sizes?: number[];
+  col_panel_sizes_by_row?: Record<string, number[]>;
   features: BentoGrid01FeaturePayload[];
 }
 
@@ -258,12 +262,47 @@ function FeatureHeader({ feature }: { feature: BentoGrid01FeaturePayload }) {
 
 function BentoGrid01Root({ payload }: { payload: BentoGrid01Payload }) {
   const showBadge = payload.show_badge !== false;
+  const gridColumns = normalizeGridColumns(payload.grid_columns);
+  const gridRows = normalizeGridRows(payload.grid_rows);
+  const hasExactPanelSizes =
+    Boolean(payload.row_panel_sizes?.length)
+    || Boolean(payload.col_panel_sizes_by_row && Object.keys(payload.col_panel_sizes_by_row).length > 0);
+  const tilesWithIds = React.useMemo(
+    () => payload.features.map((feature, index) => ({
+      ...feature,
+      id: `bento-public-${index}`,
+    })),
+    [payload.features],
+  );
 
   const sectionClass = bentoGrid01SectionClassName({
     theme: payload.theme,
     blockBackground: bentoBlockBackgroundFromPayload(payload),
     tileStyle: payload.tile_style,
   });
+
+  function renderPublicTile(feature: BentoGrid01FeaturePayload) {
+    const headerClip = (feature.header_type === 'card' || feature.header_type === 'fxbroker') ? '' : ' scn-bentogrid01__tile-header--clip';
+    const isWidgetTile = BENTO_TILES_WITHOUT_FOOTER.has(feature.header_type);
+    const widgetHeader = isWidgetTile ? ' scn-bentogrid01__tile-header--widget' : '';
+    const showTextFooter = !isWidgetTile;
+    const tileHeaderRound = showTextFooter ? '' : ' scn-bentogrid01__tile-header--round-bottom';
+    return (
+      <div className="scn-bentogrid01__tile">
+        <div
+          className={`scn-bentogrid01__tile-header${headerClip}${tileHeaderRound}${widgetHeader}`}
+        >
+          <FeatureHeader feature={feature} />
+        </div>
+        {showTextFooter ? (
+          <div className="scn-bentogrid01__tile-footer">
+            <h3 className="scn-bentogrid01__tile-title">{feature.title}</h3>
+            <p className="scn-bentogrid01__tile-desc">{feature.description}</p>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <section className={sectionClass}>
@@ -276,34 +315,29 @@ function BentoGrid01Root({ payload }: { payload: BentoGrid01Payload }) {
             </Badge>
           )}
         </div>
-        <BentoGridLayout
-          gridColumns={normalizeGridColumns(payload.grid_columns)}
-          gridRows={normalizeGridRows(payload.grid_rows)}
-          tiles={payload.features}
-          getTileKey={(_, i) => i}
-          renderTile={(feature) => {
-            const headerClip = (feature.header_type === 'card' || feature.header_type === 'fxbroker') ? '' : ' scn-bentogrid01__tile-header--clip';
-            const isWidgetTile = BENTO_TILES_WITHOUT_FOOTER.has(feature.header_type);
-            const widgetHeader = isWidgetTile ? ' scn-bentogrid01__tile-header--widget' : '';
-            const showTextFooter = !isWidgetTile;
-            const tileHeaderRound = showTextFooter ? '' : ' scn-bentogrid01__tile-header--round-bottom';
-            return (
-              <div className="scn-bentogrid01__tile">
-                <div
-                  className={`scn-bentogrid01__tile-header${headerClip}${tileHeaderRound}${widgetHeader}`}
-                >
-                  <FeatureHeader feature={feature} />
-                </div>
-                {showTextFooter ? (
-                  <div className="scn-bentogrid01__tile-footer">
-                    <h3 className="scn-bentogrid01__tile-title">{feature.title}</h3>
-                    <p className="scn-bentogrid01__tile-desc">{feature.description}</p>
-                  </div>
-                ) : null}
-              </div>
-            );
-          }}
-        />
+        {hasExactPanelSizes ? (
+          <BentoGridEditorLayout
+            gridColumns={gridColumns}
+            gridRows={gridRows}
+            tiles={tilesWithIds}
+            resizable={false}
+            rowPanelSizes={payload.row_panel_sizes}
+            colPanelSizesByRow={payload.col_panel_sizes_by_row}
+            className="scn-bentogrid01__layout-host"
+            getTileKey={(feature) => feature.id}
+            renderEmptyColumn={() => null}
+            renderEmptyRow={() => null}
+            renderTile={(feature) => renderPublicTile(feature)}
+          />
+        ) : (
+          <BentoGridLayout
+            gridColumns={gridColumns}
+            gridRows={gridRows}
+            tiles={payload.features}
+            getTileKey={(_, i) => i}
+            renderTile={(feature) => renderPublicTile(feature)}
+          />
+        )}
       </div>
     </section>
   );

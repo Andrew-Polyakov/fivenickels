@@ -754,7 +754,16 @@
 }
 
 .scn-bento-editor__layout--readonly .scn-bento-editor__row-stack {
+  display: flex;
+  flex-direction: column;
   min-height: 0;
+}
+
+.scn-bento-editor__layout--readonly .scn-bento-editor__row {
+  display: flex;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
 }
 
 .scn-taxonomy-content__bento-preview .scn-bento-editor__layout-host {
@@ -1513,6 +1522,28 @@ body.template-taxonomy-drilldown .scn-bentogrid01__inner,
   gap: 1.25rem;
   container-type: inline-size;
   width: 100%;
+}
+
+.scn-bentogrid01__layout-host {
+  min-height: 0;
+  width: 100%;
+}
+
+.scn-bentogrid01__layout-host .scn-bento-editor__layout {
+  border: none;
+  min-height: 0;
+}
+
+.scn-bentogrid01__layout-host .scn-bento-editor__row-stack {
+  min-height: 0;
+}
+
+.scn-bentogrid01__layout-host .scn-bento-editor__panel,
+.scn-bentogrid01__layout-host .scn-bento-editor__column-cell {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
 }
 
 .scn-bentogrid01__cell {

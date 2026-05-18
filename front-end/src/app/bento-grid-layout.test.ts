@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  bentoCellGridStyle,
   effectiveColSpan,
   normalizeColSpan,
   normalizeGridColumns,
@@ -29,5 +30,16 @@ describe('bento-grid-layout', () => {
     expect(useEffectiveColumns(500, 6, 260)).toBe(1);
     expect(useEffectiveColumns(1200, 6, 260)).toBe(4);
     expect(useEffectiveColumns(2000, 3, 260)).toBe(3);
+  });
+
+  it('bentoCellGridStyle applies row and column start hints', () => {
+    const style = bentoCellGridStyle(
+      { col_span: 1, row_span: 1, row: 2, col: 3 },
+      3,
+      3,
+    );
+    expect(style.gridRowStart).toBe(2);
+    expect(style.gridColumnStart).toBe(3);
+    expect(style.gridColumn).toBe('span 1');
   });
 });

@@ -467,6 +467,14 @@ def _normalize_bento_grid_columns(raw: Any) -> int:
     return max(1, min(6, n))
 
 
+def _normalize_bento_grid_rows(raw: Any) -> int:
+    try:
+        n = int(raw if raw is not None else 3)
+    except (TypeError, ValueError):
+        n = 3
+    return max(1, min(3, n))
+
+
 def _normalize_bento_col_span(raw: Any, grid_columns: int) -> int:
     """Map legacy string 4/8 or integers to 1..grid_columns."""
     if raw is None:
@@ -502,10 +510,57 @@ def _normalize_bento_row(raw: Any) -> int | None:
     return n if n >= 1 else None
 
 
+def _normalize_bento_col(raw: Any, grid_columns: int) -> int | None:
+    if raw is None or raw == "":
+        return None
+    try:
+        n = int(raw)
+    except (TypeError, ValueError):
+        return None
+    if n < 1:
+        return None
+    return max(1, min(grid_columns, n))
+
+
+def _normalize_bento_panel_size_array(raw: Any, expected_len: int | None = None) -> list[float] | None:
+    if not isinstance(raw, list) or len(raw) == 0:
+        return None
+    nums: list[float] = []
+    for value in raw:
+        try:
+            n = float(value)
+        except (TypeError, ValueError):
+            continue
+        if n > 0:
+            nums.append(n)
+    if not nums:
+        return None
+    length = expected_len if expected_len is not None else len(nums)
+    if len(nums) != length:
+        return None
+    total = sum(nums)
+    if total <= 0:
+        return None
+    return [(n / total) * 100 for n in nums]
+
+
+def _normalize_bento_col_panel_sizes_by_row(raw: Any, row_count: int) -> dict[str, list[float]] | None:
+    if not isinstance(raw, dict):
+        return None
+    out: dict[str, list[float]] = {}
+    for row_index in range(row_count):
+        key = str(row_index)
+        normalized = _normalize_bento_panel_size_array(raw.get(key))
+        if normalized:
+            out[key] = normalized
+    return out or None
+
+
 def _serialize_bentogrid01(block_value: dict, parent_context: dict | None = None) -> dict[str, Any]:
     """Convert a BentoGrid01Block value dict to a JSON-safe payload."""
     request = (parent_context or {}).get("request")
     grid_columns = _normalize_bento_grid_columns(block_value.get("grid_columns"))
+    grid_rows = _normalize_bento_grid_rows(block_value.get("grid_rows"))
     used_page_ids: list[int] = []
     features: list[dict[str, Any]] = []
     for feat in block_value.get("features") or []:
@@ -525,6 +580,9 @@ def _serialize_bentogrid01(block_value: dict, parent_context: dict | None = None
         row_n = _normalize_bento_row(val.get("row"))
         if row_n is not None:
             entry["row"] = row_n
+        col_n = _normalize_bento_col(val.get("col"), grid_columns)
+        if col_n is not None:
+            entry["col"] = col_n
         if header_type == "card":
             art = {
                 "mode": val.get("mode") or "random",
@@ -609,7 +667,7 @@ def _serialize_bentogrid01(block_value: dict, parent_context: dict | None = None
     block_bg_raw = block_value.get("block_background")
     if block_bg_raw is None and "section_padding" in block_value:
         block_bg_raw = "default"
-    return {
+    payload = {
         "badge_text": str(block_value.get("badge_text") or "Features"),
         "heading": str(block_value.get("heading") or ""),
         "theme": _normalize_bento_theme(block_value.get("theme")),
@@ -617,8 +675,22 @@ def _serialize_bentogrid01(block_value: dict, parent_context: dict | None = None
         "block_background": _normalize_bento_block_background(block_bg_raw),
         "show_badge": bool(block_value.get("show_badge", True)),
         "grid_columns": grid_columns,
+        "grid_rows": grid_rows,
         "features": features,
     }
+    row_panel_sizes = _normalize_bento_panel_size_array(
+        block_value.get("row_panel_sizes"),
+        grid_rows,
+    )
+    if row_panel_sizes:
+        payload["row_panel_sizes"] = row_panel_sizes
+    col_panel_sizes_by_row = _normalize_bento_col_panel_sizes_by_row(
+        block_value.get("col_panel_sizes_by_row"),
+        grid_rows,
+    )
+    if col_panel_sizes_by_row:
+        payload["col_panel_sizes_by_row"] = col_panel_sizes_by_row
+    return payload
 
 
 def serialize_article_card_for_related(page: Page | None, request) -> dict[str, Any]:

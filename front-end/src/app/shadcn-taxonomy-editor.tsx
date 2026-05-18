@@ -73,6 +73,7 @@ import {
   normalizePanelSizePctArray,
   parseBentoSectionDimension,
   serializeBentoFeaturePlacement,
+  pruneBentoPanelSizesForGrid,
 } from './bento-block-persist';
 import {
   normalizeCol,
@@ -92,7 +93,7 @@ type ImageBlock     = { id: string; type: 'image';     imageId: number | null; i
 type EmbedBlock     = { id: string; type: 'embed';     url: string };
 type SeparatorBlock = { id: string; type: 'separator' };
 
-type BentoGrid01Feature = {
+export type BentoGrid01Feature = {
   id: string;
   header_type:
     | 'image'
@@ -141,7 +142,7 @@ const BENTO_WIDGET_TILE_TYPES = new Set<BentoGrid01Feature['header_type']>([
   'market_movers',
   'fxbroker',
 ]);
-type BentoGrid01Block  = {
+export type BentoGrid01Block  = {
   id: string; type: 'bento_grid_01'; badge_text: string; heading: string; features: BentoGrid01Feature[];
   theme?: 'default' | 'inverted' | 'accent';
   tile_style?: 'bordered' | 'shadow' | 'flat';
@@ -450,7 +451,7 @@ function normalizeTaxonomyBlock(raw: Record<string, unknown>): TaxonomyBlock | n
   return raw as TaxonomyBlock;
 }
 
-function serializeBentoGrid01BlockForSave(block: BentoGrid01Block): BentoGrid01Block {
+export function serializeBentoGrid01BlockForSave(block: BentoGrid01Block): BentoGrid01Block {
   const grid_columns = normalizeGridColumns(block.grid_columns);
   const grid_rows = normalizeGridRows(block.grid_rows);
   const height = parseBentoSectionDimension(block.height);
@@ -479,7 +480,7 @@ function serializeBentoGrid01BlockForSave(block: BentoGrid01Block): BentoGrid01B
   };
 }
 
-function applyBentoLayoutPersistPatch(
+export function applyBentoLayoutPersistPatch(
   block: BentoGrid01Block,
   patch: BentoLayoutPersistPatch,
 ): BentoGrid01Block {
@@ -2328,10 +2329,14 @@ function BentoGrid01BlockHeaderFields({
             <label>Grid columns</label>
             <Select
               value={String(block.grid_columns ?? 3)}
-              onChange={e => onChange({
-                ...block,
-                grid_columns: normalizeGridColumns(parseInt(e.target.value, 10)),
-              })}
+              onChange={e => onChange(
+                pruneBentoPanelSizesForGrid(
+                  block,
+                  normalizeGridColumns(parseInt(e.target.value, 10)),
+                  normalizeGridRows(block.grid_rows),
+                  block.grid_columns,
+                ),
+              )}
             >
               {[1, 2, 3, 4, 5, 6].map(n => (
                 <option key={n} value={String(n)}>{n}</option>
@@ -2342,10 +2347,13 @@ function BentoGrid01BlockHeaderFields({
             <label>Grid rows</label>
             <Select
               value={String(block.grid_rows ?? 3)}
-              onChange={e => onChange({
-                ...block,
-                grid_rows: normalizeGridRows(parseInt(e.target.value, 10)),
-              })}
+              onChange={e => onChange(
+                pruneBentoPanelSizesForGrid(
+                  block,
+                  normalizeGridColumns(block.grid_columns),
+                  normalizeGridRows(parseInt(e.target.value, 10)),
+                ),
+              )}
             >
               {[1, 2, 3].map(n => (
                 <option key={n} value={String(n)}>{n}</option>
@@ -2423,6 +2431,8 @@ function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl,
 }) {
   const cardSlots = React.useMemo(() => bentoCardFeaturesToSlots(block.features), [block.features]);
   const resolvedRandom = useResolvedCarouselPreviews(cardSlots, termId);
+  const blockRef = React.useRef(block);
+  blockRef.current = block;
 
   function patchFeature(featId: string, patch: Partial<BentoGrid01Feature>) {
     onChange({
@@ -2444,10 +2454,6 @@ function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl,
     gridRows,
     { height: block.height, width: block.width },
     block.features,
-    {
-      row_panel_sizes: block.row_panel_sizes,
-      col_panel_sizes_by_row: block.col_panel_sizes_by_row,
-    },
   );
 
   const legacyPanelMigratedRef = React.useRef(false);
@@ -2497,7 +2503,8 @@ function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl,
         rowPanelSizes={block.row_panel_sizes}
         colPanelSizesByRow={block.col_panel_sizes_by_row}
         getTileKey={(f) => f.id}
-        onLayoutPersist={(patch) => onChange(applyBentoLayoutPersistPatch(block, patch))}
+        onLayoutPersist={(patch) =>
+          onChange(applyBentoLayoutPersistPatch(blockRef.current, patch))}
         renderEmptyColumn={(colIndex, rowIndex) => (
           <BentoEditorEmptySlot
             onPick={type => onAddTileInColumn(colIndex, rowIndex, type)}
@@ -3047,10 +3054,6 @@ function ReadOnlyBlock({
       gridRows,
       { height: block.height, width: block.width },
       features,
-      {
-        row_panel_sizes: block.row_panel_sizes,
-        col_panel_sizes_by_row: block.col_panel_sizes_by_row,
-      },
     );
 
     function renderReadOnlyPanel(f: BentoGrid01Feature) {
@@ -3310,6 +3313,7 @@ function TaxonomyEditor({
           block_background: 'default',
           show_badge: true,
           grid_columns: 3,
+          grid_rows: 3,
         };
         case 'carousel': return {
           id,

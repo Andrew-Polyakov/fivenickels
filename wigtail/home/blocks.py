@@ -269,6 +269,11 @@ class BentoGridFeatureBlock(blocks.StructBlock):
         min_value=1,
         help_text="Force tile onto row N (leave blank for auto-flow).",
     )
+    col = blocks.IntegerBlock(
+        required=False,
+        min_value=1,
+        help_text="Force tile onto column N (1-based; leave blank for auto-flow).",
+    )
     card_image_layout = blocks.ChoiceBlock(
         choices=[
             ("text_on_top", "Text above image"),

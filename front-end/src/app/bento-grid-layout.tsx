@@ -99,12 +99,17 @@ export function bentoCellGridStyle(
     };
   }
 
+  const colStart = normalizeCol(tile.col, gridColumns);
+
   const style: React.CSSProperties = {
     gridColumn: `span ${colSpan}`,
     gridRow: `span ${rowSpan}`,
   };
   if (rowStart !== undefined) {
     style.gridRowStart = rowStart;
+  }
+  if (colStart !== undefined) {
+    style.gridColumnStart = colStart;
   }
   return style;
 }

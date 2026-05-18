@@ -5,6 +5,7 @@ import {
   bentoSectionSizeStyles,
   normalizePanelSizePctArray,
   parseBentoSectionDimension,
+  pruneBentoPanelSizesForGrid,
   serializeBentoFeaturePlacement,
 } from './bento-block-persist';
 
@@ -37,18 +38,41 @@ describe('bento-block-persist', () => {
     expect(base).not.toBe(wide);
   });
 
-  it('layout storage key changes when saved panel sizes change', () => {
-    const a = bentoEditorLayoutStorageKey(3, 2, {}, [{ id: 'x', col_span: 1, row_span: 1 }], {
-      row_panel_sizes: [60, 40],
-    });
-    const b = bentoEditorLayoutStorageKey(3, 2, {}, [{ id: 'x', col_span: 1, row_span: 1 }], {
-      row_panel_sizes: [70, 30],
-    });
-    expect(a).not.toBe(b);
+  it('layout storage key is stable when only saved panel sizes change', () => {
+    const feat = [{ id: 'x', col_span: 1, row_span: 1 }];
+    const a = bentoEditorLayoutStorageKey(3, 2, {}, feat);
+    const b = bentoEditorLayoutStorageKey(3, 2, {}, feat);
+    expect(a).toBe(b);
   });
 
   it('normalizePanelSizePctArray requires exact length when expectedLen set', () => {
     expect(normalizePanelSizePctArray([50, 50], 2)).toEqual([50, 50]);
     expect(normalizePanelSizePctArray([50, 50], 3)).toBeUndefined();
+  });
+
+  it('pruneBentoPanelSizesForGrid trims row sizes and clears col sizes on column change', () => {
+    const block = {
+      grid_columns: 3,
+      grid_rows: 3,
+      row_panel_sizes: [40, 30, 30],
+      col_panel_sizes_by_row: { '0': [50, 50] },
+    };
+    const pruned = pruneBentoPanelSizesForGrid(block, 4, 2, 3);
+    expect(pruned.grid_columns).toBe(4);
+    expect(pruned.grid_rows).toBe(2);
+    expect(pruned.row_panel_sizes).toBeUndefined();
+    expect(pruned.col_panel_sizes_by_row).toBeUndefined();
+  });
+
+  it('pruneBentoPanelSizesForGrid keeps valid row panel sizes when only rows shrink', () => {
+    const block = {
+      grid_columns: 3,
+      grid_rows: 3,
+      row_panel_sizes: [50, 50],
+      col_panel_sizes_by_row: { '0': [60, 40], '1': [50, 50] },
+    };
+    const pruned = pruneBentoPanelSizesForGrid(block, 3, 2);
+    expect(pruned.row_panel_sizes).toEqual([50, 50]);
+    expect(pruned.col_panel_sizes_by_row).toEqual({ '0': [60, 40], '1': [50, 50] });
   });
 });

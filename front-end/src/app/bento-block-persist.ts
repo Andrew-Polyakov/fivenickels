@@ -136,12 +136,51 @@ export function serializeBentoFeaturePlacement<T extends BentoFeaturePlacement>(
   return next as T;
 }
 
+export interface BentoGridPanelPruneInput {
+  grid_columns?: number;
+  grid_rows?: number;
+  row_panel_sizes?: BentoRowPanelSizes;
+  col_panel_sizes_by_row?: BentoColPanelSizesByRow;
+}
+
+/** Drop or trim panel % arrays when grid column/row counts change. */
+export function pruneBentoPanelSizesForGrid<T extends BentoGridPanelPruneInput>(
+  block: T,
+  gridColumns: number,
+  gridRows: number,
+  prevGridColumns?: number,
+): T {
+  const cols = normalizeGridColumns(gridColumns);
+  const rows = normalizeGridRows(gridRows);
+  const columnsChanged =
+    prevGridColumns !== undefined && normalizeGridColumns(prevGridColumns) !== cols;
+
+  const rowSizes = normalizePanelSizePctArray(block.row_panel_sizes, rows);
+  const colByRow =
+    !columnsChanged && block.col_panel_sizes_by_row
+      ? normalizeColPanelSizesByRow(block.col_panel_sizes_by_row, rows)
+      : undefined;
+
+  const next = { ...block, grid_columns: cols, grid_rows: rows } as T & BentoGridPanelPruneInput;
+  if (rowSizes) {
+    next.row_panel_sizes = rowSizes;
+  } else {
+    delete next.row_panel_sizes;
+  }
+  if (colByRow) {
+    next.col_panel_sizes_by_row = colByRow;
+  } else {
+    delete next.col_panel_sizes_by_row;
+  }
+  return next as T;
+}
+
+/** Remount key for panel groups when grid geometry changes — excludes panel % (those update via panel defaultSize keys). */
 export function bentoEditorLayoutStorageKey(
   gridColumns: number,
   gridRows: number,
   dims: BentoSectionDimensions,
   features: BentoFeaturePlacement[],
-  panelSizes?: BentoPanelLayoutSizes,
 ): string {
   const cols = normalizeGridColumns(gridColumns);
   const rows = normalizeGridRows(gridRows);
@@ -156,9 +195,5 @@ export function bentoEditorLayoutStorageKey(
       return `${f.id}:${colSpan}x${rowSpan}@${row},${col}`;
     })
     .join('|');
-  const rowSizesKey = panelSizes?.row_panel_sizes?.map((n) => n.toFixed(1)).join(',') ?? '';
-  const colSizesKey = panelSizes?.col_panel_sizes_by_row
-    ? JSON.stringify(panelSizes.col_panel_sizes_by_row)
-    : '';
-  return `bento-${cols}x${rows}-h${height}-w${width}-r${rowSizesKey}-c${colSizesKey}-${featKey}`;
+  return `bento-${cols}x${rows}-h${height}-w${width}-${featKey}`;
 }

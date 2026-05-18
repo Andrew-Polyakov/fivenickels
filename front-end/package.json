@@ -4,8 +4,9 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build --configuration widget",
-    "build:widget": "ng build --configuration widget",
+    "build": "ng build --configuration widget && node scripts/validate-widget-assets.mjs",
+    "build:widget": "ng build --configuration widget && node scripts/validate-widget-assets.mjs",
+    "build:check-assets": "node scripts/validate-widget-assets.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },

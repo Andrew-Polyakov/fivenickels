@@ -1527,11 +1527,43 @@ class BentoForexMarketMoversSerializationTests(WagtailPageTestCase):
             {"request": None},
         )
         self.assertEqual(payload["grid_columns"], 4)
+        self.assertEqual(payload["grid_rows"], 3)
         self.assertEqual(payload["features"][0]["header_type"], "forex_strip")
         self.assertEqual(payload["features"][0]["col_span"], 1)
         self.assertEqual(payload["features"][0]["row_span"], 2)
         self.assertEqual(len(payload["features"][0]["forex_quotes"]), 1)
         self.assertEqual(payload["features"][0]["forex_quotes"][0]["label"], "EUR/USD")
+
+    def test_serialize_bentogrid01_grid_rows_and_col(self):
+        payload = _serialize_bentogrid01(
+            {
+                "badge_text": "Features",
+                "heading": "Grid",
+                "grid_columns": 3,
+                "grid_rows": 2,
+                "row_panel_sizes": [70, 30],
+                "col_panel_sizes_by_row": {"0": [25, 75]},
+                "features": [
+                    {
+                        "header_type": "image",
+                        "title": "Tile",
+                        "description": "",
+                        "col_span": 1,
+                        "row_span": 1,
+                        "row": 1,
+                        "col": 2,
+                    }
+                ],
+            },
+            {"request": None},
+        )
+        self.assertEqual(payload["grid_columns"], 3)
+        self.assertEqual(payload["grid_rows"], 2)
+        self.assertEqual(payload["row_panel_sizes"], [70, 30])
+        self.assertEqual(payload["col_panel_sizes_by_row"], {"0": [25, 75]})
+        feat = payload["features"][0]
+        self.assertEqual(feat["row"], 1)
+        self.assertEqual(feat["col"], 2)
 
     def test_serialize_bentogrid01_market_movers(self):
         MarketTickerRow.objects.create(
