@@ -1380,7 +1380,8 @@
 
 .scn-taxonomy-content__bento-preview {
   position: relative;
-  padding: 5px 1.5rem;
+  padding-block: 5px;
+  padding-inline: 0;
 }
 
 /* ── Bento grid 01 (public + taxonomy surfaces share these classes) ───────── */

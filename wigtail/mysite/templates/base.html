@@ -35,7 +35,7 @@
 
         {# Angular Material theme first, then site CSS (dialogs, chips, shadcn mounts). #}
         <link rel="stylesheet" type="text/css" href="{% static 'angular-taxonomy-chip-widget/browser/styles.css' %}">
-        <link rel="stylesheet" type="text/css" href="{% static 'css/mysite.css' %}">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/mysite.css' %}?v=4">
         <script>
             try {
                 if (localStorage.getItem('reading-theme') === 'day') {
@@ -52,7 +52,7 @@
         <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8.0.12/dist/turbo.es2017-umd.js" defer></script>
         {# ES module bundle exposes window.mountShadcnTaxonomySiteNav and related mounts. Build: npm run build in front-end/. #}
         <script type="module" src="{% static 'angular-taxonomy-chip-widget/browser/main.js' %}"></script>
-        <script src="{% static 'js/mysite.js' %}" defer></script>
+        <script src="{% static 'js/mysite.js' %}?v=3" defer></script>
         {% block extra_head_js %}
         {# Optional: page-specific head scripts (defer recommended) #}
         {% endblock %}
