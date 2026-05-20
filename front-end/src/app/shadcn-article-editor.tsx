@@ -55,6 +55,7 @@ type ArticleApiData = {
   id: number;
   title: string;
   status: 'published' | 'draft';
+  preview_url?: string;
   section_term:      { id: number; name: string; slug: string } | null;
   taxonomy_category: { id: number; name: string; slug: string } | null;
   catalyst: CatalystValue | null;
@@ -267,6 +268,7 @@ function TaxonomyBreadcrumb({
           <>
             <span className="scn-editor-taxonomy__sep">›</span>
             <TaxonomyCombobox
+              level={2}
               value={categoryId?.toString() ?? ''}
               options={[{ value: '', label: 'No category' }, ...categoryOptions]}
               placeholder="Select category"
@@ -281,6 +283,8 @@ function TaxonomyBreadcrumb({
   );
 }
 
+const TAXONOMY_COMBO_COLLISION_PADDING = { top: 72, bottom: 12, left: 12, right: 12 };
+
 function TaxonomyCombobox({
   value,
   options,
@@ -288,6 +292,7 @@ function TaxonomyCombobox({
   searchPlaceholder,
   emptyMessage,
   onChange,
+  level = 1,
 }: {
   value: string;
   options: Array<{ value: string; label: string }>;
@@ -295,6 +300,7 @@ function TaxonomyCombobox({
   searchPlaceholder: string;
   emptyMessage: string;
   onChange: (value: string) => void;
+  level?: 1 | 2;
 }) {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState('');
@@ -324,7 +330,14 @@ function TaxonomyCombobox({
           <span className="scn-editor-taxonomy__combo-caret" aria-hidden="true">▾</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="scn-popover-content scn-editor-taxonomy__combo-popover" align="start">
+      <PopoverContent
+        className={cn(
+          'scn-popover-content scn-editor-taxonomy__combo-popover',
+          level === 2 && 'scn-editor-taxonomy__combo-popover--level-2'
+        )}
+        align="start"
+        collisionPadding={TAXONOMY_COMBO_COLLISION_PADDING}
+      >
         <div className="scn-search-wrap scn-editor-taxonomy__combo-search">
           <svg
             className="scn-search-wrap__icon"
@@ -1207,10 +1220,45 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
   const [rootTerms, setRootTerms]     = React.useState<TaxonomyRoot[]>([]);
   const [loading, setLoading]         = React.useState(true);
   const [saving, setSaving]           = React.useState(false);
+  const [previewUrl, setPreviewUrl]   = React.useState('');
   const [toast, setToast]             = React.useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   function notify(message: string, type: 'success' | 'error' = 'success') {
     setToast({ message, type });
+  }
+
+  function buildSavePayload(): Record<string, unknown> {
+    const payload: Record<string, unknown> = {
+      title,
+      section_term_id: sectionTermId,
+      taxonomy_category_id: categoryId,
+      catalyst: catalystToApi(catalyst),
+      tile_preview: tilePreview,
+      author_name: authorName,
+      author_user_lookup: authorUser,
+      tile_priority: tilePrio,
+      article_priority: artPrio,
+      priority_expires_at: expiresAt || null,
+      tag_ids: tags.map(t => t.id),
+      body_json: editorToApi(blocks),
+      seo_title: seoTitle,
+      search_description: metaDesc,
+      canonical_url: canonicalUrl,
+      og_image_id: ogImageId,
+    };
+    if (heroId !== null) payload['hero_image_id'] = heroId;
+    return payload;
+  }
+
+  function applySaveResponse(json: ArticleApiData) {
+    setStatus(json.status);
+    if (typeof json.author_user_display === 'string') {
+      setAuthorUserDisplay(json.author_user_display);
+    }
+    setAuthorUser('');
+    if (json.preview_url) {
+      setPreviewUrl(json.preview_url);
+    }
   }
 
   // ── Load ──
@@ -1248,6 +1296,9 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
         setAllTags(mergeUniqueTags(tagCatalog, article.tags));
         setBlocks(apiToEditor(article.body));
         setStatus(article.status);
+        setPreviewUrl(
+          article.preview_url ?? `/profile/article/${articleId}/preview/`
+        );
         setRootTerms(taxonomy.root_terms);
       } catch { notify('Failed to load article', 'error'); }
       finally { setLoading(false); }
@@ -1258,42 +1309,38 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
 
   // ── Save ──
   async function handleSave() {
+    if (saving) return;
     setSaving(true);
     try {
-      const payload: Record<string, unknown> = {
-        title,
-        section_term_id: sectionTermId,
-        taxonomy_category_id: categoryId,
-        catalyst: catalystToApi(catalyst),
-        tile_preview: tilePreview,
-        author_name: authorName,
-        author_user_lookup: authorUser,
-        tile_priority: tilePrio,
-        article_priority: artPrio,
-        priority_expires_at: expiresAt || null,
-        tag_ids: tags.map(t => t.id),
-        body_json: editorToApi(blocks),
-        seo_title: seoTitle,
-        search_description: metaDesc,
-        canonical_url: canonicalUrl,
-        og_image_id: ogImageId,
-      };
-      if (heroId !== null) payload['hero_image_id'] = heroId;
-
       const res = await api(`${apiBase}/articles/${articleId}/`, {
-        method: 'PATCH', body: JSON.stringify(payload),
+        method: 'PATCH', body: JSON.stringify(buildSavePayload()),
       });
-      const json = await res.json();
+      const json = await res.json() as ArticleApiData & { detail?: string };
       if (res.ok) {
-        setStatus(json.status);
-        if (typeof json.author_user_display === 'string') {
-          setAuthorUserDisplay(json.author_user_display);
-        }
-        setAuthorUser('');
+        applySaveResponse(json);
         notify('Saved');
       }
       else notify(json.detail || JSON.stringify(json), 'error');
     } catch { notify('Save failed', 'error'); }
+    finally { setSaving(false); }
+  }
+
+  async function handlePreview() {
+    if (saving || !previewUrl) return;
+    setSaving(true);
+    try {
+      const res = await api(`${apiBase}/articles/${articleId}/`, {
+        method: 'PATCH', body: JSON.stringify(buildSavePayload()),
+      });
+      const json = await res.json() as ArticleApiData & { detail?: string };
+      if (res.ok) {
+        applySaveResponse(json);
+        const url = json.preview_url || previewUrl;
+        window.open(url, '_blank', 'noopener,noreferrer');
+        notify('Saved — preview opened');
+      }
+      else notify(json.detail || JSON.stringify(json), 'error');
+    } catch { notify('Preview failed', 'error'); }
     finally { setSaving(false); }
   }
 
@@ -1367,7 +1414,17 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
           />
         </div>
         <div className="scn-editor-header__actions">
-          <Button onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void handlePreview()}
+            disabled={saving || !previewUrl}
+          >
+            {saving ? 'Saving…' : 'Preview'}
+          </Button>
+          <Button type="button" onClick={() => void handleSave()} disabled={saving}>
+            {saving ? 'Saving…' : 'Save'}
+          </Button>
           <ActionsPopover status={status} onAction={handleAction} disabled={saving} />
         </div>
       </header>

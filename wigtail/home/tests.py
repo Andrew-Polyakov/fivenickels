@@ -1122,6 +1122,46 @@ class InlineEditingApiTests(WagtailPageTestCase):
         self.assertEqual(created.get_parent().pk, self.homepage.pk)
         self.assertFalse(created.live)
 
+    def test_article_preview_requires_staff(self):
+        page = TaggedContentPage(
+            title="Preview Gate Story",
+            slug="preview-gate-story",
+            section_term=self.energy,
+            tile_preview="preview",
+        )
+        self.homepage.add_child(instance=page)
+        page.save_revision()
+        preview_url = reverse("article_preview", kwargs={"article_id": page.pk})
+
+        response = self.client.get(preview_url)
+        self.assertEqual(response.status_code, 302)
+
+        self.client.force_login(self.non_admin)
+        response = self.client.get(preview_url)
+        self.assertEqual(response.status_code, 302)
+
+    def test_article_preview_renders_latest_revision_for_staff(self):
+        page = TaggedContentPage(
+            title="Staff Preview Story",
+            slug="staff-preview-story",
+            section_term=self.energy,
+            tile_preview="preview",
+        )
+        self.homepage.add_child(instance=page)
+        page.save_revision()
+        preview_url = reverse("article_preview", kwargs={"article_id": page.pk})
+
+        self.client.force_login(self.admin_user)
+        response = self.client.get(preview_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Staff Preview Story")
+
+        page.title = "Staff Preview Story Updated"
+        page.save_revision()
+        response = self.client.get(preview_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Staff Preview Story Updated")
+
     def test_staff_homepage_renders_inline_chip_delete_controls(self):
         self.client.force_login(self.admin_user)
         response = self.client.get(self.homepage.url)

@@ -87,7 +87,8 @@ class ArticleEditorViewSet(viewsets.ModelViewSet):
         serializer = ArticleUpdateSerializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(ArticleEditorSerializer(instance).data)
+        instance.refresh_from_db()
+        return Response(self.get_serializer(instance).data)
 
     @transaction.atomic
     def update(self, request, *args, **kwargs):
@@ -95,7 +96,8 @@ class ArticleEditorViewSet(viewsets.ModelViewSet):
         serializer = ArticleUpdateSerializer(instance, data=request.data, partial=False)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(ArticleEditorSerializer(instance).data)
+        instance.refresh_from_db()
+        return Response(self.get_serializer(instance).data)
 
     @action(detail=True, methods=['post'], url_path='action', url_name='article-action')
     def article_action(self, request, pk=None):

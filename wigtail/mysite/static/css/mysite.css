@@ -7594,6 +7594,14 @@ body.page-article-editor #shadcn-article-editor-root {
     margin-left: 0.5rem;
 }
 
+.scn-editor-taxonomy__combo-popover.scn-popover-content {
+    z-index: 10100;
+}
+
+.scn-editor-taxonomy__combo-popover--level-2.scn-popover-content {
+    z-index: 10150;
+}
+
 .scn-editor-taxonomy__combo-popover {
     width: min(92vw, 18rem);
     padding: 0.5rem;
