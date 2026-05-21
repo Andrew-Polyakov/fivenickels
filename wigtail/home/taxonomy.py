@@ -22,6 +22,53 @@ TOP_ROW_SEED: tuple[tuple[str, str, int], ...] = (
 )
 TOP_ROW_SEED_SLUGS = frozenset(slug for slug, _, _ in TOP_ROW_SEED)
 
+# Hardcoded top nav / site map entry (not a TaxonomyTerm).
+BROKERS_NAV_SLUG = "brokers"
+BROKERS_NAV_NAME = "Brokers"
+BROKERS_NAV_ID = "hardcoded:brokers"
+
+
+def brokers_nav_href() -> str:
+    from django.urls import reverse
+
+    return reverse("forex_ratings")
+
+
+def is_brokers_nav_active(request) -> bool:
+    from django.urls import Resolver404, resolve
+
+    try:
+        match = resolve(request.path_info)
+    except Resolver404:
+        return False
+    return match.url_name == "forex_ratings"
+
+
+def brokers_nav_menu_item(request) -> dict:
+    return {
+        "id": BROKERS_NAV_ID,
+        "name": BROKERS_NAV_NAME,
+        "slug": BROKERS_NAV_SLUG,
+        "href": brokers_nav_href(),
+        "active": is_brokers_nav_active(request),
+        "removable": False,
+        "inNav": True,
+        "children": [],
+    }
+
+
+def brokers_nav_hamburger_term() -> dict:
+    return {
+        "id": BROKERS_NAV_ID,
+        "name": BROKERS_NAV_NAME,
+        "slug": BROKERS_NAV_SLUG,
+        "href": brokers_nav_href(),
+        "inNav": True,
+        "inSitemap": True,
+        "removable": False,
+        "children": [],
+    }
+
 
 def taxonomy_display_name_for_slug(slug: str) -> str:
     from home.gics_sectors import GICS_SECTORS
@@ -195,6 +242,7 @@ def taxonomy_nav_root_queryset():
     return (
         TaxonomyTerm.objects.filter(depth=1, is_visible=True)
         .exclude(slug__in=GICS_SECTOR_SLUGS)
+        .exclude(slug=BROKERS_NAV_SLUG)
         .order_by("sort_order", "name")
     )
 
@@ -471,6 +519,8 @@ def build_site_nav_menu_payload(
             )
             for term in row["nodes"]
         ]
+        if depth == 1:
+            items = [brokers_nav_menu_item(request)] + items
         if depth != 1:
             items = [{**it, "children": []} for it in items]
             entry: dict = {
@@ -551,11 +601,15 @@ def build_hamburger_nav_payload(home_page) -> dict:
 
     roots = [t for t in all_terms if t.depth == 1]
     gics_roots = [t for t in roots if t.slug in GICS_SECTOR_SLUGS]
-    top_roots = [t for t in roots if t.slug not in GICS_SECTOR_SLUGS]
+    top_roots = [
+        t
+        for t in roots
+        if t.slug not in GICS_SECTOR_SLUGS and t.slug != BROKERS_NAV_SLUG
+    ]
 
     gics_nodes = [build_node(g) for g in gics_roots]
 
-    terms = []
+    terms = [brokers_nav_hamburger_term()]
     for t in top_roots:
         extra = gics_nodes if (t.slug == MARKET_NEWS_SLUG and gics_nodes) else None
         terms.append(build_node(t, extra_children=extra))

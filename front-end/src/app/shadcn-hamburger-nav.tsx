@@ -390,7 +390,7 @@ function SitemapColumns({
                 return (
                   <div key={term.id} className="scn-hamburger-nav__sitemap-item-row">
                     {control}
-                    {canEdit && (
+                    {canEdit && term.removable && (
                       <CategoryEditPopover
                         target={term}
                         canEdit={canEdit}

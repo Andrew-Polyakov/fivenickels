@@ -8534,6 +8534,8 @@ img[src*='bear.png'].scn-catalyst-toggle__icon {
 .scn-taxonomy-editor__save-bar {
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
     gap: 0.75rem;
     padding: 0.6rem 0;
     margin-bottom: 0.6rem;
@@ -8542,6 +8544,26 @@ img[src*='bear.png'].scn-catalyst-toggle__icon {
     z-index: 10;
     background: var(--color-bg, #0d1117);
     border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.scn-taxonomy-editor__save-bar-start {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    gap: 0.5rem;
+}
+
+.scn-taxonomy-editor__save-bar-add {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+}
+
+.scn-taxonomy-editor__save-bar-add .scn-editor-add-block {
+    flex: 1;
+    width: 100%;
+    margin-top: 0;
 }
 
 .scn-taxonomy-editor__save-bar--footer {
@@ -10161,12 +10183,6 @@ html[data-reading-theme="day"] .carousel-article-card__published {
 }
 
 /* ── Forex Ratings page ── */
-
-body.template-forex-ratings .site-content {
-    max-width: none;
-    margin-left: 0;
-    margin-right: 0;
-}
 
 .forex-ratings {
     padding: 1.5rem 0 3rem;

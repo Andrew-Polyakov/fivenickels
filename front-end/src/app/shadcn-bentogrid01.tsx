@@ -24,6 +24,10 @@ import UpcomingDividendsTile, {
   type DividendRowPayload,
 } from '../components/shadcn-space/blocks/bento-grid-01/UpcomingDividendsTile';
 import StockBarsTile from '../components/shadcn-space/blocks/bento-grid-01/StockBarsTile';
+import {
+  BentoArticleCarouselTile,
+  type BentoArticleCarouselFrame,
+} from '../components/shadcn-space/blocks/bento-grid-01/BentoArticleCarouselTile';
 import { CarouselCard } from './shadcn-taxonomy-editor';
 import type {
   CarouselCardImageLayoutLegacy,
@@ -83,7 +87,8 @@ export interface BentoGrid01FeaturePayload {
     | 'forex_strip'
     | 'market_movers'
     | 'upcoming_dividends'
-    | 'market_calendar';
+    | 'market_calendar'
+    | 'article_carousel';
   image_url_light?: string;
   image_url_dark?: string;
   title: string;
@@ -108,6 +113,8 @@ export interface BentoGrid01FeaturePayload {
   dividend_rows?: DividendRowPayload[];
   calendar_rows?: CalendarRowPayload[];
   fxbroker?: FxBrokerPayload | { kind: 'empty' };
+  frame_count?: number;
+  frames?: BentoArticleCarouselFrame[];
 }
 
 const BENTO_TILES_WITHOUT_FOOTER = new Set([
@@ -116,6 +123,7 @@ const BENTO_TILES_WITHOUT_FOOTER = new Set([
   'market_movers',
   'upcoming_dividends',
   'market_calendar',
+  'article_carousel',
 ]);
 
 export type { BentoTheme, BentoTileStyle, BentoBlockBackground };
@@ -233,6 +241,14 @@ function FeatureHeader({ feature }: { feature: BentoGrid01FeaturePayload }) {
       </BentoWidgetTileFrame>
     );
   }
+  if (feature.header_type === 'article_carousel') {
+    return (
+      <BentoArticleCarouselTile
+        frames={feature.frames ?? []}
+        frameCount={feature.frame_count ?? 5}
+      />
+    );
+  }
   return (
     <>
       {feature.image_url_light && (
@@ -282,7 +298,19 @@ function BentoGrid01Root({ payload }: { payload: BentoGrid01Payload }) {
   });
 
   function renderPublicTile(feature: BentoGrid01FeaturePayload) {
-    const headerClip = (feature.header_type === 'card' || feature.header_type === 'fxbroker') ? '' : ' scn-bentogrid01__tile-header--clip';
+    const headerClip = (
+      feature.header_type === 'card'
+      || feature.header_type === 'fxbroker'
+      || feature.header_type === 'article_carousel'
+    ) ? '' : ' scn-bentogrid01__tile-header--clip';
+    const headerTypeMod =
+      feature.header_type === 'card'
+        ? ' scn-bentogrid01__tile-header--card'
+        : feature.header_type === 'fxbroker'
+          ? ' scn-bentogrid01__tile-header--fxbroker'
+          : feature.header_type === 'article_carousel'
+            ? ' scn-bentogrid01__tile-header--article-carousel'
+            : '';
     const isWidgetTile = BENTO_TILES_WITHOUT_FOOTER.has(feature.header_type);
     const widgetHeader = isWidgetTile ? ' scn-bentogrid01__tile-header--widget' : '';
     const showTextFooter = !isWidgetTile;
@@ -290,7 +318,7 @@ function BentoGrid01Root({ payload }: { payload: BentoGrid01Payload }) {
     return (
       <div className="scn-bentogrid01__tile">
         <div
-          className={`scn-bentogrid01__tile-header${headerClip}${tileHeaderRound}${widgetHeader}`}
+          className={`scn-bentogrid01__tile-header${headerClip}${headerTypeMod}${tileHeaderRound}${widgetHeader}`}
         >
           <FeatureHeader feature={feature} />
         </div>

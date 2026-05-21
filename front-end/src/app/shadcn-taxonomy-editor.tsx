@@ -32,6 +32,7 @@ import { RteToolbar, TABLE_EXTENSIONS } from '../components/ui/rte-editor';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '../components/ui/carousel';
 import { Slider } from '../components/ui/slider';
 import { Checkbox } from '../components/ui/checkbox';
+import { ScrollArea } from '../components/ui/scroll-area';
 import {
   carouselCardShowsHeroImage,
   packCarouselSlides,
@@ -57,6 +58,10 @@ import MarketMoversTile, {
   type MarketMoversGroupPayload,
 } from '../components/shadcn-space/blocks/bento-grid-01/MarketMoversTile';
 import StockBarsTile from '../components/shadcn-space/blocks/bento-grid-01/StockBarsTile';
+import {
+  BentoArticleCarouselTile,
+  type BentoArticleCarouselFrame,
+} from '../components/shadcn-space/blocks/bento-grid-01/BentoArticleCarouselTile';
 import type { StockBarPoint, StockChipPayload } from '../components/shadcn-space/blocks/bento-grid-01/StockBarsTile';
 import UpcomingDividendsTile, {
   type DividendRowPayload,
@@ -110,7 +115,8 @@ export type BentoGrid01Feature = {
     | 'forex_strip'
     | 'market_movers'
     | 'upcoming_dividends'
-    | 'market_calendar';
+    | 'market_calendar'
+    | 'article_carousel';
   image_url_light: string;
   image_url_dark: string;
   title: string;
@@ -148,7 +154,14 @@ export type BentoGrid01Feature = {
   brokerFaviconUrl?: string | null;
   brokerOverallRating?: number | null;
   brokerPageUrl?: string | null;
+  frame_count?: number;
+  article_source_mode?: 'taxonomy_category' | 'selected_articles';
+  taxonomy_category_id?: number | null;
+  taxonomy_category_name?: string | null;
+  selected_article_ids?: number[];
 };
+
+type TaxonomyCategoryChoice = { id: number; name: string; slug: string };
 
 const BENTO_WIDGET_TILE_TYPES = new Set<BentoGrid01Feature['header_type']>([
   'stock_bars',
@@ -297,6 +310,93 @@ function useResolvedCarouselPreviews(cards: CarouselSlot[], termId: number): Rec
       cancelled = true;
     };
   }, [cards, signature, termId]);
+
+  return resolved;
+}
+
+function articleResultToCarouselFrame(r: ArticleResult): BentoArticleCarouselFrame {
+  return {
+    kind: 'article',
+    title: r.title,
+    href: r.url,
+    imageUrl: r.imageUrl ?? undefined,
+    sourceLabel: r.sourceLabel ?? r.authorName ?? undefined,
+    publishedAtIso: r.publishedAtIso,
+    categoryName: r.categoryName,
+  };
+}
+
+function useResolvedArticleCarouselFrames(
+  features: BentoGrid01Feature[],
+  termId: number,
+): Record<string, BentoArticleCarouselFrame[]> {
+  const carouselFeats = React.useMemo(
+    () => features.filter((f) => f.header_type === 'article_carousel'),
+    [features],
+  );
+  const signature = React.useMemo(
+    () => carouselFeats.map((f) => (
+      `${f.id}:${f.frame_count ?? 5}:${f.article_source_mode ?? ''}:${f.taxonomy_category_id ?? ''}:${(f.selected_article_ids ?? []).join(',')}`
+    )).join('|'),
+    [carouselFeats],
+  );
+  const [resolved, setResolved] = React.useState<Record<string, BentoArticleCarouselFrame[]>>({});
+
+  React.useEffect(() => {
+    if (carouselFeats.length === 0) {
+      setResolved({});
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const next: Record<string, BentoArticleCarouselFrame[]> = {};
+      for (const feat of carouselFeats) {
+        const count = Math.max(2, Math.min(12, feat.frame_count ?? 5));
+        const mode = feat.article_source_mode ?? 'taxonomy_category';
+        const frames: BentoArticleCarouselFrame[] = [];
+        if (mode === 'selected_articles') {
+          for (const id of (feat.selected_article_ids ?? []).slice(0, count)) {
+            if (!id) continue;
+            const q = new URLSearchParams({ article_id: String(id) });
+            try {
+              const res = await fetch(`/inline/article/search/?${q.toString()}`, { credentials: 'same-origin' });
+              if (!res.ok) continue;
+              const data = (await res.json()) as { results?: ArticleResult[] };
+              const article = data.results?.[0];
+              if (article) frames.push(articleResultToCarouselFrame(article));
+            } catch {
+              /* skip */
+            }
+          }
+        } else {
+          const catId = feat.taxonomy_category_id ?? (Number.isFinite(termId) && termId > 0 ? termId : null);
+          if (catId) {
+            const q = new URLSearchParams({
+              random: '1',
+              limit: String(count),
+              taxonomy_category_id: String(catId),
+            });
+            try {
+              const res = await fetch(`/inline/article/search/?${q.toString()}`, { credentials: 'same-origin' });
+              if (res.ok) {
+                const data = (await res.json()) as { results?: ArticleResult[] };
+                for (const row of data.results ?? []) {
+                  frames.push(articleResultToCarouselFrame(row));
+                }
+              }
+            } catch {
+              /* skip */
+            }
+          }
+        }
+        next[feat.id] = frames;
+      }
+      if (!cancelled) setResolved(next);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [carouselFeats, signature, termId]);
 
   return resolved;
 }
@@ -552,6 +652,9 @@ type ArticleResult = {
   excerpt?: string | null;
   authorName?: string | null;
   publishedAt?: string | null;
+  publishedAtIso?: string;
+  sourceLabel?: string;
+  categoryName?: string;
   catalyst?: string | null;
 };
 
@@ -617,6 +720,128 @@ function ArticleSearchInput({ value, onChange, searchUrl, placeholder = 'Search 
         </div>
       )}
     </div>
+  );
+}
+
+// ─── Taxonomy category combobox (article carousel) ───────────────────────────
+
+function TaxonomyCategoryCombobox({
+  termId,
+  categoryChoicesUrl,
+  valueId,
+  valueName,
+  onChange,
+}: {
+  termId: number;
+  categoryChoicesUrl: string;
+  valueId: number | null;
+  valueName: string | null;
+  onChange: (v: { id: number; name: string }) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [query, setQuery] = React.useState('');
+  const [choices, setChoices] = React.useState<TaxonomyCategoryChoice[]>([]);
+  const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!categoryChoicesUrl || !termId) return;
+    let cancelled = false;
+    setLoading(true);
+    const q = new URLSearchParams({ term_id: String(termId) });
+    if (valueId) q.set('include_id', String(valueId));
+    void fetch(`${categoryChoicesUrl}?${q.toString()}`, {
+      headers: { 'X-CSRFToken': getCsrf() },
+      credentials: 'same-origin',
+    })
+      .then((res) => (res.ok ? res.json() : { choices: [] }))
+      .then((data: { choices?: TaxonomyCategoryChoice[] }) => {
+        if (!cancelled) setChoices(data.choices ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setChoices([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [categoryChoicesUrl, termId, valueId]);
+
+  const selected = choices.find((c) => c.id === valueId);
+  const displayLabel = valueName?.trim() || selected?.name || (loading ? 'Loading…' : 'Select category');
+  const filtered = choices.filter((c) =>
+    c.name.toLowerCase().includes(query.trim().toLowerCase()),
+  );
+
+  return (
+    <label className="flex flex-col gap-1.5 min-w-0">
+      <span className="text-muted-foreground text-sm">Taxonomy category</span>
+      <Popover modal={false} open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            className="scn-editor-taxonomy__combo-trigger w-full"
+            aria-expanded={open}
+          >
+            <span
+              className={cn(
+                'scn-editor-taxonomy__combo-value truncate text-left',
+                !valueId && 'scn-editor-taxonomy__combo-value--placeholder',
+              )}
+            >
+              {displayLabel}
+            </span>
+            <ChevronsUpDown size={14} className="shrink-0 opacity-60" aria-hidden />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          className="scn-popover-content scn-editor-taxonomy__combo-popover"
+          align="start"
+          sideOffset={4}
+          collisionPadding={12}
+        >
+          <div className="scn-search-wrap scn-editor-taxonomy__combo-search">
+            <Input
+              className="scn-search-wrap__input"
+              placeholder="Search categories…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+          <ScrollArea className="scn-editor-taxonomy__combo-scroll">
+            <div className="scn-editor-taxonomy__combo-options">
+              {filtered.length > 0 ? (
+                filtered.map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    className={cn(
+                      'scn-editor-taxonomy__combo-option',
+                      opt.id === valueId && 'scn-editor-taxonomy__combo-option--active',
+                    )}
+                    onClick={() => {
+                      onChange({ id: opt.id, name: opt.name });
+                      setOpen(false);
+                    }}
+                  >
+                    <span>{opt.name}</span>
+                    {opt.id === valueId ? (
+                      <span className="scn-editor-taxonomy__combo-check" aria-hidden>✓</span>
+                    ) : null}
+                  </button>
+                ))
+              ) : (
+                <p className="scn-editor-taxonomy__combo-empty">
+                  {loading ? 'Loading…' : 'No matching categories.'}
+                </p>
+              )}
+            </div>
+          </ScrollArea>
+        </PopoverContent>
+      </Popover>
+    </label>
   );
 }
 
@@ -943,7 +1168,10 @@ function renderPackedCarouselEditorBentoSlide(
   dividendsPreviewUrl: string,
   calendarPreviewUrl: string,
   brokerListUrl: string,
+  termId: number,
+  categoryChoicesUrl: string,
   resolvedRandom: Record<string, ArticleResult | null>,
+  resolvedCarouselFrames: Record<string, BentoArticleCarouselFrame[]>,
   onPatch: (featId: string, patch: Partial<BentoGrid01Feature>) => void,
   onRemove: (featId: string) => void,
 ): React.ReactNode {
@@ -953,6 +1181,9 @@ function renderPackedCarouselEditorBentoSlide(
         key={feat.id}
         feat={feat}
         resolved={resolvedRandom[feat.id]}
+        carouselFrames={resolvedCarouselFrames[feat.id]}
+        termId={termId}
+        categoryChoicesUrl={categoryChoicesUrl}
         searchUrl={searchUrl}
         stockPreviewUrl={stockPreviewUrl}
         forexPreviewUrl={forexPreviewUrl}
@@ -1205,6 +1436,7 @@ const BENTO_TILE_LABEL: Record<string, string> = {
   market_movers: 'Market movers',
   upcoming_dividends: 'Upcoming dividends',
   market_calendar: 'Market calendar',
+  article_carousel: 'Article carousel',
 };
 
 const BENTO_TILE_TYPES: Array<{ type: BentoGrid01Feature['header_type']; desc: string }> = [
@@ -1217,6 +1449,7 @@ const BENTO_TILE_TYPES: Array<{ type: BentoGrid01Feature['header_type']; desc: s
   { type: 'market_movers',      desc: 'Winners and losers by region' },
   { type: 'upcoming_dividends', desc: 'Upcoming cash and stock dividends' },
   { type: 'market_calendar',    desc: 'Upcoming NASDAQ / NYSE sessions' },
+  { type: 'article_carousel',   desc: 'Hero carousel with underscore frame indicators' },
 ];
 
 const BENTO_TILE_TYPE_OPTIONS: Array<{ value: BentoGrid01Feature['header_type']; label: string }> = [
@@ -1229,6 +1462,7 @@ const BENTO_TILE_TYPE_OPTIONS: Array<{ value: BentoGrid01Feature['header_type'];
   { value: 'market_movers', label: 'Market movers' },
   { value: 'upcoming_dividends', label: 'Upcoming dividends' },
   { value: 'market_calendar', label: 'Market calendar' },
+  { value: 'article_carousel', label: 'Article carousel' },
 ];
 
 const MARKET_REGION_OPTIONS: Array<{ value: 'US' | 'ASIA' | 'EUROPE'; label: string }> = [
@@ -1421,8 +1655,12 @@ function BrokerPickerCombobox({
   );
 }
 
-function createBentoFeatureOfType(headerType: BentoGrid01Feature['header_type']): BentoGrid01Feature {
+function createBentoFeatureOfType(
+  headerType: BentoGrid01Feature['header_type'],
+  ctx?: { termId?: number; activeTermName?: string },
+): BentoGrid01Feature {
   const base = { id: uid(), image_url_light: '', image_url_dark: '', title: '', description: '', col_span: 1, row_span: 1 };
+  const tileCtx = ctx ?? {};
   if (headerType === 'card') {
     return {
       ...base,
@@ -1468,6 +1706,18 @@ function createBentoFeatureOfType(headerType: BentoGrid01Feature['header_type'])
   }
   if (headerType === 'fxbroker') {
     return { ...base, header_type: 'fxbroker', brokerId: null, brokerName: null, brokerFaviconUrl: null, brokerOverallRating: null, brokerPageUrl: null };
+  }
+  if (headerType === 'article_carousel') {
+    const tid = tileCtx.termId;
+    return {
+      ...base,
+      header_type: 'article_carousel',
+      frame_count: 5,
+      article_source_mode: 'taxonomy_category',
+      taxonomy_category_id: tid && tid > 0 ? tid : null,
+      taxonomy_category_name: tileCtx.activeTermName ?? null,
+      selected_article_ids: [],
+    };
   }
   return { ...base, header_type: headerType };
 }
@@ -1900,9 +2150,10 @@ function BentoTileRichTextEditor({ feat, onChange }: {
   );
 }
 
-function BentoFeaturePreview({ feat, resolved, linkable, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl }: {
+function BentoFeaturePreview({ feat, resolved, carouselFrames, linkable, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl }: {
   feat: BentoGrid01Feature;
   resolved: ArticleResult | null | undefined;
+  carouselFrames?: BentoArticleCarouselFrame[];
   linkable?: boolean;
   stockPreviewUrl?: string;
   forexPreviewUrl?: string;
@@ -1910,6 +2161,14 @@ function BentoFeaturePreview({ feat, resolved, linkable, stockPreviewUrl, forexP
   dividendsPreviewUrl?: string;
   calendarPreviewUrl?: string;
 }) {
+  if (feat.header_type === 'article_carousel') {
+    return (
+      <BentoArticleCarouselTile
+        frames={carouselFrames ?? []}
+        frameCount={feat.frame_count ?? 5}
+      />
+    );
+  }
   if (feat.header_type === 'card') {
     if (resolved) {
       return (
@@ -2048,9 +2307,7 @@ function BentoFeaturePreview({ feat, resolved, linkable, stockPreviewUrl, forexP
       return <FxBrokerCardView data={brokerPayload} />;
     }
     return (
-      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
-        <span>+<br />Add item</span>
-      </div>
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty" aria-hidden />
     );
   }
 
@@ -2060,16 +2317,12 @@ function BentoFeaturePreview({ feat, resolved, linkable, stockPreviewUrl, forexP
       return <img src={src} alt={feat.title || ''} className="scn-bento-editor__image-preview" />;
     }
     return (
-      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
-        <span>Image tile</span>
-      </div>
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty" aria-hidden />
     );
   }
 
   return (
-    <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
-      <span>{BENTO_TILE_LABEL[feat.header_type] ?? 'Feature tile'}</span>
-    </div>
+    <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty" aria-hidden />
   );
 }
 
@@ -2126,9 +2379,12 @@ function BentoTileLayoutFields({
   );
 }
 
-function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, gridColumns, onPatch, onRemove }: {
+function BentoFeaturePanel({ feat, resolved, carouselFrames, termId, categoryChoicesUrl, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, gridColumns, onPatch, onRemove }: {
   feat: BentoGrid01Feature;
   resolved: ArticleResult | null | undefined;
+  carouselFrames?: BentoArticleCarouselFrame[];
+  termId: number;
+  categoryChoicesUrl: string;
   searchUrl: string;
   stockPreviewUrl: string;
   forexPreviewUrl: string;
@@ -2166,6 +2422,9 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPr
         <div
           className={cn(
             'scn-bento-editor__panel-content',
+            feat.header_type === 'card' && 'scn-bento-editor__panel-content--card',
+            feat.header_type === 'fxbroker' && 'scn-bento-editor__panel-content--fxbroker',
+            feat.header_type === 'article_carousel' && 'scn-bento-editor__panel-content--article-carousel',
             isWidgetTile && 'scn-bento-editor__panel-content--widget',
           )}
           role="button"
@@ -2176,6 +2435,7 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPr
           <BentoFeaturePreview
             feat={feat}
             resolved={resolved}
+            carouselFrames={carouselFrames}
             stockPreviewUrl={stockPreviewUrl}
             forexPreviewUrl={forexPreviewUrl}
             marketMoversPreviewUrl={marketMoversPreviewUrl}
@@ -2233,6 +2493,91 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPr
                 onChange={e => onPatch({ image_url_light: e.target.value })} />
               <Input value={feat.image_url_dark} placeholder="Image URL (dark mode)"
                 onChange={e => onPatch({ image_url_dark: e.target.value })} />
+            </>
+          )}
+          {feat.header_type === 'article_carousel' && (
+            <>
+              <label className="flex flex-col gap-1.5 min-w-0">
+                <span className="text-muted-foreground text-sm">Frames</span>
+                <Input
+                  type="number"
+                  min={2}
+                  max={12}
+                  value={feat.frame_count ?? 5}
+                  onChange={(e) => {
+                    const n = parseInt(e.target.value, 10);
+                    onPatch({ frame_count: Number.isFinite(n) ? Math.max(2, Math.min(12, n)) : 5 });
+                  }}
+                />
+              </label>
+              <ToggleGroup
+                value={feat.article_source_mode ?? 'taxonomy_category'}
+                onValueChange={(v) => {
+                  if (v) {
+                    onPatch({
+                      article_source_mode: v as BentoGrid01Feature['article_source_mode'],
+                      taxonomy_category_id: v === 'taxonomy_category' ? (feat.taxonomy_category_id ?? termId) : feat.taxonomy_category_id,
+                      taxonomy_category_name: v === 'taxonomy_category' ? (feat.taxonomy_category_name ?? null) : feat.taxonomy_category_name,
+                      selected_article_ids: v === 'selected_articles' ? (feat.selected_article_ids ?? []) : [],
+                    });
+                  }
+                }}
+              >
+                <ToggleGroupItem value="taxonomy_category">Category</ToggleGroupItem>
+                <ToggleGroupItem value="selected_articles">Selected</ToggleGroupItem>
+              </ToggleGroup>
+              {(feat.article_source_mode ?? 'taxonomy_category') === 'taxonomy_category' ? (
+                <TaxonomyCategoryCombobox
+                  termId={termId}
+                  categoryChoicesUrl={categoryChoicesUrl}
+                  valueId={feat.taxonomy_category_id ?? termId}
+                  valueName={feat.taxonomy_category_name ?? null}
+                  onChange={({ id, name }) => onPatch({
+                    taxonomy_category_id: id,
+                    taxonomy_category_name: name,
+                  })}
+                />
+              ) : (
+                <div className="scn-bento-editor__carousel-articles">
+                  {(feat.selected_article_ids ?? []).map((id, idx) => (
+                    <div key={`${id}-${idx}`} className="scn-bento-editor__carousel-article-row">
+                      <ArticleSearchInput
+                        value={{ id, title: null }}
+                        searchUrl={searchUrl}
+                        onChange={(v) => {
+                          const ids = [...(feat.selected_article_ids ?? [])];
+                          ids[idx] = v.id ?? 0;
+                          onPatch({ selected_article_ids: ids.filter((x) => x > 0) });
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="scn-bento-editor__carousel-remove-btn"
+                        onClick={() => {
+                          const ids = [...(feat.selected_article_ids ?? [])];
+                          ids.splice(idx, 1);
+                          onPatch({ selected_article_ids: ids });
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                  {(feat.selected_article_ids ?? []).length < (feat.frame_count ?? 5) ? (
+                    <ArticleSearchInput
+                      value={{ id: null, title: null }}
+                      searchUrl={searchUrl}
+                      placeholder="Add article…"
+                      onChange={(v) => {
+                        if (!v.id) return;
+                        const ids = [...(feat.selected_article_ids ?? []), v.id];
+                        onPatch({ selected_article_ids: ids.slice(0, feat.frame_count ?? 5) });
+                      }}
+                    />
+                  ) : null}
+                </div>
+              )}
             </>
           )}
           {feat.header_type === 'card' && (
@@ -2429,7 +2774,9 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPr
               <span className="text-muted-foreground text-xs">Right-click the tile for quick ticker edit.</span>
             </div>
           )}
-          {feat.header_type !== 'card' && !BENTO_WIDGET_TILE_TYPES.has(feat.header_type) && (
+          {feat.header_type !== 'card'
+            && feat.header_type !== 'article_carousel'
+            && !BENTO_WIDGET_TILE_TYPES.has(feat.header_type) && (
             <>
               <Input value={feat.title} placeholder="Title"
                 onChange={e => onPatch({ title: e.target.value })} />
@@ -2455,7 +2802,6 @@ function BentoEditorEmptySlot({
   const [open, setOpen] = React.useState(false);
   return (
     <div className="scn-bento-editor__empty-column">
-      <span className="scn-bento-editor__empty-column-label">Empty</span>
       <Popover open={open} onOpenChange={setOpen} modal={false}>
         <PopoverTrigger asChild>
           <button type="button" className="scn-empty-add-btn scn-bento-editor__empty-column-btn" aria-label="Add tile to column">
@@ -2716,7 +3062,7 @@ function BentoGrid01BlockHeaderFields({
   );
 }
 
-function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, termId, onChange, onAddTileInColumn, onAddTileInRow }: {
+function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, termId, categoryChoicesUrl, tileCtx, onChange, onAddTileInColumn, onAddTileInRow }: {
   block: BentoGrid01Block;
   searchUrl: string;
   stockPreviewUrl: string;
@@ -2726,12 +3072,15 @@ function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl,
   calendarPreviewUrl: string;
   brokerListUrl: string;
   termId: number;
+  categoryChoicesUrl: string;
+  tileCtx: { termId: number; activeTermName?: string };
   onChange: (b: BentoGrid01Block) => void;
   onAddTileInColumn: (colIndex: number, rowIndex: number, headerType: BentoGrid01Feature['header_type']) => void;
   onAddTileInRow: (rowIndex: number, headerType: BentoGrid01Feature['header_type']) => void;
 }) {
   const cardSlots = React.useMemo(() => bentoCardFeaturesToSlots(block.features), [block.features]);
   const resolvedRandom = useResolvedCarouselPreviews(cardSlots, termId);
+  const resolvedCarouselFrames = useResolvedArticleCarouselFrames(block.features, termId);
   const blockRef = React.useRef(block);
   blockRef.current = block;
 
@@ -2820,6 +3169,9 @@ function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl,
           <BentoFeaturePanel
             feat={feat}
             resolved={resolvedRandom[feat.id]}
+            carouselFrames={resolvedCarouselFrames[feat.id]}
+            termId={termId}
+            categoryChoicesUrl={categoryChoicesUrl}
             searchUrl={searchUrl}
             stockPreviewUrl={stockPreviewUrl}
             forexPreviewUrl={forexPreviewUrl}
@@ -2885,7 +3237,7 @@ function CarouselAddTileMenu({
   );
 }
 
-function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, termId, onChange }: {
+function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, termId, categoryChoicesUrl, tileCtx, onChange }: {
   block: CarouselBlock;
   searchUrl: string;
   stockPreviewUrl: string;
@@ -2895,12 +3247,15 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, ma
   calendarPreviewUrl: string;
   brokerListUrl: string;
   termId: number;
+  categoryChoicesUrl: string;
+  tileCtx: { termId: number; activeTermName?: string };
   onChange: (b: CarouselBlock) => void;
 }) {
   const [addOpen, setAddOpen] = React.useState(false);
   const features = block.features;
   const cardSlots = React.useMemo(() => bentoCardFeaturesToSlots(features), [features]);
   const resolvedRandom = useResolvedCarouselPreviews(cardSlots, termId);
+  const resolvedCarouselFrames = useResolvedArticleCarouselFrames(features, termId);
   const infiniteScroll = Boolean(block.infiniteScroll);
   const stackDepth = carouselStackDepth(block);
   const allCards = carouselFeaturesAllCards(features);
@@ -2936,7 +3291,10 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, ma
   }
 
   function addCarouselFeature(headerType: BentoGrid01Feature['header_type']) {
-    onChange({ ...block, features: [...features, createBentoFeatureOfType(headerType)] });
+    onChange({
+      ...block,
+      features: [...features, createBentoFeatureOfType(headerType, tileCtx)],
+    });
   }
 
   const previewFixedHeightStyle: React.CSSProperties | undefined =
@@ -3021,7 +3379,10 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, ma
                 dividendsPreviewUrl,
                 calendarPreviewUrl,
                 brokerListUrl,
+                termId,
+                categoryChoicesUrl,
                 resolvedRandom,
+                resolvedCarouselFrames,
                 patchFeature,
                 removeFeature,
               ))
@@ -3031,6 +3392,9 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, ma
                     <BentoFeaturePanel
                       feat={feat}
                       resolved={resolvedRandom[feat.id]}
+                      carouselFrames={resolvedCarouselFrames[feat.id]}
+                      termId={termId}
+                      categoryChoicesUrl={categoryChoicesUrl}
                       searchUrl={searchUrl}
                       stockPreviewUrl={stockPreviewUrl}
                       forexPreviewUrl={forexPreviewUrl}
@@ -3145,28 +3509,34 @@ const BLOCK_LABEL: Record<string, string> = {
   separator: 'Separator', bento_grid_01: 'Bento block', carousel: 'Carousel',
 };
 
-function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, onChange, onRemove, onMove }: {
+function BlockEditor({ block, index, total, termId, activeTermName, categoryChoicesUrl, uploadUrl, articleSearchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, onChange, onRemove, onMove }: {
   block: TaxonomyBlock; index: number; total: number;
   termId: number;
+  activeTermName: string;
+  categoryChoicesUrl: string;
   uploadUrl: string; articleSearchUrl: string; stockPreviewUrl: string;
   forexPreviewUrl: string; marketMoversPreviewUrl: string;
   dividendsPreviewUrl: string; calendarPreviewUrl: string; brokerListUrl: string;
   onChange: (b: TaxonomyBlock) => void; onRemove: () => void; onMove: (dir: -1 | 1) => void;
 }) {
   const [bentoAddTileOpen, setBentoAddTileOpen] = React.useState(false);
+  const tileCtx = React.useMemo(
+    () => ({ termId, activeTermName }),
+    [termId, activeTermName],
+  );
 
   function addBentoTile(headerType: BentoGrid01Feature['header_type']) {
     if (block.type !== 'bento_grid_01') return;
     onChange({
       ...block,
-      features: [...block.features, createBentoFeatureOfType(headerType)],
+      features: [...block.features, createBentoFeatureOfType(headerType, tileCtx)],
     });
     setBentoAddTileOpen(false);
   }
 
   function addBentoTileInColumn(colIndex: number, rowIndex: number, headerType: BentoGrid01Feature['header_type']) {
     if (block.type !== 'bento_grid_01') return;
-    const feat = createBentoFeatureOfType(headerType);
+    const feat = createBentoFeatureOfType(headerType, tileCtx);
     feat.col = colIndex + 1;
     feat.row = rowIndex + 1;
     feat.col_span = 1;
@@ -3179,7 +3549,7 @@ function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl,
 
   function addBentoTileInRow(rowIndex: number, headerType: BentoGrid01Feature['header_type']) {
     if (block.type !== 'bento_grid_01') return;
-    const feat = createBentoFeatureOfType(headerType);
+    const feat = createBentoFeatureOfType(headerType, tileCtx);
     feat.row = rowIndex + 1;
     feat.col_span = 1;
     feat.row_span = 1;
@@ -3237,6 +3607,8 @@ function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl,
             calendarPreviewUrl={calendarPreviewUrl}
             brokerListUrl={brokerListUrl}
             termId={termId}
+            categoryChoicesUrl={categoryChoicesUrl}
+            tileCtx={tileCtx}
             onChange={onChange as (b: BentoGrid01Block) => void}
             onAddTileInColumn={addBentoTileInColumn}
             onAddTileInRow={addBentoTileInRow}
@@ -3253,6 +3625,8 @@ function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl,
             calendarPreviewUrl={calendarPreviewUrl}
             brokerListUrl={brokerListUrl}
             termId={termId}
+            categoryChoicesUrl={categoryChoicesUrl}
+            tileCtx={tileCtx}
             onChange={onChange as (b: CarouselBlock) => void}
           />
         )}
@@ -3328,6 +3702,10 @@ function ReadOnlyBlock({
     return [];
   }, [block]);
   const resolvedRandom = useResolvedCarouselPreviews(previewSlots, termId);
+  const resolvedCarouselFrames = useResolvedArticleCarouselFrames(
+    block.type === 'bento_grid_01' || block.type === 'carousel' ? block.features : [],
+    termId,
+  );
 
   if (block.type === 'heading') {
     const Tag = block.level as 'h1' | 'h2';
@@ -3382,12 +3760,15 @@ function ReadOnlyBlock({
           className={cn(
             'scn-bento-readonly__panel',
             f.header_type === 'card' && 'scn-bento-readonly__panel--card',
+            f.header_type === 'fxbroker' && 'scn-bento-readonly__panel--fxbroker',
+            f.header_type === 'article_carousel' && 'scn-bento-readonly__panel--article-carousel',
             isWidgetTile && 'scn-bento-readonly__panel--widget',
           )}
         >
           <BentoFeaturePreview
             feat={f}
             resolved={resolvedRandom[f.id]}
+            carouselFrames={resolvedCarouselFrames[f.id]}
             linkable
             stockPreviewUrl={stockPreviewUrl}
             forexPreviewUrl={forexPreviewUrl}
@@ -3505,6 +3886,7 @@ function ReadOnlyBlock({
                   <BentoFeaturePreview
                     feat={feat}
                     resolved={resolvedRandom[feat.id]}
+                    carouselFrames={resolvedCarouselFrames[feat.id]}
                     linkable
                     stockPreviewUrl={stockPreviewUrl}
                     forexPreviewUrl={forexPreviewUrl}
@@ -3546,11 +3928,13 @@ function TaxonomyEditorSaveBar({
   saving,
   lastSaved,
   onSave,
+  addBlock,
   variant = 'top',
 }: {
   saving: boolean;
   lastSaved: Date | null;
   onSave: () => void;
+  addBlock?: React.ReactNode;
   variant?: 'top' | 'bottom';
 }) {
   const barClass =
@@ -3559,12 +3943,15 @@ function TaxonomyEditorSaveBar({
       : 'scn-taxonomy-editor__save-bar';
   return (
     <div className={barClass}>
-      <Button onClick={onSave} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
-      {lastSaved && (
+      <div className="scn-taxonomy-editor__save-bar-start">
+        <Button onClick={onSave} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
+        {addBlock ? <div className="scn-taxonomy-editor__save-bar-add">{addBlock}</div> : null}
+      </div>
+      {lastSaved ? (
         <span className="scn-taxonomy-editor__saved">
           Saved {lastSaved.toLocaleTimeString()}
         </span>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -3573,11 +3960,13 @@ function TaxonomyEditorSaveBar({
 
 function TaxonomyEditor({
   termId,
+  activeTermName,
   initialJson,
   canEdit,
   saveUrl,
   uploadUrl,
   articleSearchUrl,
+  categoryChoicesUrl,
   stockPreviewUrl,
   forexPreviewUrl,
   marketMoversPreviewUrl,
@@ -3586,11 +3975,13 @@ function TaxonomyEditor({
   brokerListUrl,
 }: {
   termId: number;
+  activeTermName: string;
   initialJson: object | null;
   canEdit: boolean;
   saveUrl: string;
   uploadUrl: string;
   articleSearchUrl: string;
+  categoryChoicesUrl: string;
   stockPreviewUrl: string;
   forexPreviewUrl: string;
   marketMoversPreviewUrl: string;
@@ -3682,9 +4073,16 @@ function TaxonomyEditor({
     );
   }
 
+  const addBlockControl = <AddBlockMenu onAdd={addBlock} />;
+
   return (
     <div className="scn-taxonomy-editor">
-      <TaxonomyEditorSaveBar saving={saving} lastSaved={lastSaved} onSave={handleSave} />
+      <TaxonomyEditorSaveBar
+        saving={saving}
+        lastSaved={lastSaved}
+        onSave={handleSave}
+        addBlock={addBlockControl}
+      />
 
       <div className="scn-editor-body">
         {blocks.map((block, i) => (
@@ -3694,6 +4092,8 @@ function TaxonomyEditor({
             index={i}
             total={blocks.length}
             termId={termId}
+            activeTermName={activeTermName}
+            categoryChoicesUrl={categoryChoicesUrl}
             uploadUrl={uploadUrl}
             articleSearchUrl={articleSearchUrl}
             stockPreviewUrl={stockPreviewUrl}
@@ -3707,10 +4107,15 @@ function TaxonomyEditor({
             onMove={dir => moveBlock(i, dir)}
           />
         ))}
-        <AddBlockMenu onAdd={addBlock} />
       </div>
 
-      <TaxonomyEditorSaveBar saving={saving} lastSaved={lastSaved} onSave={handleSave} variant="bottom" />
+      <TaxonomyEditorSaveBar
+        saving={saving}
+        lastSaved={lastSaved}
+        onSave={handleSave}
+        addBlock={addBlockControl}
+        variant="bottom"
+      />
 
       {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
     </div>
@@ -3736,6 +4141,8 @@ export function mountTaxonomyEditor(): void {
     const dividendsPreviewUrl = host.dataset['dividendsPreviewUrl'] ?? '';
     const calendarPreviewUrl = host.dataset['calendarPreviewUrl'] ?? '';
     const brokerListUrl = host.dataset['brokerListUrl'] ?? '';
+    const categoryChoicesUrl = host.dataset['categoryChoicesUrl'] ?? '';
+    const activeTermName = host.dataset['activeTermName'] ?? '';
     if (!termId) return;
 
     let initialJson: object | null = null;
@@ -3752,11 +4159,13 @@ export function mountTaxonomyEditor(): void {
     root.render(
       <TaxonomyEditor
         termId={termId}
+        activeTermName={activeTermName}
         initialJson={initialJson}
         canEdit={canEdit}
         saveUrl={saveUrl}
         uploadUrl={uploadUrl}
         articleSearchUrl={articleSearchUrl}
+        categoryChoicesUrl={categoryChoicesUrl}
         stockPreviewUrl={stockPreviewUrl}
         forexPreviewUrl={forexPreviewUrl}
         marketMoversPreviewUrl={marketMoversPreviewUrl}

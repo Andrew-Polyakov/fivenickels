@@ -220,6 +220,7 @@ class BentoGridFeatureBlock(blocks.StructBlock):
             ("market_movers", "Market movers"),
             ("upcoming_dividends", "Upcoming dividends"),
             ("market_calendar", "Market calendar"),
+            ("article_carousel", "Article carousel"),
         ],
         default="image",
     )
@@ -378,6 +379,57 @@ class BentoGridFeatureBlock(blocks.StructBlock):
         max_value=90,
         label="Max calendar rows",
     )
+    frame_count = blocks.IntegerBlock(
+        required=False,
+        default=5,
+        min_value=2,
+        max_value=12,
+        label="Carousel frames",
+        help_text="Article carousel only: number of slides and underscore indicators.",
+    )
+    article_source_mode = blocks.ChoiceBlock(
+        choices=[
+            ("taxonomy_category", "Taxonomy category"),
+            ("selected_articles", "Selected articles"),
+        ],
+        default="taxonomy_category",
+        required=False,
+        label="Article carousel source",
+    )
+    taxonomy_category = SnippetChooserBlock(
+        "home.TaxonomyTerm",
+        required=False,
+        label="Taxonomy category",
+        help_text=(
+            "Article carousel only: articles matching this term via section or "
+            "taxonomy category (same as featured-quad chips)."
+        ),
+    )
+    selected_articles = blocks.ListBlock(
+        blocks.PageChooserBlock(
+            target_model="home.TaggedContentPage",
+            required=False,
+            label="Article",
+        ),
+        required=False,
+        label="Selected articles",
+        help_text="Article carousel only: pick articles in display order (max = frame count).",
+    )
+
+    def clean(self, value):
+        result = super().clean(value)
+        if (result or {}).get("header_type") != "article_carousel":
+            return result
+        try:
+            fc = int(result.get("frame_count") or 5)
+        except (TypeError, ValueError):
+            fc = 5
+        result["frame_count"] = max(2, min(12, fc))
+        if (result.get("article_source_mode") or "taxonomy_category") == "selected_articles":
+            selected = list(result.get("selected_articles") or [])
+            if len(selected) > result["frame_count"]:
+                result["selected_articles"] = selected[: result["frame_count"]]
+        return result
 
     class Meta:
         icon = "image"

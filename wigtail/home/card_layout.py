@@ -14,6 +14,7 @@ from django.utils import timezone as django_timezone
 from django.utils.formats import date_format
 
 from home.blocks import _resolve_universal_tile_state
+from home.query import get_pages_for_taxonomy_term
 from home.alpaca_bars_client import fetch_recent_stock_bars
 from home.alpaca_market_client import fetch_snapshots
 from home.market_events import (
@@ -72,6 +73,17 @@ def _article_card_dict(page: Page | None, request) -> dict[str, Any]:
         except Exception:
             image_url = ""
     catalyst = (spec.catalyst or "").strip()
+    published_iso = ""
+    if spec.first_published_at:
+        dt = spec.first_published_at
+        if django_timezone.is_naive(dt):
+            dt = django_timezone.make_aware(dt, dt_timezone.utc)
+        published_iso = dt.isoformat()
+    category_name = ""
+    if spec.taxonomy_category_id:
+        category_name = spec.taxonomy_category.name
+    elif spec.section_term_id:
+        category_name = spec.section_term.name
     return {
         "kind": "article",
         "title": title,
@@ -81,8 +93,61 @@ def _article_card_dict(page: Page | None, request) -> dict[str, Any]:
         "tags": list(spec.tags.values_list("name", flat=True)[:5]),
         "authorName": spec.card_author_name(),
         "publishedAt": date_format(spec.first_published_at, "F j, Y") if spec.first_published_at else "",
+        "publishedAtIso": published_iso,
+        "sourceLabel": spec.card_author_name(),
+        "categoryName": category_name,
         "catalyst": catalyst,
     }
+
+
+def _clamp_bento_frame_count(raw: Any) -> int:
+    try:
+        n = int(raw)
+    except (TypeError, ValueError):
+        n = 5
+    return max(2, min(12, n))
+
+
+def _resolve_carousel_frames(
+    val: dict,
+    exclude_ids: list[int] | None = None,
+) -> list[TaggedContentPage]:
+    """Resolve article pages for an article_carousel bento feature."""
+    frame_count = _clamp_bento_frame_count(val.get("frame_count"))
+    mode = str(val.get("article_source_mode") or "taxonomy_category")
+    exclude = list(exclude_ids or [])
+    pages: list[TaggedContentPage] = []
+
+    if mode == "selected_articles":
+        for page_ref in val.get("selected_articles") or []:
+            if page_ref is None:
+                continue
+            try:
+                spec = page_ref.specific
+            except Exception:
+                continue
+            if not isinstance(spec, TaggedContentPage):
+                continue
+            if not spec.live:
+                continue
+            pk = getattr(spec, "pk", None)
+            if pk is not None and int(pk) in exclude:
+                continue
+            pages.append(spec)
+            if pk is not None:
+                exclude.append(int(pk))
+            if len(pages) >= frame_count:
+                break
+    else:
+        term = val.get("taxonomy_category")
+        if term is not None:
+            picked = get_pages_for_taxonomy_term(
+                term,
+                limit=frame_count,
+                exclude_ids=exclude,
+            )
+            pages.extend(picked)
+    return pages
 
 
 def _tag_ids_from_art(art: dict) -> list[int]:
@@ -605,6 +670,22 @@ def _serialize_bentogrid01(block_value: dict, parent_context: dict | None = None
             scale_raw = val.get("card_image_scale")
             if scale_raw in _BENTO_CARD_IMAGE_SCALE_CHOICES:
                 entry["card_image_scale"] = scale_raw
+        if header_type == "article_carousel":
+            frame_count = _clamp_bento_frame_count(val.get("frame_count"))
+            entry["frame_count"] = frame_count
+            entry["article_source_mode"] = str(
+                val.get("article_source_mode") or "taxonomy_category"
+            )
+            carousel_pages = _resolve_carousel_frames(val, list(used_page_ids))
+            frames: list[dict[str, Any]] = []
+            for tile_page in carousel_pages:
+                pk = getattr(tile_page, "pk", None)
+                if pk is not None:
+                    used_page_ids.append(int(pk))
+                card = _article_card_dict(tile_page, request)
+                if card.get("kind") == "article":
+                    frames.append(card)
+            entry["frames"] = frames
         if header_type == "fxbroker":
             broker = val.get("broker")
             if broker:

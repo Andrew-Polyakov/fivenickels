@@ -250,7 +250,7 @@ function CategoryEditPopover({
     }
   };
 
-  if (!canEdit) {
+  if (!canEdit || !target.removable) {
     return <></>;
   }
 

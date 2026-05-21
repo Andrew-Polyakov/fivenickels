@@ -255,6 +255,30 @@ def pad_featured_quad_slots(pages: list) -> list:
     return out
 
 
+def get_pages_for_taxonomy_term(
+    term: TaxonomyTerm,
+    *,
+    limit: int = 5,
+    exclude_ids: list[int] | None = None,
+) -> list:
+    """
+    Live public articles for a taxonomy chip: ``section_term`` or ``taxonomy_category``
+    matches ``term`` (same rule as featured-quad category filter).
+    """
+    from home.models import TaggedContentPage
+
+    qs = (
+        TaggedContentPage.objects.live()
+        .public()
+        .filter(Q(section_term=term) | Q(taxonomy_category=term))
+        .annotate(_effective_priority=Coalesce("tile_priority", Value(10)))
+        .order_by("-_effective_priority", "-first_published_at", "pk")
+    )
+    if exclude_ids:
+        qs = qs.exclude(pk__in=exclude_ids)
+    return list(qs[: max(1, limit)])
+
+
 def featured_quad_pages_for_sector(
     sector,
     category_slug: str | None,

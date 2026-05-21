@@ -100,6 +100,11 @@ urlpatterns = [
         name="search_taxonomy_articles",
     ),
     path(
+        "inline/taxonomy/category-choices/",
+        inline_edit_views.taxonomy_category_choices,
+        name="taxonomy_category_choices",
+    ),
+    path(
         "inline/taxonomy/stock-bars-preview/",
         inline_edit_views.preview_stock_bars_tile,
         name="stock_bars_preview",

@@ -22,6 +22,7 @@ from home.alpaca_bars_client import fetch_recent_stock_bars
 from home.blocks import _resolve_section_term, _resolve_universal_tile_state
 from home.card_layout import (
     BENTO_LAYOUT_VERSION,
+    _resolve_carousel_frames,
     _serialize_bentogrid01,
     build_layout_payload,
     serialize_article_card_for_related,
@@ -32,6 +33,7 @@ from home.query import (
     _section_term_ids_for_taxonomy_scope,
     build_home_page_display_items,
     featured_quad_pages_for_sector,
+    get_pages_for_taxonomy_term,
     get_random_pages_for_section,
     get_random_pages_for_section_prioritized,
     get_priority_pages_for_section,
@@ -389,6 +391,80 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         self.assertEqual(len(pages), 4)
         self.assertEqual(pages[0].pk, self.page_e1.pk)
 
+    def test_get_pages_for_taxonomy_term_matches_section_or_category(self):
+        child = TaxonomyTerm(
+            name="Oil Carousel Cat",
+            slug="energy-oil-carousel-cat",
+            is_visible=True,
+            sort_order=2,
+        )
+        self.energy.add_child(instance=child)
+        TaxonomyTerm.fix_tree()
+        oil = TaxonomyTerm.objects.get(slug="energy-oil-carousel-cat")
+        TaggedContentPage.objects.filter(pk=self.page_e1.pk).update(
+            taxonomy_category_id=oil.pk
+        )
+        pages = get_pages_for_taxonomy_term(oil, limit=5)
+        self.assertTrue(any(p.pk == self.page_e1.pk for p in pages))
+
+    def test_resolve_carousel_frames_selected_preserves_order(self):
+        frames = _resolve_carousel_frames(
+            {
+                "frame_count": 3,
+                "article_source_mode": "selected_articles",
+                "selected_articles": [self.page_e2, self.page_e1],
+            },
+            exclude_ids=[],
+        )
+        self.assertEqual(len(frames), 2)
+        self.assertEqual(frames[0].pk, self.page_e2.pk)
+        self.assertEqual(frames[1].pk, self.page_e1.pk)
+
+    def test_taxonomy_category_choices_returns_names(self):
+        from django.urls import reverse
+
+        admin = get_user_model().objects.create_superuser(
+            "carousel_admin", "carousel@test.com", "pass",
+        )
+        self.client.force_login(admin)
+        url = reverse("taxonomy_category_choices")
+        r = self.client.get(url, {"term_id": self.energy.pk})
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertIn("choices", data)
+        ids = {c["id"] for c in data["choices"]}
+        self.assertIn(self.energy.pk, ids)
+        names = {c["name"] for c in data["choices"]}
+        self.assertIn(self.energy.name, names)
+
+    def test_serialize_bentogrid01_article_carousel(self):
+        payload = _serialize_bentogrid01(
+            {
+                "badge_text": "News",
+                "heading": "Carousel",
+                "features": [
+                    {
+                        "header_type": "article_carousel",
+                        "frame_count": 2,
+                        "article_source_mode": "selected_articles",
+                        "selected_articles": [self.page_e1, self.page_e2],
+                        "title": "",
+                        "description": "",
+                        "col_span": 2,
+                        "row_span": 2,
+                    }
+                ],
+            },
+            {"request": None},
+        )
+        feat = payload["features"][0]
+        self.assertEqual(feat["header_type"], "article_carousel")
+        self.assertEqual(feat["frame_count"], 2)
+        self.assertEqual(len(feat["frames"]), 2)
+        self.assertEqual(feat["frames"][0]["kind"], "article")
+        self.assertIn("publishedAtIso", feat["frames"][0])
+        self.assertIn("sourceLabel", feat["frames"][0])
+
     def test_featured_quad_pages_for_sector_returns_four_slots(self):
         pages, sel = featured_quad_pages_for_sector(
             self.energy, None, home_page=self.homepage
@@ -680,6 +756,63 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         ctx = market_header(request)
         footer_slugs = [t.slug for t in ctx["site_footer_roots"]]
         self.assertIn(MARKET_NEWS_SLUG, footer_slugs)
+
+    def test_brokers_nav_first_in_site_nav_menu_payload(self):
+        from django.test import RequestFactory
+
+        from home.taxonomy import (
+            BROKERS_NAV_ID,
+            BROKERS_NAV_NAME,
+            build_nav_rows,
+            build_site_nav_menu_payload,
+            is_brokers_nav_active,
+        )
+
+        factory = RequestFactory()
+        request = factory.get("/")
+        nav_rows = build_nav_rows([], home_page=self.homepage)
+        payload = build_site_nav_menu_payload(
+            request,
+            self.homepage,
+            nav_rows,
+            [],
+            [],
+        )
+        top_row = next(r for r in payload if r["depth"] == 1)
+        first = top_row["items"][0]
+        self.assertEqual(first["id"], BROKERS_NAV_ID)
+        self.assertEqual(first["name"], BROKERS_NAV_NAME)
+        self.assertTrue(first["href"].endswith("/rating/forex/"))
+        self.assertFalse(first["removable"])
+        self.assertFalse(is_brokers_nav_active(request))
+
+        forex_request = factory.get(reverse("forex_ratings"))
+        self.assertTrue(is_brokers_nav_active(forex_request))
+        forex_payload = build_site_nav_menu_payload(
+            forex_request,
+            self.homepage,
+            nav_rows,
+            [],
+            [],
+        )
+        forex_top = next(r for r in forex_payload if r["depth"] == 1)
+        self.assertTrue(forex_top["items"][0]["active"])
+
+    def test_brokers_nav_first_in_hamburger_payload(self):
+        from home.taxonomy import (
+            BROKERS_NAV_ID,
+            BROKERS_NAV_NAME,
+            build_hamburger_nav_payload,
+        )
+
+        payload = build_hamburger_nav_payload(self.homepage)
+        first = payload["terms"][0]
+        self.assertEqual(first["id"], BROKERS_NAV_ID)
+        self.assertEqual(first["name"], BROKERS_NAV_NAME)
+        self.assertTrue(first["href"].endswith("/rating/forex/"))
+        self.assertTrue(first["inSitemap"])
+        self.assertFalse(first["removable"])
+        self.assertEqual(first["children"], [])
 
     def test_taxonomy_nav_market_news_forex_returns_200(self):
         from home.taxonomy import taxonomy_prefix_path
