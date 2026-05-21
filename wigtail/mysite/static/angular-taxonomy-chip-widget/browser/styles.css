@@ -1391,7 +1391,8 @@ html {
 }
 .scn-taxonomy-content__bento-preview {
   position: relative;
-  padding: 5px 1.5rem;
+  padding-block: 5px;
+  padding-inline: 0;
 }
 .scn-bentogrid01 {
   box-sizing: border-box;
@@ -1403,23 +1404,24 @@ html {
   box-sizing: border-box;
 }
 .scn-bentogrid01--bg-edge {
-  width: 100vw;
-  max-width: 100vw;
   position: relative;
-  left: 50%;
-  margin-left: -50vw;
-  margin-right: -50vw;
-  padding-left: 0;
-  padding-right: 0;
+  isolation: isolate;
+  width: 100%;
+  max-width: 100%;
   box-sizing: border-box;
+  background: transparent;
 }
-.scn-taxonomy-content__bento-preview.scn-bentogrid01--bg-edge {
+.scn-bentogrid01--bg-edge::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  bottom: 0;
+  left: 50%;
   width: 100vw;
   max-width: 100vw;
-  position: relative;
-  left: 50%;
-  margin-left: -50vw;
-  margin-right: -50vw;
+  transform: translateX(-50%);
+  box-sizing: border-box;
 }
 .home-stream:has(.scn-bentogrid01-root .scn-bentogrid01--bg-edge) {
   overflow-x: visible;
@@ -1628,8 +1630,10 @@ body.template-taxonomy-drilldown .scn-bentogrid01__inner,
   background: transparent;
 }
 .scn-bentogrid01--theme-default.scn-bentogrid01--bg-edge {
-  background: var(--color-bg-elevated);
   color: var(--color-text);
+}
+.scn-bentogrid01--theme-default.scn-bentogrid01--bg-edge::before {
+  background: var(--color-bg-elevated);
 }
 html:not([data-reading-theme=day]) .scn-bentogrid01--theme-default .scn-bentogrid01__feat-img--light {
   display: none;
@@ -1711,7 +1715,7 @@ html[data-reading-theme=day] .scn-bentogrid01--theme-inverted .scn-bentogrid01__
     padding: 2.75rem 2rem 5rem;
   }
 }
-.scn-bentogrid01--theme-inverted.scn-bentogrid01--bg-edge {
+.scn-bentogrid01--theme-inverted.scn-bentogrid01--bg-edge::before {
   background: var(--bento-bg);
 }
 .scn-bentogrid01--theme-inverted .scn-bentogrid01__richtext,
@@ -1803,7 +1807,7 @@ html[data-reading-theme=day] .scn-bentogrid01--theme-inverted .carousel-article-
     padding: 2.75rem 2rem 5rem;
   }
 }
-.scn-bentogrid01--theme-accent.scn-bentogrid01--bg-edge {
+.scn-bentogrid01--theme-accent.scn-bentogrid01--bg-edge::before {
   background: var(--bento-bg);
 }
 .scn-bentogrid01--theme-accent .scn-bentogrid01__richtext,
