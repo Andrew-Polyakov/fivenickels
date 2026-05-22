@@ -6,6 +6,8 @@ import {
   normalizePanelSizePctArray,
   parseBentoSectionDimension,
   pruneBentoPanelSizesForGrid,
+  resizablePanelDefaultSizes,
+  resizablePanelLayoutMap,
   serializeBentoFeaturePlacement,
 } from './bento-block-persist';
 
@@ -48,6 +50,23 @@ describe('bento-block-persist', () => {
   it('normalizePanelSizePctArray requires exact length when expectedLen set', () => {
     expect(normalizePanelSizePctArray([50, 50], 2)).toEqual([50, 50]);
     expect(normalizePanelSizePctArray([50, 50], 3)).toBeUndefined();
+  });
+
+  it('resizablePanelDefaultSizes never returns 100/0 split for two panels', () => {
+    const sizes = resizablePanelDefaultSizes(2, [0, 1]);
+    expect(sizes).toHaveLength(2);
+    expect(sizes[0]).toBeGreaterThan(0);
+    expect(sizes[1]).toBeGreaterThan(0);
+    expect(sizes[0]! + sizes[1]!).toBeCloseTo(100, 5);
+    expect(sizes).not.toEqual([100, 0]);
+    expect(sizes).not.toEqual([0, 100]);
+  });
+
+  it('resizablePanelLayoutMap sums to 100 across panel ids', () => {
+    const layout = resizablePanelLayoutMap(['a', 'b'], [1, 1]);
+    expect(layout['a']! + layout['b']!).toBeCloseTo(100, 5);
+    expect(layout['a']).toBeGreaterThan(0);
+    expect(layout['b']).toBeGreaterThan(0);
   });
 
   it('pruneBentoPanelSizesForGrid trims row sizes and clears col sizes on column change', () => {

@@ -350,7 +350,7 @@ export function computeRowSegments<T extends BentoGridTilePlacement & { id: stri
 
     const occupant = placed.find((p) => tileOccupiesCell(p, rowIndex, c));
     if (occupant) {
-      c += 1;
+      c = occupant.startCol + occupant.colSpan;
       continue;
     }
 
@@ -358,7 +358,10 @@ export function computeRowSegments<T extends BentoGridTilePlacement & { id: stri
     while (end < cols && !placed.some((p) => tileOccupiesCell(p, rowIndex, end))) {
       end += 1;
     }
-    segments.push({ startCol: c, width: end - c });
+    const width = end - c;
+    if (width > 0) {
+      segments.push({ startCol: c, width });
+    }
     c = end;
   }
 

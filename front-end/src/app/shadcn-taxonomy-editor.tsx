@@ -4126,6 +4126,48 @@ function TaxonomyEditor({
 
 const taxonomyEditorRoots = new WeakMap<HTMLElement, Root>();
 
+type TaxonomyEditorErrorBoundaryProps = {
+  children: React.ReactNode;
+};
+
+type TaxonomyEditorErrorBoundaryState = {
+  error: Error | null;
+};
+
+class TaxonomyEditorErrorBoundary extends React.Component<
+  TaxonomyEditorErrorBoundaryProps,
+  TaxonomyEditorErrorBoundaryState
+> {
+  override state: TaxonomyEditorErrorBoundaryState = { error: null };
+
+  static getDerivedStateFromError(error: Error): TaxonomyEditorErrorBoundaryState {
+    return { error };
+  }
+
+  override render() {
+    if (this.state.error) {
+      return (
+        <div className="scn-taxonomy-editor__error" role="alert">
+          <p className="scn-taxonomy-editor__error-title">Taxonomy editor failed to load</p>
+          <p className="scn-taxonomy-editor__error-detail">{this.state.error.message}</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export function unmountTaxonomyEditors(root: ParentNode = document): void {
+  root.querySelectorAll<HTMLElement>('[data-shadcn-taxonomy-editor]').forEach(host => {
+    const existing = taxonomyEditorRoots.get(host);
+    if (existing) {
+      existing.unmount();
+      taxonomyEditorRoots.delete(host);
+    }
+    delete host.dataset['shadcnTaxonomyEditorBound'];
+  });
+}
+
 export function mountTaxonomyEditor(): void {
   document.querySelectorAll<HTMLElement>('[data-shadcn-taxonomy-editor]').forEach(host => {
     if (host.dataset['shadcnTaxonomyEditorBound'] === '1') return;
@@ -4157,22 +4199,24 @@ export function mountTaxonomyEditor(): void {
     let root = taxonomyEditorRoots.get(host);
     if (!root) { root = createRoot(host); taxonomyEditorRoots.set(host, root); }
     root.render(
-      <TaxonomyEditor
-        termId={termId}
-        activeTermName={activeTermName}
-        initialJson={initialJson}
-        canEdit={canEdit}
-        saveUrl={saveUrl}
-        uploadUrl={uploadUrl}
-        articleSearchUrl={articleSearchUrl}
-        categoryChoicesUrl={categoryChoicesUrl}
-        stockPreviewUrl={stockPreviewUrl}
-        forexPreviewUrl={forexPreviewUrl}
-        marketMoversPreviewUrl={marketMoversPreviewUrl}
-        dividendsPreviewUrl={dividendsPreviewUrl}
-        calendarPreviewUrl={calendarPreviewUrl}
-        brokerListUrl={brokerListUrl}
-      />
+      <TaxonomyEditorErrorBoundary>
+        <TaxonomyEditor
+          termId={termId}
+          activeTermName={activeTermName}
+          initialJson={initialJson}
+          canEdit={canEdit}
+          saveUrl={saveUrl}
+          uploadUrl={uploadUrl}
+          articleSearchUrl={articleSearchUrl}
+          categoryChoicesUrl={categoryChoicesUrl}
+          stockPreviewUrl={stockPreviewUrl}
+          forexPreviewUrl={forexPreviewUrl}
+          marketMoversPreviewUrl={marketMoversPreviewUrl}
+          dividendsPreviewUrl={dividendsPreviewUrl}
+          calendarPreviewUrl={calendarPreviewUrl}
+          brokerListUrl={brokerListUrl}
+        />
+      </TaxonomyEditorErrorBoundary>
     );
   });
 }

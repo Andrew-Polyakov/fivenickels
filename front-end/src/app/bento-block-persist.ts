@@ -111,6 +111,54 @@ export function panelDefaultSizeAt(
   return typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : fallback;
 }
 
+/** Percentages for react-resizable-panels: length === panelCount, each > 0, sum === 100. */
+export function resizablePanelDefaultSizes(
+  panelCount: number,
+  spanWeights: number[],
+  savedPct?: number[],
+): number[] {
+  if (panelCount <= 0) return [];
+  const saved =
+    savedPct && savedPct.length === panelCount
+      ? normalizePanelSizePctArray(savedPct, panelCount)
+      : undefined;
+  if (saved) return saved;
+
+  const weights: number[] = [];
+  for (let i = 0; i < panelCount; i++) {
+    const w = spanWeights[i];
+    weights.push(typeof w === 'number' && Number.isFinite(w) && w > 0 ? w : 1);
+  }
+  const sum = weights.reduce((a, b) => a + b, 0) || panelCount;
+  return weights.map((w) => (w / sum) * 100);
+}
+
+/** Map panel ids to percentages for react-resizable-panels Group `defaultLayout`. */
+export function resizablePanelLayoutMap(
+  panelIds: string[],
+  spanWeights: number[],
+  savedPct?: number[],
+): Record<string, number> {
+  const sizes = resizablePanelDefaultSizes(panelIds.length, spanWeights, savedPct);
+  const out: Record<string, number> = {};
+  panelIds.forEach((id, i) => {
+    out[id] = sizes[i] ?? 100 / Math.max(panelIds.length, 1);
+  });
+  return out;
+}
+
+/** Cap minSize so N panels can each satisfy minSize and still sum to 100%. */
+export function resizablePanelMinSize(
+  containerPx: number,
+  panelCount: number,
+  minPanelPctFn: (containerPx: number, panelCount: number) => number,
+): number {
+  const n = Math.max(panelCount, 1);
+  const raw = minPanelPctFn(containerPx, n);
+  const fairCap = n > 1 ? (100 / n) * 0.9 : 100;
+  return Math.min(raw, fairCap);
+}
+
 export function serializeBentoFeaturePlacement<T extends BentoFeaturePlacement>(
   feat: T,
   gridColumns: number,

@@ -409,6 +409,12 @@
         if (window.mountShadcnArticleEditor && typeof window.mountShadcnArticleEditor === "function") {
             window.mountShadcnArticleEditor();
         }
+        if (window.unmountTaxonomyEditors && typeof window.unmountTaxonomyEditors === "function") {
+            var taxonomyHosts = document.querySelectorAll("[data-shadcn-taxonomy-editor]");
+            if (taxonomyHosts.length) {
+                window.unmountTaxonomyEditors(document);
+            }
+        }
         if (window.mountTaxonomyEditor && typeof window.mountTaxonomyEditor === "function") {
             window.mountTaxonomyEditor();
         }

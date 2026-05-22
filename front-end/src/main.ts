@@ -16,7 +16,7 @@ import { mountShadcnBrokerTable, mountShadcnBrokerCarousel } from './app/shadcn-
 import { mountShadcnProfileArticlesTable } from './app/shadcn-profile-articles-table';
 import { mountShadcnArticleEditor } from './app/shadcn-article-editor';
 import { mountShadcnReadingThemeToggle } from './app/shadcn-reading-theme-toggle';
-import { mountTaxonomyEditor } from './app/shadcn-taxonomy-editor';
+import { mountTaxonomyEditor, unmountTaxonomyEditors } from './app/shadcn-taxonomy-editor';
 import { mountShadcnHamburgerNav } from './app/shadcn-hamburger-nav';
 import {
   ConfirmDialogComponent,
@@ -43,6 +43,7 @@ declare global {
     mountShadcnProfileArticlesTable?: () => void;
     mountShadcnArticleEditor?: () => void;
     mountTaxonomyEditor?: () => void;
+    unmountTaxonomyEditors?: (root?: ParentNode) => void;
     mountShadcnBentoGrid01?: () => void;
     mountShadcnReadingThemeToggle?: () => void;
     mountShadcnHamburgerNav?: () => void;
@@ -112,6 +113,7 @@ createApplication({
     window.mountShadcnProfileArticlesTable = mountShadcnProfileArticlesTable;
     window.mountShadcnArticleEditor = mountShadcnArticleEditor;
     window.mountTaxonomyEditor = mountTaxonomyEditor;
+    window.unmountTaxonomyEditors = unmountTaxonomyEditors;
     window.mountShadcnBentoGrid01 = mountShadcnBentoGrid01;
     window.mountShadcnReadingThemeToggle = mountShadcnReadingThemeToggle;
     window.mountShadcnHamburgerNav = mountShadcnHamburgerNav;

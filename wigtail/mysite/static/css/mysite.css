@@ -8531,6 +8531,37 @@ img[src*='bear.png'].scn-catalyst-toggle__icon {
 
 .scn-taxonomy-editor { display: flex; flex-direction: column; gap: 0; }
 
+body.template-taxonomy-drilldown .scn-taxonomy-editor {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+body.template-taxonomy-drilldown .scn-taxonomy-editor .scn-editor-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+}
+
+.scn-taxonomy-editor__error {
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 0.55rem;
+    background: var(--color-surface);
+    color: var(--color-text);
+}
+
+.scn-taxonomy-editor__error-title {
+    margin: 0 0 0.35rem;
+    font-weight: 600;
+}
+
+.scn-taxonomy-editor__error-detail {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    word-break: break-word;
+}
+
 .scn-taxonomy-editor__save-bar {
     display: flex;
     align-items: center;
