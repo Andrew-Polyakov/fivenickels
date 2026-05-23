@@ -3369,6 +3369,75 @@ mark.search-hit {
 
 
 
+/* Pull quote inside paragraph rich text (article editor → published article) */
+.stream-block--paragraph blockquote.scn-article-quote,
+.stream-block--paragraph .rich-text blockquote.scn-article-quote,
+.scn-taxonomy-content__paragraph blockquote.scn-article-quote {
+    --scn-article-quote-fg: #a8d4f5;
+    --scn-article-quote-bg: #0c1220;
+    --scn-article-quote-mark-size: 1.5em;
+    --scn-article-quote-radius: 0.75rem;
+    position: relative;
+    margin: 1rem 0;
+    padding: 1.25rem;
+    border: 1px solid var(--scn-article-quote-fg);
+    border-radius: var(--scn-article-quote-radius);
+    background: var(--scn-article-quote-bg);
+    color: var(--scn-article-quote-fg);
+    font-size: 1.0625rem;
+    line-height: 1.55;
+    font-style: normal;
+}
+
+.stream-block--paragraph blockquote.scn-article-quote > :first-child::before,
+.stream-block--paragraph .rich-text blockquote.scn-article-quote > :first-child::before,
+.scn-taxonomy-content__paragraph blockquote.scn-article-quote > :first-child::before,
+.stream-block--paragraph blockquote.scn-article-quote > :last-child::after,
+.stream-block--paragraph .rich-text blockquote.scn-article-quote > :last-child::after,
+.scn-taxonomy-content__paragraph blockquote.scn-article-quote > :last-child::after {
+    font-size: var(--scn-article-quote-mark-size);
+    line-height: 0;
+    font-weight: 700;
+    font-style: normal;
+    color: var(--scn-article-quote-fg);
+    vertical-align: -0.12em;
+    pointer-events: none;
+}
+
+.stream-block--paragraph blockquote.scn-article-quote > :first-child::before,
+.stream-block--paragraph .rich-text blockquote.scn-article-quote > :first-child::before,
+.scn-taxonomy-content__paragraph blockquote.scn-article-quote > :first-child::before {
+    content: '\201C';
+    display: inline;
+    margin-right: 0.15em;
+}
+
+.stream-block--paragraph blockquote.scn-article-quote > :last-child::after,
+.stream-block--paragraph .rich-text blockquote.scn-article-quote > :last-child::after,
+.scn-taxonomy-content__paragraph blockquote.scn-article-quote > :last-child::after {
+    content: '\201D';
+    display: inline;
+    margin-left: 0.15em;
+}
+
+.stream-block--paragraph blockquote.scn-article-quote p,
+.stream-block--paragraph .rich-text blockquote.scn-article-quote p,
+.scn-taxonomy-content__paragraph blockquote.scn-article-quote p,
+.stream-block--paragraph blockquote.scn-article-quote a,
+.stream-block--paragraph .rich-text blockquote.scn-article-quote a,
+.scn-taxonomy-content__paragraph blockquote.scn-article-quote a,
+.stream-block--paragraph blockquote.scn-article-quote strong,
+.stream-block--paragraph .rich-text blockquote.scn-article-quote strong,
+.scn-taxonomy-content__paragraph blockquote.scn-article-quote strong,
+.stream-block--paragraph blockquote.scn-article-quote em,
+.stream-block--paragraph .rich-text blockquote.scn-article-quote em,
+.scn-taxonomy-content__paragraph blockquote.scn-article-quote em {
+    margin: 0;
+    color: inherit;
+}
+
+
+
 .stream-block__image {
 
     height: auto;
@@ -8148,6 +8217,61 @@ body.page-article-editor #shadcn-article-editor-root {
 .scn-rte-content .ProseMirror p.is-editor-empty:first-child::before {
     content: attr(data-placeholder);
     float: left; color: var(--color-text-muted, #888); pointer-events: none; height: 0;
+}
+
+/* Pull quote in paragraph RTE (editor preview; follows reading theme) */
+.scn-rte-content .ProseMirror blockquote.scn-article-quote {
+    --scn-article-quote-fg: #a8d4f5;
+    --scn-article-quote-bg: #0c1220;
+    --scn-article-quote-mark-size: 1.5em;
+    --scn-article-quote-radius: 0.75rem;
+    position: relative;
+    margin: 0.75em 0;
+    padding: 1rem;
+    border: 1px solid var(--scn-article-quote-fg);
+    border-radius: var(--scn-article-quote-radius);
+    background: var(--scn-article-quote-bg);
+    color: var(--scn-article-quote-fg);
+    font-size: 1rem;
+    line-height: 1.5;
+    font-style: normal;
+}
+
+.scn-rte-content .ProseMirror blockquote.scn-article-quote > :first-child::before,
+.scn-rte-content .ProseMirror blockquote.scn-article-quote > :last-child::after {
+    font-size: var(--scn-article-quote-mark-size);
+    line-height: 0;
+    font-weight: 700;
+    color: var(--scn-article-quote-fg);
+    vertical-align: -0.12em;
+    pointer-events: none;
+}
+
+.scn-rte-content .ProseMirror blockquote.scn-article-quote > :first-child::before {
+    content: '\201C';
+    display: inline;
+    margin-right: 0.15em;
+}
+
+.scn-rte-content .ProseMirror blockquote.scn-article-quote > :last-child::after {
+    content: '\201D';
+    display: inline;
+    margin-left: 0.15em;
+}
+
+.scn-rte-content .ProseMirror blockquote.scn-article-quote p,
+.scn-rte-content .ProseMirror blockquote.scn-article-quote a,
+.scn-rte-content .ProseMirror blockquote.scn-article-quote strong,
+.scn-rte-content .ProseMirror blockquote.scn-article-quote em {
+    margin: 0;
+    color: inherit;
+}
+
+.scn-rte-btn__quote-icon {
+    font-size: 1.125rem;
+    font-weight: 700;
+    line-height: 1;
+    font-family: Georgia, 'Times New Roman', serif;
 }
 
 /* RTE tables */

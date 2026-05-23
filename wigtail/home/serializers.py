@@ -226,15 +226,13 @@ class ArticleUpdateSerializer(serializers.ModelSerializer):
         return _normalize_catalyst_value(value)
 
     def update(self, instance, validated_data):
-        import json
-
         tag_ids = validated_data.pop('tag_ids', None)
         if tag_ids is not None:
             instance.tags.set(tag_ids)
 
         body_json = validated_data.pop('body_json', None)
         if body_json is not None:
-            instance.body = json.dumps(body_json)
+            instance.body = body_json
 
         hero_image_id = validated_data.pop('hero_image_id', None)
         if hero_image_id is not None:

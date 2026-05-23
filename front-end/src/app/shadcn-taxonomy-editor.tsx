@@ -29,6 +29,7 @@ import { ToggleGroup, ToggleGroupItem } from '../components/ui/toggle-group';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { Command, CommandGroup, CommandItem, CommandList } from '../components/ui/command';
 import { RteToolbar, TABLE_EXTENSIONS } from '../components/ui/rte-editor';
+import { ARTICLE_QUOTE_EXTENSION } from './tiptap-article-quote';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '../components/ui/carousel';
 import { Slider } from '../components/ui/slider';
 import { Checkbox } from '../components/ui/checkbox';
@@ -1326,7 +1327,8 @@ function ParagraphEditor({ block, uploadUrl, onChange }: {
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ heading: { levels: [2, 3] } }),
+      StarterKit.configure({ heading: { levels: [2, 3] }, blockquote: false }),
+      ARTICLE_QUOTE_EXTENSION,
       TiptapLink.configure({ openOnClick: false }),
       Placeholder.configure({ placeholder: 'Write paragraph content…' }),
       WagtailImage,
@@ -2111,7 +2113,8 @@ function BentoTileRichTextEditor({ feat, onChange }: {
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ heading: { levels: [2, 3] } }),
+      StarterKit.configure({ heading: { levels: [2, 3] }, blockquote: false }),
+      ARTICLE_QUOTE_EXTENSION,
       TiptapLink.configure({ openOnClick: false }),
       Placeholder.configure({ placeholder: 'Write tile content…' }),
     ],

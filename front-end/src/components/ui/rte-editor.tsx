@@ -7,6 +7,7 @@ import { Table } from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
+import { ARTICLE_QUOTE_EXTENSION } from '../../app/tiptap-article-quote';
 
 // ─── Table extensions (shared with ParagraphEditor) ───────────────────────────
 
@@ -126,6 +127,13 @@ export function RteToolbar({ editor, onInsertImage }: { editor: Editor; onInsert
       </ToolbarBtn>
       <span className="scn-rte-sep" />
 
+      {/* ── Pull quote ── */}
+      <ToolbarBtn active={editor.isActive('articleQuote')} title="Pull quote"
+        onMouseDown={e => cmd(e, () => editor.chain().focus().toggleWrap('articleQuote').run())}>
+        <span className="scn-rte-btn__quote-icon" aria-hidden="true">&ldquo;</span>
+      </ToolbarBtn>
+      <span className="scn-rte-sep" />
+
       {/* ── Link ── */}
       <ToolbarBtn active={editor.isActive('link')} title="Link (⌘K)" onMouseDown={openLink}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
@@ -237,7 +245,8 @@ export function RteEditor({ initialValue, onChange, placeholder }: {
   const [focused, setFocused] = React.useState(false);
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ heading: { levels: [2, 3] } }),
+      StarterKit.configure({ heading: { levels: [2, 3] }, blockquote: false }),
+      ARTICLE_QUOTE_EXTENSION,
       TiptapLink.configure({ openOnClick: false }),
       Placeholder.configure({ placeholder: placeholder ?? '' }),
       ...TABLE_EXTENSIONS,

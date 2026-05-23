@@ -87,6 +87,7 @@ class ArticleEditorViewSet(viewsets.ModelViewSet):
         serializer = ArticleUpdateSerializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        instance.save_revision(user=request.user)
         instance.refresh_from_db()
         return Response(self.get_serializer(instance).data)
 
@@ -96,6 +97,7 @@ class ArticleEditorViewSet(viewsets.ModelViewSet):
         serializer = ArticleUpdateSerializer(instance, data=request.data, partial=False)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        instance.save_revision(user=request.user)
         instance.refresh_from_db()
         return Response(self.get_serializer(instance).data)
 

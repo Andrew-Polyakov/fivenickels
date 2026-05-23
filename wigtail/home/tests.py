@@ -1295,6 +1295,83 @@ class InlineEditingApiTests(WagtailPageTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Staff Preview Story Updated")
 
+    def test_article_preview_shows_body_after_api_patch(self):
+        import json
+
+        page = TaggedContentPage(
+            title="API Preview Body Story",
+            slug="api-preview-body-story",
+            section_term=self.energy,
+            tile_preview="preview",
+        )
+        self.homepage.add_child(instance=page)
+        page.save_revision()
+        preview_url = reverse("article_preview", kwargs={"article_id": page.pk})
+        marker = "UniquePreviewBodyMarker42"
+
+        self.client.force_login(self.admin_user)
+        patch_response = self.client.patch(
+            reverse("article-detail", args=[page.pk]),
+            data=json.dumps(
+                {
+                    "body_json": [
+                        {
+                            "id": "preview-body-block",
+                            "type": "paragraph",
+                            "value": f"<p>{marker}</p>",
+                        }
+                    ]
+                }
+            ),
+            content_type="application/json",
+        )
+        self.assertEqual(patch_response.status_code, 200)
+
+        response = self.client.get(preview_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, marker)
+        self.assertContains(response, "stream-block")
+
+    def test_article_preview_renders_pull_quote_markup(self):
+        import json
+
+        page = TaggedContentPage(
+            title="Pull Quote Preview",
+            slug="pull-quote-preview",
+            section_term=self.energy,
+        )
+        self.homepage.add_child(instance=page)
+        page.save_revision()
+        preview_url = reverse("article_preview", kwargs={"article_id": page.pk})
+        quote_text = "UniquePullQuotePreviewMarker"
+
+        self.client.force_login(self.admin_user)
+        patch_response = self.client.patch(
+            reverse("article-detail", args=[page.pk]),
+            data=json.dumps(
+                {
+                    "body_json": [
+                        {
+                            "id": "quote-block",
+                            "type": "paragraph",
+                            "value": (
+                                f'<blockquote class="scn-article-quote">'
+                                f"<p>{quote_text}</p></blockquote>"
+                            ),
+                        }
+                    ]
+                }
+            ),
+            content_type="application/json",
+        )
+        self.assertEqual(patch_response.status_code, 200)
+
+        response = self.client.get(preview_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, quote_text)
+        self.assertContains(response, "stream-block--paragraph")
+        self.assertContains(response, 'blockquote class="scn-article-quote"')
+
     def test_staff_homepage_renders_inline_chip_delete_controls(self):
         self.client.force_login(self.admin_user)
         response = self.client.get(self.homepage.url)
