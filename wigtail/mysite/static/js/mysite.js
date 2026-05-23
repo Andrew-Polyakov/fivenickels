@@ -364,7 +364,22 @@
         }
     }
 
+    function syncReadingThemeFromStorage() {
+        try {
+            var theme = localStorage.getItem("reading-theme");
+            var root = document.documentElement;
+            if (theme === "day") {
+                root.setAttribute("data-reading-theme", "day");
+            } else if (theme === "night") {
+                root.removeAttribute("data-reading-theme");
+            }
+        } catch (_e) {
+            /* ignore */
+        }
+    }
+
     function initReadingThemeToggle() {
+        syncReadingThemeFromStorage();
         if (
             window.mountShadcnReadingThemeToggle &&
             typeof window.mountShadcnReadingThemeToggle === "function"
@@ -373,11 +388,21 @@
         }
     }
 
+    function initProfileHeaderButton() {
+        if (
+            window.mountShadcnProfileHeaderButton &&
+            typeof window.mountShadcnProfileHeaderButton === "function"
+        ) {
+            window.mountShadcnProfileHeaderButton();
+        }
+    }
+
     /** Reading toggle is registered asynchronously by the ES module bundle; retry briefly after load. */
     function scheduleReadingThemeToggleMount() {
         var delays = [0, 50, 150, 400];
         delays.forEach(function (ms) {
             window.setTimeout(initReadingThemeToggle, ms);
+            window.setTimeout(initProfileHeaderButton, ms);
         });
     }
 
@@ -941,6 +966,7 @@
     }
 
     document.addEventListener("DOMContentLoaded", function () {
+        syncReadingThemeFromStorage();
         if (!isTurboPreview()) {
             syncHeaderFromUrl();
         }
@@ -956,10 +982,12 @@
         remountShadcnWidgets();
         initMarketMoversFilter();
         initReadingThemeToggle();
+        initProfileHeaderButton();
         scheduleReadingThemeToggleMount();
     });
 
     document.addEventListener("turbo:load", function () {
+        syncReadingThemeFromStorage();
         if (!isTurboPreview()) {
             syncHeaderFromUrl();
             initSectorScroll();
@@ -975,6 +1003,7 @@
         remountShadcnWidgets();
         initMarketMoversFilter();
         initReadingThemeToggle();
+        initProfileHeaderButton();
         scheduleReadingThemeToggleMount();
     });
 

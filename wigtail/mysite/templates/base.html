@@ -35,7 +35,7 @@
 
         {# Angular Material theme first, then site CSS (dialogs, chips, shadcn mounts). #}
         <link rel="stylesheet" type="text/css" href="{% static 'angular-taxonomy-chip-widget/browser/styles.css' %}">
-        <link rel="stylesheet" type="text/css" href="{% static 'css/mysite.css' %}?v=6">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/mysite.css' %}?v=11">
         <script>
             try {
                 if (localStorage.getItem('reading-theme') === 'day') {
@@ -52,7 +52,7 @@
         <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8.0.12/dist/turbo.es2017-umd.js" defer></script>
         {# ES module bundle exposes window.mountShadcnTaxonomySiteNav and related mounts. Build: npm run build in front-end/. #}
         <script type="module" src="{% static 'angular-taxonomy-chip-widget/browser/main.js' %}"></script>
-        <script src="{% static 'js/mysite.js' %}?v=3" defer></script>
+        <script src="{% static 'js/mysite.js' %}?v=4" defer></script>
         {% block extra_head_js %}
         {# Optional: page-specific head scripts (defer recommended) #}
         {% endblock %}
@@ -167,26 +167,13 @@
                             </div>
 
                             <div class="site-header__masthead-right">
-
-                                <div id="site-reading-theme-mount"></div>
-                                <div class="site-header__masthead-right-ctas">
-                                    {% if request.user.is_authenticated %}
-                                    <a href="{% url 'profile' %}" class="btn btn--raised site-header__signin">
-                                        <span class="material-symbols-outlined site-header__signin-icon" aria-hidden="true">account_circle</span>
-                                        Profile
-                                    </a>
-                                    {% else %}
-                                    <button
-                                        type="button"
-                                        class="btn btn--raised site-header__signin"
-                                        data-auth-modal-open
-                                        data-auth-tab="login"
-                                    >
-                                        <span class="material-symbols-outlined site-header__signin-icon" aria-hidden="true">person</span>
-                                        Sign in
-                                    </button>
-                                    {% endif %}
-                                    <a href="#subscribe" class="btn btn--raised site-header__cta">Subscribe</a>
+                                <div class="site-header__masthead-right-tools">
+                                    <div id="site-reading-theme-mount"></div>
+                                    <div
+                                        id="site-profile-mount"
+                                        data-authenticated="{% if request.user.is_authenticated %}true{% else %}false{% endif %}"
+                                        data-profile-url="{% url 'profile' %}"
+                                    ></div>
                                 </div>
                             </div>
                         </div>

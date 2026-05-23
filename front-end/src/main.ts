@@ -15,6 +15,7 @@ import { mountShadcnTaxonomySiteNav } from './app/shadcn-taxonomy-site-nav';
 import { mountShadcnBrokerTable, mountShadcnBrokerCarousel } from './app/shadcn-broker-data-table';
 import { mountShadcnProfileArticlesTable } from './app/shadcn-profile-articles-table';
 import { mountShadcnArticleEditor } from './app/shadcn-article-editor';
+import { mountShadcnProfileHeaderButton } from './app/shadcn-profile-header-button';
 import { mountShadcnReadingThemeToggle } from './app/shadcn-reading-theme-toggle';
 import { mountTaxonomyEditor, unmountTaxonomyEditors } from './app/shadcn-taxonomy-editor';
 import { mountShadcnHamburgerNav } from './app/shadcn-hamburger-nav';
@@ -46,6 +47,7 @@ declare global {
     unmountTaxonomyEditors?: (root?: ParentNode) => void;
     mountShadcnBentoGrid01?: () => void;
     mountShadcnReadingThemeToggle?: () => void;
+    mountShadcnProfileHeaderButton?: () => void;
     mountShadcnHamburgerNav?: () => void;
   }
 }
@@ -116,6 +118,7 @@ createApplication({
     window.unmountTaxonomyEditors = unmountTaxonomyEditors;
     window.mountShadcnBentoGrid01 = mountShadcnBentoGrid01;
     window.mountShadcnReadingThemeToggle = mountShadcnReadingThemeToggle;
+    window.mountShadcnProfileHeaderButton = mountShadcnProfileHeaderButton;
     window.mountShadcnHamburgerNav = mountShadcnHamburgerNav;
     window.showMaterialConfirm = (message: string, title?: string) =>
       new Promise<boolean>((resolve) => {
@@ -153,6 +156,7 @@ createApplication({
     };
     mountTaxonomyChipWidgets();
     mountShadcnReadingThemeToggle();
+    mountShadcnProfileHeaderButton();
     mountShadcnTaxonomySiteNav();
     mountShadcnBento2();
     mountSimilarArticleCarousels();

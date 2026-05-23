@@ -607,8 +607,9 @@ html[data-reading-theme="day"] .site-search-live__list a {
 
 }
 
-/* Reading theme: shadcn-style ghost icon control (see ui.shadcn.com docs header toggle) */
-.site-header__theme-toggle.scn-button.scn-button--ghost {
+/* Reading theme + profile: shadcn-style ghost icon controls */
+.site-header__theme-toggle.scn-button.scn-button--ghost,
+.site-header__profile-toggle.scn-button.scn-button--ghost {
 
     display: inline-flex;
 
@@ -634,7 +635,8 @@ html[data-reading-theme="day"] .site-search-live__list a {
 
 }
 
-.site-header__theme-toggle.scn-button.scn-button--ghost:hover {
+.site-header__theme-toggle.scn-button.scn-button--ghost:hover,
+.site-header__profile-toggle.scn-button.scn-button--ghost:hover {
 
     background: rgba(var(--sc-rgb-accent), 0.12);
 
@@ -642,7 +644,8 @@ html[data-reading-theme="day"] .site-search-live__list a {
 
 }
 
-.site-header__theme-toggle.scn-button.scn-button--ghost:focus-visible {
+.site-header__theme-toggle.scn-button.scn-button--ghost:focus-visible,
+.site-header__profile-toggle.scn-button.scn-button--ghost:focus-visible {
 
     outline: none;
 
@@ -652,13 +655,15 @@ html[data-reading-theme="day"] .site-search-live__list a {
 
 }
 
-.site-header__tools .site-header__theme-toggle.scn-button.scn-button--ghost {
+.site-header__tools .site-header__theme-toggle.scn-button.scn-button--ghost,
+.site-header__tools .site-header__profile-toggle.scn-button.scn-button--ghost {
 
     flex-shrink: 0;
 
 }
 
-#site-reading-theme-mount {
+#site-reading-theme-mount,
+#site-profile-mount {
 
     display: flex;
 
@@ -674,7 +679,8 @@ html[data-reading-theme="day"] .site-search-live__list a {
 
 }
 
-.site-header__theme-toggle-icon {
+.site-header__theme-toggle-icon,
+.site-header__profile-toggle-icon {
 
     display: block;
 
@@ -684,13 +690,15 @@ html[data-reading-theme="day"] .site-search-live__list a {
 
 }
 
-html[data-reading-theme="day"] .site-header__theme-toggle.scn-button.scn-button--ghost {
+html[data-reading-theme="day"] .site-header__theme-toggle.scn-button.scn-button--ghost,
+html[data-reading-theme="day"] .site-header__profile-toggle.scn-button.scn-button--ghost {
 
     color: var(--color-text);
 
 }
 
-html[data-reading-theme="day"] .site-header__theme-toggle.scn-button.scn-button--ghost:hover {
+html[data-reading-theme="day"] .site-header__theme-toggle.scn-button.scn-button--ghost:hover,
+html[data-reading-theme="day"] .site-header__profile-toggle.scn-button.scn-button--ghost:hover {
 
     background: rgba(0, 96, 94, 0.12);
 
@@ -1553,15 +1561,15 @@ body.template-homepage {
 
 }
 
-.site-header__masthead-right-ctas {
+.site-header__masthead-right-tools {
 
     display: flex;
 
-    flex-direction: row;
+    flex-direction: column;
 
-    align-items: center;
+    align-items: flex-end;
 
-    gap: 0.5rem;
+    gap: 0.25rem;
 
 }
 
@@ -3374,15 +3382,14 @@ mark.search-hit {
 .stream-block--paragraph .rich-text blockquote.scn-article-quote,
 .scn-taxonomy-content__paragraph blockquote.scn-article-quote {
     --scn-article-quote-fg: #a8d4f5;
-    --scn-article-quote-bg: #0c1220;
     --scn-article-quote-mark-size: 1.5em;
     --scn-article-quote-radius: 0.75rem;
     position: relative;
     margin: 1rem 0;
     padding: 1.25rem;
-    border: 1px solid var(--scn-article-quote-fg);
+    border: 1px solid var(--scn-article-quote-border, var(--scn-article-quote-fg));
     border-radius: var(--scn-article-quote-radius);
-    background: var(--scn-article-quote-bg);
+    background-color: var(--scn-article-quote-bg, #0c1220);
     color: var(--scn-article-quote-fg);
     font-size: 1.0625rem;
     line-height: 1.55;
@@ -3434,6 +3441,38 @@ mark.search-hit {
 .scn-taxonomy-content__paragraph blockquote.scn-article-quote em {
     margin: 0;
     color: inherit;
+}
+
+html:not([data-reading-theme="day"]) .stream-block--paragraph blockquote.scn-article-quote,
+html:not([data-reading-theme="day"]) .stream-block--paragraph .rich-text blockquote.scn-article-quote,
+html:not([data-reading-theme="day"]) .home-stream .stream-block--paragraph blockquote.scn-article-quote,
+html:not([data-reading-theme="day"]) .tagged-content__body .stream-block--paragraph blockquote.scn-article-quote,
+html:not([data-reading-theme="day"]) .scn-taxonomy-content__paragraph blockquote.scn-article-quote {
+    --scn-article-quote-bg: #0c1220;
+    --scn-article-quote-border: var(--scn-article-quote-fg);
+    background-color: #0c1220;
+    border-color: var(--scn-article-quote-fg);
+}
+
+html[data-reading-theme="day"] .stream-block--paragraph blockquote.scn-article-quote,
+html[data-reading-theme="day"] .stream-block--paragraph .rich-text blockquote.scn-article-quote,
+html[data-reading-theme="day"] .home-stream .stream-block--paragraph blockquote.scn-article-quote,
+html[data-reading-theme="day"] .tagged-content__body .stream-block--paragraph blockquote.scn-article-quote,
+html[data-reading-theme="day"] .scn-taxonomy-content__paragraph blockquote.scn-article-quote {
+    --scn-article-quote-fg: #0c1220;
+    --scn-article-quote-bg: #eef3f9;
+    --scn-article-quote-border: #0c1220;
+    background-color: #eef3f9;
+    border-color: #0c1220;
+    color: #0c1220;
+}
+
+html[data-reading-theme="day"] .stream-block--paragraph:has(blockquote.scn-article-quote),
+html[data-reading-theme="day"] .home-stream .stream-block--paragraph:has(blockquote.scn-article-quote),
+html[data-reading-theme="day"] .tagged-content__body .stream-block--paragraph:has(blockquote.scn-article-quote) {
+    background: transparent;
+    box-shadow: none;
+    border-color: transparent;
 }
 
 
@@ -7286,13 +7325,16 @@ body.page-article-editor #shadcn-article-editor-root {
     width: 2.25rem;
     min-width: 2.25rem;
     padding: 0;
+    transition:
+        background-color 0.15s,
+        border-color 0.15s,
+        color 0.15s,
+        box-shadow 0.15s;
 }
 
 .scn-profile-action-edit:hover:not(:disabled),
-.scn-profile-article-edit:hover,
 .scn-profile-moderation-card__edit:hover,
 .scn-profile-action-edit:focus-visible,
-.scn-profile-article-edit:focus-visible,
 .scn-profile-moderation-card__edit:focus-visible {
     background: #171717;
     border-color: #171717;
@@ -7300,8 +7342,20 @@ body.page-article-editor #shadcn-article-editor-root {
     outline: none;
 }
 
+/* Pencil icon buttons (article page staff edit, profile table) — match header taxonomy pen glow */
+.scn-profile-article-edit:hover,
+.scn-profile-article-edit:focus-visible {
+    background: rgba(var(--sc-rgb-glow), 0.12);
+    border-color: rgba(var(--sc-rgb-accent), 0.65);
+    color: var(--sc-accent-hex);
+    outline: none;
+    box-shadow:
+        0 0 0 1px rgba(var(--sc-rgb-glow), 0.35),
+        0 0 10px rgba(var(--sc-rgb-glow), 0.28),
+        0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
 .scn-profile-action-edit:focus-visible,
-.scn-profile-article-edit:focus-visible,
 .scn-profile-moderation-card__edit:focus-visible {
     border-color: rgba(var(--sc-rgb-accent), 0.9);
     box-shadow: 0 0 0 2px rgba(var(--sc-rgb-glow), 0.32), 0 1px 2px rgba(0, 0, 0, 0.35);
@@ -8222,15 +8276,14 @@ body.page-article-editor #shadcn-article-editor-root {
 /* Pull quote in paragraph RTE (editor preview; follows reading theme) */
 .scn-rte-content .ProseMirror blockquote.scn-article-quote {
     --scn-article-quote-fg: #a8d4f5;
-    --scn-article-quote-bg: #0c1220;
     --scn-article-quote-mark-size: 1.5em;
     --scn-article-quote-radius: 0.75rem;
     position: relative;
     margin: 0.75em 0;
     padding: 1rem;
-    border: 1px solid var(--scn-article-quote-fg);
+    border: 1px solid var(--scn-article-quote-border, var(--scn-article-quote-fg));
     border-radius: var(--scn-article-quote-radius);
-    background: var(--scn-article-quote-bg);
+    background-color: var(--scn-article-quote-bg, #0c1220);
     color: var(--scn-article-quote-fg);
     font-size: 1rem;
     line-height: 1.5;
@@ -8265,6 +8318,22 @@ body.page-article-editor #shadcn-article-editor-root {
 .scn-rte-content .ProseMirror blockquote.scn-article-quote em {
     margin: 0;
     color: inherit;
+}
+
+html:not([data-reading-theme="day"]) .scn-rte-content .ProseMirror blockquote.scn-article-quote {
+    --scn-article-quote-bg: #0c1220;
+    --scn-article-quote-border: var(--scn-article-quote-fg);
+    background-color: #0c1220;
+    border-color: var(--scn-article-quote-fg);
+}
+
+html[data-reading-theme="day"] .scn-rte-content .ProseMirror blockquote.scn-article-quote {
+    --scn-article-quote-fg: #0c1220;
+    --scn-article-quote-bg: #eef3f9;
+    --scn-article-quote-border: #0c1220;
+    background-color: #eef3f9;
+    border-color: #0c1220;
+    color: #0c1220;
 }
 
 .scn-rte-btn__quote-icon {

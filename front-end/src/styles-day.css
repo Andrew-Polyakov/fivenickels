@@ -630,18 +630,26 @@ html[data-reading-theme='day'] .scn-profile-moderation-card__edit {
 }
 
 html[data-reading-theme='day'] .scn-profile-action-edit:hover:not(:disabled),
-html[data-reading-theme='day'] .scn-profile-article-edit:hover,
 html[data-reading-theme='day'] .scn-profile-moderation-card__edit:hover,
 html[data-reading-theme='day'] .scn-profile-action-edit:focus-visible,
-html[data-reading-theme='day'] .scn-profile-article-edit:focus-visible,
 html[data-reading-theme='day'] .scn-profile-moderation-card__edit:focus-visible {
   background: rgba(0, 0, 0, 0.06);
   border-color: rgba(0, 0, 0, 0.22);
   color: #000000;
 }
 
+html[data-reading-theme='day'] .scn-profile-article-edit:hover,
+html[data-reading-theme='day'] .scn-profile-article-edit:focus-visible {
+  background: rgba(var(--sc-rgb-glow), 0.1);
+  border-color: rgba(var(--sc-rgb-accent), 0.65);
+  color: var(--sc-accent-hex);
+  box-shadow:
+    0 0 0 1px rgba(var(--sc-rgb-glow), 0.32),
+    0 0 12px rgba(var(--sc-rgb-glow), 0.22),
+    0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
 html[data-reading-theme='day'] .scn-profile-action-edit:focus-visible,
-html[data-reading-theme='day'] .scn-profile-article-edit:focus-visible,
 html[data-reading-theme='day'] .scn-profile-moderation-card__edit:focus-visible {
   border-color: rgba(var(--sc-rgb-accent), 0.65);
   box-shadow:
