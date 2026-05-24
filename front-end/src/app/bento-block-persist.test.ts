@@ -69,6 +69,11 @@ describe('bento-block-persist', () => {
     expect(layout['b']).toBeGreaterThan(0);
   });
 
+  it('ensureUniquePanelIds keeps one entry per panel in layout map', () => {
+    const layout = resizablePanelLayoutMap(['x', 'x', 'y'], [1, 1, 1]);
+    expect(Object.keys(layout)).toHaveLength(3);
+  });
+
   it('pruneBentoPanelSizesForGrid trims row sizes and clears col sizes on column change', () => {
     const block = {
       grid_columns: 3,

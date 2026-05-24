@@ -446,6 +446,7 @@ class TaxonomyTagsTests(WagtailPageTestCase):
                     {
                         "header_type": "article_carousel",
                         "frame_count": 2,
+                        "auto_scroll": True,
                         "article_source_mode": "selected_articles",
                         "selected_articles": [self.page_e1, self.page_e2],
                         "title": "",
@@ -460,6 +461,7 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         feat = payload["features"][0]
         self.assertEqual(feat["header_type"], "article_carousel")
         self.assertEqual(feat["frame_count"], 2)
+        self.assertTrue(feat["auto_scroll"])
         self.assertEqual(len(feat["frames"]), 2)
         self.assertEqual(feat["frames"][0]["kind"], "article")
         self.assertIn("publishedAtIso", feat["frames"][0])

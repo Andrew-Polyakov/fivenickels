@@ -673,6 +673,7 @@ def _serialize_bentogrid01(block_value: dict, parent_context: dict | None = None
         if header_type == "article_carousel":
             frame_count = _clamp_bento_frame_count(val.get("frame_count"))
             entry["frame_count"] = frame_count
+            entry["auto_scroll"] = bool(val.get("auto_scroll"))
             entry["article_source_mode"] = str(
                 val.get("article_source_mode") or "taxonomy_category"
             )

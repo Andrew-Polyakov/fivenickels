@@ -423,7 +423,9 @@ function RootSectionNavigationMenuContent({
                 className={cn('scn-navigation-menu__list-item-link', ch.active && 'scn-navigation-menu__list-item-link--active')}
               >
                 <div className="scn-navigation-menu__list-item-body scn-navigation-menu__list-item-body--docs">
-                  <div className="scn-navigation-menu__list-item-title scn-navigation-menu__list-item-title--docs">{ch.name}</div>
+                  <div className="scn-navigation-menu__list-item-title scn-navigation-menu__list-item-title--docs">
+                    {ch.name}
+                  </div>
                   {ch.description ? (
                     <div className="scn-navigation-menu__list-item-desc scn-navigation-menu__list-item-desc--docs">{ch.description}</div>
                   ) : null}

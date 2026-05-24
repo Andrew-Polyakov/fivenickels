@@ -898,10 +898,18 @@ function EmbedEditor({ block, onChange }: { block: EmbedBlock; onChange: (b: Emb
   );
 }
 
+function StreamSeparatorLine() {
+  return (
+    <div className="scn-stream-separator scn-stream-separator--masthead-strip" role="separator">
+      <hr className="scn-taxonomy-content__sep scn-taxonomy-content__sep--horizontal" />
+    </div>
+  );
+}
+
 function SeparatorEditor() {
   return (
     <div className="scn-editor-block__fields scn-editor-separator-preview" aria-hidden>
-      <hr className="scn-taxonomy-content__sep scn-taxonomy-content__sep--horizontal" />
+      <StreamSeparatorLine />
     </div>
   );
 }

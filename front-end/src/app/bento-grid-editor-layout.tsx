@@ -10,6 +10,7 @@ import {
   ResizablePanelGroup,
 } from '../components/ui/resizable';
 import {
+  ensureUniquePanelIds,
   normalizePanelSizePctArray,
   resizablePanelDefaultSizes,
   resizablePanelLayoutMap,
@@ -134,9 +135,7 @@ export function panelLayoutToSizes(
 }
 
 function segmentPanelId(rowIndex: number, segIndex: number, tileId?: string): string {
-  return tileId
-    ? `bento-seg-${rowIndex}-${tileId}`
-    : `bento-seg-${rowIndex}-empty-${segIndex}`;
+  return `bento-seg-${rowIndex}-${segIndex}-${tileId ?? 'empty'}`;
 }
 
 function panelFlexStyle(size: number): React.CSSProperties {
@@ -184,8 +183,8 @@ function BentoEditorRowBand<T extends BentoGridTilePlacement & { id: string }>({
     [placed, rowIndex, cols],
   );
 
-  const panelIds = segments.map((seg, i) =>
-    segmentPanelId(rowIndex, i, seg.placed?.tile.id),
+  const panelIds = ensureUniquePanelIds(
+    segments.map((seg, i) => segmentPanelId(rowIndex, i, seg.placed?.tile.id)),
   );
 
   if (segments.length === 0) {
@@ -262,7 +261,7 @@ function BentoEditorRowBand<T extends BentoGridTilePlacement & { id: string }>({
       <ResizablePanelGroup
         key={layoutStorageKey ? `${layoutStorageKey}-row-${rowIndex}` : undefined}
         orientation="horizontal"
-        id={`bento-row-${rowIndex}`}
+        id={layoutStorageKey ? `${layoutStorageKey}-row-${rowIndex}` : `bento-row-${rowIndex}`}
         className="scn-bento-editor__row"
         disabled={!resizable}
         defaultLayout={colDefaultLayout}
@@ -358,26 +357,30 @@ export function BentoGridEditorLayout<T extends BentoGridTilePlacement & { id: s
     [cols, onLayoutPersist],
   );
 
+  const rowIdPrefix = layoutStorageKey ? `${layoutStorageKey}-` : '';
+
   const rowPanelIds = React.useMemo(
     () =>
-      Array.from({ length: rowCount }, (_, rowIndex) =>
-        emptyRows.includes(rowIndex)
-          ? `bento-empty-row-${rowIndex}`
-          : `bento-row-panel-${rowIndex}`,
+      ensureUniquePanelIds(
+        Array.from({ length: rowCount }, (_, rowIndex) =>
+          emptyRows.includes(rowIndex)
+            ? `${rowIdPrefix}bento-empty-row-${rowIndex}`
+            : `${rowIdPrefix}bento-row-panel-${rowIndex}`,
+        ),
       ),
-    [emptyRows, rowCount],
+    [emptyRows, rowCount, rowIdPrefix],
   );
 
   const rowBandSizes = React.useMemo(() => {
     const saved =
       rowPanelSizes && rowPanelSizes.length === rowCount ? rowPanelSizes : undefined;
     const weights = Array.from({ length: rowCount }, (_, r) => {
+      if (emptyRows.includes(r)) return 0.12;
       const starters = tilesStartingInRow(placed, r);
-      if (starters.length === 0) return 1;
       return Math.max(1, ...starters.map((p) => p.rowSpan));
     });
     return resizablePanelDefaultSizes(rowCount, weights, saved);
-  }, [placed, rowCount, rowPanelSizes]);
+  }, [emptyRows, placed, rowCount, rowPanelSizes]);
 
   const handleRowSpansChange = React.useCallback(
     (layout: PanelLayout) => {
@@ -534,8 +537,8 @@ export function BentoGridEditorLayout<T extends BentoGridTilePlacement & { id: s
   const rowDefaultLayout = resizablePanelLayoutMap(
     rowPanelIds,
     Array.from({ length: rowCount }, (_, r) => {
+      if (emptyRows.includes(r)) return 0.12;
       const starters = tilesStartingInRow(placed, r);
-      if (starters.length === 0) return 1;
       return Math.max(1, ...starters.map((p) => p.rowSpan));
     }),
     rowPanelSizes && rowPanelSizes.length === rowCount ? rowPanelSizes : undefined,
@@ -546,7 +549,7 @@ export function BentoGridEditorLayout<T extends BentoGridTilePlacement & { id: s
       return (
         <ResizablePanel
           key={`empty-row-${rowIndex}`}
-          id={`bento-empty-row-${rowIndex}`}
+          id={rowPanelIds[rowIndex]}
           minSize={mpRow}
           disabled={!resizable}
           className="scn-bento-editor__panel scn-bento-editor__panel--empty-row"
@@ -561,7 +564,7 @@ export function BentoGridEditorLayout<T extends BentoGridTilePlacement & { id: s
     return (
       <ResizablePanel
         key={`row-${rowIndex}`}
-        id={`bento-row-panel-${rowIndex}`}
+        id={rowPanelIds[rowIndex]}
         minSize={mpRow}
         disabled={!resizable}
         className="scn-bento-editor__panel"
@@ -594,7 +597,7 @@ export function BentoGridEditorLayout<T extends BentoGridTilePlacement & { id: s
     <ResizablePanelGroup
       key={layoutStorageKey ?? 'bento-editor-rows'}
       orientation="vertical"
-      id="bento-editor-rows"
+      id={layoutStorageKey ? `${layoutStorageKey}-rows` : 'bento-editor-rows'}
       className="scn-bento-editor__row-stack"
       disabled={!resizable}
       defaultLayout={rowDefaultLayout}

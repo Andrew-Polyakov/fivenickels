@@ -387,6 +387,12 @@ class BentoGridFeatureBlock(blocks.StructBlock):
         label="Carousel frames",
         help_text="Article carousel only: number of slides and underscore indicators.",
     )
+    auto_scroll = blocks.BooleanBlock(
+        required=False,
+        default=False,
+        label="Auto-advance carousel",
+        help_text="Article carousel only: auto-advance slides and loop.",
+    )
     article_source_mode = blocks.ChoiceBlock(
         choices=[
             ("taxonomy_category", "Taxonomy category"),
@@ -503,6 +509,7 @@ class LayoutSeparatorBlock(blocks.StaticBlock):
         icon = "horizontalrule"
         label = "Separator"
         admin_text = "Horizontal rule"
+        template = "home/blocks/layout_separator.html"
 
 
 class PerforationSeparatorBlock(blocks.StaticBlock):

@@ -1,7 +1,5 @@
 import * as React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import Autoplay from 'embla-carousel-autoplay';
-
 import { useEditor, EditorContent, ReactNodeViewRenderer, NodeViewWrapper, type Editor, type ReactNodeViewProps } from '@tiptap/react';
 import { Node, mergeAttributes } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
@@ -45,6 +43,10 @@ import {
   type CarouselPackedSlide,
 } from './carousel-slide-packing';
 import {
+  carouselAutoplayOpts,
+  carouselAutoplayPlugins,
+} from './carousel-autoplay';
+import {
   bentoGrid01SectionClassName,
   normalizeBentoBlockBackground,
   normalizeBentoTheme,
@@ -73,10 +75,12 @@ import MarketCalendarTile, {
 import { BentoWidgetTileFrame } from './bento-widget-tile-frame';
 import {
   BentoGridEditorLayout,
+  computeRowSegments,
   spansFromLegacyPanelSizes,
   tilesHaveDefaultSpans,
   type BentoLayoutPersistPatch,
 } from './bento-grid-editor-layout';
+import { placeBentoTiles } from './bento-grid-editor-placement';
 import {
   bentoEditorLayoutStorageKey,
   bentoSectionHasFixedHeight,
@@ -156,6 +160,7 @@ export type BentoGrid01Feature = {
   brokerOverallRating?: number | null;
   brokerPageUrl?: string | null;
   frame_count?: number;
+  auto_scroll?: boolean;
   article_source_mode?: 'taxonomy_category' | 'selected_articles';
   taxonomy_category_id?: number | null;
   taxonomy_category_name?: string | null;
@@ -608,18 +613,32 @@ export function applyBentoLayoutPersistPatch(
       return p ? { ...f, ...p } : f;
     });
   }
+
+  const gridColumns = normalizeGridColumns(block.grid_columns);
+  const rowCount = normalizeGridRows(block.grid_rows);
+  const row_panel_sizes = patch.row_panel_sizes
+    ? normalizePanelSizePctArray(patch.row_panel_sizes, rowCount)
+    : undefined;
+
+  let col_panel_sizes_by_row = block.col_panel_sizes_by_row ?? {};
+  if (patch.col_panel_sizes_by_row) {
+    const placed = placeBentoTiles(features, gridColumns, gridColumns);
+    const merged = { ...col_panel_sizes_by_row, ...patch.col_panel_sizes_by_row };
+    col_panel_sizes_by_row = {};
+    for (const [key, raw] of Object.entries(merged)) {
+      const rowIndex = parseInt(key, 10);
+      if (!Number.isFinite(rowIndex)) continue;
+      const segCount = computeRowSegments(placed, rowIndex, gridColumns).length;
+      const normalized = normalizePanelSizePctArray(raw, segCount);
+      if (normalized) col_panel_sizes_by_row[key] = normalized;
+    }
+  }
+
   return {
     ...block,
     features,
-    ...(patch.row_panel_sizes ? { row_panel_sizes: patch.row_panel_sizes } : {}),
-    ...(patch.col_panel_sizes_by_row
-      ? {
-          col_panel_sizes_by_row: {
-            ...(block.col_panel_sizes_by_row ?? {}),
-            ...patch.col_panel_sizes_by_row,
-          },
-        }
-      : {}),
+    ...(row_panel_sizes ? { row_panel_sizes } : {}),
+    ...(patch.col_panel_sizes_by_row ? { col_panel_sizes_by_row } : {}),
   };
 }
 
@@ -1418,10 +1437,18 @@ function EmbedEditor({ block, onChange }: { block: EmbedBlock; onChange: (b: Emb
   );
 }
 
+function StreamSeparatorLine() {
+  return (
+    <div className="scn-stream-separator scn-stream-separator--masthead-strip" role="separator">
+      <hr className="scn-taxonomy-content__sep scn-taxonomy-content__sep--horizontal" />
+    </div>
+  );
+}
+
 function SeparatorEditor() {
   return (
     <div className="scn-editor-block__fields scn-editor-separator-preview" aria-hidden>
-      <hr className="scn-taxonomy-content__sep scn-taxonomy-content__sep--horizontal" />
+      <StreamSeparatorLine />
     </div>
   );
 }
@@ -2169,6 +2196,7 @@ function BentoFeaturePreview({ feat, resolved, carouselFrames, linkable, stockPr
       <BentoArticleCarouselTile
         frames={carouselFrames ?? []}
         frameCount={feat.frame_count ?? 5}
+        autoScroll={Boolean(feat.auto_scroll)}
       />
     );
   }
@@ -2581,6 +2609,13 @@ function BentoFeaturePanel({ feat, resolved, carouselFrames, termId, categoryCho
                   ) : null}
                 </div>
               )}
+              <label className="scn-bento-editor__size-auto-row">
+                <Checkbox
+                  checked={Boolean(feat.auto_scroll)}
+                  onCheckedChange={(checked) => onPatch({ auto_scroll: checked === true })}
+                />
+                <span>Auto-advance</span>
+              </label>
             </>
           )}
           {feat.header_type === 'card' && (
@@ -3194,23 +3229,10 @@ function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl,
 
 // ─── Carousel Editor ──────────────────────────────────────────────────────────
 
-const CAROUSEL_AUTOPLAY_DELAY_MS = 3500;
-
 function carouselStackDepth(block: Pick<CarouselBlock, 'stackDepth'>): number {
   const n = block.stackDepth;
   if (n == null || !Number.isFinite(n)) return 3;
   return Math.min(4, Math.max(1, Math.round(n)));
-}
-
-function carouselAutoplayPlugins(infiniteScroll: boolean) {
-  if (!infiniteScroll) {
-    return undefined;
-  }
-  return [Autoplay({ delay: CAROUSEL_AUTOPLAY_DELAY_MS, stopOnInteraction: true })];
-}
-
-function carouselAutoplayOpts(infiniteScroll: boolean) {
-  return { loop: Boolean(infiniteScroll) };
 }
 
 function CarouselAddTileMenu({
@@ -3739,7 +3761,7 @@ function ReadOnlyBlock({
   }
 
   if (block.type === 'separator') {
-    return <hr className="scn-taxonomy-content__sep scn-taxonomy-content__sep--horizontal" />;
+    return <StreamSeparatorLine />;
   }
 
   if (block.type === 'bento_grid_01') {

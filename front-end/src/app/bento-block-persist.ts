@@ -11,6 +11,7 @@ import {
   normalizeRow,
   normalizeRowSpan,
 } from './bento-grid-layout';
+import { computeRowSegments, placeBentoTiles } from './bento-grid-editor-placement';
 
 export interface BentoSectionDimensions {
   height?: string;
@@ -133,16 +134,27 @@ export function resizablePanelDefaultSizes(
   return weights.map((w) => (w / sum) * 100);
 }
 
+/** Ensure every panel id is unique so defaultLayout has one entry per panel. */
+export function ensureUniquePanelIds(panelIds: string[]): string[] {
+  const seen = new Map<string, number>();
+  return panelIds.map((id) => {
+    const n = seen.get(id) ?? 0;
+    seen.set(id, n + 1);
+    return n === 0 ? id : `${id}-${n}`;
+  });
+}
+
 /** Map panel ids to percentages for react-resizable-panels Group `defaultLayout`. */
 export function resizablePanelLayoutMap(
   panelIds: string[],
   spanWeights: number[],
   savedPct?: number[],
 ): Record<string, number> {
-  const sizes = resizablePanelDefaultSizes(panelIds.length, spanWeights, savedPct);
+  const uniqueIds = ensureUniquePanelIds(panelIds);
+  const sizes = resizablePanelDefaultSizes(uniqueIds.length, spanWeights, savedPct);
   const out: Record<string, number> = {};
-  panelIds.forEach((id, i) => {
-    out[id] = sizes[i] ?? 100 / Math.max(panelIds.length, 1);
+  uniqueIds.forEach((id, i) => {
+    out[id] = sizes[i] ?? 100 / Math.max(uniqueIds.length, 1);
   });
   return out;
 }
@@ -223,6 +235,26 @@ export function pruneBentoPanelSizesForGrid<T extends BentoGridPanelPruneInput>(
   return next as T;
 }
 
+/** Segment topology signature (panel count per row after empty-column merging). */
+export function bentoEditorSegmentTopologyKey(
+  features: BentoFeaturePlacement[],
+  gridColumns: number,
+  gridRows: number,
+): string {
+  const cols = normalizeGridColumns(gridColumns);
+  const rows = normalizeGridRows(gridRows);
+  const placed = placeBentoTiles(features, cols, cols);
+  const parts: string[] = [];
+  for (let r = 0; r < rows; r++) {
+    const segs = computeRowSegments(placed, r, cols);
+    const rowPart = segs
+      .map((s) => `${s.width}:${s.placed?.tile.id ?? 'empty'}`)
+      .join(',');
+    parts.push(`${r}[${rowPart}]`);
+  }
+  return parts.join(';');
+}
+
 /** Remount key for panel groups when grid geometry changes — excludes panel % (those update via panel defaultSize keys). */
 export function bentoEditorLayoutStorageKey(
   gridColumns: number,
@@ -243,5 +275,6 @@ export function bentoEditorLayoutStorageKey(
       return `${f.id}:${colSpan}x${rowSpan}@${row},${col}`;
     })
     .join('|');
-  return `bento-${cols}x${rows}-h${height}-w${width}-${featKey}`;
+  const topoKey = bentoEditorSegmentTopologyKey(features, cols, rows);
+  return `bento-${cols}x${rows}-h${height}-w${width}-${featKey}-topo${topoKey}`;
 }

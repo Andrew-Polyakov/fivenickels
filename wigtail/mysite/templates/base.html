@@ -20,6 +20,7 @@
         {% endif %}
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="{% static 'images/favicon.ico' %}" sizes="any" />
+        <link rel="preload" as="image" href="{% static 'images/logo.png' %}" />
 
         {# Force all links in the live preview panel to be opened in a new tab #}
         {% if request.in_preview_panel %}
@@ -35,7 +36,7 @@
 
         {# Angular Material theme first, then site CSS (dialogs, chips, shadcn mounts). #}
         <link rel="stylesheet" type="text/css" href="{% static 'angular-taxonomy-chip-widget/browser/styles.css' %}">
-        <link rel="stylesheet" type="text/css" href="{% static 'css/mysite.css' %}?v=11">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/mysite.css' %}?v=16">
         <script>
             try {
                 if (localStorage.getItem('reading-theme') === 'day') {
@@ -52,7 +53,7 @@
         <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8.0.12/dist/turbo.es2017-umd.js" defer></script>
         {# ES module bundle exposes window.mountShadcnTaxonomySiteNav and related mounts. Build: npm run build in front-end/. #}
         <script type="module" src="{% static 'angular-taxonomy-chip-widget/browser/main.js' %}"></script>
-        <script src="{% static 'js/mysite.js' %}?v=4" defer></script>
+        <script src="{% static 'js/mysite.js' %}?v=6" defer></script>
         {% block extra_head_js %}
         {# Optional: page-specific head scripts (defer recommended) #}
         {% endblock %}
@@ -161,8 +162,15 @@
                                     href="{% if current_site and current_site.root_page %}{% pageurl current_site.root_page %}{% else %}/{% endif %}"
                                     data-turbo-frame="main"
                                 >
-                                    <span class="site-header__masthead-title">FIVE NICKEL</span>
-                                    <span class="site-header__masthead-tagline">Forex and stock market</span>
+                                    <img
+                                        class="site-header__masthead-logo"
+                                        src="{% static 'images/logo.png' %}"
+                                        alt="Five Nickel — Forex and stock market"
+                                        width="2152"
+                                        height="456"
+                                        decoding="async"
+                                        fetchpriority="high"
+                                    >
                                 </a>
                             </div>
 

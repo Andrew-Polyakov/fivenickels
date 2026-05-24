@@ -114,6 +114,7 @@ export interface BentoGrid01FeaturePayload {
   calendar_rows?: CalendarRowPayload[];
   fxbroker?: FxBrokerPayload | { kind: 'empty' };
   frame_count?: number;
+  auto_scroll?: boolean;
   frames?: BentoArticleCarouselFrame[];
 }
 
@@ -246,6 +247,7 @@ function FeatureHeader({ feature }: { feature: BentoGrid01FeaturePayload }) {
       <BentoArticleCarouselTile
         frames={feature.frames ?? []}
         frameCount={feature.frame_count ?? 5}
+        autoScroll={Boolean(feature.auto_scroll)}
       />
     );
   }

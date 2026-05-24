@@ -12,6 +12,10 @@ import {
   CarouselPrevious,
   type CarouselApi,
 } from '../../../ui/carousel';
+import {
+  carouselAutoplayOpts,
+  carouselAutoplayPlugins,
+} from '../../../../app/carousel-autoplay';
 import { cn } from '../../../../lib/utils';
 
 export interface BentoArticleCarouselFrame {
@@ -27,6 +31,7 @@ export interface BentoArticleCarouselFrame {
 export interface BentoArticleCarouselTileProps {
   frames: BentoArticleCarouselFrame[];
   frameCount: number;
+  autoScroll?: boolean;
 }
 
 export function formatRelativePublished(iso: string | undefined): string {
@@ -101,7 +106,12 @@ function CarouselSlide({ frame }: { frame: BentoArticleCarouselFrame }) {
   const imageUrl = frame.imageUrl || '';
 
   const inner = (
-    <div className="bento-article-carousel__slide">
+    <div
+      className={cn(
+        'bento-article-carousel__slide',
+        !imageUrl && 'bento-article-carousel__slide--no-image',
+      )}
+    >
       {imageUrl ? (
         <img
           src={imageUrl}
@@ -131,11 +141,16 @@ function CarouselSlide({ frame }: { frame: BentoArticleCarouselFrame }) {
   return inner;
 }
 
-export function BentoArticleCarouselTile({ frames, frameCount }: BentoArticleCarouselTileProps) {
+export function BentoArticleCarouselTile({
+  frames,
+  frameCount,
+  autoScroll = false,
+}: BentoArticleCarouselTileProps) {
   const count = Math.max(2, Math.min(12, frameCount || 5));
   const [api, setApi] = React.useState<CarouselApi>();
   const [selectedIndex, setSelectedIndex] = React.useState(0);
   const slides = frames.filter((f) => f.kind === 'article');
+  const autoAdvance = Boolean(autoScroll);
 
   React.useEffect(() => {
     if (!api) return;
@@ -171,7 +186,11 @@ export function BentoArticleCarouselTile({ frames, frameCount }: BentoArticleCar
     <div className="bento-article-carousel">
       <Carousel
         className="bento-article-carousel__carousel"
-        opts={{ align: 'start', loop: slides.length > 1 }}
+        opts={{
+          align: 'start',
+          ...(autoAdvance ? carouselAutoplayOpts(true) : { loop: slides.length > 1 }),
+        }}
+        plugins={carouselAutoplayPlugins(autoAdvance)}
         setApi={setApi}
       >
         <CarouselContent className="bento-article-carousel__track">
@@ -191,12 +210,16 @@ export function BentoArticleCarouselTile({ frames, frameCount }: BentoArticleCar
           </>
         ) : null}
       </Carousel>
-      <BentoArticleCarouselFrameDots
-        frameCount={count}
-        slideCount={slides.length}
-        selectedIndex={dotIndex}
-        onSelect={scrollTo}
-      />
+      {slides.length > 1 ? (
+        <div className="bento-article-carousel__controls" aria-label="Carousel controls">
+          <BentoArticleCarouselFrameDots
+            frameCount={count}
+            slideCount={slides.length}
+            selectedIndex={dotIndex}
+            onSelect={scrollTo}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
