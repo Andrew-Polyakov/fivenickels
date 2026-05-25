@@ -3580,6 +3580,21 @@ mark.search-hit {
 
 }
 
+/* Published articles: plain paragraph blocks (no green glow frame). */
+.tagged-content__body .stream-block--paragraph {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+}
+
+html[data-reading-theme="day"] .tagged-content__body .stream-block--paragraph {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
 
 
 .stream-block--heading {
@@ -4763,6 +4778,10 @@ taxonomy-chip-widget {
 
     margin-bottom: 1.5rem;
 
+    max-height: 50vh;
+
+    overflow: hidden;
+
 }
 
 
@@ -4771,13 +4790,77 @@ taxonomy-chip-widget {
 
     width: 100%;
 
+    max-height: 50vh;
+
     height: auto;
+
+    object-fit: contain;
+
+    object-position: center;
 
     display: block;
 
     border-radius: 0.5rem;
 
     border: 1px solid var(--color-border-subtle);
+
+}
+
+
+
+.tagged-content__body {
+
+    display: flow-root;
+
+}
+
+
+
+@media (min-width: 768px) {
+
+    .tagged-content__hero {
+
+        float: left;
+
+        max-width: 45%;
+
+        margin-right: 1.5rem;
+
+        margin-bottom: 1rem;
+
+    }
+
+
+
+    .tagged-content__body > .stream-block--paragraph,
+
+    .tagged-content__body > .stream-block--heading,
+
+    .tagged-content__body > .stream-block--article-markdown {
+
+        display: flow-root;
+
+    }
+
+
+
+    .tagged-content__body > .stream-block--image,
+
+    .tagged-content__body > .stream-block--embed,
+
+    .tagged-content__body > .stream-block--separator,
+
+    .tagged-content__body > .stream-block--perforation,
+
+    .tagged-content__body > .scn-bentogrid01-root,
+
+    .tagged-content__body > .scn-bento2-root,
+
+    .tagged-content__body > .scn-recent-articles-root {
+
+        clear: both;
+
+    }
 
 }
 
@@ -4834,6 +4917,8 @@ taxonomy-chip-widget {
 
 
 .tagged-content__footer {
+
+    clear: both;
 
     margin-top: 2.5rem;
 
@@ -11169,8 +11254,9 @@ html[data-reading-theme="day"] .carousel-article-card__published {
 
 /* ── Hamburger nav dialog (size override) ─────────────────────────── */
 .scn-hamburger-nav__dialog {
-    width: 75vw;
-    max-width: 75vw;
+    --scn-sitemap-dialog-margin: 12px;
+    width: calc(100vw - 2 * var(--scn-sitemap-dialog-margin));
+    max-width: calc(100vw - 2 * var(--scn-sitemap-dialog-margin));
     height: auto;
     max-height: 80vh;
     padding: 0;

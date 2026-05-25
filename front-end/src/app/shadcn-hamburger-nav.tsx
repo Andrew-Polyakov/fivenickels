@@ -11,7 +11,15 @@ import {
 import { Input } from '../components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { Separator } from '../components/ui/separator';
+import { BentoArticleCarouselTile } from '../components/shadcn-space/blocks/bento-grid-01/BentoArticleCarouselTile';
 import { cn } from '../lib/utils';
+import {
+  getActiveSitemapTermId,
+  getDefaultSitemapPath,
+  shouldStackSitemapLayout,
+  SITEMAP_MILLER_MAX_COLS,
+  useSitemapCarouselFrames,
+} from './sitemap-carousel-articles';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -307,6 +315,28 @@ function patchTermInTree(
 
 // ── Sitemap Miller-column drilldown ───────────────────────────────────────────
 
+const SITEMAP_CAROUSEL_FRAME_COUNT = 5;
+
+function SitemapArticlePreview({ termId }: { termId: string }) {
+  const { frames, loading } = useSitemapCarouselFrames(termId, SITEMAP_CAROUSEL_FRAME_COUNT);
+
+  return (
+    <div className="scn-hamburger-nav__sitemap-preview-inner">
+      {loading ? (
+        <div className="scn-hamburger-nav__sitemap-preview-loading" aria-live="polite">
+          Loading articles…
+        </div>
+      ) : (
+        <BentoArticleCarouselTile
+          frames={frames}
+          frameCount={SITEMAP_CAROUSEL_FRAME_COUNT}
+          autoScroll={false}
+        />
+      )}
+    </div>
+  );
+}
+
 type SitemapColumnsProps = {
   roots: HamburgerNavTerm[];
   onNavigate: () => void;
@@ -332,7 +362,15 @@ function SitemapColumns({
   onNavChange,
   onSitemapChange,
 }: SitemapColumnsProps) {
-  const [path, setPath] = React.useState<string[]>([]);
+  const [path, setPath] = React.useState<string[]>(() => getDefaultSitemapPath(roots));
+
+  React.useEffect(() => {
+    if (path.length === 0 && roots.length > 0) {
+      setPath(getDefaultSitemapPath(roots));
+    }
+  }, [path.length, roots]);
+
+  const activeTermId = getActiveSitemapTermId(path);
 
   function termsAtLevel(level: number): HamburgerNavTerm[] {
     if (level === 0) return roots;
@@ -352,64 +390,111 @@ function SitemapColumns({
     });
   }
 
-  const numCols = path.length + 1;
+  const numCols = Math.min(path.length + 1, SITEMAP_MILLER_MAX_COLS);
+
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [stacked, setStacked] = React.useState(false);
+
+  React.useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const evaluate = () => {
+      setStacked(prev =>
+        shouldStackSitemapLayout(container.clientWidth, prev),
+      );
+    };
+
+    evaluate();
+    const observer = new ResizeObserver(evaluate);
+    observer.observe(container);
+    window.addEventListener('resize', evaluate);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', evaluate);
+    };
+  }, []);
 
   return (
-    <div className="scn-hamburger-nav__sitemap-cols">
-      {Array.from({ length: numCols }, (_, level) => {
-        const terms = termsAtLevel(level);
-        if (!terms.length) return null;
-        return (
-          <React.Fragment key={level}>
-            {level > 0 && (
-              <Separator orientation="vertical" className="scn-hamburger-nav__sitemap-vsep" />
-            )}
-            <div className="scn-hamburger-nav__sitemap-col">
-              {terms.map(term => {
-                const isSelected = path[level] === term.id;
-                const hasChildren = term.children.length > 0;
-                const itemClass = cn(
-                  'scn-hamburger-nav__sitemap-item',
-                  isSelected && 'scn-hamburger-nav__sitemap-item--selected',
-                );
-                const control = hasChildren ? (
-                  <button
-                    type="button"
-                    className={itemClass}
-                    onMouseEnter={() => selectAtLevel(level, term.id)}
-                    onFocus={() => selectAtLevel(level, term.id)}
-                  >
-                    <span>{term.name}</span>
-                    <ChevronRight size={14} aria-hidden />
-                  </button>
-                ) : (
-                  <a href={term.href} className={itemClass} onClick={onNavigate}>
-                    {term.name}
-                  </a>
-                );
-                return (
-                  <div key={term.id} className="scn-hamburger-nav__sitemap-item-row">
-                    {control}
-                    {canEdit && term.removable && (
-                      <CategoryEditPopover
-                        target={term}
-                        canEdit={canEdit}
-                        renameUrl={renameUrl}
-                        createUrl={createUrl}
-                        deleteUrl={deleteUrl}
-                        setNavUrl={setNavUrl}
-                        setSitemapUrl={setSitemapUrl}
-                        onNavChange={onNavChange}
-                        onSitemapChange={onSitemapChange}
-                      />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </React.Fragment>
-        );
-      })}
+    <div
+      ref={containerRef}
+      className={cn(
+        'scn-hamburger-nav__sitemap-cols',
+        stacked && 'scn-hamburger-nav__sitemap-cols--stacked',
+      )}
+    >
+      <div className="scn-hamburger-nav__sitemap-cols-main">
+        {Array.from({ length: numCols }, (_, level) => {
+          const terms = termsAtLevel(level);
+          if (!terms.length) return null;
+          return (
+            <React.Fragment key={level}>
+              {level > 0 && (
+                <Separator orientation="vertical" className="scn-hamburger-nav__sitemap-vsep" />
+              )}
+              <div className="scn-hamburger-nav__sitemap-col">
+                {terms.map(term => {
+                  const isSelected = path[level] === term.id;
+                  const hasChildren = term.children.length > 0;
+                  const itemClass = cn(
+                    'scn-hamburger-nav__sitemap-item',
+                    isSelected && 'scn-hamburger-nav__sitemap-item--selected',
+                  );
+                  const selectTerm = () => selectAtLevel(level, term.id);
+                  const control = hasChildren ? (
+                    <button
+                      type="button"
+                      className={itemClass}
+                      onMouseEnter={selectTerm}
+                      onFocus={selectTerm}
+                    >
+                      <span>{term.name}</span>
+                      <ChevronRight size={14} aria-hidden />
+                    </button>
+                  ) : (
+                    <a
+                      href={term.href}
+                      className={itemClass}
+                      onClick={onNavigate}
+                      onMouseEnter={selectTerm}
+                      onFocus={selectTerm}
+                    >
+                      {term.name}
+                    </a>
+                  );
+                  return (
+                    <div key={term.id} className="scn-hamburger-nav__sitemap-item-row">
+                      {control}
+                      {canEdit && term.removable && (
+                        <CategoryEditPopover
+                          target={term}
+                          canEdit={canEdit}
+                          renameUrl={renameUrl}
+                          createUrl={createUrl}
+                          deleteUrl={deleteUrl}
+                          setNavUrl={setNavUrl}
+                          setSitemapUrl={setSitemapUrl}
+                          onNavChange={onNavChange}
+                          onSitemapChange={onSitemapChange}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </React.Fragment>
+          );
+        })}
+      </div>
+      <div className="scn-hamburger-nav__sitemap-preview">
+        {activeTermId ? (
+          <SitemapArticlePreview termId={activeTermId} />
+        ) : (
+          <div className="scn-hamburger-nav__sitemap-preview-empty" aria-live="polite">
+            Select a category to preview articles.
+          </div>
+        )}
+      </div>
     </div>
   );
 }
