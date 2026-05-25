@@ -250,7 +250,7 @@ function CategoryEditPopover({
     }
   };
 
-  if (!canEdit) {
+  if (!canEdit || !target.removable) {
     return <></>;
   }
 
@@ -423,7 +423,9 @@ function RootSectionNavigationMenuContent({
                 className={cn('scn-navigation-menu__list-item-link', ch.active && 'scn-navigation-menu__list-item-link--active')}
               >
                 <div className="scn-navigation-menu__list-item-body scn-navigation-menu__list-item-body--docs">
-                  <div className="scn-navigation-menu__list-item-title scn-navigation-menu__list-item-title--docs">{ch.name}</div>
+                  <div className="scn-navigation-menu__list-item-title scn-navigation-menu__list-item-title--docs">
+                    {ch.name}
+                  </div>
                   {ch.description ? (
                     <div className="scn-navigation-menu__list-item-desc scn-navigation-menu__list-item-desc--docs">{ch.description}</div>
                   ) : null}
@@ -472,6 +474,136 @@ function RootSectionNavigationMenuContent({
         ) : null}
       </ul>
     </NavigationMenuContent>
+  );
+}
+
+function chipRowsFromMenuRows(menuRows: MenuRowPayload[], canEdit: boolean): MenuRowPayload[] {
+  return menuRows.filter(
+    (row) => row.depth >= 3 && (canEdit || row.items.some((item) => item.inNav))
+  );
+}
+
+/** Level-3+ strip: same square triggers + active top line as root row, centered. */
+function TaxonomyDepthNavRow({
+  row,
+  canEdit,
+  createUrl,
+  renameUrl,
+  deleteUrl,
+  setNavUrl,
+  onNavChange,
+}: {
+  row: MenuRowPayload;
+  canEdit: boolean;
+  createUrl: string;
+  renameUrl: string;
+  deleteUrl: string;
+  setNavUrl: string;
+  onNavChange: (id: string, inNav: boolean) => void;
+}): React.JSX.Element {
+  const [addDraft, setAddDraft] = React.useState('');
+  const visibleItems = row.items.filter((item) => canEdit || item.inNav);
+  const showAddRow = canEdit && Boolean(createUrl) && row.parentId != null;
+
+  const onAddChild = async () => {
+    if (!canEdit || !createUrl || row.parentId == null) {
+      return;
+    }
+    const trimmed = addDraft.trim();
+    if (!trimmed) {
+      return;
+    }
+    try {
+      await postJson(createUrl, {
+        name: trimmed,
+        parent_id: row.parentId,
+        create_root: false,
+      });
+      setAddDraft('');
+      refreshCurrentPage();
+    } catch (err) {
+      showAlert((err as Error).message || 'Could not create category.');
+    }
+  };
+
+  if (visibleItems.length === 0 && !showAddRow) {
+    return <></>;
+  }
+
+  return (
+    <nav
+      className={cn(
+        'site-nav__row',
+        `site-nav__row--depth-${row.depth}`,
+        'scn-taxonomy-site-nav__depth-row'
+      )}
+      aria-label="Subsections"
+    >
+      <ul className="scn-taxonomy-site-nav__depth-list">
+        {visibleItems.map((item) => (
+          <li
+            key={item.id}
+            className={cn(
+              'scn-taxonomy-site-nav__depth-item',
+              !item.inNav && canEdit && 'scn-taxonomy-site-nav__menu-item--off-nav'
+            )}
+          >
+            <a
+              href={item.href}
+              data-turbo-frame="main"
+              className={cn(
+                navigationMenuTriggerStyle(),
+                'scn-navigation-menu__trigger--link',
+                item.active && 'scn-navigation-menu__trigger--active'
+              )}
+              onClick={(e) => {
+                if (!item.href) {
+                  return;
+                }
+                e.preventDefault();
+                visitTopLevel(item.href);
+              }}
+            >
+              {item.name}
+            </a>
+            {canEdit ? (
+              <CategoryEditPopover
+                className="scn-taxonomy-site-nav__rename-inline--top"
+                target={{
+                  id: item.id,
+                  name: item.name,
+                  inNav: item.inNav,
+                  removable: item.removable !== false,
+                }}
+                canEdit={canEdit}
+                renameUrl={renameUrl}
+                createUrl={createUrl}
+                deleteUrl={deleteUrl}
+                setNavUrl={setNavUrl}
+                onNavChange={onNavChange}
+              />
+            ) : null}
+          </li>
+        ))}
+        {showAddRow ? (
+          <li className="scn-taxonomy-site-nav__depth-item scn-taxonomy-site-nav__depth-add">
+            <Input
+              value={addDraft}
+              className="scn-taxonomy-site-nav__depth-add-input"
+              placeholder={row.placeholder || 'Add new'}
+              onChange={(e) => setAddDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter') {
+                  return;
+                }
+                e.preventDefault();
+                void onAddChild();
+              }}
+            />
+          </li>
+        ) : null}
+      </ul>
+    </nav>
   );
 }
 
@@ -544,11 +676,12 @@ function TaxonomySiteNavView({
   }
 
   const visibleTopItems = topRow.items.filter((item) => canEdit || item.inNav);
+  const chipRows = chipRowsFromMenuRows(menuRows, canEdit);
 
   return (
     <div className="scn-taxonomy-site-nav">
       <nav className="site-nav__row scn-taxonomy-site-nav__unified" aria-label="Site taxonomy">
-        <NavigationMenu>
+        <NavigationMenu viewport={false}>
           <NavigationMenuList className="scn-taxonomy-site-nav__menu-list">
             {visibleTopItems.map((item) => {
               const hasChildren = item.children.length > 0;
@@ -659,6 +792,18 @@ function TaxonomySiteNavView({
           </NavigationMenuList>
         </NavigationMenu>
       </nav>
+      {chipRows.map((row) => (
+        <TaxonomyDepthNavRow
+          key={`depth-row-${row.depth}-${row.parentId ?? 'root'}`}
+          row={row}
+          canEdit={canEdit}
+          createUrl={createUrl}
+          renameUrl={renameUrl}
+          deleteUrl={deleteUrl}
+          setNavUrl={setNavUrl}
+          onNavChange={updateInNav}
+        />
+      ))}
     </div>
   );
 }

@@ -1,7 +1,5 @@
 import * as React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import Autoplay from 'embla-carousel-autoplay';
-
 import { useEditor, EditorContent, ReactNodeViewRenderer, NodeViewWrapper, type Editor, type ReactNodeViewProps } from '@tiptap/react';
 import { Node, mergeAttributes } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
@@ -29,10 +27,11 @@ import { ToggleGroup, ToggleGroupItem } from '../components/ui/toggle-group';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { Command, CommandGroup, CommandItem, CommandList } from '../components/ui/command';
 import { RteToolbar, TABLE_EXTENSIONS } from '../components/ui/rte-editor';
+import { ARTICLE_QUOTE_EXTENSION } from './tiptap-article-quote';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '../components/ui/carousel';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '../components/ui/resizable';
 import { Slider } from '../components/ui/slider';
 import { Checkbox } from '../components/ui/checkbox';
+import { ScrollArea } from '../components/ui/scroll-area';
 import {
   carouselCardShowsHeroImage,
   packCarouselSlides,
@@ -43,6 +42,10 @@ import {
   type CarouselCardViewModel,
   type CarouselPackedSlide,
 } from './carousel-slide-packing';
+import {
+  carouselAutoplayOpts,
+  carouselAutoplayPlugins,
+} from './carousel-autoplay';
 import {
   bentoGrid01SectionClassName,
   normalizeBentoBlockBackground,
@@ -58,8 +61,44 @@ import MarketMoversTile, {
   type MarketMoversGroupPayload,
 } from '../components/shadcn-space/blocks/bento-grid-01/MarketMoversTile';
 import StockBarsTile from '../components/shadcn-space/blocks/bento-grid-01/StockBarsTile';
+import {
+  BentoArticleCarouselTile,
+  type BentoArticleCarouselFrame,
+} from '../components/shadcn-space/blocks/bento-grid-01/BentoArticleCarouselTile';
 import type { StockBarPoint, StockChipPayload } from '../components/shadcn-space/blocks/bento-grid-01/StockBarsTile';
+import UpcomingDividendsTile, {
+  type DividendRowPayload,
+} from '../components/shadcn-space/blocks/bento-grid-01/UpcomingDividendsTile';
+import MarketCalendarTile, {
+  type CalendarRowPayload,
+} from '../components/shadcn-space/blocks/bento-grid-01/MarketCalendarTile';
 import { BentoWidgetTileFrame } from './bento-widget-tile-frame';
+import {
+  BentoGridEditorLayout,
+  computeRowSegments,
+  spansFromLegacyPanelSizes,
+  tilesHaveDefaultSpans,
+  type BentoLayoutPersistPatch,
+} from './bento-grid-editor-layout';
+import { placeBentoTiles } from './bento-grid-editor-placement';
+import {
+  bentoEditorLayoutStorageKey,
+  bentoSectionHasFixedHeight,
+  bentoSectionSizeStyles,
+  normalizeColPanelSizesByRow,
+  normalizePanelSizePctArray,
+  parseBentoSectionDimension,
+  serializeBentoFeaturePlacement,
+  pruneBentoPanelSizesForGrid,
+} from './bento-block-persist';
+import {
+  normalizeCol,
+  normalizeColSpan,
+  normalizeGridColumns,
+  normalizeGridRows,
+  normalizeRow,
+  normalizeRowSpan,
+} from './bento-grid-layout';
 import { FxBrokerCardView, type FxBrokerPayload } from './shadcn-fx-broker-card';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -70,23 +109,28 @@ type ImageBlock     = { id: string; type: 'image';     imageId: number | null; i
 type EmbedBlock     = { id: string; type: 'embed';     url: string };
 type SeparatorBlock = { id: string; type: 'separator' };
 
-type BentoGrid01Feature = {
+export type BentoGrid01Feature = {
   id: string;
   header_type:
-    | 'reminder_animation'
-    | 'animated_ui_block'
     | 'image'
     | 'card'
     | 'fxbroker'
     | 'richtext'
     | 'stock_bars'
     | 'forex_strip'
-    | 'market_movers';
+    | 'market_movers'
+    | 'upcoming_dividends'
+    | 'market_calendar'
+    | 'article_carousel';
   image_url_light: string;
   image_url_dark: string;
   title: string;
   description: string;
-  col_span: '4' | '8';
+  col_span?: number;
+  row_span?: number;
+  row?: number | null;
+  /** 1-based start column (editor placement). */
+  col?: number | null;
   mode?: 'random' | 'priority' | 'specific';
   articleId?: number | null;
   articleTitle?: string | null;
@@ -103,28 +147,54 @@ type BentoGrid01Feature = {
   stock_bars_limit?: number;
   /** Market movers tile: default region when no ?market_region= on the page. */
   market_region?: 'US' | 'ASIA' | 'EUROPE';
+  /** Upcoming dividends tile: optional symbol filter (blank = all enabled tickers). */
+  dividend_symbols?: string[];
+  dividend_max_rows?: number;
+  /** Market calendar tile: exchange and row cap. */
+  calendar_market?: 'NASDAQ' | 'NYSE';
+  calendar_max_rows?: number;
   /** FX Broker card tile fields (stored inline for public rendering). */
   brokerId?: number | null;
   brokerName?: string | null;
   brokerFaviconUrl?: string | null;
   brokerOverallRating?: number | null;
   brokerPageUrl?: string | null;
+  frame_count?: number;
+  auto_scroll?: boolean;
+  article_source_mode?: 'taxonomy_category' | 'selected_articles';
+  taxonomy_category_id?: number | null;
+  taxonomy_category_name?: string | null;
+  selected_article_ids?: number[];
 };
+
+type TaxonomyCategoryChoice = { id: number; name: string; slug: string };
 
 const BENTO_WIDGET_TILE_TYPES = new Set<BentoGrid01Feature['header_type']>([
   'stock_bars',
   'forex_strip',
   'market_movers',
+  'upcoming_dividends',
+  'market_calendar',
   'fxbroker',
 ]);
-type BentoGrid01Block  = {
+export type BentoGrid01Block  = {
   id: string; type: 'bento_grid_01'; badge_text: string; heading: string; features: BentoGrid01Feature[];
   theme?: 'default' | 'inverted' | 'accent';
   tile_style?: 'bordered' | 'shadow' | 'flat';
   block_background?: 'default' | 'edge_to_edge';
   show_badge?: boolean;
+  grid_columns?: number;
+  grid_rows?: number;
+  /** @deprecated Layout uses CSS grid; kept for JSON compatibility. */
   panelSizes?: number[];
+  /** Section height (e.g. `480px`). Omit or `auto` for intrinsic height. */
   height?: string;
+  /** Section max width (e.g. `1200px`). Omit for full column width. */
+  width?: string;
+  /** Vertical row band sizes (%), from resize handles. */
+  row_panel_sizes?: number[];
+  /** Horizontal segment sizes (%), keyed by row index. */
+  col_panel_sizes_by_row?: Record<string, number[]>;
 };
 
 type CarouselSlot  = {
@@ -250,6 +320,93 @@ function useResolvedCarouselPreviews(cards: CarouselSlot[], termId: number): Rec
   return resolved;
 }
 
+function articleResultToCarouselFrame(r: ArticleResult): BentoArticleCarouselFrame {
+  return {
+    kind: 'article',
+    title: r.title,
+    href: r.url,
+    imageUrl: r.imageUrl ?? undefined,
+    sourceLabel: r.sourceLabel ?? r.authorName ?? undefined,
+    publishedAtIso: r.publishedAtIso,
+    categoryName: r.categoryName,
+  };
+}
+
+function useResolvedArticleCarouselFrames(
+  features: BentoGrid01Feature[],
+  termId: number,
+): Record<string, BentoArticleCarouselFrame[]> {
+  const carouselFeats = React.useMemo(
+    () => features.filter((f) => f.header_type === 'article_carousel'),
+    [features],
+  );
+  const signature = React.useMemo(
+    () => carouselFeats.map((f) => (
+      `${f.id}:${f.frame_count ?? 5}:${f.article_source_mode ?? ''}:${f.taxonomy_category_id ?? ''}:${(f.selected_article_ids ?? []).join(',')}`
+    )).join('|'),
+    [carouselFeats],
+  );
+  const [resolved, setResolved] = React.useState<Record<string, BentoArticleCarouselFrame[]>>({});
+
+  React.useEffect(() => {
+    if (carouselFeats.length === 0) {
+      setResolved({});
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const next: Record<string, BentoArticleCarouselFrame[]> = {};
+      for (const feat of carouselFeats) {
+        const count = Math.max(2, Math.min(12, feat.frame_count ?? 5));
+        const mode = feat.article_source_mode ?? 'taxonomy_category';
+        const frames: BentoArticleCarouselFrame[] = [];
+        if (mode === 'selected_articles') {
+          for (const id of (feat.selected_article_ids ?? []).slice(0, count)) {
+            if (!id) continue;
+            const q = new URLSearchParams({ article_id: String(id) });
+            try {
+              const res = await fetch(`/inline/article/search/?${q.toString()}`, { credentials: 'same-origin' });
+              if (!res.ok) continue;
+              const data = (await res.json()) as { results?: ArticleResult[] };
+              const article = data.results?.[0];
+              if (article) frames.push(articleResultToCarouselFrame(article));
+            } catch {
+              /* skip */
+            }
+          }
+        } else {
+          const catId = feat.taxonomy_category_id ?? (Number.isFinite(termId) && termId > 0 ? termId : null);
+          if (catId) {
+            const q = new URLSearchParams({
+              random: '1',
+              limit: String(count),
+              taxonomy_category_id: String(catId),
+            });
+            try {
+              const res = await fetch(`/inline/article/search/?${q.toString()}`, { credentials: 'same-origin' });
+              if (res.ok) {
+                const data = (await res.json()) as { results?: ArticleResult[] };
+                for (const row of data.results ?? []) {
+                  frames.push(articleResultToCarouselFrame(row));
+                }
+              }
+            } catch {
+              /* skip */
+            }
+          }
+        }
+        next[feat.id] = frames;
+      }
+      if (!cancelled) setResolved(next);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [carouselFeats, signature, termId]);
+
+  return resolved;
+}
+
 function legacyCarouselSlotsToFeatures(cards: CarouselSlot[]): BentoGrid01Feature[] {
   return cards.map((slot) => ({
     id: slot.id,
@@ -258,7 +415,8 @@ function legacyCarouselSlotsToFeatures(cards: CarouselSlot[]): BentoGrid01Featur
     image_url_dark: '',
     title: '',
     description: '',
-    col_span: '4' as const,
+    col_span: 1,
+    row_span: 1,
     mode: slot.mode,
     articleId: slot.articleId,
     articleTitle: slot.articleTitle,
@@ -303,11 +461,30 @@ export function normalizeBentoCardFeatureFields(feat: Record<string, unknown>): 
   feat['cardImageScale'] = scale ?? 'bleed_under';
 }
 
-function normalizeBentoFeatureFromUnknown(raw: unknown): BentoGrid01Feature | null {
+function normalizeBentoFeatureFromUnknown(
+  raw: unknown,
+  gridColumns = 3,
+): BentoGrid01Feature | null {
   if (typeof raw !== 'object' || raw === null) return null;
   const o = { ...(raw as Record<string, unknown>) } as Record<string, unknown>;
   if (typeof o['id'] !== 'string' || typeof o['header_type'] !== 'string') return null;
+  if (o['header_type'] === 'animated_ui_block' || o['header_type'] === 'reminder_animation') return null;
   normalizeBentoCardFeatureFields(o);
+  const cols = normalizeGridColumns(gridColumns);
+  o['col_span'] = normalizeColSpan(o['col_span'], cols);
+  o['row_span'] = normalizeRowSpan(o['row_span']);
+  const rowN = normalizeRow(o['row']);
+  if (rowN !== undefined) {
+    o['row'] = rowN;
+  } else {
+    delete o['row'];
+  }
+  const colN = normalizeCol(o['col'], cols);
+  if (colN !== undefined) {
+    o['col'] = colN;
+  } else {
+    delete o['col'];
+  }
   return o as unknown as BentoGrid01Feature;
 }
 
@@ -355,27 +532,114 @@ function normalizeTaxonomyBlock(raw: Record<string, unknown>): TaxonomyBlock | n
   }
   if (t === 'bento_grid_01' && typeof raw['id'] === 'string') {
     const rawFeats = raw['features'];
-    const features: BentoGrid01Feature[] = Array.isArray(rawFeats)
+    const block_background = normalizeBentoBlockBackground(raw['block_background']);
+    const grid_columns = normalizeGridColumns(raw['grid_columns']);
+    const grid_rows = normalizeGridRows(raw['grid_rows']);
+    const featuresNormalized: BentoGrid01Feature[] = Array.isArray(rawFeats)
       ? rawFeats
-          .map((item) => normalizeBentoFeatureFromUnknown(item))
+          .map((item) => normalizeBentoFeatureFromUnknown(item, grid_columns))
           .filter((f): f is BentoGrid01Feature => f !== null)
       : [];
-    const block_background = normalizeBentoBlockBackground(raw['block_background']);
     return {
       id: raw['id'],
       type: 'bento_grid_01',
       badge_text: typeof raw['badge_text'] === 'string' ? raw['badge_text'] : 'Features',
       heading: typeof raw['heading'] === 'string' ? raw['heading'] : '',
-      features,
+      features: featuresNormalized,
       theme: normalizeBentoTheme(raw['theme']),
       tile_style: normalizeBentoTileStyle(raw['tile_style']),
       block_background,
       show_badge: typeof raw['show_badge'] === 'boolean' ? raw['show_badge'] : true,
+      grid_columns,
+      grid_rows,
       ...(Array.isArray(raw['panelSizes']) ? { panelSizes: raw['panelSizes'] as number[] } : {}),
-      ...(typeof raw['height'] === 'string' ? { height: raw['height'] } : {}),
+      ...(() => {
+        const height = parseBentoSectionDimension(raw['height']);
+        const width = parseBentoSectionDimension(raw['width']);
+        const row_panel_sizes = normalizePanelSizePctArray(raw['row_panel_sizes'], grid_rows);
+        const col_panel_sizes_by_row = normalizeColPanelSizesByRow(
+          raw['col_panel_sizes_by_row'],
+          grid_rows,
+        );
+        return {
+          ...(height ? { height } : {}),
+          ...(width ? { width } : {}),
+          ...(row_panel_sizes ? { row_panel_sizes } : {}),
+          ...(col_panel_sizes_by_row ? { col_panel_sizes_by_row } : {}),
+        };
+      })(),
     };
   }
   return raw as TaxonomyBlock;
+}
+
+export function serializeBentoGrid01BlockForSave(block: BentoGrid01Block): BentoGrid01Block {
+  const grid_columns = normalizeGridColumns(block.grid_columns);
+  const grid_rows = normalizeGridRows(block.grid_rows);
+  const height = parseBentoSectionDimension(block.height);
+  const width = parseBentoSectionDimension(block.width);
+  const row_panel_sizes = normalizePanelSizePctArray(block.row_panel_sizes, grid_rows);
+  const col_panel_sizes_by_row = normalizeColPanelSizesByRow(
+    block.col_panel_sizes_by_row,
+    grid_rows,
+  );
+  return {
+    id: block.id,
+    type: 'bento_grid_01',
+    badge_text: block.badge_text,
+    heading: block.heading,
+    features: block.features.map((f) => serializeBentoFeaturePlacement(f, grid_columns)),
+    theme: block.theme,
+    tile_style: block.tile_style,
+    block_background: block.block_background,
+    show_badge: block.show_badge,
+    grid_columns,
+    grid_rows,
+    ...(height ? { height } : {}),
+    ...(width ? { width } : {}),
+    ...(row_panel_sizes ? { row_panel_sizes } : {}),
+    ...(col_panel_sizes_by_row ? { col_panel_sizes_by_row } : {}),
+  };
+}
+
+export function applyBentoLayoutPersistPatch(
+  block: BentoGrid01Block,
+  patch: BentoLayoutPersistPatch,
+): BentoGrid01Block {
+  let features = block.features;
+  if (patch.tileSpanPatches?.length) {
+    features = features.map((f) => {
+      const p = patch.tileSpanPatches!.find((x) => x.id === f.id);
+      return p ? { ...f, ...p } : f;
+    });
+  }
+
+  const gridColumns = normalizeGridColumns(block.grid_columns);
+  const rowCount = normalizeGridRows(block.grid_rows);
+  const row_panel_sizes = patch.row_panel_sizes
+    ? normalizePanelSizePctArray(patch.row_panel_sizes, rowCount)
+    : undefined;
+
+  let col_panel_sizes_by_row = block.col_panel_sizes_by_row ?? {};
+  if (patch.col_panel_sizes_by_row) {
+    const placed = placeBentoTiles(features, gridColumns, gridColumns);
+    const merged = { ...col_panel_sizes_by_row, ...patch.col_panel_sizes_by_row };
+    col_panel_sizes_by_row = {};
+    for (const [key, raw] of Object.entries(merged)) {
+      const rowIndex = parseInt(key, 10);
+      if (!Number.isFinite(rowIndex)) continue;
+      const segCount = computeRowSegments(placed, rowIndex, gridColumns).length;
+      const normalized = normalizePanelSizePctArray(raw, segCount);
+      if (normalized) col_panel_sizes_by_row[key] = normalized;
+    }
+  }
+
+  return {
+    ...block,
+    features,
+    ...(row_panel_sizes ? { row_panel_sizes } : {}),
+    ...(patch.col_panel_sizes_by_row ? { col_panel_sizes_by_row } : {}),
+  };
 }
 
 function jsonToBlocks(json: object | null): TaxonomyBlock[] {
@@ -388,7 +652,12 @@ function jsonToBlocks(json: object | null): TaxonomyBlock[] {
 }
 
 function blocksToJson(blocks: TaxonomyBlock[]): TaxonomyContentJson {
-  return { version: 1, blocks };
+  return {
+    version: 1,
+    blocks: blocks.map((b) =>
+      b.type === 'bento_grid_01' ? serializeBentoGrid01BlockForSave(b) : b,
+    ),
+  };
 }
 
 // ─── Article Search Input ─────────────────────────────────────────────────────
@@ -403,6 +672,9 @@ type ArticleResult = {
   excerpt?: string | null;
   authorName?: string | null;
   publishedAt?: string | null;
+  publishedAtIso?: string;
+  sourceLabel?: string;
+  categoryName?: string;
   catalyst?: string | null;
 };
 
@@ -468,6 +740,128 @@ function ArticleSearchInput({ value, onChange, searchUrl, placeholder = 'Search 
         </div>
       )}
     </div>
+  );
+}
+
+// ─── Taxonomy category combobox (article carousel) ───────────────────────────
+
+function TaxonomyCategoryCombobox({
+  termId,
+  categoryChoicesUrl,
+  valueId,
+  valueName,
+  onChange,
+}: {
+  termId: number;
+  categoryChoicesUrl: string;
+  valueId: number | null;
+  valueName: string | null;
+  onChange: (v: { id: number; name: string }) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [query, setQuery] = React.useState('');
+  const [choices, setChoices] = React.useState<TaxonomyCategoryChoice[]>([]);
+  const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!categoryChoicesUrl || !termId) return;
+    let cancelled = false;
+    setLoading(true);
+    const q = new URLSearchParams({ term_id: String(termId) });
+    if (valueId) q.set('include_id', String(valueId));
+    void fetch(`${categoryChoicesUrl}?${q.toString()}`, {
+      headers: { 'X-CSRFToken': getCsrf() },
+      credentials: 'same-origin',
+    })
+      .then((res) => (res.ok ? res.json() : { choices: [] }))
+      .then((data: { choices?: TaxonomyCategoryChoice[] }) => {
+        if (!cancelled) setChoices(data.choices ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setChoices([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [categoryChoicesUrl, termId, valueId]);
+
+  const selected = choices.find((c) => c.id === valueId);
+  const displayLabel = valueName?.trim() || selected?.name || (loading ? 'Loading…' : 'Select category');
+  const filtered = choices.filter((c) =>
+    c.name.toLowerCase().includes(query.trim().toLowerCase()),
+  );
+
+  return (
+    <label className="flex flex-col gap-1.5 min-w-0">
+      <span className="text-muted-foreground text-sm">Taxonomy category</span>
+      <Popover modal={false} open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            className="scn-editor-taxonomy__combo-trigger w-full"
+            aria-expanded={open}
+          >
+            <span
+              className={cn(
+                'scn-editor-taxonomy__combo-value truncate text-left',
+                !valueId && 'scn-editor-taxonomy__combo-value--placeholder',
+              )}
+            >
+              {displayLabel}
+            </span>
+            <ChevronsUpDown size={14} className="shrink-0 opacity-60" aria-hidden />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          className="scn-popover-content scn-editor-taxonomy__combo-popover"
+          align="start"
+          sideOffset={4}
+          collisionPadding={12}
+        >
+          <div className="scn-search-wrap scn-editor-taxonomy__combo-search">
+            <Input
+              className="scn-search-wrap__input"
+              placeholder="Search categories…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+          <ScrollArea className="scn-editor-taxonomy__combo-scroll">
+            <div className="scn-editor-taxonomy__combo-options">
+              {filtered.length > 0 ? (
+                filtered.map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    className={cn(
+                      'scn-editor-taxonomy__combo-option',
+                      opt.id === valueId && 'scn-editor-taxonomy__combo-option--active',
+                    )}
+                    onClick={() => {
+                      onChange({ id: opt.id, name: opt.name });
+                      setOpen(false);
+                    }}
+                  >
+                    <span>{opt.name}</span>
+                    {opt.id === valueId ? (
+                      <span className="scn-editor-taxonomy__combo-check" aria-hidden>✓</span>
+                    ) : null}
+                  </button>
+                ))
+              ) : (
+                <p className="scn-editor-taxonomy__combo-empty">
+                  {loading ? 'Loading…' : 'No matching categories.'}
+                </p>
+              )}
+            </div>
+          </ScrollArea>
+        </PopoverContent>
+      </Popover>
+    </label>
   );
 }
 
@@ -791,8 +1185,13 @@ function renderPackedCarouselEditorBentoSlide(
   stockPreviewUrl: string,
   forexPreviewUrl: string,
   marketMoversPreviewUrl: string,
+  dividendsPreviewUrl: string,
+  calendarPreviewUrl: string,
   brokerListUrl: string,
+  termId: number,
+  categoryChoicesUrl: string,
   resolvedRandom: Record<string, ArticleResult | null>,
+  resolvedCarouselFrames: Record<string, BentoArticleCarouselFrame[]>,
   onPatch: (featId: string, patch: Partial<BentoGrid01Feature>) => void,
   onRemove: (featId: string) => void,
 ): React.ReactNode {
@@ -802,11 +1201,17 @@ function renderPackedCarouselEditorBentoSlide(
         key={feat.id}
         feat={feat}
         resolved={resolvedRandom[feat.id]}
+        carouselFrames={resolvedCarouselFrames[feat.id]}
+        termId={termId}
+        categoryChoicesUrl={categoryChoicesUrl}
         searchUrl={searchUrl}
         stockPreviewUrl={stockPreviewUrl}
         forexPreviewUrl={forexPreviewUrl}
         marketMoversPreviewUrl={marketMoversPreviewUrl}
+        dividendsPreviewUrl={dividendsPreviewUrl}
+        calendarPreviewUrl={calendarPreviewUrl}
         brokerListUrl={brokerListUrl}
+        gridColumns={3}
         onPatch={patch => onPatch(feat.id, patch)}
         onRemove={() => onRemove(feat.id)}
       />
@@ -941,7 +1346,8 @@ function ParagraphEditor({ block, uploadUrl, onChange }: {
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ heading: { levels: [2, 3] } }),
+      StarterKit.configure({ heading: { levels: [2, 3] }, blockquote: false }),
+      ARTICLE_QUOTE_EXTENSION,
       TiptapLink.configure({ openOnClick: false }),
       Placeholder.configure({ placeholder: 'Write paragraph content…' }),
       WagtailImage,
@@ -1031,10 +1437,18 @@ function EmbedEditor({ block, onChange }: { block: EmbedBlock; onChange: (b: Emb
   );
 }
 
+function StreamSeparatorLine() {
+  return (
+    <div className="scn-stream-separator scn-stream-separator--masthead-strip" role="separator">
+      <hr className="scn-taxonomy-content__sep scn-taxonomy-content__sep--horizontal" />
+    </div>
+  );
+}
+
 function SeparatorEditor() {
   return (
     <div className="scn-editor-block__fields scn-editor-separator-preview" aria-hidden>
-      <hr className="scn-taxonomy-content__sep scn-taxonomy-content__sep--horizontal" />
+      <StreamSeparatorLine />
     </div>
   );
 }
@@ -1043,44 +1457,52 @@ function SeparatorEditor() {
 
 const BENTO_TILE_LABEL: Record<string, string> = {
   image: 'Image tile',
-  reminder_animation: 'Reminder Animation',
-  animated_ui_block: 'Animated UI Block',
   card: 'Article card',
   fxbroker: 'FX Broker card',
   richtext: 'Rich text',
   stock_bars: 'Stock bars',
   forex_strip: 'FX pairs',
   market_movers: 'Market movers',
+  upcoming_dividends: 'Upcoming dividends',
+  market_calendar: 'Market calendar',
+  article_carousel: 'Article carousel',
 };
 
 const BENTO_TILE_TYPES: Array<{ type: BentoGrid01Feature['header_type']; desc: string }> = [
   { type: 'image',              desc: 'Light / dark image pair' },
-  { type: 'reminder_animation', desc: 'Built-in reminder animation' },
-  { type: 'animated_ui_block',  desc: 'Built-in animated UI block' },
   { type: 'card',               desc: 'Resolved article card' },
   { type: 'fxbroker',           desc: 'FX broker rating card' },
   { type: 'richtext',           desc: 'Formatted rich text content' },
   { type: 'stock_bars',         desc: 'OHLC chart + ticker chips (cadence & bar count)' },
   { type: 'forex_strip',        desc: 'Live major FX pairs' },
   { type: 'market_movers',      desc: 'Winners and losers by region' },
+  { type: 'upcoming_dividends', desc: 'Upcoming cash and stock dividends' },
+  { type: 'market_calendar',    desc: 'Upcoming NASDAQ / NYSE sessions' },
+  { type: 'article_carousel',   desc: 'Hero carousel with underscore frame indicators' },
 ];
 
 const BENTO_TILE_TYPE_OPTIONS: Array<{ value: BentoGrid01Feature['header_type']; label: string }> = [
   { value: 'image', label: 'Image (light/dark)' },
-  { value: 'reminder_animation', label: 'Reminder Animation' },
-  { value: 'animated_ui_block', label: 'Animated UI Block' },
   { value: 'card', label: 'Article card' },
   { value: 'fxbroker', label: 'FX Broker card' },
   { value: 'richtext', label: 'Rich text' },
   { value: 'stock_bars', label: 'Stock bars' },
   { value: 'forex_strip', label: 'FX pairs' },
   { value: 'market_movers', label: 'Market movers' },
+  { value: 'upcoming_dividends', label: 'Upcoming dividends' },
+  { value: 'market_calendar', label: 'Market calendar' },
+  { value: 'article_carousel', label: 'Article carousel' },
 ];
 
 const MARKET_REGION_OPTIONS: Array<{ value: 'US' | 'ASIA' | 'EUROPE'; label: string }> = [
   { value: 'US', label: 'US' },
   { value: 'ASIA', label: 'Asia' },
   { value: 'EUROPE', label: 'Europe' },
+];
+
+const CALENDAR_MARKET_OPTIONS: Array<{ value: 'NASDAQ' | 'NYSE'; label: string }> = [
+  { value: 'NASDAQ', label: 'NASDAQ' },
+  { value: 'NYSE', label: 'NYSE' },
 ];
 
 function BentoTileTypeCombobox({
@@ -1262,8 +1684,12 @@ function BrokerPickerCombobox({
   );
 }
 
-function createBentoFeatureOfType(headerType: BentoGrid01Feature['header_type']): BentoGrid01Feature {
-  const base = { id: uid(), image_url_light: '', image_url_dark: '', title: '', description: '', col_span: '4' as const };
+function createBentoFeatureOfType(
+  headerType: BentoGrid01Feature['header_type'],
+  ctx?: { termId?: number; activeTermName?: string },
+): BentoGrid01Feature {
+  const base = { id: uid(), image_url_light: '', image_url_dark: '', title: '', description: '', col_span: 1, row_span: 1 };
+  const tileCtx = ctx ?? {};
   if (headerType === 'card') {
     return {
       ...base,
@@ -1291,8 +1717,36 @@ function createBentoFeatureOfType(headerType: BentoGrid01Feature['header_type'])
   if (headerType === 'forex_strip') {
     return { ...base, header_type: 'forex_strip' };
   }
+  if (headerType === 'upcoming_dividends') {
+    return {
+      ...base,
+      header_type: 'upcoming_dividends',
+      dividend_symbols: [],
+      dividend_max_rows: 25,
+    };
+  }
+  if (headerType === 'market_calendar') {
+    return {
+      ...base,
+      header_type: 'market_calendar',
+      calendar_market: 'NASDAQ',
+      calendar_max_rows: 30,
+    };
+  }
   if (headerType === 'fxbroker') {
     return { ...base, header_type: 'fxbroker', brokerId: null, brokerName: null, brokerFaviconUrl: null, brokerOverallRating: null, brokerPageUrl: null };
+  }
+  if (headerType === 'article_carousel') {
+    const tid = tileCtx.termId;
+    return {
+      ...base,
+      header_type: 'article_carousel',
+      frame_count: 5,
+      article_source_mode: 'taxonomy_category',
+      taxonomy_category_id: tid && tid > 0 ? tid : null,
+      taxonomy_category_name: tileCtx.activeTermName ?? null,
+      selected_article_ids: [],
+    };
   }
   return { ...base, header_type: headerType };
 }
@@ -1539,6 +1993,146 @@ function BentoMarketMoversPreview({
   );
 }
 
+type UpcomingDividendsPreviewJson = {
+  dividend_rows: DividendRowPayload[];
+};
+
+function BentoUpcomingDividendsPreview({
+  dividendsPreviewUrl,
+  symbols,
+  maxRows,
+}: {
+  dividendsPreviewUrl: string;
+  symbols: string[];
+  maxRows: number;
+}) {
+  const symKey = symbols.join(',');
+  const safeMaxRows = Math.min(100, Math.max(1, maxRows));
+
+  const [data, setData] = React.useState<UpcomingDividendsPreviewJson | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [fetchErr, setFetchErr] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!dividendsPreviewUrl) {
+      setLoading(false);
+      setFetchErr(null);
+      setData(null);
+      return;
+    }
+    const ac = new AbortController();
+    setLoading(true);
+    setFetchErr(null);
+    const q = new URLSearchParams({ max_rows: String(safeMaxRows) });
+    if (symKey) q.set('symbols', symKey);
+    fetch(`${dividendsPreviewUrl}?${q}`, { signal: ac.signal, credentials: 'same-origin' })
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json() as Promise<UpcomingDividendsPreviewJson>;
+      })
+      .then((j) => { setData(j); })
+      .catch((e: unknown) => {
+        if (e instanceof Error && e.name === 'AbortError') return;
+        setFetchErr(e instanceof Error ? e.message : 'Failed to load');
+        setData(null);
+      })
+      .finally(() => { if (!ac.signal.aborted) setLoading(false); });
+    return () => ac.abort();
+  }, [dividendsPreviewUrl, symKey, safeMaxRows]);
+
+  if (!dividendsPreviewUrl) {
+    return (
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+        <span className="scn-taxonomy-content__bento-desc">Configure dividends preview URL.</span>
+      </div>
+    );
+  }
+  if (loading) {
+    return (
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+        <span className="scn-taxonomy-content__bento-desc">Loading dividends…</span>
+      </div>
+    );
+  }
+  if (fetchErr) {
+    return (
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+        <span className="scn-taxonomy-content__bento-desc text-destructive">{fetchErr}</span>
+      </div>
+    );
+  }
+  return <UpcomingDividendsTile rows={data?.dividend_rows ?? []} />;
+}
+
+type MarketCalendarPreviewJson = {
+  calendar_rows: CalendarRowPayload[];
+};
+
+function BentoMarketCalendarPreview({
+  calendarPreviewUrl,
+  market,
+  maxRows,
+}: {
+  calendarPreviewUrl: string;
+  market: 'NASDAQ' | 'NYSE';
+  maxRows: number;
+}) {
+  const safeMaxRows = Math.min(90, Math.max(1, maxRows));
+
+  const [data, setData] = React.useState<MarketCalendarPreviewJson | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [fetchErr, setFetchErr] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!calendarPreviewUrl) {
+      setLoading(false);
+      setFetchErr(null);
+      setData(null);
+      return;
+    }
+    const ac = new AbortController();
+    setLoading(true);
+    setFetchErr(null);
+    const q = new URLSearchParams({ market, max_rows: String(safeMaxRows) });
+    fetch(`${calendarPreviewUrl}?${q}`, { signal: ac.signal, credentials: 'same-origin' })
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json() as Promise<MarketCalendarPreviewJson>;
+      })
+      .then((j) => { setData(j); })
+      .catch((e: unknown) => {
+        if (e instanceof Error && e.name === 'AbortError') return;
+        setFetchErr(e instanceof Error ? e.message : 'Failed to load');
+        setData(null);
+      })
+      .finally(() => { if (!ac.signal.aborted) setLoading(false); });
+    return () => ac.abort();
+  }, [calendarPreviewUrl, market, safeMaxRows]);
+
+  if (!calendarPreviewUrl) {
+    return (
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+        <span className="scn-taxonomy-content__bento-desc">Configure calendar preview URL.</span>
+      </div>
+    );
+  }
+  if (loading) {
+    return (
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+        <span className="scn-taxonomy-content__bento-desc">Loading calendar…</span>
+      </div>
+    );
+  }
+  if (fetchErr) {
+    return (
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+        <span className="scn-taxonomy-content__bento-desc text-destructive">{fetchErr}</span>
+      </div>
+    );
+  }
+  return <MarketCalendarTile rows={data?.calendar_rows ?? []} />;
+}
+
 function BentoTileRichTextEditor({ feat, onChange }: {
   feat: BentoGrid01Feature; onChange: (html: string) => void;
 }) {
@@ -1546,7 +2140,8 @@ function BentoTileRichTextEditor({ feat, onChange }: {
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ heading: { levels: [2, 3] } }),
+      StarterKit.configure({ heading: { levels: [2, 3] }, blockquote: false }),
+      ARTICLE_QUOTE_EXTENSION,
       TiptapLink.configure({ openOnClick: false }),
       Placeholder.configure({ placeholder: 'Write tile content…' }),
     ],
@@ -1585,14 +2180,26 @@ function BentoTileRichTextEditor({ feat, onChange }: {
   );
 }
 
-function BentoFeaturePreview({ feat, resolved, linkable, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl }: {
+function BentoFeaturePreview({ feat, resolved, carouselFrames, linkable, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl }: {
   feat: BentoGrid01Feature;
   resolved: ArticleResult | null | undefined;
+  carouselFrames?: BentoArticleCarouselFrame[];
   linkable?: boolean;
   stockPreviewUrl?: string;
   forexPreviewUrl?: string;
   marketMoversPreviewUrl?: string;
+  dividendsPreviewUrl?: string;
+  calendarPreviewUrl?: string;
 }) {
+  if (feat.header_type === 'article_carousel') {
+    return (
+      <BentoArticleCarouselTile
+        frames={carouselFrames ?? []}
+        frameCount={feat.frame_count ?? 5}
+        autoScroll={Boolean(feat.auto_scroll)}
+      />
+    );
+  }
   if (feat.header_type === 'card') {
     if (resolved) {
       return (
@@ -1679,6 +2286,46 @@ function BentoFeaturePreview({ feat, resolved, linkable, stockPreviewUrl, forexP
     );
   }
 
+  if (feat.header_type === 'upcoming_dividends') {
+    return (
+      <BentoWidgetTileFrame scrollable>
+        {dividendsPreviewUrl
+          ? (
+            <BentoUpcomingDividendsPreview
+              dividendsPreviewUrl={dividendsPreviewUrl}
+              symbols={feat.dividend_symbols ?? []}
+              maxRows={feat.dividend_max_rows ?? 25}
+            />
+          )
+          : (
+            <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+              <span className="scn-taxonomy-content__bento-desc">Configure dividends preview URL.</span>
+            </div>
+          )}
+      </BentoWidgetTileFrame>
+    );
+  }
+
+  if (feat.header_type === 'market_calendar') {
+    return (
+      <BentoWidgetTileFrame scrollable>
+        {calendarPreviewUrl
+          ? (
+            <BentoMarketCalendarPreview
+              calendarPreviewUrl={calendarPreviewUrl}
+              market={feat.calendar_market ?? 'NASDAQ'}
+              maxRows={feat.calendar_max_rows ?? 30}
+            />
+          )
+          : (
+            <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
+              <span className="scn-taxonomy-content__bento-desc">Configure calendar preview URL.</span>
+            </div>
+          )}
+      </BentoWidgetTileFrame>
+    );
+  }
+
   if (feat.header_type === 'fxbroker') {
     if (feat.brokerName && feat.brokerOverallRating != null) {
       const brokerPayload: FxBrokerPayload = {
@@ -1691,9 +2338,7 @@ function BentoFeaturePreview({ feat, resolved, linkable, stockPreviewUrl, forexP
       return <FxBrokerCardView data={brokerPayload} />;
     }
     return (
-      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
-        <span>+<br />Add item</span>
-      </div>
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty" aria-hidden />
     );
   }
 
@@ -1703,27 +2348,82 @@ function BentoFeaturePreview({ feat, resolved, linkable, stockPreviewUrl, forexP
       return <img src={src} alt={feat.title || ''} className="scn-bento-editor__image-preview" />;
     }
     return (
-      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
-        <span>Image tile</span>
-      </div>
+      <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty" aria-hidden />
     );
   }
 
   return (
-    <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty">
-      <span>{BENTO_TILE_LABEL[feat.header_type] ?? 'Feature tile'}</span>
+    <div className="scn-bento-editor__placeholder-card scn-bento-editor__placeholder-card--empty" aria-hidden />
+  );
+}
+
+function BentoTileLayoutFields({
+  feat,
+  gridColumns,
+  onPatch,
+}: {
+  feat: BentoGrid01Feature;
+  gridColumns: number;
+  onPatch: (patch: Partial<BentoGrid01Feature>) => void;
+}) {
+  const cols = normalizeGridColumns(gridColumns);
+  const colSpan = normalizeColSpan(feat.col_span, cols);
+  const rowSpan = normalizeRowSpan(feat.row_span);
+  return (
+    <div className="scn-bento-editor__layout-fields grid grid-cols-3 gap-2">
+      <label className="flex flex-col gap-1 min-w-0">
+        <span className="text-muted-foreground text-xs">Columns</span>
+        <Select
+          value={String(colSpan)}
+          onChange={(e) => onPatch({ col_span: parseInt(e.target.value, 10) })}
+        >
+          {Array.from({ length: cols }, (_, i) => i + 1).map((n) => (
+            <option key={n} value={String(n)}>{n}</option>
+          ))}
+        </Select>
+      </label>
+      <label className="flex flex-col gap-1 min-w-0">
+        <span className="text-muted-foreground text-xs">Rows</span>
+        <Select
+          value={String(rowSpan)}
+          onChange={(e) => onPatch({ row_span: parseInt(e.target.value, 10) })}
+        >
+          {[1, 2, 3].map((n) => (
+            <option key={n} value={String(n)}>{n}</option>
+          ))}
+        </Select>
+      </label>
+      <label className="flex flex-col gap-1 min-w-0">
+        <span className="text-muted-foreground text-xs">Row #</span>
+        <Input
+          type="number"
+          min={1}
+          placeholder="Auto"
+          value={feat.row ?? ''}
+          onChange={(e) => {
+            const v = e.target.value.trim();
+            onPatch({ row: v ? Math.max(1, parseInt(v, 10) || 1) : null });
+          }}
+        />
+      </label>
     </div>
   );
 }
 
-function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, onPatch, onRemove }: {
+function BentoFeaturePanel({ feat, resolved, carouselFrames, termId, categoryChoicesUrl, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, gridColumns, onPatch, onRemove }: {
   feat: BentoGrid01Feature;
   resolved: ArticleResult | null | undefined;
+  carouselFrames?: BentoArticleCarouselFrame[];
+  termId: number;
+  categoryChoicesUrl: string;
   searchUrl: string;
   stockPreviewUrl: string;
   forexPreviewUrl: string;
   marketMoversPreviewUrl: string;
+  dividendsPreviewUrl: string;
+  calendarPreviewUrl: string;
   brokerListUrl: string;
+  gridColumns: number;
   onPatch: (patch: Partial<BentoGrid01Feature>) => void;
   onRemove: () => void;
 }) {
@@ -1753,6 +2453,9 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPr
         <div
           className={cn(
             'scn-bento-editor__panel-content',
+            feat.header_type === 'card' && 'scn-bento-editor__panel-content--card',
+            feat.header_type === 'fxbroker' && 'scn-bento-editor__panel-content--fxbroker',
+            feat.header_type === 'article_carousel' && 'scn-bento-editor__panel-content--article-carousel',
             isWidgetTile && 'scn-bento-editor__panel-content--widget',
           )}
           role="button"
@@ -1763,9 +2466,12 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPr
           <BentoFeaturePreview
             feat={feat}
             resolved={resolved}
+            carouselFrames={carouselFrames}
             stockPreviewUrl={stockPreviewUrl}
             forexPreviewUrl={forexPreviewUrl}
             marketMoversPreviewUrl={marketMoversPreviewUrl}
+            dividendsPreviewUrl={dividendsPreviewUrl}
+            calendarPreviewUrl={calendarPreviewUrl}
           />
         </div>
       </PopoverTrigger>
@@ -1777,6 +2483,7 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPr
         collisionPadding={12}
       >
         <div className="scn-bento-editor__feat-popover-body">
+          <BentoTileLayoutFields feat={feat} gridColumns={gridColumns} onPatch={onPatch} />
           <div className="scn-bento-editor__card-row">
             <BentoTileTypeCombobox
               value={feat.header_type}
@@ -1793,6 +2500,18 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPr
                     header_type: v,
                     market_region: feat.market_region ?? 'US',
                   });
+                } else if (v === 'upcoming_dividends') {
+                  onPatch({
+                    header_type: v,
+                    dividend_symbols: feat.dividend_symbols ?? [],
+                    dividend_max_rows: feat.dividend_max_rows ?? 25,
+                  });
+                } else if (v === 'market_calendar') {
+                  onPatch({
+                    header_type: v,
+                    calendar_market: feat.calendar_market ?? 'NASDAQ',
+                    calendar_max_rows: feat.calendar_max_rows ?? 30,
+                  });
                 } else {
                   onPatch({ header_type: v });
                 }
@@ -1805,6 +2524,98 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPr
                 onChange={e => onPatch({ image_url_light: e.target.value })} />
               <Input value={feat.image_url_dark} placeholder="Image URL (dark mode)"
                 onChange={e => onPatch({ image_url_dark: e.target.value })} />
+            </>
+          )}
+          {feat.header_type === 'article_carousel' && (
+            <>
+              <label className="flex flex-col gap-1.5 min-w-0">
+                <span className="text-muted-foreground text-sm">Frames</span>
+                <Input
+                  type="number"
+                  min={2}
+                  max={12}
+                  value={feat.frame_count ?? 5}
+                  onChange={(e) => {
+                    const n = parseInt(e.target.value, 10);
+                    onPatch({ frame_count: Number.isFinite(n) ? Math.max(2, Math.min(12, n)) : 5 });
+                  }}
+                />
+              </label>
+              <ToggleGroup
+                value={feat.article_source_mode ?? 'taxonomy_category'}
+                onValueChange={(v) => {
+                  if (v) {
+                    onPatch({
+                      article_source_mode: v as BentoGrid01Feature['article_source_mode'],
+                      taxonomy_category_id: v === 'taxonomy_category' ? (feat.taxonomy_category_id ?? termId) : feat.taxonomy_category_id,
+                      taxonomy_category_name: v === 'taxonomy_category' ? (feat.taxonomy_category_name ?? null) : feat.taxonomy_category_name,
+                      selected_article_ids: v === 'selected_articles' ? (feat.selected_article_ids ?? []) : [],
+                    });
+                  }
+                }}
+              >
+                <ToggleGroupItem value="taxonomy_category">Category</ToggleGroupItem>
+                <ToggleGroupItem value="selected_articles">Selected</ToggleGroupItem>
+              </ToggleGroup>
+              {(feat.article_source_mode ?? 'taxonomy_category') === 'taxonomy_category' ? (
+                <TaxonomyCategoryCombobox
+                  termId={termId}
+                  categoryChoicesUrl={categoryChoicesUrl}
+                  valueId={feat.taxonomy_category_id ?? termId}
+                  valueName={feat.taxonomy_category_name ?? null}
+                  onChange={({ id, name }) => onPatch({
+                    taxonomy_category_id: id,
+                    taxonomy_category_name: name,
+                  })}
+                />
+              ) : (
+                <div className="scn-bento-editor__carousel-articles">
+                  {(feat.selected_article_ids ?? []).map((id, idx) => (
+                    <div key={`${id}-${idx}`} className="scn-bento-editor__carousel-article-row">
+                      <ArticleSearchInput
+                        value={{ id, title: null }}
+                        searchUrl={searchUrl}
+                        onChange={(v) => {
+                          const ids = [...(feat.selected_article_ids ?? [])];
+                          ids[idx] = v.id ?? 0;
+                          onPatch({ selected_article_ids: ids.filter((x) => x > 0) });
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="scn-bento-editor__carousel-remove-btn"
+                        onClick={() => {
+                          const ids = [...(feat.selected_article_ids ?? [])];
+                          ids.splice(idx, 1);
+                          onPatch({ selected_article_ids: ids });
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                  {(feat.selected_article_ids ?? []).length < (feat.frame_count ?? 5) ? (
+                    <ArticleSearchInput
+                      value={{ id: null, title: null }}
+                      searchUrl={searchUrl}
+                      placeholder="Add article…"
+                      onChange={(v) => {
+                        if (!v.id) return;
+                        const ids = [...(feat.selected_article_ids ?? []), v.id];
+                        onPatch({ selected_article_ids: ids.slice(0, feat.frame_count ?? 5) });
+                      }}
+                    />
+                  ) : null}
+                </div>
+              )}
+              <label className="scn-bento-editor__size-auto-row">
+                <Checkbox
+                  checked={Boolean(feat.auto_scroll)}
+                  onCheckedChange={(checked) => onPatch({ auto_scroll: checked === true })}
+                />
+                <span>Auto-advance</span>
+              </label>
             </>
           )}
           {feat.header_type === 'card' && (
@@ -1913,6 +2724,60 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPr
               </select>
             </label>
           )}
+          {feat.header_type === 'upcoming_dividends' && (
+            <div className="flex flex-col gap-3">
+              <label className="flex flex-col gap-1.5 min-w-0">
+                <span className="text-muted-foreground text-sm">Tickers (optional)</span>
+                <Input
+                  value={(feat.dividend_symbols ?? []).join(', ')}
+                  placeholder="e.g. AAPL, MSFT (blank = all enabled tickers)"
+                  onChange={e => { onPatch({ dividend_symbols: parseCommaTickers(e.target.value) }); }}
+                />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-muted-foreground text-sm">
+                  Max rows: <span className="tabular-nums text-foreground">{feat.dividend_max_rows ?? 25}</span>
+                </span>
+                <Slider
+                  min={1}
+                  max={100}
+                  step={1}
+                  value={[feat.dividend_max_rows ?? 25]}
+                  onValueChange={([v]) => onPatch({ dividend_max_rows: v })}
+                />
+              </label>
+            </div>
+          )}
+          {feat.header_type === 'market_calendar' && (
+            <div className="flex flex-col gap-3">
+              <label className="flex flex-col gap-1.5 min-w-0">
+                <span className="text-muted-foreground text-sm">Market</span>
+                <select
+                  className="scn-bento-editor__region-select"
+                  value={feat.calendar_market ?? 'NASDAQ'}
+                  onChange={(e) => {
+                    onPatch({ calendar_market: e.target.value as BentoGrid01Feature['calendar_market'] });
+                  }}
+                >
+                  {CALENDAR_MARKET_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-muted-foreground text-sm">
+                  Max rows: <span className="tabular-nums text-foreground">{feat.calendar_max_rows ?? 30}</span>
+                </span>
+                <Slider
+                  min={1}
+                  max={90}
+                  step={1}
+                  value={[feat.calendar_max_rows ?? 30]}
+                  onValueChange={([v]) => onPatch({ calendar_max_rows: v })}
+                />
+              </label>
+            </div>
+          )}
           {feat.header_type === 'stock_bars' && (
             <div className="flex flex-col gap-3">
               <div className="grid grid-cols-2 gap-3 items-end">
@@ -1947,7 +2812,9 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPr
               <span className="text-muted-foreground text-xs">Right-click the tile for quick ticker edit.</span>
             </div>
           )}
-          {feat.header_type !== 'card' && !BENTO_WIDGET_TILE_TYPES.has(feat.header_type) && (
+          {feat.header_type !== 'card'
+            && feat.header_type !== 'article_carousel'
+            && !BENTO_WIDGET_TILE_TYPES.has(feat.header_type) && (
             <>
               <Input value={feat.title} placeholder="Title"
                 onChange={e => onPatch({ title: e.target.value })} />
@@ -1962,6 +2829,33 @@ function BentoFeaturePanel({ feat, resolved, searchUrl, stockPreviewUrl, forexPr
         </div>
       </PopoverContent>
     </Popover>
+  );
+}
+
+function BentoEditorEmptySlot({
+  onPick,
+}: {
+  onPick: (type: BentoGrid01Feature['header_type']) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <div className="scn-bento-editor__empty-column">
+      <Popover open={open} onOpenChange={setOpen} modal={false}>
+        <PopoverTrigger asChild>
+          <button type="button" className="scn-empty-add-btn scn-bento-editor__empty-column-btn" aria-label="Add tile to column">
+            <span className="scn-broker-carousel__add-icon">+</span>
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="scn-popover-content scn-editor-add-block-menu" align="center">
+          <BentoAddTilePopoverContent
+            onPick={type => {
+              onPick(type);
+              setOpen(false);
+            }}
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }
 
@@ -1991,6 +2885,27 @@ function BentoAddTilePopoverContent({
   );
 }
 
+/** Live preview of badge + heading (matches public bento intro). */
+function BentoBlockIntroHeader({
+  block,
+}: {
+  block: Pick<BentoGrid01Block, 'heading' | 'badge_text' | 'show_badge'>;
+}) {
+  const showIntro =
+    (block.show_badge !== false && block.badge_text) || Boolean(block.heading?.trim());
+  if (!showIntro) return null;
+  return (
+    <div className="scn-bentogrid01__intro scn-bento-editor__intro-preview">
+      {block.heading ? <h2 className="scn-bentogrid01__heading">{block.heading}</h2> : null}
+      {block.show_badge !== false && block.badge_text ? (
+        <div className="scn-taxonomy-content__bento-badge scn-bentogrid01__badge">
+          {block.badge_text}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function BentoGrid01BlockHeaderFields({
   block,
   onChange,
@@ -2004,6 +2919,8 @@ function BentoGrid01BlockHeaderFields({
   onAddOpenChange: (open: boolean) => void;
   onAddTile: (headerType: BentoGrid01Feature['header_type']) => void;
 }) {
+  const [themeOpen, setThemeOpen] = React.useState(false);
+
   return (
     <div className="scn-editor-block__header-fields scn-editor-block__header-fields--bento-toolbar">
       <div className="scn-editor-block__bento-text-fields">
@@ -2026,7 +2943,7 @@ function BentoGrid01BlockHeaderFields({
             checked={!block.height || block.height === 'auto'}
             onCheckedChange={checked => onChange({ ...block, height: checked ? undefined : '320px' })}
           />
-          <span>Auto</span>
+          <span>H auto</span>
         </label>
         {block.height && block.height !== 'auto' ? (
           <div className="scn-bento-editor__size-slider-row">
@@ -2041,7 +2958,28 @@ function BentoGrid01BlockHeaderFields({
           </div>
         ) : null}
       </div>
-      <Popover>
+      <div className="scn-editor-block__header-height scn-editor-block__bento-size">
+        <label className="scn-bento-editor__size-auto-row">
+          <Checkbox
+            checked={!block.width}
+            onCheckedChange={checked => onChange({ ...block, width: checked ? undefined : '1200px' })}
+          />
+          <span>W full</span>
+        </label>
+        {block.width ? (
+          <div className="scn-bento-editor__size-slider-row">
+            <Slider
+              min={480}
+              max={1600}
+              step={20}
+              value={[parseInt(block.width, 10) || 1200]}
+              onValueChange={([v]) => onChange({ ...block, width: `${v}px` })}
+            />
+            <span className="scn-bento-editor__size-value">{block.width}</span>
+          </div>
+        ) : null}
+      </div>
+      <Popover open={themeOpen} onOpenChange={setThemeOpen} modal={false}>
         <PopoverTrigger asChild>
           <Button
             type="button"
@@ -2053,7 +2991,12 @@ function BentoGrid01BlockHeaderFields({
             <Settings2 size={14} />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="scn-popover-content scn-bento-editor__theme-popover" align="end">
+        <PopoverContent
+          className="scn-popover-content scn-carousel-editor__popover scn-carousel-editor__settings-popover"
+          align="end"
+          collisionPadding={12}
+        >
+          <div className="scn-carousel-editor__settings-popover-body">
           <div className="scn-bento-editor__theme-field">
             <label>Theme</label>
             <Select
@@ -2063,6 +3006,41 @@ function BentoGrid01BlockHeaderFields({
               <option value="default">Default</option>
               <option value="inverted">Inverted</option>
               <option value="accent">Accent</option>
+            </Select>
+          </div>
+          <div className="scn-bento-editor__theme-field">
+            <label>Grid columns</label>
+            <Select
+              value={String(block.grid_columns ?? 3)}
+              onChange={e => onChange(
+                pruneBentoPanelSizesForGrid(
+                  block,
+                  normalizeGridColumns(parseInt(e.target.value, 10)),
+                  normalizeGridRows(block.grid_rows),
+                  block.grid_columns,
+                ),
+              )}
+            >
+              {[1, 2, 3, 4, 5, 6].map(n => (
+                <option key={n} value={String(n)}>{n}</option>
+              ))}
+            </Select>
+          </div>
+          <div className="scn-bento-editor__theme-field">
+            <label>Grid rows</label>
+            <Select
+              value={String(block.grid_rows ?? 3)}
+              onChange={e => onChange(
+                pruneBentoPanelSizesForGrid(
+                  block,
+                  normalizeGridColumns(block.grid_columns),
+                  normalizeGridRows(parseInt(e.target.value, 10)),
+                ),
+              )}
+            >
+              {[1, 2, 3].map(n => (
+                <option key={n} value={String(n)}>{n}</option>
+              ))}
             </Select>
           </div>
           <div className="scn-bento-editor__theme-field">
@@ -2096,15 +3074,20 @@ function BentoGrid01BlockHeaderFields({
             />
             <span>Show badge</span>
           </label>
+          </div>
         </PopoverContent>
       </Popover>
-      <Popover open={addOpen} onOpenChange={onAddOpenChange}>
+      <Popover open={addOpen} onOpenChange={onAddOpenChange} modal={false}>
         <PopoverTrigger asChild>
-          <Button type="button" variant="outline" className="scn-bento-editor__toolbar-icon-btn" aria-label="Add tile">
+          <button type="button" className="scn-bento-editor__toolbar-icon-btn" aria-label="Add tile">
             +
-          </Button>
+          </button>
         </PopoverTrigger>
-        <PopoverContent className="scn-popover-content" align="end">
+        <PopoverContent
+          className="scn-popover-content scn-editor-add-block-menu scn-bento-editor__add-tile-popover"
+          align="end"
+          side="bottom"
+        >
           <BentoAddTilePopoverContent
             onPick={type => {
               onAddTile(type);
@@ -2117,140 +3100,27 @@ function BentoGrid01BlockHeaderFields({
   );
 }
 
-function BentoResizableLayout({ features, resolvedRandom, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, onPatch, onRemove, panelSizes, onLayoutChange, height, addTileOpen, onAddTileOpenChange, onAddTile }: {
-  features: BentoGrid01Feature[];
-  resolvedRandom: Record<string, ArticleResult | null>;
-  searchUrl: string;
-  stockPreviewUrl: string;
-  forexPreviewUrl: string;
-  marketMoversPreviewUrl: string;
-  brokerListUrl: string;
-  onPatch: (featId: string, patch: Partial<BentoGrid01Feature>) => void;
-  onRemove: (featId: string) => void;
-  panelSizes?: number[];
-  onLayoutChange?: (sizes: number[]) => void;
-  height?: string;
-  addTileOpen: boolean;
-  onAddTileOpenChange: (open: boolean) => void;
-  onAddTile: (headerType: BentoGrid01Feature['header_type']) => void;
-}) {
-  const [emptyAddOpen, setEmptyAddOpen] = React.useState(false);
-
-  if (features.length === 0) {
-    return (
-      <div className="scn-bento-editor__empty">
-        <Popover open={emptyAddOpen} onOpenChange={setEmptyAddOpen}>
-          <PopoverTrigger asChild>
-            <button type="button" className="scn-empty-add-btn" aria-label="Add tile">
-              <span className="scn-broker-carousel__add-icon">+</span>
-            </button>
-          </PopoverTrigger>
-          <PopoverContent className="scn-popover-content scn-editor-add-block-menu" align="center">
-            {BENTO_TILE_TYPES.map(bt => (
-              <button key={bt.type} type="button" className="scn-editor-add-block-item"
-                onClick={() => { onAddTile(bt.type); setEmptyAddOpen(false); }}>
-                <span className="scn-editor-add-block-item__label">{BENTO_TILE_LABEL[bt.type]}</span>
-                <span className="scn-editor-add-block-item__desc">{bt.desc}</span>
-              </button>
-            ))}
-          </PopoverContent>
-        </Popover>
-      </div>
-    );
-  }
-
-  const layoutStyle: React.CSSProperties | undefined = height && height !== 'auto'
-    ? { height } : undefined;
-
-  function renderPanel(feat: BentoGrid01Feature) {
-    return (
-      <BentoFeaturePanel
-        feat={feat}
-        resolved={resolvedRandom[feat.id]}
-        searchUrl={searchUrl}
-        stockPreviewUrl={stockPreviewUrl}
-        forexPreviewUrl={forexPreviewUrl}
-        marketMoversPreviewUrl={marketMoversPreviewUrl}
-        brokerListUrl={brokerListUrl}
-        onPatch={patch => onPatch(feat.id, patch)}
-        onRemove={() => onRemove(feat.id)}
-      />
-    );
-  }
-
-  const hLeft = panelSizes?.[0] ?? 50;
-
-  if (features.length === 1) {
-    return (
-      <ResizablePanelGroup orientation="horizontal" className="scn-bento-editor__layout" style={layoutStyle}>
-        <ResizablePanel defaultSize={100}>{renderPanel(features[0])}</ResizablePanel>
-      </ResizablePanelGroup>
-    );
-  }
-
-  if (features.length === 2) {
-    return (
-      <ResizablePanelGroup orientation="horizontal" className="scn-bento-editor__layout" style={layoutStyle}
-        onLayoutChanged={layout => {
-          if (!onLayoutChange) return;
-          const vals = Object.values(layout);
-          onLayoutChange(vals);
-        }}>
-        <ResizablePanel id="h0" defaultSize={hLeft}>{renderPanel(features[0])}</ResizablePanel>
-        <ResizableHandle withHandle />
-        <ResizablePanel id="h1" defaultSize={100 - hLeft}>{renderPanel(features[1])}</ResizablePanel>
-      </ResizablePanelGroup>
-    );
-  }
-
-  const rest = features.slice(1);
-  const verticalSizes = panelSizes?.slice(1);
-  const defaultVSize = Math.floor(100 / rest.length);
-
-  return (
-    <ResizablePanelGroup orientation="horizontal" className="scn-bento-editor__layout" style={layoutStyle}
-      onLayoutChanged={layout => {
-        if (!onLayoutChange) return;
-        const hSize = layout['h0'] ?? hLeft;
-        const savedVertical = panelSizes?.slice(1) ?? rest.map(() => defaultVSize);
-        onLayoutChange([hSize, ...savedVertical]);
-      }}>
-      <ResizablePanel id="h0" defaultSize={hLeft}>{renderPanel(features[0])}</ResizablePanel>
-      <ResizableHandle withHandle />
-      <ResizablePanel id="h1" defaultSize={100 - hLeft}>
-        <ResizablePanelGroup orientation="vertical"
-          onLayoutChanged={layout => {
-            if (!onLayoutChange) return;
-            const vSizes = rest.map((_, i) => layout[`v${i}`] ?? defaultVSize);
-            onLayoutChange([hLeft, ...vSizes]);
-          }}>
-          {rest.map((feat, i) => (
-            <React.Fragment key={feat.id}>
-              {i > 0 && <ResizableHandle withHandle />}
-              <ResizablePanel id={`v${i}`} defaultSize={verticalSizes?.[i] ?? defaultVSize}>{renderPanel(feat)}</ResizablePanel>
-            </React.Fragment>
-          ))}
-        </ResizablePanelGroup>
-      </ResizablePanel>
-    </ResizablePanelGroup>
-  );
-}
-
-function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, termId, onChange, addTileOpen, onAddTileOpenChange, onAddTile }: {
+function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, termId, categoryChoicesUrl, tileCtx, onChange, onAddTileInColumn, onAddTileInRow }: {
   block: BentoGrid01Block;
   searchUrl: string;
   stockPreviewUrl: string;
   forexPreviewUrl: string;
   marketMoversPreviewUrl: string;
+  dividendsPreviewUrl: string;
+  calendarPreviewUrl: string;
   brokerListUrl: string;
   termId: number;
+  categoryChoicesUrl: string;
+  tileCtx: { termId: number; activeTermName?: string };
   onChange: (b: BentoGrid01Block) => void;
-  addTileOpen: boolean;
-  onAddTileOpenChange: (open: boolean) => void;
-  onAddTile: (headerType: BentoGrid01Feature['header_type']) => void;
+  onAddTileInColumn: (colIndex: number, rowIndex: number, headerType: BentoGrid01Feature['header_type']) => void;
+  onAddTileInRow: (rowIndex: number, headerType: BentoGrid01Feature['header_type']) => void;
 }) {
   const cardSlots = React.useMemo(() => bentoCardFeaturesToSlots(block.features), [block.features]);
   const resolvedRandom = useResolvedCarouselPreviews(cardSlots, termId);
+  const resolvedCarouselFrames = useResolvedArticleCarouselFrames(block.features, termId);
+  const blockRef = React.useRef(block);
+  blockRef.current = block;
 
   function patchFeature(featId: string, patch: Partial<BentoGrid01Feature>) {
     onChange({
@@ -2263,15 +3133,37 @@ function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl,
     onChange({ ...block, features: block.features.filter(f => f.id !== featId) });
   }
 
-  const layoutRef = React.useRef(block.panelSizes);
-  layoutRef.current = block.panelSizes;
+  const gridColumns = normalizeGridColumns(block.grid_columns);
+  const gridRows = normalizeGridRows(block.grid_rows);
+  const sectionSizes = bentoSectionSizeStyles({ height: block.height, width: block.width });
+  const hasFixedHeight = bentoSectionHasFixedHeight({ height: block.height });
+  const layoutStorageKey = bentoEditorLayoutStorageKey(
+    gridColumns,
+    gridRows,
+    { height: block.height, width: block.width },
+    block.features,
+  );
 
-  const handleLayoutChange = React.useCallback((sizes: number[]) => {
-    const rounded = sizes.map(s => Math.round(s * 10) / 10);
-    const prev = layoutRef.current;
-    if (prev && prev.length === rounded.length && prev.every((v, i) => v === rounded[i])) return;
-    onChange({ ...block, panelSizes: rounded });
-  }, [block, onChange]);
+  const legacyPanelMigratedRef = React.useRef(false);
+  React.useLayoutEffect(() => {
+    if (legacyPanelMigratedRef.current) return;
+    if (!block.panelSizes?.length || !tilesHaveDefaultSpans(block.features, gridColumns)) return;
+    legacyPanelMigratedRef.current = true;
+    const spanPatches = spansFromLegacyPanelSizes(
+      block.panelSizes,
+      block.features.length,
+      gridColumns,
+    );
+    const { panelSizes: _removed, ...rest } = block;
+    onChange({
+      ...rest,
+      features: block.features.map((f, i) => ({
+        ...f,
+        col_span: spanPatches[i]?.col_span ?? f.col_span,
+        row_span: spanPatches[i]?.row_span ?? f.row_span,
+      })),
+    });
+  }, [block.id, block.panelSizes, block.features, gridColumns, onChange]);
 
   return (
     <div
@@ -2283,23 +3175,53 @@ function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl,
           tileStyle: block.tile_style,
         }),
       )}
+      style={sectionSizes.shell}
     >
-      <BentoResizableLayout
-        features={block.features}
-        resolvedRandom={resolvedRandom}
-        searchUrl={searchUrl}
-        stockPreviewUrl={stockPreviewUrl}
-        forexPreviewUrl={forexPreviewUrl}
-        marketMoversPreviewUrl={marketMoversPreviewUrl}
-        brokerListUrl={brokerListUrl}
-        onPatch={patchFeature}
-        onRemove={removeFeature}
-        panelSizes={block.panelSizes}
-        onLayoutChange={handleLayoutChange}
-        height={block.height}
-        addTileOpen={addTileOpen}
-        onAddTileOpenChange={onAddTileOpenChange}
-        onAddTile={onAddTile}
+      <BentoBlockIntroHeader block={block} />
+      <BentoGridEditorLayout
+        gridColumns={gridColumns}
+        gridRows={gridRows}
+        tiles={block.features}
+        className={cn(
+          'scn-bento-editor__layout-host',
+          hasFixedHeight && 'scn-bento-editor__layout-host--fixed-h',
+        )}
+        style={sectionSizes.host}
+        layoutStorageKey={layoutStorageKey}
+        rowPanelSizes={block.row_panel_sizes}
+        colPanelSizesByRow={block.col_panel_sizes_by_row}
+        getTileKey={(f) => f.id}
+        onLayoutPersist={(patch) =>
+          onChange(applyBentoLayoutPersistPatch(blockRef.current, patch))}
+        renderEmptyColumn={(colIndex, rowIndex) => (
+          <BentoEditorEmptySlot
+            onPick={type => onAddTileInColumn(colIndex, rowIndex, type)}
+          />
+        )}
+        renderEmptyRow={(rowIndex) => (
+          <BentoEditorEmptySlot
+            onPick={type => onAddTileInRow(rowIndex, type)}
+          />
+        )}
+        renderTile={(feat) => (
+          <BentoFeaturePanel
+            feat={feat}
+            resolved={resolvedRandom[feat.id]}
+            carouselFrames={resolvedCarouselFrames[feat.id]}
+            termId={termId}
+            categoryChoicesUrl={categoryChoicesUrl}
+            searchUrl={searchUrl}
+            stockPreviewUrl={stockPreviewUrl}
+            forexPreviewUrl={forexPreviewUrl}
+            marketMoversPreviewUrl={marketMoversPreviewUrl}
+            dividendsPreviewUrl={dividendsPreviewUrl}
+            calendarPreviewUrl={calendarPreviewUrl}
+            brokerListUrl={brokerListUrl}
+            gridColumns={gridColumns}
+            onPatch={patch => patchFeature(feat.id, patch)}
+            onRemove={() => removeFeature(feat.id)}
+          />
+        )}
       />
     </div>
   );
@@ -2307,39 +3229,58 @@ function BentoGrid01Editor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl,
 
 // ─── Carousel Editor ──────────────────────────────────────────────────────────
 
-const CAROUSEL_AUTOPLAY_DELAY_MS = 3500;
-
 function carouselStackDepth(block: Pick<CarouselBlock, 'stackDepth'>): number {
   const n = block.stackDepth;
   if (n == null || !Number.isFinite(n)) return 3;
   return Math.min(4, Math.max(1, Math.round(n)));
 }
 
-function carouselAutoplayPlugins(infiniteScroll: boolean) {
-  if (!infiniteScroll) {
-    return undefined;
-  }
-  return [Autoplay({ delay: CAROUSEL_AUTOPLAY_DELAY_MS, stopOnInteraction: true })];
+function CarouselAddTileMenu({
+  open,
+  onOpenChange,
+  onAdd,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onAdd: (headerType: BentoGrid01Feature['header_type']) => void;
+}) {
+  return (
+    <Popover open={open} onOpenChange={onOpenChange}>
+      <PopoverTrigger asChild>
+        <button type="button" className="scn-bento-editor__toolbar-icon-btn" aria-label="Add tile">+</button>
+      </PopoverTrigger>
+      <PopoverContent className="scn-popover-content scn-editor-add-block-menu" align="end">
+        {BENTO_TILE_TYPES.map(bt => (
+          <button key={bt.type} type="button" className="scn-editor-add-block-item"
+            onClick={() => { onAdd(bt.type); onOpenChange(false); }}>
+            <span className="scn-editor-add-block-item__label">{BENTO_TILE_LABEL[bt.type]}</span>
+            <span className="scn-editor-add-block-item__desc">{bt.desc}</span>
+          </button>
+        ))}
+      </PopoverContent>
+    </Popover>
+  );
 }
 
-function carouselAutoplayOpts(infiniteScroll: boolean) {
-  return { loop: Boolean(infiniteScroll) };
-}
-
-function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, termId, onChange }: {
+function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, termId, categoryChoicesUrl, tileCtx, onChange }: {
   block: CarouselBlock;
   searchUrl: string;
   stockPreviewUrl: string;
   forexPreviewUrl: string;
   marketMoversPreviewUrl: string;
+  dividendsPreviewUrl: string;
+  calendarPreviewUrl: string;
   brokerListUrl: string;
   termId: number;
+  categoryChoicesUrl: string;
+  tileCtx: { termId: number; activeTermName?: string };
   onChange: (b: CarouselBlock) => void;
 }) {
   const [addOpen, setAddOpen] = React.useState(false);
   const features = block.features;
   const cardSlots = React.useMemo(() => bentoCardFeaturesToSlots(features), [features]);
   const resolvedRandom = useResolvedCarouselPreviews(cardSlots, termId);
+  const resolvedCarouselFrames = useResolvedArticleCarouselFrames(features, termId);
   const infiniteScroll = Boolean(block.infiniteScroll);
   const stackDepth = carouselStackDepth(block);
   const allCards = carouselFeaturesAllCards(features);
@@ -2375,7 +3316,10 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, ma
   }
 
   function addCarouselFeature(headerType: BentoGrid01Feature['header_type']) {
-    onChange({ ...block, features: [...features, createBentoFeatureOfType(headerType)] });
+    onChange({
+      ...block,
+      features: [...features, createBentoFeatureOfType(headerType, tileCtx)],
+    });
   }
 
   const previewFixedHeightStyle: React.CSSProperties | undefined =
@@ -2383,27 +3327,32 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, ma
       ? { height: block.height, minHeight: 0 }
       : undefined;
 
+  const carouselHeaderTools = (
+    <div className="scn-carousel-editor__header-controls">
+      <CarouselAddTileMenu
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        onAdd={addCarouselFeature}
+      />
+      {features.length > 0 ? (
+        <>
+          <CarouselPrevious />
+          <CarouselNext />
+        </>
+      ) : null}
+    </div>
+  );
+
   return (
     <div className="scn-carousel-editor">
-      <div className="scn-carousel-editor__header scn-carousel-editor__header--tools">
-        <span className="scn-carousel-editor__count">
-          {features.length} tile{features.length !== 1 ? 's' : ''}
-        </span>
-        <Popover open={addOpen} onOpenChange={setAddOpen}>
-          <PopoverTrigger asChild>
-            <button type="button" className="scn-bento-editor__add-col" aria-label="Add tile">+</button>
-          </PopoverTrigger>
-          <PopoverContent className="scn-popover-content scn-editor-add-block-menu" align="end">
-            {BENTO_TILE_TYPES.map(bt => (
-              <button key={bt.type} type="button" className="scn-editor-add-block-item"
-                onClick={() => { addCarouselFeature(bt.type); setAddOpen(false); }}>
-                <span className="scn-editor-add-block-item__label">{BENTO_TILE_LABEL[bt.type]}</span>
-                <span className="scn-editor-add-block-item__desc">{bt.desc}</span>
-              </button>
-            ))}
-          </PopoverContent>
-        </Popover>
-      </div>
+      {features.length === 0 && (
+        <div className="scn-carousel-editor__header scn-carousel-editor__header--tools">
+          <span className="scn-carousel-editor__count">
+            {features.length} tiles
+          </span>
+          {carouselHeaderTools}
+        </div>
+      )}
 
       {features.length === 0 && (
         <div className="scn-bento-editor__empty">
@@ -2436,6 +3385,12 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, ma
           opts={carouselAutoplayOpts(infiniteScroll)}
           plugins={carouselAutoplayPlugins(infiniteScroll)}
         >
+          <div className="scn-carousel-editor__header scn-carousel-editor__header--tools">
+            <span className="scn-carousel-editor__count">
+              {features.length} tile{features.length !== 1 ? 's' : ''}
+            </span>
+            {carouselHeaderTools}
+          </div>
           <CarouselContent>
             {allCards
               ? packedSlides.map((slide) => renderPackedCarouselEditorBentoSlide(
@@ -2446,8 +3401,13 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, ma
                 stockPreviewUrl,
                 forexPreviewUrl,
                 marketMoversPreviewUrl,
+                dividendsPreviewUrl,
+                calendarPreviewUrl,
                 brokerListUrl,
+                termId,
+                categoryChoicesUrl,
                 resolvedRandom,
+                resolvedCarouselFrames,
                 patchFeature,
                 removeFeature,
               ))
@@ -2457,11 +3417,17 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, ma
                     <BentoFeaturePanel
                       feat={feat}
                       resolved={resolvedRandom[feat.id]}
+                      carouselFrames={resolvedCarouselFrames[feat.id]}
+                      termId={termId}
+                      categoryChoicesUrl={categoryChoicesUrl}
                       searchUrl={searchUrl}
                       stockPreviewUrl={stockPreviewUrl}
                       forexPreviewUrl={forexPreviewUrl}
                       marketMoversPreviewUrl={marketMoversPreviewUrl}
+                      dividendsPreviewUrl={dividendsPreviewUrl}
+                      calendarPreviewUrl={calendarPreviewUrl}
                       brokerListUrl={brokerListUrl}
+                      gridColumns={3}
                       onPatch={patch => patchFeature(feat.id, patch)}
                       onRemove={() => removeFeature(feat.id)}
                     />
@@ -2469,8 +3435,6 @@ function CarouselEditor({ block, searchUrl, stockPreviewUrl, forexPreviewUrl, ma
                 </CarouselItem>
               ))}
           </CarouselContent>
-          <CarouselPrevious />
-          <CarouselNext />
         </Carousel>
       )}
     </div>
@@ -2570,22 +3534,54 @@ const BLOCK_LABEL: Record<string, string> = {
   separator: 'Separator', bento_grid_01: 'Bento block', carousel: 'Carousel',
 };
 
-function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, brokerListUrl, onChange, onRemove, onMove }: {
+function BlockEditor({ block, index, total, termId, activeTermName, categoryChoicesUrl, uploadUrl, articleSearchUrl, stockPreviewUrl, forexPreviewUrl, marketMoversPreviewUrl, dividendsPreviewUrl, calendarPreviewUrl, brokerListUrl, onChange, onRemove, onMove }: {
   block: TaxonomyBlock; index: number; total: number;
   termId: number;
+  activeTermName: string;
+  categoryChoicesUrl: string;
   uploadUrl: string; articleSearchUrl: string; stockPreviewUrl: string;
-  forexPreviewUrl: string; marketMoversPreviewUrl: string; brokerListUrl: string;
+  forexPreviewUrl: string; marketMoversPreviewUrl: string;
+  dividendsPreviewUrl: string; calendarPreviewUrl: string; brokerListUrl: string;
   onChange: (b: TaxonomyBlock) => void; onRemove: () => void; onMove: (dir: -1 | 1) => void;
 }) {
   const [bentoAddTileOpen, setBentoAddTileOpen] = React.useState(false);
+  const tileCtx = React.useMemo(
+    () => ({ termId, activeTermName }),
+    [termId, activeTermName],
+  );
 
   function addBentoTile(headerType: BentoGrid01Feature['header_type']) {
     if (block.type !== 'bento_grid_01') return;
     onChange({
       ...block,
-      features: [...block.features, createBentoFeatureOfType(headerType)],
+      features: [...block.features, createBentoFeatureOfType(headerType, tileCtx)],
     });
     setBentoAddTileOpen(false);
+  }
+
+  function addBentoTileInColumn(colIndex: number, rowIndex: number, headerType: BentoGrid01Feature['header_type']) {
+    if (block.type !== 'bento_grid_01') return;
+    const feat = createBentoFeatureOfType(headerType, tileCtx);
+    feat.col = colIndex + 1;
+    feat.row = rowIndex + 1;
+    feat.col_span = 1;
+    feat.row_span = 1;
+    onChange({
+      ...block,
+      features: [...block.features, feat],
+    });
+  }
+
+  function addBentoTileInRow(rowIndex: number, headerType: BentoGrid01Feature['header_type']) {
+    if (block.type !== 'bento_grid_01') return;
+    const feat = createBentoFeatureOfType(headerType, tileCtx);
+    feat.row = rowIndex + 1;
+    feat.col_span = 1;
+    feat.row_span = 1;
+    onChange({
+      ...block,
+      features: [...block.features, feat],
+    });
   }
 
   return (
@@ -2632,12 +3628,15 @@ function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl,
             stockPreviewUrl={stockPreviewUrl}
             forexPreviewUrl={forexPreviewUrl}
             marketMoversPreviewUrl={marketMoversPreviewUrl}
+            dividendsPreviewUrl={dividendsPreviewUrl}
+            calendarPreviewUrl={calendarPreviewUrl}
             brokerListUrl={brokerListUrl}
             termId={termId}
+            categoryChoicesUrl={categoryChoicesUrl}
+            tileCtx={tileCtx}
             onChange={onChange as (b: BentoGrid01Block) => void}
-            addTileOpen={bentoAddTileOpen}
-            onAddTileOpenChange={setBentoAddTileOpen}
-            onAddTile={addBentoTile}
+            onAddTileInColumn={addBentoTileInColumn}
+            onAddTileInRow={addBentoTileInRow}
           />
         )}
         {block.type === 'carousel' && (
@@ -2647,8 +3646,12 @@ function BlockEditor({ block, index, total, termId, uploadUrl, articleSearchUrl,
             stockPreviewUrl={stockPreviewUrl}
             forexPreviewUrl={forexPreviewUrl}
             marketMoversPreviewUrl={marketMoversPreviewUrl}
+            dividendsPreviewUrl={dividendsPreviewUrl}
+            calendarPreviewUrl={calendarPreviewUrl}
             brokerListUrl={brokerListUrl}
             termId={termId}
+            categoryChoicesUrl={categoryChoicesUrl}
+            tileCtx={tileCtx}
             onChange={onChange as (b: CarouselBlock) => void}
           />
         )}
@@ -2707,12 +3710,16 @@ function ReadOnlyBlock({
   stockPreviewUrl,
   forexPreviewUrl,
   marketMoversPreviewUrl,
+  dividendsPreviewUrl,
+  calendarPreviewUrl,
 }: {
   block: TaxonomyBlock;
   termId: number;
   stockPreviewUrl: string;
   forexPreviewUrl: string;
   marketMoversPreviewUrl: string;
+  dividendsPreviewUrl: string;
+  calendarPreviewUrl: string;
 }) {
   const previewSlots = React.useMemo(() => {
     if (block.type === 'carousel') return bentoCardFeaturesToSlots(block.features);
@@ -2720,6 +3727,10 @@ function ReadOnlyBlock({
     return [];
   }, [block]);
   const resolvedRandom = useResolvedCarouselPreviews(previewSlots, termId);
+  const resolvedCarouselFrames = useResolvedArticleCarouselFrames(
+    block.type === 'bento_grid_01' || block.type === 'carousel' ? block.features : [],
+    termId,
+  );
 
   if (block.type === 'heading') {
     const Tag = block.level as 'h1' | 'h2';
@@ -2750,14 +3761,21 @@ function ReadOnlyBlock({
   }
 
   if (block.type === 'separator') {
-    return <hr className="scn-taxonomy-content__sep scn-taxonomy-content__sep--horizontal" />;
+    return <StreamSeparatorLine />;
   }
 
   if (block.type === 'bento_grid_01') {
     const features = block.features;
-    const sizes = block.panelSizes;
-    const hLeft = sizes?.[0] ?? 50;
-    const blockHeight = block.height && block.height !== 'auto' ? block.height : undefined;
+    const gridColumns = normalizeGridColumns(block.grid_columns);
+    const gridRows = normalizeGridRows(block.grid_rows);
+    const sectionSizes = bentoSectionSizeStyles({ height: block.height, width: block.width });
+    const hasFixedHeight = bentoSectionHasFixedHeight({ height: block.height });
+    const layoutStorageKey = bentoEditorLayoutStorageKey(
+      gridColumns,
+      gridRows,
+      { height: block.height, width: block.width },
+      features,
+    );
 
     function renderReadOnlyPanel(f: BentoGrid01Feature) {
       const isWidgetTile = BENTO_WIDGET_TILE_TYPES.has(f.header_type);
@@ -2766,66 +3784,47 @@ function ReadOnlyBlock({
           key={f.id}
           className={cn(
             'scn-bento-readonly__panel',
+            f.header_type === 'card' && 'scn-bento-readonly__panel--card',
+            f.header_type === 'fxbroker' && 'scn-bento-readonly__panel--fxbroker',
+            f.header_type === 'article_carousel' && 'scn-bento-readonly__panel--article-carousel',
             isWidgetTile && 'scn-bento-readonly__panel--widget',
           )}
         >
           <BentoFeaturePreview
             feat={f}
             resolved={resolvedRandom[f.id]}
+            carouselFrames={resolvedCarouselFrames[f.id]}
             linkable
             stockPreviewUrl={stockPreviewUrl}
             forexPreviewUrl={forexPreviewUrl}
             marketMoversPreviewUrl={marketMoversPreviewUrl}
+            dividendsPreviewUrl={dividendsPreviewUrl}
+            calendarPreviewUrl={calendarPreviewUrl}
           />
         </div>
       );
     }
 
-    let gridContent: React.ReactNode;
-    if (features.length === 0) {
-      gridContent = null;
-    } else if (features.length === 1) {
-      gridContent = (
-        <div className="scn-bento-readonly__grid"
-          style={blockHeight ? { height: blockHeight } : undefined}>
-          {renderReadOnlyPanel(features[0])}
-        </div>
-      );
-    } else if (features.length === 2) {
-      gridContent = (
-        <div className="scn-bento-readonly__grid scn-bento-readonly__grid--two-col"
-          style={{
-            gridTemplateColumns: `${hLeft}fr ${100 - hLeft}fr`,
-            ...(blockHeight ? { height: blockHeight } : {}),
-          }}>
-          {renderReadOnlyPanel(features[0])}
-          {renderReadOnlyPanel(features[1])}
-        </div>
-      );
-    } else {
-      const rest = features.slice(1);
-      const verticalSizes = sizes?.slice(1);
-      const defaultVSize = 100 / rest.length;
-      const rowTemplate = rest
-        .map((_, i) => `${verticalSizes?.[i] ?? defaultVSize}fr`)
-        .join(' ');
-
-      gridContent = (
-        <div className="scn-bento-readonly__grid scn-bento-readonly__grid--hero"
-          style={{
-            gridTemplateColumns: `${hLeft}fr ${100 - hLeft}fr`,
-            ...(blockHeight ? { height: blockHeight } : {}),
-          }}>
-          <div className="scn-bento-readonly__hero">
-            {renderReadOnlyPanel(features[0])}
-          </div>
-          <div className="scn-bento-readonly__right-stack"
-            style={verticalSizes ? { display: 'grid', gridTemplateRows: rowTemplate, gap: '0.65rem' } : undefined}>
-            {features.slice(1).map(f => renderReadOnlyPanel(f))}
-          </div>
-        </div>
-      );
-    }
+    const gridContent = features.length > 0 ? (
+      <BentoGridEditorLayout
+        gridColumns={gridColumns}
+        gridRows={gridRows}
+        tiles={features}
+        resizable={false}
+        layoutStorageKey={layoutStorageKey}
+        rowPanelSizes={block.row_panel_sizes}
+        colPanelSizesByRow={block.col_panel_sizes_by_row}
+        className={cn(
+          'scn-bento-editor__layout-host',
+          hasFixedHeight && 'scn-bento-editor__layout-host--fixed-h',
+        )}
+        style={sectionSizes.host}
+        getTileKey={(f) => f.id}
+        renderEmptyColumn={() => null}
+        renderEmptyRow={() => null}
+        renderTile={(f) => renderReadOnlyPanel(f)}
+      />
+    ) : null;
 
     return (
       <div
@@ -2838,6 +3837,7 @@ function ReadOnlyBlock({
             tileStyle: block.tile_style,
           }),
         )}
+        style={sectionSizes.shell}
       >
         <div className="scn-bentogrid01__inner">
           {((block.show_badge !== false && block.badge_text) || block.heading) ? (
@@ -2911,10 +3911,13 @@ function ReadOnlyBlock({
                   <BentoFeaturePreview
                     feat={feat}
                     resolved={resolvedRandom[feat.id]}
+                    carouselFrames={resolvedCarouselFrames[feat.id]}
                     linkable
                     stockPreviewUrl={stockPreviewUrl}
                     forexPreviewUrl={forexPreviewUrl}
                     marketMoversPreviewUrl={marketMoversPreviewUrl}
+                    dividendsPreviewUrl={dividendsPreviewUrl}
+                    calendarPreviewUrl={calendarPreviewUrl}
                   />
                 </div>
               </CarouselItem>
@@ -2950,11 +3953,13 @@ function TaxonomyEditorSaveBar({
   saving,
   lastSaved,
   onSave,
+  addBlock,
   variant = 'top',
 }: {
   saving: boolean;
   lastSaved: Date | null;
   onSave: () => void;
+  addBlock?: React.ReactNode;
   variant?: 'top' | 'bottom';
 }) {
   const barClass =
@@ -2963,12 +3968,15 @@ function TaxonomyEditorSaveBar({
       : 'scn-taxonomy-editor__save-bar';
   return (
     <div className={barClass}>
-      <Button onClick={onSave} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
-      {lastSaved && (
+      <div className="scn-taxonomy-editor__save-bar-start">
+        <Button onClick={onSave} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
+        {addBlock ? <div className="scn-taxonomy-editor__save-bar-add">{addBlock}</div> : null}
+      </div>
+      {lastSaved ? (
         <span className="scn-taxonomy-editor__saved">
           Saved {lastSaved.toLocaleTimeString()}
         </span>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -2977,25 +3985,33 @@ function TaxonomyEditorSaveBar({
 
 function TaxonomyEditor({
   termId,
+  activeTermName,
   initialJson,
   canEdit,
   saveUrl,
   uploadUrl,
   articleSearchUrl,
+  categoryChoicesUrl,
   stockPreviewUrl,
   forexPreviewUrl,
   marketMoversPreviewUrl,
+  dividendsPreviewUrl,
+  calendarPreviewUrl,
   brokerListUrl,
 }: {
   termId: number;
+  activeTermName: string;
   initialJson: object | null;
   canEdit: boolean;
   saveUrl: string;
   uploadUrl: string;
   articleSearchUrl: string;
+  categoryChoicesUrl: string;
   stockPreviewUrl: string;
   forexPreviewUrl: string;
   marketMoversPreviewUrl: string;
+  dividendsPreviewUrl: string;
+  calendarPreviewUrl: string;
   brokerListUrl: string;
 }) {
   const [blocks, setBlocks] = React.useState<TaxonomyBlock[]>(() => jsonToBlocks(initialJson));
@@ -3038,6 +4054,8 @@ function TaxonomyEditor({
           tile_style: 'bordered',
           block_background: 'default',
           show_badge: true,
+          grid_columns: 3,
+          grid_rows: 3,
         };
         case 'carousel': return {
           id,
@@ -3072,15 +4090,24 @@ function TaxonomyEditor({
             stockPreviewUrl={stockPreviewUrl}
             forexPreviewUrl={forexPreviewUrl}
             marketMoversPreviewUrl={marketMoversPreviewUrl}
+            dividendsPreviewUrl={dividendsPreviewUrl}
+            calendarPreviewUrl={calendarPreviewUrl}
           />
         ))}
       </div>
     );
   }
 
+  const addBlockControl = <AddBlockMenu onAdd={addBlock} />;
+
   return (
     <div className="scn-taxonomy-editor">
-      <TaxonomyEditorSaveBar saving={saving} lastSaved={lastSaved} onSave={handleSave} />
+      <TaxonomyEditorSaveBar
+        saving={saving}
+        lastSaved={lastSaved}
+        onSave={handleSave}
+        addBlock={addBlockControl}
+      />
 
       <div className="scn-editor-body">
         {blocks.map((block, i) => (
@@ -3090,21 +4117,30 @@ function TaxonomyEditor({
             index={i}
             total={blocks.length}
             termId={termId}
+            activeTermName={activeTermName}
+            categoryChoicesUrl={categoryChoicesUrl}
             uploadUrl={uploadUrl}
             articleSearchUrl={articleSearchUrl}
             stockPreviewUrl={stockPreviewUrl}
             forexPreviewUrl={forexPreviewUrl}
             marketMoversPreviewUrl={marketMoversPreviewUrl}
+            dividendsPreviewUrl={dividendsPreviewUrl}
+            calendarPreviewUrl={calendarPreviewUrl}
             brokerListUrl={brokerListUrl}
             onChange={updated => setBlocks(prev => prev.map((b, j) => j === i ? updated : b))}
             onRemove={() => setBlocks(prev => prev.filter((_, j) => j !== i))}
             onMove={dir => moveBlock(i, dir)}
           />
         ))}
-        <AddBlockMenu onAdd={addBlock} />
       </div>
 
-      <TaxonomyEditorSaveBar saving={saving} lastSaved={lastSaved} onSave={handleSave} variant="bottom" />
+      <TaxonomyEditorSaveBar
+        saving={saving}
+        lastSaved={lastSaved}
+        onSave={handleSave}
+        addBlock={addBlockControl}
+        variant="bottom"
+      />
 
       {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
     </div>
@@ -3114,6 +4150,48 @@ function TaxonomyEditor({
 // ─── Mount ────────────────────────────────────────────────────────────────────
 
 const taxonomyEditorRoots = new WeakMap<HTMLElement, Root>();
+
+type TaxonomyEditorErrorBoundaryProps = {
+  children: React.ReactNode;
+};
+
+type TaxonomyEditorErrorBoundaryState = {
+  error: Error | null;
+};
+
+class TaxonomyEditorErrorBoundary extends React.Component<
+  TaxonomyEditorErrorBoundaryProps,
+  TaxonomyEditorErrorBoundaryState
+> {
+  override state: TaxonomyEditorErrorBoundaryState = { error: null };
+
+  static getDerivedStateFromError(error: Error): TaxonomyEditorErrorBoundaryState {
+    return { error };
+  }
+
+  override render() {
+    if (this.state.error) {
+      return (
+        <div className="scn-taxonomy-editor__error" role="alert">
+          <p className="scn-taxonomy-editor__error-title">Taxonomy editor failed to load</p>
+          <p className="scn-taxonomy-editor__error-detail">{this.state.error.message}</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export function unmountTaxonomyEditors(root: ParentNode = document): void {
+  root.querySelectorAll<HTMLElement>('[data-shadcn-taxonomy-editor]').forEach(host => {
+    const existing = taxonomyEditorRoots.get(host);
+    if (existing) {
+      existing.unmount();
+      taxonomyEditorRoots.delete(host);
+    }
+    delete host.dataset['shadcnTaxonomyEditorBound'];
+  });
+}
 
 export function mountTaxonomyEditor(): void {
   document.querySelectorAll<HTMLElement>('[data-shadcn-taxonomy-editor]').forEach(host => {
@@ -3127,7 +4205,11 @@ export function mountTaxonomyEditor(): void {
     const stockPreviewUrl = host.dataset['stockPreviewUrl'] ?? '';
     const forexPreviewUrl = host.dataset['forexPreviewUrl'] ?? '';
     const marketMoversPreviewUrl = host.dataset['marketMoversPreviewUrl'] ?? '';
+    const dividendsPreviewUrl = host.dataset['dividendsPreviewUrl'] ?? '';
+    const calendarPreviewUrl = host.dataset['calendarPreviewUrl'] ?? '';
     const brokerListUrl = host.dataset['brokerListUrl'] ?? '';
+    const categoryChoicesUrl = host.dataset['categoryChoicesUrl'] ?? '';
+    const activeTermName = host.dataset['activeTermName'] ?? '';
     if (!termId) return;
 
     let initialJson: object | null = null;
@@ -3142,18 +4224,24 @@ export function mountTaxonomyEditor(): void {
     let root = taxonomyEditorRoots.get(host);
     if (!root) { root = createRoot(host); taxonomyEditorRoots.set(host, root); }
     root.render(
-      <TaxonomyEditor
-        termId={termId}
-        initialJson={initialJson}
-        canEdit={canEdit}
-        saveUrl={saveUrl}
-        uploadUrl={uploadUrl}
-        articleSearchUrl={articleSearchUrl}
-        stockPreviewUrl={stockPreviewUrl}
-        forexPreviewUrl={forexPreviewUrl}
-        marketMoversPreviewUrl={marketMoversPreviewUrl}
-        brokerListUrl={brokerListUrl}
-      />
+      <TaxonomyEditorErrorBoundary>
+        <TaxonomyEditor
+          termId={termId}
+          activeTermName={activeTermName}
+          initialJson={initialJson}
+          canEdit={canEdit}
+          saveUrl={saveUrl}
+          uploadUrl={uploadUrl}
+          articleSearchUrl={articleSearchUrl}
+          categoryChoicesUrl={categoryChoicesUrl}
+          stockPreviewUrl={stockPreviewUrl}
+          forexPreviewUrl={forexPreviewUrl}
+          marketMoversPreviewUrl={marketMoversPreviewUrl}
+          dividendsPreviewUrl={dividendsPreviewUrl}
+          calendarPreviewUrl={calendarPreviewUrl}
+          brokerListUrl={brokerListUrl}
+        />
+      </TaxonomyEditorErrorBoundary>
     );
   });
 }

@@ -6,6 +6,7 @@ import uuid as _uuid
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
+from django.urls import reverse
 from wagtail.models import Page
 from home.models import TaggedContentPage, TaxonomyTerm, ContentTag
 
@@ -117,11 +118,12 @@ class ArticleEditorSerializer(serializers.ModelSerializer):
     og_image_url = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     author_user_display = serializers.SerializerMethodField()
+    preview_url = serializers.SerializerMethodField()
 
     class Meta:
         model = TaggedContentPage
         fields = [
-            'id', 'title', 'slug', 'status',
+            'id', 'title', 'slug', 'status', 'preview_url',
             'section_term', 'taxonomy_category',
             'catalyst', 'tags', 'hero_image', 'hero_image_url',
             'tile_preview', 'author_name', 'author_user', 'author_user_display',
@@ -159,6 +161,14 @@ class ArticleEditorSerializer(serializers.ModelSerializer):
         if full:
             return full
         return user.get_username() if hasattr(user, "get_username") else ""
+
+    def get_preview_url(self, obj):
+        request = self.context.get("request")
+        if request is None:
+            return ""
+        return request.build_absolute_uri(
+            reverse("article_preview", kwargs={"article_id": obj.pk})
+        )
 
 
 def _normalize_catalyst_value(value: str | None) -> str:
@@ -216,15 +226,13 @@ class ArticleUpdateSerializer(serializers.ModelSerializer):
         return _normalize_catalyst_value(value)
 
     def update(self, instance, validated_data):
-        import json
-
         tag_ids = validated_data.pop('tag_ids', None)
         if tag_ids is not None:
             instance.tags.set(tag_ids)
 
         body_json = validated_data.pop('body_json', None)
         if body_json is not None:
-            instance.body = json.dumps(body_json)
+            instance.body = body_json
 
         hero_image_id = validated_data.pop('hero_image_id', None)
         if hero_image_id is not None:

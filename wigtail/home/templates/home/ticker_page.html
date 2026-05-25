@@ -53,6 +53,13 @@
         </div>
     </section>
 
+    {% if dividend_rows %}
+    <section class="ticker-dividends" aria-labelledby="ticker-dividends-heading">
+        <h2 id="ticker-dividends-heading" class="ticker-dividends__heading">Upcoming dividends</h2>
+        {% include "home/includes/ticker_dividends_table.html" %}
+    </section>
+    {% endif %}
+
     {% if related_pages %}
     <section class="ticker-related" aria-labelledby="ticker-related-heading">
         <h2 id="ticker-related-heading" class="ticker-related__heading">Related news</h2>

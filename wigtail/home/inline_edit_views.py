@@ -16,9 +16,20 @@ from home.card_layout import (
     stock_bars_limit_clamped,
     stock_bars_timeframe_from_cadence,
 )
+from home.market_events import (
+    calendar_max_rows_clamped,
+    calendar_payload_for_bento,
+    dividend_max_rows_clamped,
+    dividends_payload_for_bento,
+    resolve_dividend_symbols_from_bento,
+    upcoming_calendar_days,
+    upcoming_dividends,
+)
 from home.market_widgets import build_forex_quotes_payload, build_market_movers_payload
 from home.models import MarketTickerRow, SubsectionIndexPage, TaggedContentPage, TaxonomyTerm
-from home.query import _section_term_ids_for_taxonomy_scope
+from django.db.models import Q
+
+from home.query import _section_term_ids_for_taxonomy_scope, list_category_terms_for_sector
 from home.taxonomy import MARKET_NEWS_SLUG, ensure_top_row_taxonomy_terms
 
 
@@ -86,8 +97,8 @@ def create_taxonomy_term(request: HttpRequest) -> JsonResponse:
         except (TypeError, ValueError, TaxonomyTerm.DoesNotExist):
             return JsonResponse({"error": "Selected parent not found."}, status=400)
 
-    # Top nav rows omit parent_id; only TOP_ROW_SLUGS roots appear there, so new
-    # roots would be invisible. Default to Market News so the chip shows under it.
+    # Depth-1 "Add new" without create_root defaults under Market News; use
+    # create_root=true to add a new top-level nav root (shown when depth=1 + visible).
     if parent is None and not create_root:
         parent = TaxonomyTerm.objects.filter(
             slug=MARKET_NEWS_SLUG, is_visible=True
@@ -271,6 +282,21 @@ def _article_result_image_url(row: TaggedContentPage) -> str | None:
 
 
 def _article_result_payload(row: TaggedContentPage, request: HttpRequest) -> dict[str, Any]:
+    published_iso = ""
+    if row.first_published_at:
+        from django.utils import timezone as django_timezone
+
+        dt = row.first_published_at
+        if django_timezone.is_naive(dt):
+            from datetime import timezone as dt_timezone
+
+            dt = django_timezone.make_aware(dt, dt_timezone.utc)
+        published_iso = dt.isoformat()
+    category_name = ""
+    if row.taxonomy_category_id:
+        category_name = row.taxonomy_category.name
+    elif row.section_term_id:
+        category_name = row.section_term.name
     return {
         "id": row.pk,
         "title": row.title,
@@ -281,6 +307,9 @@ def _article_result_payload(row: TaggedContentPage, request: HttpRequest) -> dic
         "tags": list(row.tags.values_list("name", flat=True)[:5]),
         "authorName": row.card_author_name(),
         "publishedAt": date_format(row.first_published_at, "F j, Y") if row.first_published_at else "",
+        "publishedAtIso": published_iso,
+        "sourceLabel": row.card_author_name(),
+        "categoryName": category_name,
         "catalyst": (row.catalyst or "").strip(),
     }
 
@@ -350,6 +379,8 @@ def search_articles(request: HttpRequest) -> JsonResponse:
         except ValueError:
             article_id = None
     section_term_id_raw = str(request.GET.get("section_term_id") or "").strip()
+    taxonomy_category_id_raw = str(request.GET.get("taxonomy_category_id") or "").strip()
+    limit_raw = str(request.GET.get("limit") or "").strip()
     tag_ids_raw = str(request.GET.get("tag_ids") or "").strip()
     tag_ids: list[int] = []
     if tag_ids_raw:
@@ -378,7 +409,14 @@ def search_articles(request: HttpRequest) -> JsonResponse:
     qs = TaggedContentPage.objects.live().public().order_by("-first_published_at")
     if article_id is not None:
         qs = qs.filter(pk=article_id)
-    if section_term_id_raw:
+    if taxonomy_category_id_raw:
+        try:
+            chip = TaxonomyTerm.objects.filter(pk=int(taxonomy_category_id_raw)).first()
+        except ValueError:
+            chip = None
+        if chip is not None:
+            qs = qs.filter(Q(section_term=chip) | Q(taxonomy_category=chip))
+    elif section_term_id_raw:
         try:
             term = TaxonomyTerm.objects.filter(pk=int(section_term_id_raw)).first()
         except ValueError:
@@ -396,8 +434,22 @@ def search_articles(request: HttpRequest) -> JsonResponse:
     elif query:
         for token in [t for t in query.split() if t]:
             qs = qs.filter(title__icontains=token)
-    limit = 1 if random_mode or article_id is not None else 20
-    qs = qs.select_related("section_term", "author_user", "hero_image", "og_image").prefetch_related("tags")
+    if limit_raw:
+        try:
+            limit = max(1, min(12, int(limit_raw)))
+        except ValueError:
+            limit = 1 if random_mode or article_id is not None else 20
+    elif random_mode or article_id is not None:
+        limit = 1
+    else:
+        limit = 20
+    qs = qs.select_related(
+        "section_term",
+        "taxonomy_category",
+        "author_user",
+        "hero_image",
+        "og_image",
+    ).prefetch_related("tags")
     rows = list(qs[:limit])
     results = [_article_result_payload(row, request) for row in rows]
     return JsonResponse({"results": results})
@@ -482,6 +534,28 @@ def preview_market_movers_tile(request: HttpRequest) -> JsonResponse:
 
 
 @require_GET
+def preview_upcoming_dividends_tile(request: HttpRequest) -> JsonResponse:
+    """Public JSON for taxonomy Bento upcoming dividends tile preview."""
+    raw_syms = request.GET.getlist("symbols") or []
+    if not raw_syms:
+        single = str(request.GET.get("symbols") or "")
+        raw_syms = [p.strip() for p in re.split(r"[\s,]+", single) if p.strip()]
+    syms = resolve_dividend_symbols_from_bento(raw_syms or None)
+    lim = dividend_max_rows_clamped(request.GET.get("max_rows"))
+    rows = upcoming_dividends(symbols=syms, limit=lim)
+    return JsonResponse({"dividend_rows": dividends_payload_for_bento(rows)})
+
+
+@require_GET
+def preview_market_calendar_tile(request: HttpRequest) -> JsonResponse:
+    """Public JSON for taxonomy Bento market calendar tile preview."""
+    mkt = str(request.GET.get("market") or "NASDAQ").strip().upper()
+    lim = calendar_max_rows_clamped(request.GET.get("max_rows"))
+    rows = upcoming_calendar_days(market=mkt, limit=lim)
+    return JsonResponse({"calendar_rows": calendar_payload_for_bento(rows)})
+
+
+@require_GET
 @user_passes_test(_admin_inline_access)
 def search_taxonomy_articles(request: HttpRequest) -> JsonResponse:
     query = str(request.GET.get("q") or "").strip()
@@ -522,6 +596,73 @@ def search_taxonomy_articles(request: HttpRequest) -> JsonResponse:
             "catalyst": (row.catalyst or "").strip(),
         })
     return JsonResponse({"results": results})
+
+
+def _sector_for_category_choices(term: TaxonomyTerm) -> TaxonomyTerm:
+    """Sector hub used by featured-quad chips (GICS sector, Market News, or depth-2 node)."""
+    from home.gics_sectors import GICS_SECTOR_SLUGS
+
+    if term.slug in GICS_SECTOR_SLUGS or term.slug == MARKET_NEWS_SLUG:
+        return term
+    for ancestor in term.get_ancestors():
+        if ancestor.slug in GICS_SECTOR_SLUGS:
+            return ancestor
+        if ancestor.slug == MARKET_NEWS_SLUG:
+            return ancestor
+    if term.depth >= 2:
+        parent = term.get_parent()
+        if parent is not None:
+            return parent
+    return term
+
+
+@require_GET
+@user_passes_test(_admin_inline_access)
+def taxonomy_category_choices(request: HttpRequest) -> JsonResponse:
+    """Category labels for article-carousel tiles on taxonomy content constructor."""
+    from home.models import HomePage
+
+    term_id_raw = str(request.GET.get("term_id") or "").strip()
+    include_id_raw = str(request.GET.get("include_id") or "").strip()
+    try:
+        term_id = int(term_id_raw)
+    except ValueError:
+        return JsonResponse({"choices": []})
+
+    term = TaxonomyTerm.objects.filter(pk=term_id).first()
+    if term is None:
+        return JsonResponse({"choices": []})
+
+    sector = _sector_for_category_choices(term)
+    home_page = HomePage.objects.live().public().first()
+    chips = list_category_terms_for_sector(sector, home_page=home_page)
+
+    seen: set[int] = set()
+    choices: list[dict[str, Any]] = []
+
+    def add_choice(t: TaxonomyTerm) -> None:
+        if t.pk in seen:
+            return
+        seen.add(t.pk)
+        choices.append({"id": t.pk, "name": t.name, "slug": t.slug})
+
+    add_choice(sector)
+    for chip in chips:
+        add_choice(chip)
+    if term.pk not in seen:
+        add_choice(term)
+
+    if include_id_raw:
+        try:
+            include_id = int(include_id_raw)
+        except ValueError:
+            include_id = None
+        if include_id is not None and include_id not in seen:
+            extra = TaxonomyTerm.objects.filter(pk=include_id).first()
+            if extra is not None:
+                add_choice(extra)
+
+    return JsonResponse({"choices": choices})
 
 
 @require_GET

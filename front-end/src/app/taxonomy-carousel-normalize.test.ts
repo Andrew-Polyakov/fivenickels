@@ -37,6 +37,37 @@ describe('normalizeCarouselBlockFromJson', () => {
     })?.stackDepth).toBe(2);
   });
 
+  it('drops removed animated_ui_block tiles', () => {
+    const raw = {
+      id: 'anim',
+      type: 'carousel',
+      features: [
+        {
+          id: 'f-anim',
+          header_type: 'animated_ui_block',
+          image_url_light: '',
+          image_url_dark: '',
+          title: 'Old',
+          description: '',
+          col_span: 1,
+        },
+        {
+          id: 'f-card',
+          header_type: 'card',
+          image_url_light: '',
+          image_url_dark: '',
+          title: '',
+          description: '',
+          col_span: 1,
+          mode: 'random',
+        },
+      ],
+    };
+    const b = normalizeCarouselBlockFromJson(raw);
+    expect(b?.features).toHaveLength(1);
+    expect(b?.features[0]?.id).toBe('f-card');
+  });
+
   it('prefers features when present', () => {
     const raw = {
       id: 'x',
@@ -49,7 +80,7 @@ describe('normalizeCarouselBlockFromJson', () => {
         image_url_dark: '',
         title: '',
         description: '',
-        col_span: '4',
+        col_span: 1,
         html: '<p>x</p>',
       }],
     };
@@ -73,7 +104,7 @@ describe('carouselFeaturesAllCards', () => {
         image_url_dark: '',
         title: '',
         description: '',
-        col_span: '4',
+        col_span: 1,
         mode: 'random',
       },
     ])).toBe(true);
@@ -88,7 +119,7 @@ describe('carouselFeaturesAllCards', () => {
         image_url_dark: '',
         title: '',
         description: '',
-        col_span: '4',
+        col_span: 1,
       },
       {
         id: 'b',
@@ -97,7 +128,7 @@ describe('carouselFeaturesAllCards', () => {
         image_url_dark: '',
         title: '',
         description: '',
-        col_span: '4',
+        col_span: 1,
         html: '',
       },
     ])).toBe(false);

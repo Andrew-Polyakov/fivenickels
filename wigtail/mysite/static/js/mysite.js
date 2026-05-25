@@ -364,7 +364,22 @@
         }
     }
 
+    function syncReadingThemeFromStorage() {
+        try {
+            var theme = localStorage.getItem("reading-theme");
+            var root = document.documentElement;
+            if (theme === "day") {
+                root.setAttribute("data-reading-theme", "day");
+            } else if (theme === "night") {
+                root.removeAttribute("data-reading-theme");
+            }
+        } catch (_e) {
+            /* ignore */
+        }
+    }
+
     function initReadingThemeToggle() {
+        syncReadingThemeFromStorage();
         if (
             window.mountShadcnReadingThemeToggle &&
             typeof window.mountShadcnReadingThemeToggle === "function"
@@ -373,11 +388,21 @@
         }
     }
 
+    function initProfileHeaderButton() {
+        if (
+            window.mountShadcnProfileHeaderButton &&
+            typeof window.mountShadcnProfileHeaderButton === "function"
+        ) {
+            window.mountShadcnProfileHeaderButton();
+        }
+    }
+
     /** Reading toggle is registered asynchronously by the ES module bundle; retry briefly after load. */
     function scheduleReadingThemeToggleMount() {
         var delays = [0, 50, 150, 400];
         delays.forEach(function (ms) {
             window.setTimeout(initReadingThemeToggle, ms);
+            window.setTimeout(initProfileHeaderButton, ms);
         });
     }
 
@@ -408,6 +433,12 @@
         }
         if (window.mountShadcnArticleEditor && typeof window.mountShadcnArticleEditor === "function") {
             window.mountShadcnArticleEditor();
+        }
+        if (window.unmountTaxonomyEditors && typeof window.unmountTaxonomyEditors === "function") {
+            var taxonomyHosts = document.querySelectorAll("[data-shadcn-taxonomy-editor]");
+            if (taxonomyHosts.length) {
+                window.unmountTaxonomyEditors(document);
+            }
         }
         if (window.mountTaxonomyEditor && typeof window.mountTaxonomyEditor === "function") {
             window.mountTaxonomyEditor();
@@ -607,10 +638,43 @@
         });
     }
 
-    function afterMainFrameVisit(htmlDocumentOptional) {
-        if (htmlDocumentOptional) {
-            syncBodyAndTitleFromResponse(htmlDocumentOptional);
+    function clearSiteLayoutInlineStyles() {
+        var selectors = [".site-page", ".site-header", ".site-content"];
+        selectors.forEach(function (sel) {
+            var el = document.querySelector(sel);
+            if (!el || !el.style) {
+                return;
+            }
+            el.style.removeProperty("margin");
+            el.style.removeProperty("margin-left");
+            el.style.removeProperty("margin-right");
+            el.style.removeProperty("margin-inline");
+            el.style.removeProperty("padding");
+            el.style.removeProperty("padding-left");
+            el.style.removeProperty("padding-right");
+            el.style.removeProperty("padding-inline");
+        });
+    }
+
+    function syncBodyFromFetchResponse(fr) {
+        if (!fr || !fr.responseHTML) {
+            return;
         }
+        if (typeof fr.responseHTML === "string") {
+            syncBodyAndTitleFromResponse(fr.responseHTML);
+            return;
+        }
+        if (typeof fr.responseHTML.then === "function") {
+            fr.responseHTML
+                .then(function (html) {
+                    syncBodyAndTitleFromResponse(html);
+                })
+                .catch(function () {});
+        }
+    }
+
+    function afterMainFrameWidgets() {
+        clearSiteLayoutInlineStyles();
         syncHeaderFromUrl();
         initSectorScroll();
         initCarousels();
@@ -625,6 +689,29 @@
         scheduleReadingThemeToggleMount();
     }
 
+    function handleTurboBeforeFetchResponse(e) {
+        var target = e.target;
+        if (!target || !target.id || target.id !== "main") {
+            return;
+        }
+        syncBodyFromFetchResponse(e.detail && e.detail.fetchResponse);
+    }
+
+    function handleTurboFrameRender(e) {
+        if (!e.target || e.target.id !== "main") {
+            return;
+        }
+        syncBodyFromFetchResponse(e.detail && e.detail.fetchResponse);
+    }
+
+    function handleTurboBeforeRender(e) {
+        clearSiteLayoutInlineStyles();
+        var newBody = e.detail && e.detail.newBody;
+        if (newBody && newBody.className) {
+            document.body.className = newBody.className;
+        }
+    }
+
     function handleTurboFrameLoad(e) {
         if (!e.target || !e.target.id) {
             return;
@@ -637,18 +724,7 @@
         if (e.target.id !== "main") {
             return;
         }
-        var fr = e.detail && e.detail.fetchResponse;
-        if (fr && fr.responseHTML) {
-            fr.responseHTML
-                .then(function (html) {
-                    afterMainFrameVisit(html);
-                })
-                .catch(function () {
-                    afterMainFrameVisit(null);
-                });
-        } else {
-            afterMainFrameVisit(null);
-        }
+        afterMainFrameWidgets();
     }
 
     function initSiteSearchLive() {
@@ -890,6 +966,7 @@
     }
 
     document.addEventListener("DOMContentLoaded", function () {
+        syncReadingThemeFromStorage();
         if (!isTurboPreview()) {
             syncHeaderFromUrl();
         }
@@ -905,10 +982,12 @@
         remountShadcnWidgets();
         initMarketMoversFilter();
         initReadingThemeToggle();
+        initProfileHeaderButton();
         scheduleReadingThemeToggleMount();
     });
 
     document.addEventListener("turbo:load", function () {
+        syncReadingThemeFromStorage();
         if (!isTurboPreview()) {
             syncHeaderFromUrl();
             initSectorScroll();
@@ -924,8 +1003,15 @@
         remountShadcnWidgets();
         initMarketMoversFilter();
         initReadingThemeToggle();
+        initProfileHeaderButton();
         scheduleReadingThemeToggleMount();
     });
 
+    document.addEventListener("turbo:before-fetch-response", handleTurboBeforeFetchResponse);
+
+    document.addEventListener("turbo:frame-render", handleTurboFrameRender);
+
     document.addEventListener("turbo:frame-load", handleTurboFrameLoad);
+
+    document.addEventListener("turbo:before-render", handleTurboBeforeRender);
 })();

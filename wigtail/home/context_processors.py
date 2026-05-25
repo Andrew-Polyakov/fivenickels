@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from home.ticker_utils import chip_context_for_row
 from home.taxonomy import (
-    MARKET_NEWS_SLUG,
     build_hamburger_nav_payload,
     build_site_nav_menu_payload,
     get_site_nav_template_context,
@@ -58,11 +57,7 @@ def market_header(request):
                 "trail": [],
                 "trail_slugs": [],
             }
-    site_footer_roots = (
-        [t for t in taxonomy_roots_for_nav(home) if t.slug != MARKET_NEWS_SLUG]
-        if home
-        else []
-    )
+    site_footer_roots = list(taxonomy_roots_for_nav(home)) if home else []
 
     rows = list(
         MarketTickerRow.objects.filter(enabled=True).order_by("sort_order", "symbol")

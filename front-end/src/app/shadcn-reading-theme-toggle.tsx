@@ -22,6 +22,18 @@ export function applyReadingTheme(theme: ReadingTheme): void {
   }
 }
 
+/** Re-apply saved theme on <html> after Turbo navigations (body swaps, html attrs can drift). */
+export function syncReadingThemeFromStorage(): void {
+  try {
+    const stored = localStorage.getItem(READING_THEME_STORAGE_KEY);
+    if (stored === 'day' || stored === 'night') {
+      applyReadingTheme(stored);
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 function readIsDay(): boolean {
   return document.documentElement.getAttribute('data-reading-theme') === 'day';
 }
@@ -64,6 +76,7 @@ function ReadingThemeToggle(): React.JSX.Element {
 const readingThemeRoots = new WeakMap<HTMLElement, Root>();
 
 export function mountShadcnReadingThemeToggle(): void {
+  syncReadingThemeFromStorage();
   const host = document.querySelector<HTMLElement>('#site-reading-theme-mount');
   if (!host) {
     return;

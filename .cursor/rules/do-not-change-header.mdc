@@ -1,0 +1,30 @@
+---
+description: Do not modify site header chrome unless the user explicitly asks
+alwaysApply: true
+---
+
+# Do Not Change the Site Header
+
+Never modify the **site header** (global navigation chrome) unless the user **explicitly** requests header work in that message (e.g. “update the header”, “fix the masthead”, “change site nav”).
+
+## In scope (leave untouched unless asked)
+
+- `wigtail/mysite/templates/base.html` — `site-header`, ticker strip, masthead, sign-in/CTA row
+- `wigtail/mysite/templates/components/site_masthead_social.html`, `components/ticker_carousel.html`
+- `wigtail/mysite/static/css/mysite.css` — rules for `.site-header`, `.site-hamburger-nav`, masthead, ticker, sector strip
+- `front-end/src/app/shadcn-hamburger-nav.tsx`, `shadcn-taxonomy-site-nav.tsx`, `shadcn-reading-theme-toggle.tsx`
+- `wigtail/home/taxonomy.py` and taxonomy header/nav templates under `wigtail/home/templates/home/taxonomy/`
+
+Do not “improve”, restyle, refactor, or fix unrelated issues in these files as a side effect of other tasks.
+
+## Out of scope (not the site header)
+
+These are fine to change when the task requires it:
+
+- Block/tile editor chrome (e.g. `.scn-editor-block__header`, `.scn-bentogrid01__tile-header`)
+- Dialog/card section headers (e.g. `.scn-dialog-header`)
+- Page body headings (`<h1>`–`<h6>`) and stream block “heading” fields
+
+## When header work is allowed
+
+Only when the user’s request clearly targets header/nav/masthead behavior or markup. If a fix might touch header files, prefer changes elsewhere or ask before editing header code.

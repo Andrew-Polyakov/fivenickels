@@ -40,17 +40,17 @@
 
     </header>
 
-    {% if page.hero_image %}
-
-        <div class="tagged-content__hero">
-
-            {% image page.hero_image width-960 class="tagged-content__hero-img" %}
-
-        </div>
-
-    {% endif %}
-
     <div class="home-stream tagged-content__body">
+
+        {% if page.hero_image %}
+
+            <div class="tagged-content__hero">
+
+                {% image page.hero_image width-960 class="tagged-content__hero-img" %}
+
+            </div>
+
+        {% endif %}
 
         {% render_main_site_stream page.body %}
 

@@ -14,8 +14,18 @@ from django.utils import timezone as django_timezone
 from django.utils.formats import date_format
 
 from home.blocks import _resolve_universal_tile_state
+from home.query import get_pages_for_taxonomy_term
 from home.alpaca_bars_client import fetch_recent_stock_bars
 from home.alpaca_market_client import fetch_snapshots
+from home.market_events import (
+    calendar_max_rows_clamped,
+    calendar_payload_for_bento,
+    dividend_max_rows_clamped,
+    dividends_payload_for_bento,
+    resolve_dividend_symbols_from_bento,
+    upcoming_calendar_days,
+    upcoming_dividends,
+)
 from home.market_widgets import build_forex_quotes_payload, build_market_movers_payload
 from home.models import MarketTickerRow, TaggedContentPage
 from home.ticker_utils import chip_json_payload
@@ -63,6 +73,17 @@ def _article_card_dict(page: Page | None, request) -> dict[str, Any]:
         except Exception:
             image_url = ""
     catalyst = (spec.catalyst or "").strip()
+    published_iso = ""
+    if spec.first_published_at:
+        dt = spec.first_published_at
+        if django_timezone.is_naive(dt):
+            dt = django_timezone.make_aware(dt, dt_timezone.utc)
+        published_iso = dt.isoformat()
+    category_name = ""
+    if spec.taxonomy_category_id:
+        category_name = spec.taxonomy_category.name
+    elif spec.section_term_id:
+        category_name = spec.section_term.name
     return {
         "kind": "article",
         "title": title,
@@ -72,8 +93,61 @@ def _article_card_dict(page: Page | None, request) -> dict[str, Any]:
         "tags": list(spec.tags.values_list("name", flat=True)[:5]),
         "authorName": spec.card_author_name(),
         "publishedAt": date_format(spec.first_published_at, "F j, Y") if spec.first_published_at else "",
+        "publishedAtIso": published_iso,
+        "sourceLabel": spec.card_author_name(),
+        "categoryName": category_name,
         "catalyst": catalyst,
     }
+
+
+def _clamp_bento_frame_count(raw: Any) -> int:
+    try:
+        n = int(raw)
+    except (TypeError, ValueError):
+        n = 5
+    return max(2, min(12, n))
+
+
+def _resolve_carousel_frames(
+    val: dict,
+    exclude_ids: list[int] | None = None,
+) -> list[TaggedContentPage]:
+    """Resolve article pages for an article_carousel bento feature."""
+    frame_count = _clamp_bento_frame_count(val.get("frame_count"))
+    mode = str(val.get("article_source_mode") or "taxonomy_category")
+    exclude = list(exclude_ids or [])
+    pages: list[TaggedContentPage] = []
+
+    if mode == "selected_articles":
+        for page_ref in val.get("selected_articles") or []:
+            if page_ref is None:
+                continue
+            try:
+                spec = page_ref.specific
+            except Exception:
+                continue
+            if not isinstance(spec, TaggedContentPage):
+                continue
+            if not spec.live:
+                continue
+            pk = getattr(spec, "pk", None)
+            if pk is not None and int(pk) in exclude:
+                continue
+            pages.append(spec)
+            if pk is not None:
+                exclude.append(int(pk))
+            if len(pages) >= frame_count:
+                break
+    else:
+        term = val.get("taxonomy_category")
+        if term is not None:
+            picked = get_pages_for_taxonomy_term(
+                term,
+                limit=frame_count,
+                exclude_ids=exclude,
+            )
+            pages.extend(picked)
+    return pages
 
 
 def _tag_ids_from_art(art: dict) -> list[int]:
@@ -450,22 +524,130 @@ def _normalize_bento_block_background(raw: Any) -> str:
     return "default"
 
 
+def _normalize_bento_grid_columns(raw: Any) -> int:
+    try:
+        n = int(raw if raw is not None else 3)
+    except (TypeError, ValueError):
+        n = 3
+    return max(1, min(6, n))
+
+
+def _normalize_bento_grid_rows(raw: Any) -> int:
+    try:
+        n = int(raw if raw is not None else 3)
+    except (TypeError, ValueError):
+        n = 3
+    return max(1, min(3, n))
+
+
+def _normalize_bento_col_span(raw: Any, grid_columns: int) -> int:
+    """Map legacy string 4/8 or integers to 1..grid_columns."""
+    if raw is None:
+        return 1
+    if isinstance(raw, int):
+        return max(1, min(int(raw), grid_columns))
+    s = str(raw).strip()
+    if s == "8":
+        return min(2, grid_columns)
+    if s == "4":
+        return 1
+    try:
+        return max(1, min(int(s), grid_columns))
+    except (TypeError, ValueError):
+        return 1
+
+
+def _normalize_bento_row_span(raw: Any) -> int:
+    try:
+        n = int(raw if raw is not None else 1)
+    except (TypeError, ValueError):
+        n = 1
+    return max(1, min(3, n))
+
+
+def _normalize_bento_row(raw: Any) -> int | None:
+    if raw is None or raw == "":
+        return None
+    try:
+        n = int(raw)
+    except (TypeError, ValueError):
+        return None
+    return n if n >= 1 else None
+
+
+def _normalize_bento_col(raw: Any, grid_columns: int) -> int | None:
+    if raw is None or raw == "":
+        return None
+    try:
+        n = int(raw)
+    except (TypeError, ValueError):
+        return None
+    if n < 1:
+        return None
+    return max(1, min(grid_columns, n))
+
+
+def _normalize_bento_panel_size_array(raw: Any, expected_len: int | None = None) -> list[float] | None:
+    if not isinstance(raw, list) or len(raw) == 0:
+        return None
+    nums: list[float] = []
+    for value in raw:
+        try:
+            n = float(value)
+        except (TypeError, ValueError):
+            continue
+        if n > 0:
+            nums.append(n)
+    if not nums:
+        return None
+    length = expected_len if expected_len is not None else len(nums)
+    if len(nums) != length:
+        return None
+    total = sum(nums)
+    if total <= 0:
+        return None
+    return [(n / total) * 100 for n in nums]
+
+
+def _normalize_bento_col_panel_sizes_by_row(raw: Any, row_count: int) -> dict[str, list[float]] | None:
+    if not isinstance(raw, dict):
+        return None
+    out: dict[str, list[float]] = {}
+    for row_index in range(row_count):
+        key = str(row_index)
+        normalized = _normalize_bento_panel_size_array(raw.get(key))
+        if normalized:
+            out[key] = normalized
+    return out or None
+
+
 def _serialize_bentogrid01(block_value: dict, parent_context: dict | None = None) -> dict[str, Any]:
     """Convert a BentoGrid01Block value dict to a JSON-safe payload."""
     request = (parent_context or {}).get("request")
+    grid_columns = _normalize_bento_grid_columns(block_value.get("grid_columns"))
+    grid_rows = _normalize_bento_grid_rows(block_value.get("grid_rows"))
     used_page_ids: list[int] = []
     features: list[dict[str, Any]] = []
     for feat in block_value.get("features") or []:
         val = feat.value if hasattr(feat, "value") else feat
         header_type = str(val.get("header_type") or "image")
+        if header_type == "animated_ui_block":
+            continue
         entry: dict[str, Any] = {
             "header_type": header_type,
             "image_url_light": str(val.get("image_url_light") or ""),
             "image_url_dark": str(val.get("image_url_dark") or ""),
             "title": str(val.get("title") or ""),
             "description": str(val.get("description") or ""),
-            "col_span": str(val.get("col_span") or "4"),
+            "col_span": _normalize_bento_col_span(val.get("col_span"), grid_columns),
+            "row_span": _normalize_bento_row_span(val.get("row_span")),
         }
+        row_n = _normalize_bento_row(val.get("row"))
+        if row_n is not None:
+            entry["row"] = row_n
+        col_n = _normalize_bento_col(val.get("col"), grid_columns)
+        if col_n is not None:
+            entry["col"] = col_n
         if header_type == "card":
             art = {
                 "mode": val.get("mode") or "random",
@@ -488,6 +670,23 @@ def _serialize_bentogrid01(block_value: dict, parent_context: dict | None = None
             scale_raw = val.get("card_image_scale")
             if scale_raw in _BENTO_CARD_IMAGE_SCALE_CHOICES:
                 entry["card_image_scale"] = scale_raw
+        if header_type == "article_carousel":
+            frame_count = _clamp_bento_frame_count(val.get("frame_count"))
+            entry["frame_count"] = frame_count
+            entry["auto_scroll"] = bool(val.get("auto_scroll"))
+            entry["article_source_mode"] = str(
+                val.get("article_source_mode") or "taxonomy_category"
+            )
+            carousel_pages = _resolve_carousel_frames(val, list(used_page_ids))
+            frames: list[dict[str, Any]] = []
+            for tile_page in carousel_pages:
+                pk = getattr(tile_page, "pk", None)
+                if pk is not None:
+                    used_page_ids.append(int(pk))
+                card = _article_card_dict(tile_page, request)
+                if card.get("kind") == "article":
+                    frames.append(card)
+            entry["frames"] = frames
         if header_type == "fxbroker":
             broker = val.get("broker")
             if broker:
@@ -536,19 +735,44 @@ def _serialize_bentogrid01(block_value: dict, parent_context: dict | None = None
             entry["market_movers"] = movers_payload["market_movers"]
             entry["market_mover_tabs"] = movers_payload["market_mover_tabs"]
             entry["selected_region"] = movers_payload["selected_region"]
+        if header_type == "upcoming_dividends":
+            syms = resolve_dividend_symbols_from_bento(val.get("dividend_symbols"))
+            lim = dividend_max_rows_clamped(val.get("dividend_max_rows"))
+            div_rows = list(upcoming_dividends(symbols=syms, limit=lim))
+            entry["dividend_rows"] = dividends_payload_for_bento(div_rows)
+        if header_type == "market_calendar":
+            mkt = str(val.get("calendar_market") or "NASDAQ").strip().upper()
+            lim = calendar_max_rows_clamped(val.get("calendar_max_rows"))
+            cal_rows = list(upcoming_calendar_days(market=mkt, limit=lim))
+            entry["calendar_rows"] = calendar_payload_for_bento(cal_rows)
         features.append(entry)
     block_bg_raw = block_value.get("block_background")
     if block_bg_raw is None and "section_padding" in block_value:
         block_bg_raw = "default"
-    return {
+    payload = {
         "badge_text": str(block_value.get("badge_text") or "Features"),
         "heading": str(block_value.get("heading") or ""),
         "theme": _normalize_bento_theme(block_value.get("theme")),
         "tile_style": str(block_value.get("tile_style") or "bordered"),
         "block_background": _normalize_bento_block_background(block_bg_raw),
         "show_badge": bool(block_value.get("show_badge", True)),
+        "grid_columns": grid_columns,
+        "grid_rows": grid_rows,
         "features": features,
     }
+    row_panel_sizes = _normalize_bento_panel_size_array(
+        block_value.get("row_panel_sizes"),
+        grid_rows,
+    )
+    if row_panel_sizes:
+        payload["row_panel_sizes"] = row_panel_sizes
+    col_panel_sizes_by_row = _normalize_bento_col_panel_sizes_by_row(
+        block_value.get("col_panel_sizes_by_row"),
+        grid_rows,
+    )
+    if col_panel_sizes_by_row:
+        payload["col_panel_sizes_by_row"] = col_panel_sizes_by_row
+    return payload
 
 
 def serialize_article_card_for_related(page: Page | None, request) -> dict[str, Any]:

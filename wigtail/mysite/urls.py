@@ -16,6 +16,10 @@ from home import api_urls
 from search import views as search_views
 
 from home.ticker_serve import render_ticker_page
+from home.seo_views import robots_txt
+from home.sitemaps import SITEMAPS
+
+from wagtail.contrib.sitemaps import views as wagtail_sitemap_views
 
 
 def favicon_view(request):
@@ -34,6 +38,11 @@ urlpatterns = [
     path("profile/", auth_views.profile, name="profile"),
     path("profile/article/create/", editor_views.create_article, name="article_create"),
     path("profile/article/<int:article_id>/edit/", editor_views.article_editor, name="article_editor"),
+    path(
+        "profile/article/<int:article_id>/preview/",
+        editor_views.article_preview,
+        name="article_preview",
+    ),
     path(
         "inline/taxonomy/create/",
         inline_edit_views.create_taxonomy_term,
@@ -95,6 +104,11 @@ urlpatterns = [
         name="search_taxonomy_articles",
     ),
     path(
+        "inline/taxonomy/category-choices/",
+        inline_edit_views.taxonomy_category_choices,
+        name="taxonomy_category_choices",
+    ),
+    path(
         "inline/taxonomy/stock-bars-preview/",
         inline_edit_views.preview_stock_bars_tile,
         name="stock_bars_preview",
@@ -109,6 +123,16 @@ urlpatterns = [
         inline_edit_views.preview_market_movers_tile,
         name="market_movers_preview",
     ),
+    path(
+        "inline/taxonomy/upcoming-dividends-preview/",
+        inline_edit_views.preview_upcoming_dividends_tile,
+        name="upcoming_dividends_preview",
+    ),
+    path(
+        "inline/taxonomy/market-calendar-preview/",
+        inline_edit_views.preview_market_calendar_tile,
+        name="market_calendar_preview",
+    ),
     path("inline/brokers/list/", broker_views.broker_list_json, name="broker_list_json"),
     path("rating/forex/", broker_views.forex_ratings, name="forex_ratings"),
     path("rating/forex/<int:pk>/update/", broker_views.broker_rating_update, name="broker_rating_update"),
@@ -118,6 +142,19 @@ urlpatterns = [
         "ticker/<str:ticker_slug>/",
         render_ticker_page,
         name="ticker_page",
+    ),
+    path("robots.txt", robots_txt, name="robots_txt"),
+    path(
+        "sitemap.xml",
+        wagtail_sitemap_views.index,
+        {"sitemaps": SITEMAPS, "sitemap_url_name": "sitemap_section"},
+        name="sitemap_index",
+    ),
+    path(
+        "sitemap-<section>.xml",
+        wagtail_sitemap_views.sitemap,
+        {"sitemaps": SITEMAPS},
+        name="sitemap_section",
     ),
 ]
 

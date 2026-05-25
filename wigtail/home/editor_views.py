@@ -1,7 +1,7 @@
 """
 Views for article editing from profile page.
 """
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -10,6 +10,22 @@ from django.views.decorators.http import require_GET, require_POST
 from wagtail.models import Site
 
 from home.models import HomePage, TaggedContentPage, TaxonomyTerm
+
+
+def _staff_article_access(user) -> bool:
+    return bool(user.is_authenticated and (user.is_staff or user.is_superuser))
+
+
+@login_required
+@user_passes_test(_staff_article_access)
+@require_GET
+def article_preview(request, article_id):
+    """Staff-only render of the article using its latest saved revision."""
+    page = get_object_or_404(TaggedContentPage, id=article_id)
+    revision = page.get_latest_revision()
+    if revision is not None:
+        page = revision.as_object()
+    return page.serve(request)
 
 
 @login_required

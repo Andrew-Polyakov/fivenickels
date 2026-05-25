@@ -22,6 +22,7 @@ from home.alpaca_bars_client import fetch_recent_stock_bars
 from home.blocks import _resolve_section_term, _resolve_universal_tile_state
 from home.card_layout import (
     BENTO_LAYOUT_VERSION,
+    _resolve_carousel_frames,
     _serialize_bentogrid01,
     build_layout_payload,
     serialize_article_card_for_related,
@@ -32,6 +33,7 @@ from home.query import (
     _section_term_ids_for_taxonomy_scope,
     build_home_page_display_items,
     featured_quad_pages_for_sector,
+    get_pages_for_taxonomy_term,
     get_random_pages_for_section,
     get_random_pages_for_section_prioritized,
     get_priority_pages_for_section,
@@ -313,6 +315,29 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         self.assertContains(r, "SUMM")
 
     @patch("home.ticker_serve.fetch_asset_meta", return_value=None)
+    def test_ticker_page_shows_upcoming_dividends_section(self, _mock_asset):
+        import uuid
+        from datetime import timedelta
+
+        from home.market_events import market_today_eastern
+        from home.models import CorporateActionEvent
+
+        MarketTickerRow.objects.create(symbol="DIV", enabled=True, sort_order=0)
+        today = market_today_eastern()
+        CorporateActionEvent.objects.create(
+            alpaca_id=uuid.uuid4(),
+            symbol="DIV",
+            action_type=CorporateActionEvent.ACTION_CASH,
+            ex_date=today + timedelta(days=5),
+            rate=Decimal("0.42"),
+        )
+        url = reverse("ticker_page", kwargs={"ticker_slug": "div"})
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "Upcoming dividends")
+        self.assertContains(r, "$0.42")
+
+    @patch("home.ticker_serve.fetch_asset_meta", return_value=None)
     def test_ticker_page_shows_unsynced_notice_without_fetched_at(self, _mock_asset):
         MarketTickerRow.objects.create(
             symbol="NOSYNC",
@@ -365,6 +390,82 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         self.assertEqual(selected, "energy-oil-test-cat")
         self.assertEqual(len(pages), 4)
         self.assertEqual(pages[0].pk, self.page_e1.pk)
+
+    def test_get_pages_for_taxonomy_term_matches_section_or_category(self):
+        child = TaxonomyTerm(
+            name="Oil Carousel Cat",
+            slug="energy-oil-carousel-cat",
+            is_visible=True,
+            sort_order=2,
+        )
+        self.energy.add_child(instance=child)
+        TaxonomyTerm.fix_tree()
+        oil = TaxonomyTerm.objects.get(slug="energy-oil-carousel-cat")
+        TaggedContentPage.objects.filter(pk=self.page_e1.pk).update(
+            taxonomy_category_id=oil.pk
+        )
+        pages = get_pages_for_taxonomy_term(oil, limit=5)
+        self.assertTrue(any(p.pk == self.page_e1.pk for p in pages))
+
+    def test_resolve_carousel_frames_selected_preserves_order(self):
+        frames = _resolve_carousel_frames(
+            {
+                "frame_count": 3,
+                "article_source_mode": "selected_articles",
+                "selected_articles": [self.page_e2, self.page_e1],
+            },
+            exclude_ids=[],
+        )
+        self.assertEqual(len(frames), 2)
+        self.assertEqual(frames[0].pk, self.page_e2.pk)
+        self.assertEqual(frames[1].pk, self.page_e1.pk)
+
+    def test_taxonomy_category_choices_returns_names(self):
+        from django.urls import reverse
+
+        admin = get_user_model().objects.create_superuser(
+            "carousel_admin", "carousel@test.com", "pass",
+        )
+        self.client.force_login(admin)
+        url = reverse("taxonomy_category_choices")
+        r = self.client.get(url, {"term_id": self.energy.pk})
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertIn("choices", data)
+        ids = {c["id"] for c in data["choices"]}
+        self.assertIn(self.energy.pk, ids)
+        names = {c["name"] for c in data["choices"]}
+        self.assertIn(self.energy.name, names)
+
+    def test_serialize_bentogrid01_article_carousel(self):
+        payload = _serialize_bentogrid01(
+            {
+                "badge_text": "News",
+                "heading": "Carousel",
+                "features": [
+                    {
+                        "header_type": "article_carousel",
+                        "frame_count": 2,
+                        "auto_scroll": True,
+                        "article_source_mode": "selected_articles",
+                        "selected_articles": [self.page_e1, self.page_e2],
+                        "title": "",
+                        "description": "",
+                        "col_span": 2,
+                        "row_span": 2,
+                    }
+                ],
+            },
+            {"request": None},
+        )
+        feat = payload["features"][0]
+        self.assertEqual(feat["header_type"], "article_carousel")
+        self.assertEqual(feat["frame_count"], 2)
+        self.assertTrue(feat["auto_scroll"])
+        self.assertEqual(len(feat["frames"]), 2)
+        self.assertEqual(feat["frames"][0]["kind"], "article")
+        self.assertIn("publishedAtIso", feat["frames"][0])
+        self.assertIn("sourceLabel", feat["frames"][0])
 
     def test_featured_quad_pages_for_sector_returns_four_slots(self):
         pages, sel = featured_quad_pages_for_sector(
@@ -458,6 +559,27 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         self.assertContains(r2, "Energy")
         self.assertContains(r2, "Materials")
         self.assertNotContains(r2, "Utilities")
+
+    def test_taxonomy_nav_level3_row_when_level2_selected(self):
+        from home.taxonomy import taxonomy_prefix_path
+
+        child = TaxonomyTerm(
+            name="Oil nav child",
+            slug="oil-nav-child-test",
+            is_visible=True,
+            is_nav=True,
+        )
+        self.energy.add_child(instance=child)
+        prefix = taxonomy_prefix_path(self.homepage)
+        url = prefix + "market-news/energy/"
+        response = self.client.get(url, HTTP_TURBO_FRAME="site-nav")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '"depth": 3')
+        self.assertContains(response, "oil-nav-child-test")
+        self.assertContains(response, "site-nav__row--depth-3")
+        self.assertContains(response, "scn-taxonomy-site-nav__depth-row")
+        self.assertContains(response, "scn-navigation-menu__trigger--link")
+        self.assertNotContains(response, "site-nav__row--depth-2")
 
     def test_taxonomy_nav_market_news_energy_returns_200(self):
         from home.taxonomy import taxonomy_prefix_path
@@ -563,6 +685,136 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         )
         self.assertIsNotNone(trail)
         self.assertEqual([t.slug for t in trail], ["market-news", "forex"])
+
+    def test_taxonomy_roots_for_nav_includes_custom_root(self):
+        from django.utils.crypto import get_random_string
+
+        from home.taxonomy import taxonomy_roots_for_nav
+
+        slug = f"custom-nav-root-{get_random_string(6).lower()}"
+        term = TaxonomyTerm(
+            name="Custom Nav Root",
+            slug=slug,
+            is_visible=True,
+            is_nav=True,
+            sort_order=99,
+        )
+        last = TaxonomyTerm.get_last_root_node()
+        if last is not None:
+            last.add_sibling("sorted-sibling", instance=term)
+        else:
+            TaxonomyTerm.add_root(instance=term)
+        TaxonomyTerm.fix_tree()
+
+        roots = taxonomy_roots_for_nav(self.homepage)
+        self.assertIn(slug, [t.slug for t in roots])
+
+    def test_resolve_taxonomy_trail_custom_root(self):
+        from django.utils.crypto import get_random_string
+
+        from home.taxonomy import resolve_taxonomy_trail
+
+        slug = f"custom-trail-root-{get_random_string(6).lower()}"
+        term = TaxonomyTerm(
+            name="Custom Trail Root",
+            slug=slug,
+            is_visible=True,
+            is_nav=True,
+            sort_order=98,
+        )
+        last = TaxonomyTerm.get_last_root_node()
+        if last is not None:
+            last.add_sibling("sorted-sibling", instance=term)
+        else:
+            TaxonomyTerm.add_root(instance=term)
+        TaxonomyTerm.fix_tree()
+
+        trail = resolve_taxonomy_trail(
+            [slug],
+            home_page=self.homepage,
+            require_content=False,
+        )
+        self.assertIsNotNone(trail)
+        self.assertEqual([t.slug for t in trail], [slug])
+
+    def test_resolve_taxonomy_trail_rejects_gics_at_root(self):
+        from home.taxonomy import resolve_taxonomy_trail
+
+        trail = resolve_taxonomy_trail(
+            ["energy"],
+            home_page=self.homepage,
+            require_content=False,
+        )
+        self.assertIsNone(trail)
+
+    def test_market_header_footer_includes_market_news(self):
+        from django.test import RequestFactory
+
+        from home.taxonomy import MARKET_NEWS_SLUG
+
+        factory = RequestFactory()
+        request = factory.get("/")
+        request.site = Site.objects.filter(is_default_site=True).first()
+        ctx = market_header(request)
+        footer_slugs = [t.slug for t in ctx["site_footer_roots"]]
+        self.assertIn(MARKET_NEWS_SLUG, footer_slugs)
+
+    def test_brokers_nav_first_in_site_nav_menu_payload(self):
+        from django.test import RequestFactory
+
+        from home.taxonomy import (
+            BROKERS_NAV_ID,
+            BROKERS_NAV_NAME,
+            build_nav_rows,
+            build_site_nav_menu_payload,
+            is_brokers_nav_active,
+        )
+
+        factory = RequestFactory()
+        request = factory.get("/")
+        nav_rows = build_nav_rows([], home_page=self.homepage)
+        payload = build_site_nav_menu_payload(
+            request,
+            self.homepage,
+            nav_rows,
+            [],
+            [],
+        )
+        top_row = next(r for r in payload if r["depth"] == 1)
+        first = top_row["items"][0]
+        self.assertEqual(first["id"], BROKERS_NAV_ID)
+        self.assertEqual(first["name"], BROKERS_NAV_NAME)
+        self.assertTrue(first["href"].endswith("/rating/forex/"))
+        self.assertFalse(first["removable"])
+        self.assertFalse(is_brokers_nav_active(request))
+
+        forex_request = factory.get(reverse("forex_ratings"))
+        self.assertTrue(is_brokers_nav_active(forex_request))
+        forex_payload = build_site_nav_menu_payload(
+            forex_request,
+            self.homepage,
+            nav_rows,
+            [],
+            [],
+        )
+        forex_top = next(r for r in forex_payload if r["depth"] == 1)
+        self.assertTrue(forex_top["items"][0]["active"])
+
+    def test_brokers_nav_first_in_hamburger_payload(self):
+        from home.taxonomy import (
+            BROKERS_NAV_ID,
+            BROKERS_NAV_NAME,
+            build_hamburger_nav_payload,
+        )
+
+        payload = build_hamburger_nav_payload(self.homepage)
+        first = payload["terms"][0]
+        self.assertEqual(first["id"], BROKERS_NAV_ID)
+        self.assertEqual(first["name"], BROKERS_NAV_NAME)
+        self.assertTrue(first["href"].endswith("/rating/forex/"))
+        self.assertTrue(first["inSitemap"])
+        self.assertFalse(first["removable"])
+        self.assertEqual(first["children"], [])
 
     def test_taxonomy_nav_market_news_forex_returns_200(self):
         from home.taxonomy import taxonomy_prefix_path
@@ -1005,16 +1257,134 @@ class InlineEditingApiTests(WagtailPageTestCase):
         self.assertEqual(created.get_parent().pk, self.homepage.pk)
         self.assertFalse(created.live)
 
+    def test_article_preview_requires_staff(self):
+        page = TaggedContentPage(
+            title="Preview Gate Story",
+            slug="preview-gate-story",
+            section_term=self.energy,
+            tile_preview="preview",
+        )
+        self.homepage.add_child(instance=page)
+        page.save_revision()
+        preview_url = reverse("article_preview", kwargs={"article_id": page.pk})
+
+        response = self.client.get(preview_url)
+        self.assertEqual(response.status_code, 302)
+
+        self.client.force_login(self.non_admin)
+        response = self.client.get(preview_url)
+        self.assertEqual(response.status_code, 302)
+
+    def test_article_preview_renders_latest_revision_for_staff(self):
+        page = TaggedContentPage(
+            title="Staff Preview Story",
+            slug="staff-preview-story",
+            section_term=self.energy,
+            tile_preview="preview",
+        )
+        self.homepage.add_child(instance=page)
+        page.save_revision()
+        preview_url = reverse("article_preview", kwargs={"article_id": page.pk})
+
+        self.client.force_login(self.admin_user)
+        response = self.client.get(preview_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Staff Preview Story")
+
+        page.title = "Staff Preview Story Updated"
+        page.save_revision()
+        response = self.client.get(preview_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Staff Preview Story Updated")
+
+    def test_article_preview_shows_body_after_api_patch(self):
+        import json
+
+        page = TaggedContentPage(
+            title="API Preview Body Story",
+            slug="api-preview-body-story",
+            section_term=self.energy,
+            tile_preview="preview",
+        )
+        self.homepage.add_child(instance=page)
+        page.save_revision()
+        preview_url = reverse("article_preview", kwargs={"article_id": page.pk})
+        marker = "UniquePreviewBodyMarker42"
+
+        self.client.force_login(self.admin_user)
+        patch_response = self.client.patch(
+            reverse("article-detail", args=[page.pk]),
+            data=json.dumps(
+                {
+                    "body_json": [
+                        {
+                            "id": "preview-body-block",
+                            "type": "paragraph",
+                            "value": f"<p>{marker}</p>",
+                        }
+                    ]
+                }
+            ),
+            content_type="application/json",
+        )
+        self.assertEqual(patch_response.status_code, 200)
+
+        response = self.client.get(preview_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, marker)
+        self.assertContains(response, "stream-block")
+
+    def test_article_preview_renders_pull_quote_markup(self):
+        import json
+
+        page = TaggedContentPage(
+            title="Pull Quote Preview",
+            slug="pull-quote-preview",
+            section_term=self.energy,
+        )
+        self.homepage.add_child(instance=page)
+        page.save_revision()
+        preview_url = reverse("article_preview", kwargs={"article_id": page.pk})
+        quote_text = "UniquePullQuotePreviewMarker"
+
+        self.client.force_login(self.admin_user)
+        patch_response = self.client.patch(
+            reverse("article-detail", args=[page.pk]),
+            data=json.dumps(
+                {
+                    "body_json": [
+                        {
+                            "id": "quote-block",
+                            "type": "paragraph",
+                            "value": (
+                                f'<blockquote class="scn-article-quote">'
+                                f"<p>{quote_text}</p></blockquote>"
+                            ),
+                        }
+                    ]
+                }
+            ),
+            content_type="application/json",
+        )
+        self.assertEqual(patch_response.status_code, 200)
+
+        response = self.client.get(preview_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, quote_text)
+        self.assertContains(response, "stream-block--paragraph")
+        self.assertContains(response, 'blockquote class="scn-article-quote"')
+
     def test_staff_homepage_renders_inline_chip_delete_controls(self):
         self.client.force_login(self.admin_user)
         response = self.client.get(self.homepage.url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "data-taxonomy-chip-widget")
+        self.assertContains(response, "data-shadcn-taxonomy-site-nav")
         self.assertContains(response, 'data-can-edit="1"')
         self.assertContains(response, "data-create-url")
         self.assertContains(response, "data-delete-url")
         self.assertContains(response, "data-rename-url")
-        self.assertContains(response, "data-after-create-visit=")
+        self.assertContains(response, "site-nav-menu-payload")
+        self.assertNotContains(response, "site-nav__row--depth-3")
 
     def _seed_taxonomy_card_widget(self, slug="market-news"):
         term = TaxonomyTerm.objects.get(slug=slug)
@@ -1395,20 +1765,57 @@ class BentoForexMarketMoversSerializationTests(WagtailPageTestCase):
             {
                 "badge_text": "Features",
                 "heading": "Markets",
+                "grid_columns": 4,
                 "features": [
                     {
                         "header_type": "forex_strip",
                         "title": "",
                         "description": "",
                         "col_span": "4",
+                        "row_span": 2,
                     }
                 ],
             },
             {"request": None},
         )
+        self.assertEqual(payload["grid_columns"], 4)
+        self.assertEqual(payload["grid_rows"], 3)
         self.assertEqual(payload["features"][0]["header_type"], "forex_strip")
+        self.assertEqual(payload["features"][0]["col_span"], 1)
+        self.assertEqual(payload["features"][0]["row_span"], 2)
         self.assertEqual(len(payload["features"][0]["forex_quotes"]), 1)
         self.assertEqual(payload["features"][0]["forex_quotes"][0]["label"], "EUR/USD")
+
+    def test_serialize_bentogrid01_grid_rows_and_col(self):
+        payload = _serialize_bentogrid01(
+            {
+                "badge_text": "Features",
+                "heading": "Grid",
+                "grid_columns": 3,
+                "grid_rows": 2,
+                "row_panel_sizes": [70, 30],
+                "col_panel_sizes_by_row": {"0": [25, 75]},
+                "features": [
+                    {
+                        "header_type": "image",
+                        "title": "Tile",
+                        "description": "",
+                        "col_span": 1,
+                        "row_span": 1,
+                        "row": 1,
+                        "col": 2,
+                    }
+                ],
+            },
+            {"request": None},
+        )
+        self.assertEqual(payload["grid_columns"], 3)
+        self.assertEqual(payload["grid_rows"], 2)
+        self.assertEqual(payload["row_panel_sizes"], [70, 30])
+        self.assertEqual(payload["col_panel_sizes_by_row"], {"0": [25, 75]})
+        feat = payload["features"][0]
+        self.assertEqual(feat["row"], 1)
+        self.assertEqual(feat["col"], 2)
 
     def test_serialize_bentogrid01_market_movers(self):
         MarketTickerRow.objects.create(
@@ -1439,13 +1846,17 @@ class BentoForexMarketMoversSerializationTests(WagtailPageTestCase):
                         "title": "",
                         "description": "",
                         "col_span": "8",
+                        "row_span": 1,
                     }
                 ],
             },
             {"request": request},
         )
+        self.assertEqual(payload["grid_columns"], 3)
         feat = payload["features"][0]
         self.assertEqual(feat["header_type"], "market_movers")
+        self.assertEqual(feat["col_span"], 2)
+        self.assertEqual(feat["row_span"], 1)
         self.assertTrue(feat["market_movers"]["has_data"])
         self.assertEqual(len(feat["market_movers"]["winners"]), 1)
         self.assertEqual(feat["market_movers"]["winners"][0]["symbol"], "WIN")
@@ -1610,4 +2021,52 @@ class AlpacaBarsClientTests(SimpleTestCase):
         self.assertLess(bars[1]["t"], bars[2]["t"])
         self.assertEqual(bars[0]["c"], 1.0)
         self.assertEqual(bars[2]["c"], 3.0)
+
+
+class SitemapAndRobotsTests(WagtailPageTestCase):
+    """XML sitemap index/sections and robots.txt for search engines."""
+
+    def setUp(self):
+        root_page = Page.get_first_root_node()
+        Site.objects.update_or_create(
+            hostname="testserver",
+            defaults={"root_page": root_page, "is_default_site": True},
+        )
+        self.homepage = HomePage.objects.filter(slug="home").first()
+        if self.homepage is None:
+            self.homepage = HomePage(title="Home", slug="home")
+            root_page.add_child(instance=self.homepage)
+        if not self.homepage.live:
+            self.homepage.save_revision().publish()
+
+    def test_sitemap_index_lists_sections(self):
+        response = self.client.get("/sitemap.xml")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/xml")
+        content = response.content.decode()
+        self.assertIn("sitemap-pages.xml", content)
+        self.assertIn("sitemap-static.xml", content)
+
+    def test_sitemap_pages_includes_home(self):
+        response = self.client.get("/sitemap-pages.xml")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/xml")
+        content = response.content.decode()
+        self.assertIn(f"/{self.homepage.slug}/", content)
+
+    def test_sitemap_static_includes_forex_ratings(self):
+        response = self.client.get("/sitemap-static.xml")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/xml")
+        self.assertIn("/rating/forex/", response.content.decode())
+
+    def test_robots_txt_points_at_sitemap(self):
+        response = self.client.get("/robots.txt")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/plain; charset=utf-8")
+        content = response.content.decode()
+        self.assertIn("User-agent: *", content)
+        self.assertIn("Allow: /", content)
+        self.assertIn("Sitemap:", content)
+        self.assertIn("sitemap.xml", content)
 

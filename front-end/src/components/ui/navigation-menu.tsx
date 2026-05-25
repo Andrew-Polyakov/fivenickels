@@ -66,13 +66,18 @@ const NavigationMenuIndicator = React.forwardRef<
 ));
 NavigationMenuIndicator.displayName = NavigationMenuPrimitive.Indicator.displayName;
 
+type NavigationMenuProps = React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.Root> & {
+  /** When false, content renders in each item (for per-trigger dropdown positioning). */
+  viewport?: boolean;
+};
+
 const NavigationMenu = React.forwardRef<
   React.ElementRef<typeof NavigationMenuPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.Root>
->(({ className, children, ...props }, ref) => (
+  NavigationMenuProps
+>(({ className, children, viewport = true, ...props }, ref) => (
   <NavigationMenuPrimitive.Root ref={ref} className={cn('scn-navigation-menu', className)} {...props}>
     {children}
-    <NavigationMenuViewport />
+    {viewport ? <NavigationMenuViewport /> : null}
   </NavigationMenuPrimitive.Root>
 ));
 NavigationMenu.displayName = NavigationMenuPrimitive.Root.displayName;

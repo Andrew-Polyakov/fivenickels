@@ -24,7 +24,8 @@
     ></div>
     <div class="taxonomy-site-nav__fallback">
         {% for row in nav_rows %}
-            <nav class="site-nav__row site-nav__row--depth-{{ row.depth }}" aria-label="{% if row.depth == 1 %}Site sections{% else %}Subsections{% endif %}">
+            {% if row.depth == 1 %}
+            <nav class="site-nav__row site-nav__row--depth-{{ row.depth }}" aria-label="Site sections">
                 {% for term in row.nodes %}
                     {% if term.link_page %}
                         <a
@@ -44,6 +45,32 @@
                     {% endif %}
                 {% endfor %}
             </nav>
+            {% elif row.depth >= 3 %}
+            <nav class="site-nav__row site-nav__row--depth-{{ row.depth }} scn-taxonomy-site-nav__depth-row" aria-label="Subsections">
+                <ul class="scn-taxonomy-site-nav__depth-list">
+                    {% for term in row.nodes %}
+                        <li class="scn-taxonomy-site-nav__depth-item">
+                            {% if term.link_page %}
+                                <a
+                                    href="{% pageurl term.link_page %}"
+                                    class="scn-navigation-menu__trigger scn-navigation-menu__trigger--link{% if term.slug in trail_slugs %} scn-navigation-menu__trigger--active{% elif page and term.link_page_id == page.pk %} scn-navigation-menu__trigger--active{% elif page and page.section_term and page.section_term_id == term.id %} scn-navigation-menu__trigger--active{% endif %}"
+                                    data-site-nav-link="1"
+                                    data-turbo-frame="main"
+                                >{{ term.name }}</a>
+                            {% else %}
+                                {% taxonomy_term_nav_url home_page trail_slugs row.depth term as nav_url %}
+                                <a
+                                    href="{{ nav_url }}"
+                                    class="scn-navigation-menu__trigger scn-navigation-menu__trigger--link{% if term.slug in trail_slugs %} scn-navigation-menu__trigger--active{% elif page and page.section_term and page.section_term_id == term.id %} scn-navigation-menu__trigger--active{% endif %}"
+                                    data-site-nav-link="1"
+                                    data-turbo-frame="main"
+                                >{{ term.name }}</a>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </nav>
+            {% endif %}
         {% endfor %}
     </div>
 </turbo-frame>

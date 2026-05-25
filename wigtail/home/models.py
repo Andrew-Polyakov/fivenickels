@@ -334,6 +334,64 @@ class MarketTickerRow(models.Model):
         return f"{self.symbol} ({self.display_label()})"
 
 
+class CorporateActionEvent(models.Model):
+    ACTION_CASH = "cash_dividend"
+    ACTION_STOCK = "stock_dividend"
+    ACTION_CHOICES = (
+        (ACTION_CASH, "Cash dividend"),
+        (ACTION_STOCK, "Stock dividend"),
+    )
+
+    alpaca_id = models.UUIDField(unique=True)
+    symbol = models.CharField(max_length=32, db_index=True)
+    action_type = models.CharField(max_length=32, choices=ACTION_CHOICES)
+    ex_date = models.DateField(db_index=True)
+    record_date = models.DateField(null=True, blank=True)
+    payable_date = models.DateField(null=True, blank=True)
+    rate = models.DecimalField(max_digits=20, decimal_places=8, null=True, blank=True)
+    special = models.BooleanField(default=False)
+    foreign = models.BooleanField(default=False)
+    fetched_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["ex_date", "symbol"]
+        indexes = [
+            models.Index(fields=["ex_date", "symbol"]),
+        ]
+        verbose_name = "corporate action event"
+        verbose_name_plural = "corporate action events"
+
+    def __str__(self) -> str:
+        return f"{self.symbol} {self.action_type} ex {self.ex_date}"
+
+
+class MarketCalendarDay(models.Model):
+    market = models.CharField(max_length=16, db_index=True)
+    session_date = models.DateField(db_index=True)
+    pre_start = models.DateTimeField(null=True, blank=True)
+    pre_end = models.DateTimeField(null=True, blank=True)
+    core_start = models.DateTimeField(null=True, blank=True)
+    core_end = models.DateTimeField(null=True, blank=True)
+    post_start = models.DateTimeField(null=True, blank=True)
+    post_end = models.DateTimeField(null=True, blank=True)
+    settlement_date = models.DateField(null=True, blank=True)
+    fetched_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["session_date"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["market", "session_date"],
+                name="uniq_market_calendar_day",
+            ),
+        ]
+        verbose_name = "market calendar day"
+        verbose_name_plural = "market calendar days"
+
+    def __str__(self) -> str:
+        return f"{self.market} {self.session_date}"
+
+
 class SubsectionIndexPage(Page):
     section_term = models.ForeignKey(
         TaxonomyTerm,
@@ -614,10 +672,10 @@ class HomePage(RoutablePageMixin, Page):
 
         # Dev / partial DB copies may omit seeded nav roots; lazy-heal only when absent.
         if slugs:
-            from home.taxonomy import TOP_ROW_SLUGS_SET, ensure_top_row_taxonomy_terms
+            from home.taxonomy import TOP_ROW_SEED_SLUGS, ensure_top_row_taxonomy_terms
 
             if (
-                slugs[0] in TOP_ROW_SLUGS_SET
+                slugs[0] in TOP_ROW_SEED_SLUGS
                 and not TaxonomyTerm.objects.filter(slug=slugs[0]).exists()
             ):
                 ensure_top_row_taxonomy_terms()
