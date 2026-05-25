@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "alpaca-feed": {
+      "command": "python3",
+      "args": [
+        "/Users/andewpolyakov/fivenickels/tools/AlpacaFeed/mcp_server.py"
+      ],
+      "env": {}
+    }
+  }
+}
