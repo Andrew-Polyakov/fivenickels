@@ -873,20 +873,22 @@ html[data-reading-theme='day'] .scn-bento-editor__panel-content {
   background: transparent;
 }
 
-/* Bento block — soft sideways vignette (white edges, gentle gray center; no hard 33% bands). */
+/* Bento block — pronounced sideways vignette (white edges, deeper gray center). */
 html[data-reading-theme='day'] .scn-bentogrid01--theme-default,
 html[data-reading-theme='day'] .scn-bentogrid01--theme-inverted,
 html[data-reading-theme='day'] .scn-bentogrid01--theme-accent {
   --bento-strip-bg-bright: #ffffff;
-  --bento-strip-bg-dark: #eef0f3;
+  --bento-strip-bg-dark: #b8bec8;
   --bento-strip-gradient: linear-gradient(
     90deg,
     var(--bento-strip-bg-bright) 0%,
-    #fafbfc 16%,
-    #f5f6f8 32%,
+    #f3f4f6 8%,
+    #e2e6eb 20%,
+    #cbd0d8 36%,
     var(--bento-strip-bg-dark) 50%,
-    #f5f6f8 68%,
-    #fafbfc 84%,
+    #cbd0d8 64%,
+    #e2e6eb 80%,
+    #f3f4f6 92%,
     var(--bento-strip-bg-bright) 100%
   );
   --bento-block-bg: var(--bento-strip-gradient);
@@ -918,15 +920,17 @@ html[data-reading-theme='day'] .scn-bentogrid01--theme-inverted .scn-bentogrid01
 }
 
 html[data-reading-theme='day'] .scn-bentogrid01--theme-accent {
-  --bento-strip-bg-dark: #e8edf3;
+  --bento-strip-bg-dark: #a8b4c4;
   --bento-strip-gradient: linear-gradient(
     90deg,
     #ffffff 0%,
-    #f8fafc 16%,
-    #f1f5f9 32%,
-    #e8edf3 50%,
-    #f1f5f9 68%,
-    #f8fafc 84%,
+    #eef2f7 8%,
+    #d5dce8 20%,
+    #b8c4d4 36%,
+    #a8b4c4 50%,
+    #b8c4d4 64%,
+    #d5dce8 80%,
+    #eef2f7 92%,
     #ffffff 100%
   );
   --bento-bg: #f8fafc;

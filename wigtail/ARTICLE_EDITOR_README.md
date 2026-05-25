@@ -381,6 +381,21 @@ python manage.py shell
 > print(f"Test article ID: {article.id}")
 ```
 
+## XML sitemap (search engines)
+
+Public crawlers can discover pages via:
+
+- `/sitemap.xml` — index (`sitemap-pages.xml`, `sitemap-static.xml`)
+- `/sitemap-pages.xml` — all live, public Wagtail pages
+- `/sitemap-static.xml` — non-page routes (e.g. `/rating/forex/`)
+- `/robots.txt` — includes `Sitemap:` pointing at `/sitemap.xml`
+
+Implementation: `home/sitemaps.py`, routes in `mysite/urls.py`.
+
+### Production Site hostname
+
+Sitemap `<loc>` URLs use the Wagtail **Site** hostname (Admin → Settings → Sites). For Search Console or Bing Webmaster Tools, set the default site to your production domain (port `443` for HTTPS). Leaving `localhost` produces crawl URLs that search engines cannot use.
+
 ## License
 
 Part of the Wigtail/FiveNickels project.

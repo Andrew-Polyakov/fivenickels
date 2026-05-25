@@ -1978,15 +1978,17 @@ body.template-taxonomy-drilldown .scn-bentogrid01__inner,
 
 html[data-reading-theme="day"] .scn-bentogrid01--theme-default {
   --bento-strip-bg-bright: #ffffff;
-  --bento-strip-bg-dark: #eef0f3;
+  --bento-strip-bg-dark: #b8bec8;
   --bento-strip-gradient: linear-gradient(
     90deg,
     var(--bento-strip-bg-bright) 0%,
-    #fafbfc 16%,
-    #f5f6f8 32%,
+    #f3f4f6 8%,
+    #e2e6eb 20%,
+    #cbd0d8 36%,
     var(--bento-strip-bg-dark) 50%,
-    #f5f6f8 68%,
-    #fafbfc 84%,
+    #cbd0d8 64%,
+    #e2e6eb 80%,
+    #f3f4f6 92%,
     var(--bento-strip-bg-bright) 100%
   );
 }
