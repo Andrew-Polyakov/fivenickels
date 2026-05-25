@@ -22,10 +22,11 @@ import { Select } from '../components/ui/select';
 import { ScrollArea } from '../components/ui/scroll-area';
 import { ToggleGroup, ToggleGroupItem } from '../components/ui/toggle-group';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
-import { RteToolbar, TABLE_EXTENSIONS } from '../components/ui/rte-editor';
+import { ARTICLE_RTE_EDITOR_PROPS, RteToolbar, TABLE_EXTENSIONS } from '../components/ui/rte-editor';
+import { SCN_PROSE } from '../components/ui/typography';
+import { cn } from '../lib/utils';
 import { ARTICLE_QUOTE_EXTENSION } from './tiptap-article-quote';
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from '../components/ui/empty';
-import { cn } from '../lib/utils';
 import { ScnToast } from '../components/scn-toast';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -815,6 +816,7 @@ function ParagraphEditor({ block, apiBase, onChange }: {
   const editorRef = React.useRef<Editor | null>(null);
 
   const editor = useEditor({
+    ...ARTICLE_RTE_EDITOR_PROPS,
     extensions: [
       StarterKit.configure({ heading: { levels: [2, 3] }, blockquote: false }),
       ARTICLE_QUOTE_EXTENSION,
@@ -866,7 +868,7 @@ function ParagraphEditor({ block, apiBase, onChange }: {
         />
       )}
       <ScrollArea className="scn-editor-block-scroll scn-editor-block-scroll--paragraph">
-        <EditorContent editor={editor} className="scn-rte-content" />
+        <EditorContent editor={editor} className={cn('scn-rte-content', SCN_PROSE)} />
       </ScrollArea>
       <input ref={imageInputRef} type="file" accept="image/*" className="scn-sr-only"
         onChange={e => { const f = e.target.files?.[0]; if (f) handleImageFile(f); e.target.value = ''; }} />

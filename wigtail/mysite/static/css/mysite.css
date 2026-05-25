@@ -3770,11 +3770,7 @@ html:not([data-reading-theme="day"]) .tagged-content__body .stream-block--headin
 
 
 
-.stream-block--paragraph .rich-text p {
-
-    margin: 0 0 0.75rem;
-
-}
+/* Paragraph spacing: .scn-prose (see RTE typography section) */
 
 
 
@@ -4901,6 +4897,144 @@ taxonomy-chip-widget {
 
 }
 
+.tagged-content__header-grid {
+
+    display: grid;
+
+    grid-template-columns: auto minmax(0, 1fr) auto;
+
+    align-items: stretch;
+
+    gap: 0 1rem;
+
+}
+
+/* Full-height vertical rule at the left of the header (matches header-sep / root nav weight). */
+.tagged-content__header-lead-sep {
+
+    align-self: stretch;
+
+    width: 3px;
+
+    min-height: 100%;
+
+    margin: 0;
+
+    padding: 0;
+
+    border: none;
+
+    border-radius: 0;
+
+    background: rgba(var(--sc-rgb-glow), 0.88);
+
+    box-shadow:
+        0 0 14px rgba(var(--sc-rgb-glow), 0.48),
+        0 0 6px rgba(var(--sc-rgb-glow), 0.32);
+
+}
+
+.tagged-content__header-main {
+
+    min-width: 0;
+
+}
+
+.tagged-content__header-rail {
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: flex-end;
+
+    align-self: stretch;
+
+    flex-shrink: 0;
+
+    justify-content: flex-start;
+
+    gap: 0.65rem;
+
+    min-width: max-content;
+
+    padding-left: 0.25rem;
+
+}
+
+.tagged-content__header-rail .tagged-content__share-mount {
+
+    margin-top: auto;
+
+}
+
+.tagged-content__category-chip {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    align-self: flex-start;
+
+    flex: 0 0 auto;
+
+    max-width: 12rem;
+
+    padding: 0.35rem 0.85rem;
+
+    border-radius: 999px;
+
+    font-family: var(--font-sans);
+
+    font-size: 0.7rem;
+
+    font-weight: 600;
+
+    letter-spacing: 0.06em;
+
+    line-height: 1.25;
+
+    text-transform: uppercase;
+
+    text-decoration: none;
+
+    text-align: center;
+
+    color: var(--color-bg);
+
+    background: linear-gradient(135deg, var(--neon-blue) 0%, var(--neon-blue-deep) 100%);
+
+    box-shadow: 0 0 12px var(--neon-blue-glow);
+
+}
+
+a.tagged-content__category-chip:hover,
+a.tagged-content__category-chip:focus-visible {
+
+    color: var(--color-bg);
+
+    box-shadow: 0 0 16px var(--neon-blue-glow);
+
+}
+
+html[data-reading-theme="day"] .tagged-content__header-lead-sep {
+
+    background: #000000;
+
+    box-shadow: none;
+
+}
+
+html[data-reading-theme="day"] .tagged-content__category-chip {
+
+    color: #ffffff;
+
+    background: linear-gradient(135deg, var(--neon-blue) 0%, var(--neon-blue-deep) 100%);
+
+    box-shadow: 0 0 10px var(--neon-blue-glow);
+
+}
+
 .tagged-content__title-row {
 
     display: flex;
@@ -4912,16 +5046,6 @@ taxonomy-chip-widget {
     flex-wrap: wrap;
 
     gap: 0.75rem;
-
-}
-
-.tagged-content__title-row .markdown-tile__taxonomy {
-
-    flex: 0 0 auto;
-
-    align-self: center;
-
-    margin: 0;
 
 }
 
@@ -5029,7 +5153,9 @@ taxonomy-chip-widget {
 
     flex: 0 0 auto;
 
-    margin-left: auto;
+    margin-left: 0;
+
+    align-self: flex-end;
 
 }
 
@@ -9041,6 +9167,205 @@ body.page-article-editor #shadcn-article-editor-root {
 
 .scn-rte-link-input:focus { border-color: var(--color-slime); }
 
+/* shadcn/ui Typography — https://ui.shadcn.com/docs/components/radix/typography */
+.scn-prose,
+.scn-rte-content .ProseMirror,
+.stream-block--paragraph .rich-text,
+.scn-taxonomy-content__paragraph,
+.scn-bento-editor__richtext-preview {
+    --scn-prose-leading: 1.75;
+}
+
+.scn-prose h2,
+.scn-rte-content .ProseMirror h2,
+.stream-block--paragraph .rich-text h2,
+.scn-taxonomy-content__paragraph h2,
+.scn-bento-editor__richtext-preview h2 {
+    scroll-margin-top: 5rem;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-border-subtle);
+    font-size: 1.875rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+    color: inherit;
+}
+
+.scn-prose h2:first-child,
+.scn-rte-content .ProseMirror h2:first-child,
+.stream-block--paragraph .rich-text h2:first-child,
+.scn-taxonomy-content__paragraph h2:first-child,
+.scn-bento-editor__richtext-preview h2:first-child {
+    margin-top: 0;
+}
+
+.scn-prose h3,
+.scn-rte-content .ProseMirror h3,
+.stream-block--paragraph .rich-text h3,
+.scn-taxonomy-content__paragraph h3,
+.scn-bento-editor__richtext-preview h3 {
+    scroll-margin-top: 5rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    line-height: 1.3;
+    color: inherit;
+}
+
+.scn-prose p,
+.scn-rte-content .ProseMirror p,
+.stream-block--paragraph .rich-text p,
+.scn-taxonomy-content__paragraph p,
+.scn-bento-editor__richtext-preview p {
+    margin: 0;
+    line-height: var(--scn-prose-leading);
+}
+
+.scn-prose p:not(:first-child),
+.scn-rte-content .ProseMirror p:not(:first-child),
+.stream-block--paragraph .rich-text p:not(:first-child),
+.scn-taxonomy-content__paragraph p:not(:first-child),
+.scn-bento-editor__richtext-preview p:not(:first-child) {
+    margin-top: 1.5rem;
+}
+
+.scn-prose ul,
+.scn-rte-content .ProseMirror ul,
+.stream-block--paragraph .rich-text ul,
+.scn-taxonomy-content__paragraph ul,
+.scn-bento-editor__richtext-preview ul {
+    margin: 1.5rem 0;
+    margin-left: 1.5rem;
+    padding-left: 0;
+    list-style-type: disc;
+}
+
+.scn-prose ol,
+.scn-rte-content .ProseMirror ol,
+.stream-block--paragraph .rich-text ol,
+.scn-taxonomy-content__paragraph ol,
+.scn-bento-editor__richtext-preview ol {
+    margin: 1.5rem 0;
+    margin-left: 1.5rem;
+    padding-left: 0;
+    list-style-type: decimal;
+}
+
+.scn-prose li,
+.scn-rte-content .ProseMirror li,
+.stream-block--paragraph .rich-text li,
+.scn-taxonomy-content__paragraph li,
+.scn-bento-editor__richtext-preview li {
+    margin-top: 0.5rem;
+}
+
+.scn-prose li:first-child,
+.scn-rte-content .ProseMirror li:first-child,
+.stream-block--paragraph .rich-text li:first-child,
+.scn-taxonomy-content__paragraph li:first-child,
+.scn-bento-editor__richtext-preview li:first-child {
+    margin-top: 0;
+}
+
+.scn-prose a,
+.scn-rte-content .ProseMirror a,
+.stream-block--paragraph .rich-text a,
+.scn-taxonomy-content__paragraph a,
+.scn-bento-editor__richtext-preview a {
+    color: var(--color-slime);
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+}
+
+.scn-prose strong,
+.scn-rte-content .ProseMirror strong,
+.stream-block--paragraph .rich-text strong,
+.scn-taxonomy-content__paragraph strong,
+.scn-bento-editor__richtext-preview strong {
+    font-weight: 700;
+}
+
+.scn-prose em,
+.scn-rte-content .ProseMirror em,
+.stream-block--paragraph .rich-text em,
+.scn-taxonomy-content__paragraph em,
+.scn-bento-editor__richtext-preview em {
+    font-style: italic;
+}
+
+.scn-prose code,
+.scn-rte-content .ProseMirror code,
+.stream-block--paragraph .rich-text code,
+.scn-taxonomy-content__paragraph code,
+.scn-bento-editor__richtext-preview code {
+    position: relative;
+    border-radius: 0.25rem;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 0.2rem 0.3rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+html[data-reading-theme="day"] .scn-prose code,
+html[data-reading-theme="day"] .scn-rte-content .ProseMirror code,
+html[data-reading-theme="day"] .stream-block--paragraph .rich-text code,
+html[data-reading-theme="day"] .scn-taxonomy-content__paragraph code,
+html[data-reading-theme="day"] .scn-bento-editor__richtext-preview code {
+    background: rgba(0, 0, 0, 0.06);
+}
+
+.scn-prose table,
+.scn-rte-content .ProseMirror table,
+.stream-block--paragraph .rich-text table,
+.scn-taxonomy-content__paragraph table,
+.scn-bento-editor__richtext-preview table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1.5rem 0;
+    font-size: 0.875rem;
+    table-layout: fixed;
+}
+
+.scn-prose th,
+.scn-prose td,
+.scn-rte-content .ProseMirror th,
+.scn-rte-content .ProseMirror td,
+.stream-block--paragraph .rich-text th,
+.stream-block--paragraph .rich-text td,
+.scn-taxonomy-content__paragraph th,
+.scn-taxonomy-content__paragraph td,
+.scn-bento-editor__richtext-preview th,
+.scn-bento-editor__richtext-preview td {
+    border: 1px solid var(--color-border-subtle);
+    padding: 0.4em 0.6em;
+    vertical-align: top;
+    min-width: 2em;
+    position: relative;
+}
+
+.scn-prose th,
+.scn-rte-content .ProseMirror th,
+.stream-block--paragraph .rich-text th,
+.scn-taxonomy-content__paragraph th,
+.scn-bento-editor__richtext-preview th {
+    background: rgba(255, 255, 255, 0.04);
+    font-weight: 600;
+    text-align: left;
+}
+
+html[data-reading-theme="day"] .scn-prose th,
+html[data-reading-theme="day"] .scn-rte-content .ProseMirror th,
+html[data-reading-theme="day"] .stream-block--paragraph .rich-text th,
+html[data-reading-theme="day"] .scn-taxonomy-content__paragraph th,
+html[data-reading-theme="day"] .scn-bento-editor__richtext-preview th {
+    background: rgba(0, 0, 0, 0.04);
+}
+
 /* Tiptap RTE content area */
 .scn-rte-content {
     border: 1px solid var(--color-border-subtle);
@@ -9056,18 +9381,11 @@ body.page-article-editor #shadcn-article-editor-root {
 .scn-rte-content .ProseMirror {
     min-height: 80px; padding: 0.5rem 0.65rem;
     color: var(--color-text);
-    font-size: 0.9375rem; line-height: 1.65; outline: none;
+    font-size: 0.9375rem;
+    line-height: var(--scn-prose-leading, 1.75);
+    outline: none;
 }
 
-.scn-rte-content .ProseMirror h2 { font-size: 1.25rem; font-weight: 700; margin: 0.5em 0 0.25em; }
-.scn-rte-content .ProseMirror h3 { font-size: 1.0625rem; font-weight: 700; margin: 0.5em 0 0.25em; }
-.scn-rte-content .ProseMirror p  { margin: 0 0 0.5em; }
-.scn-rte-content .ProseMirror p:last-child { margin-bottom: 0; }
-.scn-rte-content .ProseMirror ul, .scn-rte-content .ProseMirror ol { margin: 0.25em 0 0.5em 1.25em; }
-.scn-rte-content .ProseMirror li { margin-bottom: 0.15em; }
-.scn-rte-content .ProseMirror a  { color: var(--color-slime); text-decoration: underline; }
-.scn-rte-content .ProseMirror strong { font-weight: 700; }
-.scn-rte-content .ProseMirror em { font-style: italic; }
 .scn-rte-content .ProseMirror p.is-editor-empty:first-child::before {
     content: attr(data-placeholder);
     float: left; color: var(--color-text-muted, #888); pointer-events: none; height: 0;
@@ -9143,27 +9461,7 @@ html[data-reading-theme="day"] .scn-rte-content .ProseMirror blockquote.scn-arti
     font-family: Georgia, 'Times New Roman', serif;
 }
 
-/* RTE tables */
-.scn-rte-content .ProseMirror table {
-    border-collapse: collapse;
-    width: 100%;
-    margin: 0.75em 0;
-    font-size: 0.875rem;
-    table-layout: fixed;
-}
-.scn-rte-content .ProseMirror th,
-.scn-rte-content .ProseMirror td {
-    border: 1px solid var(--color-border-subtle);
-    padding: 0.4em 0.6em;
-    vertical-align: top;
-    min-width: 2em;
-    position: relative;
-}
-.scn-rte-content .ProseMirror th {
-    background: rgba(255, 255, 255, 0.04);
-    font-weight: 600;
-    text-align: left;
-}
+/* RTE table editing (editor-only) */
 .scn-rte-content .ProseMirror .selectedCell::after {
     content: '';
     position: absolute;

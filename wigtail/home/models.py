@@ -633,6 +633,15 @@ class TaggedContentPage(SeoMetaFields, Page):
         context["article_share_url"] = share_url
         context["article_share_payload"] = {"shareUrl": share_url or ""}
         context["article_tags"] = article_tags_context(self, routable_home)
+        from home.article_tags import section_term_public_href
+        from home.taxonomy import trail_slugs_from_section_term
+
+        context["article_section_href"] = section_term_public_href(
+            self.section_term, routable_home
+        )
+        context["article_section_trail_slugs"] = trail_slugs_from_section_term(
+            self.section_term
+        )
         context.update(article_dateline_context(self))
         return context
 

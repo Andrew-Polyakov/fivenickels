@@ -26,7 +26,8 @@ import { Select } from '../components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '../components/ui/toggle-group';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { Command, CommandGroup, CommandItem, CommandList } from '../components/ui/command';
-import { RteToolbar, TABLE_EXTENSIONS } from '../components/ui/rte-editor';
+import { ARTICLE_RTE_EDITOR_PROPS, RteToolbar, TABLE_EXTENSIONS } from '../components/ui/rte-editor';
+import { SCN_PROSE } from '../components/ui/typography';
 import { ARTICLE_QUOTE_EXTENSION } from './tiptap-article-quote';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '../components/ui/carousel';
 import { Slider } from '../components/ui/slider';
@@ -1345,6 +1346,7 @@ function ParagraphEditor({ block, uploadUrl, onChange }: {
   const editorRef = React.useRef<Editor | null>(null);
 
   const editor = useEditor({
+    ...ARTICLE_RTE_EDITOR_PROPS,
     extensions: [
       StarterKit.configure({ heading: { levels: [2, 3] }, blockquote: false }),
       ARTICLE_QUOTE_EXTENSION,
@@ -1387,7 +1389,7 @@ function ParagraphEditor({ block, uploadUrl, onChange }: {
   return (
     <div className={`scn-rte-wrap${focused ? ' scn-rte-wrap--active' : ''}`}>
       {editor && <RteToolbar editor={editor} onInsertImage={() => imageInputRef.current?.click()} />}
-      <EditorContent editor={editor} className="scn-rte-content" />
+      <EditorContent editor={editor} className={cn('scn-rte-content', SCN_PROSE)} />
       <input ref={imageInputRef} type="file" accept="image/*" className="scn-sr-only"
         onChange={e => { const f = e.target.files?.[0]; if (f) handleImageFile(f); e.target.value = ''; }} />
     </div>
@@ -2139,6 +2141,7 @@ function BentoTileRichTextEditor({ feat, onChange }: {
   const [editing, setEditing] = React.useState(false);
 
   const editor = useEditor({
+    ...ARTICLE_RTE_EDITOR_PROPS,
     extensions: [
       StarterKit.configure({ heading: { levels: [2, 3] }, blockquote: false }),
       ARTICLE_QUOTE_EXTENSION,
@@ -2170,10 +2173,10 @@ function BentoTileRichTextEditor({ feat, onChange }: {
       {editing ? (
         <div className="scn-rte-wrap scn-rte-wrap--active">
           {editor && <RteToolbar editor={editor} />}
-          <EditorContent editor={editor} className="scn-rte-content" />
+          <EditorContent editor={editor} className={cn('scn-rte-content', SCN_PROSE)} />
         </div>
       ) : (
-        <div className="scn-taxonomy-content__paragraph"
+        <div className={cn('scn-taxonomy-content__paragraph', SCN_PROSE)}
           dangerouslySetInnerHTML={{ __html: feat.html || '<p style="color:var(--muted-foreground)">Empty rich text tile</p>' }} />
       )}
     </div>
@@ -2233,7 +2236,7 @@ function BentoFeaturePreview({ feat, resolved, carouselFrames, linkable, stockPr
 
   if (feat.header_type === 'richtext') {
     return (
-      <div className="scn-bento-editor__richtext-preview scn-taxonomy-content__paragraph"
+      <div className={cn('scn-bento-editor__richtext-preview', 'scn-taxonomy-content__paragraph', SCN_PROSE)}
         dangerouslySetInnerHTML={{ __html: feat.html || '<p style="color:var(--color-text-muted)">Empty rich text</p>' }}
       />
     );
@@ -3739,7 +3742,7 @@ function ReadOnlyBlock({
 
   if (block.type === 'paragraph') {
     return (
-      <div className="scn-taxonomy-content__paragraph"
+      <div className={cn('scn-taxonomy-content__paragraph', SCN_PROSE)}
         dangerouslySetInnerHTML={{ __html: block.html }} />
     );
   }

@@ -8,6 +8,17 @@ import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import { ARTICLE_QUOTE_EXTENSION } from '../../app/tiptap-article-quote';
+import { cn } from '../../lib/utils';
+import { SCN_PROSE } from './typography';
+
+/** Shared Tiptap editor chrome for article paragraph / bento rich text. */
+export const ARTICLE_RTE_EDITOR_PROPS = {
+  editorProps: {
+    attributes: {
+      class: SCN_PROSE,
+    },
+  },
+} as const;
 
 // ─── Table extensions (shared with ParagraphEditor) ───────────────────────────
 
@@ -244,6 +255,7 @@ export function RteEditor({ initialValue, onChange, placeholder }: {
 }) {
   const [focused, setFocused] = React.useState(false);
   const editor = useEditor({
+    ...ARTICLE_RTE_EDITOR_PROPS,
     extensions: [
       StarterKit.configure({ heading: { levels: [2, 3] }, blockquote: false }),
       ARTICLE_QUOTE_EXTENSION,
@@ -262,7 +274,7 @@ export function RteEditor({ initialValue, onChange, placeholder }: {
   return (
     <div className={`scn-rte-wrap${focused ? ' scn-rte-wrap--active' : ''}`}>
       {editor && <RteToolbar editor={editor} />}
-      <EditorContent editor={editor} className="scn-rte-content" />
+      <EditorContent editor={editor} className={cn('scn-rte-content', SCN_PROSE)} />
     </div>
   );
 }

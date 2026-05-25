@@ -3111,6 +3111,12 @@ turbo-frame#site-nav.site-nav {
   box-shadow: none;
 }
 
+/* SSR fallback is replaced by React; avoid layout flash while the host is binding. */
+turbo-frame#site-nav:has(.site-nav__menu-host[data-shadcn-taxonomy-site-nav-bound='1'])
+  .taxonomy-site-nav__fallback {
+  display: none;
+}
+
 /* Root taxonomy row: flat triggers on carousel-placeholder shell (no outer glow). */
 .site-nav__row.scn-taxonomy-site-nav__unified {
   position: sticky;

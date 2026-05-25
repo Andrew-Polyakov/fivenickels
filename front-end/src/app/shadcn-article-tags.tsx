@@ -50,10 +50,33 @@ function readTagsPayload(jsonId: string): ArticleTagPayload[] | null {
 
 const tagRoots = new WeakMap<HTMLElement, Root>();
 
+function isTagsHostMounted(host: HTMLElement): boolean {
+  return Boolean(host.querySelector('.tagged-content__meta-tags'));
+}
+
+export function unmountShadcnArticleTags(root: ParentNode = document): void {
+  root.querySelectorAll<HTMLElement>('[data-shadcn-article-tags]').forEach((host) => {
+    const reactRoot = tagRoots.get(host);
+    if (reactRoot) {
+      reactRoot.unmount();
+      tagRoots.delete(host);
+    }
+    delete host.dataset['shadcnArticleTagsBound'];
+  });
+}
+
 export function mountShadcnArticleTags(): void {
   document.querySelectorAll<HTMLElement>('[data-shadcn-article-tags]').forEach((host) => {
-    if (host.dataset['shadcnArticleTagsBound'] === '1') {
+    if (host.dataset['shadcnArticleTagsBound'] === '1' && isTagsHostMounted(host)) {
       return;
+    }
+    if (host.dataset['shadcnArticleTagsBound'] === '1') {
+      delete host.dataset['shadcnArticleTagsBound'];
+      const stale = tagRoots.get(host);
+      if (stale) {
+        stale.unmount();
+        tagRoots.delete(host);
+      }
     }
     const jsonId = host.dataset['tagsJsonId'];
     if (!jsonId) {

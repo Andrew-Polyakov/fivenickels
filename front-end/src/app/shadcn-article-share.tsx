@@ -107,10 +107,33 @@ function readSharePayload(jsonId: string): ArticleSharePayload | null {
 
 const shareRoots = new WeakMap<HTMLElement, Root>();
 
+function isShareHostMounted(host: HTMLElement): boolean {
+  return Boolean(host.querySelector('.tagged-content__share'));
+}
+
+export function unmountShadcnArticleShare(root: ParentNode = document): void {
+  root.querySelectorAll<HTMLElement>('[data-shadcn-article-share]').forEach((host) => {
+    const reactRoot = shareRoots.get(host);
+    if (reactRoot) {
+      reactRoot.unmount();
+      shareRoots.delete(host);
+    }
+    delete host.dataset['shadcnArticleShareBound'];
+  });
+}
+
 export function mountShadcnArticleShare(): void {
   document.querySelectorAll<HTMLElement>('[data-shadcn-article-share]').forEach((host) => {
-    if (host.dataset['shadcnArticleShareBound'] === '1') {
+    if (host.dataset['shadcnArticleShareBound'] === '1' && isShareHostMounted(host)) {
       return;
+    }
+    if (host.dataset['shadcnArticleShareBound'] === '1') {
+      delete host.dataset['shadcnArticleShareBound'];
+      const stale = shareRoots.get(host);
+      if (stale) {
+        stale.unmount();
+        shareRoots.delete(host);
+      }
     }
     const jsonId = host.dataset['shareJsonId'];
     if (!jsonId) {

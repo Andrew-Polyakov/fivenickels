@@ -408,6 +408,38 @@ def term_child_nav_href(
     return _taxonomy_href(home_page, base + [child_term.slug])
 
 
+def trail_terms_from_section_term(term: TaxonomyTerm | None) -> list:
+    """Ancestor chain for a page section term (depth >= 1), inclusive."""
+    if term is None:
+        return []
+    from home.gics_sectors import GICS_SECTOR_SLUGS
+    from home.models import TaxonomyTerm
+
+    ancestors = list(term.get_ancestors().filter(depth__gte=1))
+    trail = ancestors + [term]
+    if term.slug in GICS_SECTOR_SLUGS:
+        mnews = TaxonomyTerm.objects.filter(slug=MARKET_NEWS_SLUG, is_visible=True).first()
+        if mnews is not None and all(t.pk != mnews.pk for t in trail):
+            return [mnews, term]
+    return trail
+
+
+def trail_slugs_from_section_term(term: TaxonomyTerm | None) -> list[str]:
+    return [t.slug for t in trail_terms_from_section_term(term)]
+
+
+def build_site_nav_context_from_trail(home_page: HomePage, trail: list) -> dict:
+    nav_rows = build_nav_rows(trail, home_page=home_page)
+    return {
+        "home_page": home_page,
+        "taxonomy_prefix": taxonomy_prefix_path(home_page),
+        "nav_rows": nav_rows,
+        "active_node": trail[-1] if trail else None,
+        "trail": trail,
+        "trail_slugs": [n.slug for n in trail],
+    }
+
+
 def term_is_nav_active(term, trail_slugs: list[str], page) -> bool:
     if term.slug in trail_slugs:
         return True
@@ -416,8 +448,12 @@ def term_is_nav_active(term, trail_slugs: list[str], page) -> bool:
             return True
         spec = getattr(page, "specific", page)
         st = getattr(spec, "section_term", None)
-        if st is not None and st.id == term.id:
-            return True
+        if st is not None:
+            if st.id == term.id:
+                return True
+            # Article pages: highlight the matching depth-1 root tab.
+            if term.depth == 1 and st.path.startswith(term.path):
+                return True
     return False
 
 
@@ -649,16 +685,7 @@ def build_site_nav_context(
     trail = resolve_taxonomy_trail(slug_parts, home_page=home_page, require_content=require_content)
     if trail is None:
         raise Http404("Unknown taxonomy path")
-    active = trail[-1] if trail else None
-    nav_rows = build_nav_rows(trail, home_page=home_page)
-    return {
-        "home_page": home_page,
-        "taxonomy_prefix": taxonomy_prefix_path(home_page),
-        "nav_rows": nav_rows,
-        "active_node": active,
-        "trail": trail,
-        "trail_slugs": [n.slug for n in trail],
-    }
+    return build_site_nav_context_from_trail(home_page, trail)
 
 
 def get_site_nav_template_context(request, home_page: HomePage) -> dict:
@@ -669,6 +696,13 @@ def get_site_nav_template_context(request, home_page: HomePage) -> dict:
         except Http404:
             slug_parts = []
     if not slug_parts:
+        page = resolve_page_for_nav(request)
+        if page is not None:
+            spec = getattr(page, "specific", page)
+            st = getattr(spec, "section_term", None)
+            trail = trail_terms_from_section_term(st)
+            if trail:
+                return build_site_nav_context_from_trail(home_page, trail)
         roots = list(taxonomy_roots_for_nav(home_page))
         return {
             "home_page": home_page,

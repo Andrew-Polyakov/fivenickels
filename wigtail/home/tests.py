@@ -550,9 +550,14 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         self.assertLess(lede_pos, sep_pos)
         self.assertLess(sep_pos, body_pos)
 
-    def test_tagged_article_page_taxonomy_in_title_row_with_datelines(self):
+    def test_tagged_article_page_section_chip_in_header_rail_with_datelines(self):
         r = self.client.get(self.page_e1.url)
         self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "tagged-content__header-grid")
+        self.assertContains(r, "tagged-content__header-rail")
+        self.assertContains(r, "tagged-content__category-chip")
+        self.assertContains(r, "tagged-content__header-lead-sep")
+        self.assertNotContains(r, "tagged-content__header-rail-sep")
         self.assertContains(r, "tagged-content__meta-row")
         self.assertContains(r, "tagged-content__meta-start")
         self.assertContains(r, "data-shadcn-article-datelines")
@@ -567,8 +572,47 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         title_row_start = content.find("tagged-content__title-row")
         meta_row_start = content.find("tagged-content__meta-row")
         title_chunk = content[title_row_start:meta_row_start]
-        self.assertIn("markdown-tile__taxonomy", title_chunk)
-        self.assertIn("Energy", title_chunk)
+        self.assertNotIn("markdown-tile__taxonomy", title_chunk)
+        self.assertNotIn("tagged-content__category-chip", title_chunk)
+        self.assertContains(r, 'href="/energy-hub/"')
+        rail_start = content.find("tagged-content__header-rail")
+        header_sep_start = content.find("tagged-content__header-sep")
+        rail_chunk = content[rail_start:header_sep_start]
+        self.assertIn("Energy", rail_chunk)
+        self.assertIn("tagged-content__category-chip", rail_chunk)
+
+    def test_site_nav_selects_trail_from_article_section_term(self):
+        from django.test import RequestFactory
+
+        from home.taxonomy import (
+            get_site_nav_template_context,
+            term_is_nav_active,
+            trail_slugs_from_section_term,
+        )
+
+        rf = RequestFactory()
+        request = rf.get(self.page_e1.url)
+        ctx = get_site_nav_template_context(request, self.homepage)
+        expected_slugs = trail_slugs_from_section_term(self.energy)
+        self.assertEqual(ctx["trail_slugs"], expected_slugs)
+        self.assertTrue(expected_slugs)
+        roots = ctx["nav_rows"][0]["nodes"]
+        root_slugs = [t.slug for t in roots]
+        active_roots = [
+            t.slug
+            for t in roots
+            if term_is_nav_active(t, ctx["trail_slugs"], self.page_e1)
+        ]
+        self.assertEqual(len(active_roots), 1)
+        from home.gics_sectors import GICS_SECTOR_SLUGS
+        from home.taxonomy import MARKET_NEWS_SLUG
+
+        if self.energy.slug in GICS_SECTOR_SLUGS:
+            self.assertEqual(active_roots[0], MARKET_NEWS_SLUG)
+        elif self.energy.depth == 1:
+            self.assertEqual(active_roots[0], "energy")
+        else:
+            self.assertIn(active_roots[0], expected_slugs)
 
     def test_tagged_article_page_share_button_uses_stable_permalink(self):
         self.page_e1.canonical_url = "https://fivenickels.com/articles/energy-one/"
@@ -584,7 +628,10 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         meta_row_start = content.find("tagged-content__meta-row")
         intro_start = content.find("tagged-content__intro")
         self.assertNotIn("tagged-content__share", content[title_row_start:meta_row_start])
-        self.assertIn("tagged-content__share", content[meta_row_start:intro_start])
+        rail_start = content.find("tagged-content__header-rail")
+        intro_start = content.find("tagged-content__intro")
+        self.assertGreater(rail_start, -1)
+        self.assertIn("tagged-content__share", content[rail_start:intro_start])
 
     def test_home_sector_nav_includes_subsection_url(self):
         from home.taxonomy import taxonomy_prefix_path

@@ -406,6 +406,36 @@
         });
     }
 
+    function initArticleMetaMounts() {
+        if (window.mountShadcnArticleDatelines && typeof window.mountShadcnArticleDatelines === "function") {
+            window.mountShadcnArticleDatelines();
+        }
+        if (window.mountShadcnArticleTags && typeof window.mountShadcnArticleTags === "function") {
+            window.mountShadcnArticleTags();
+        }
+        if (window.mountShadcnArticleShare && typeof window.mountShadcnArticleShare === "function") {
+            window.mountShadcnArticleShare();
+        }
+    }
+
+    /** Article datelines/tags/share mount with the ES module bundle; retry briefly after load. */
+    function scheduleArticleMetaMounts() {
+        var delays = [0, 50, 150, 400];
+        delays.forEach(function (ms) {
+            window.setTimeout(initArticleMetaMounts, ms);
+        });
+    }
+
+    function unmountArticleMetaMounts(root) {
+        var scope = root || document;
+        if (window.unmountShadcnArticleTags && typeof window.unmountShadcnArticleTags === "function") {
+            window.unmountShadcnArticleTags(scope);
+        }
+        if (window.unmountShadcnArticleShare && typeof window.unmountShadcnArticleShare === "function") {
+            window.unmountShadcnArticleShare(scope);
+        }
+    }
+
     function initShadcnCardLayouts() {
         if (window.mountShadcnCardLayouts && typeof window.mountShadcnCardLayouts === "function") {
             window.mountShadcnCardLayouts();
@@ -419,15 +449,7 @@
         if (window.mountShadcnBreadcrumbs && typeof window.mountShadcnBreadcrumbs === "function") {
             window.mountShadcnBreadcrumbs();
         }
-        if (window.mountShadcnArticleDatelines && typeof window.mountShadcnArticleDatelines === "function") {
-            window.mountShadcnArticleDatelines();
-        }
-        if (window.mountShadcnArticleTags && typeof window.mountShadcnArticleTags === "function") {
-            window.mountShadcnArticleTags();
-        }
-        if (window.mountShadcnArticleShare && typeof window.mountShadcnArticleShare === "function") {
-            window.mountShadcnArticleShare();
-        }
+        initArticleMetaMounts();
     }
 
     function remountShadcnWidgets() {
@@ -666,6 +688,7 @@
         initMarketMoversFilter();
         initReadingThemeToggle();
         scheduleReadingThemeToggleMount();
+        scheduleArticleMetaMounts();
     }
 
     function handleTurboBeforeFetchResponse(e) {
@@ -688,6 +711,10 @@
         var newBody = e.detail && e.detail.newBody;
         if (newBody && newBody.className) {
             document.body.className = newBody.className;
+        }
+        var mainFrame = document.querySelector("turbo-frame#main");
+        if (mainFrame) {
+            unmountArticleMetaMounts(mainFrame);
         }
     }
 
@@ -962,6 +989,7 @@
         initReadingThemeToggle();
         initProfileHeaderButton();
         scheduleReadingThemeToggleMount();
+        scheduleArticleMetaMounts();
     });
 
     document.addEventListener("turbo:load", function () {
@@ -982,6 +1010,7 @@
         initReadingThemeToggle();
         initProfileHeaderButton();
         scheduleReadingThemeToggleMount();
+        scheduleArticleMetaMounts();
     });
 
     document.addEventListener("turbo:before-fetch-response", handleTurboBeforeFetchResponse);

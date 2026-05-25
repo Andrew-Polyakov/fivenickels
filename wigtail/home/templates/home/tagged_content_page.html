@@ -8,55 +8,103 @@
 
 <article class="tagged-content">
 
+    {% if article_section_trail_slugs %}
+        {{ article_section_trail_slugs|json_script:"article-section-trail-data" }}
+    {% endif %}
+
     <header class="tagged-content__header">
 
-        <div class="tagged-content__title-row">
-            {% if page.section_term %}
-                <span class="markdown-tile__taxonomy">{{ page.section_term.name }}</span>
-            {% endif %}
-            {% if request.user.is_authenticated and request.user.is_staff or request.user.is_authenticated and request.user.is_superuser %}
-                <a
-                    href="{% url 'article_editor' article_id=page.id %}"
-                    class="scn-profile-article-edit"
-                    aria-label="Open article editor"
-                >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M12 20h9"></path>
-                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19H4v-3L16.5 3.5z"></path>
-                    </svg>
-                </a>
-            {% endif %}
-            <h1 class="tagged-content__title" id="tagged-content-title">{{ page.title }}</h1>
-        </div>
-
-        <div class="tagged-content__meta-row">
-            <div class="tagged-content__meta-start">
-                {% if article_datelines_accordion %}
-                    <div
-                        class="tagged-content__datelines-mount"
-                        data-shadcn-article-datelines
-                        data-accordion-json-id="article-datelines-data"
-                    >
-                        <span class="tagged-content__datelines-fallback">{{ article_datelines_accordion.headerLabel }}</span>
-                    </div>
-                    {{ article_datelines_accordion|json_script:"article-datelines-data" }}
-                {% else %}
-                    <div class="tagged-content__datelines-mount tagged-content__datelines-mount--empty" aria-hidden="true"></div>
-                {% endif %}
-                {% if article_tags %}
-                    <div
-                        data-shadcn-article-tags
-                        data-tags-json-id="article-tags-data"
-                    ></div>
-                    {{ article_tags|json_script:"article-tags-data" }}
-                {% endif %}
-            </div>
+        <div class="tagged-content__header-grid">
             <div
-                class="tagged-content__share-mount"
-                data-shadcn-article-share
-                data-share-json-id="article-share-data"
+                class="tagged-content__header-lead-sep"
+                role="separator"
+                aria-hidden="true"
             ></div>
-            {{ article_share_payload|json_script:"article-share-data" }}
+            <div class="tagged-content__header-main">
+                <div class="tagged-content__title-row">
+                    {% if request.user.is_authenticated and request.user.is_staff or request.user.is_authenticated and request.user.is_superuser %}
+                        <a
+                            href="{% url 'article_editor' article_id=page.id %}"
+                            class="scn-profile-article-edit"
+                            aria-label="Open article editor"
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M12 20h9"></path>
+                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19H4v-3L16.5 3.5z"></path>
+                            </svg>
+                        </a>
+                    {% endif %}
+                    <h1 class="tagged-content__title" id="tagged-content-title">{{ page.title }}</h1>
+                </div>
+
+                <div class="tagged-content__meta-row">
+                    <div class="tagged-content__meta-start">
+                        {% if article_datelines_accordion %}
+                            {{ article_datelines_accordion|json_script:"article-datelines-data" }}
+                            <div
+                                class="tagged-content__datelines-mount"
+                                data-shadcn-article-datelines
+                                data-accordion-json-id="article-datelines-data"
+                            >
+                                <span class="tagged-content__datelines-fallback">{{ article_datelines_accordion.headerLabel }}</span>
+                            </div>
+                        {% else %}
+                            <div class="tagged-content__datelines-mount tagged-content__datelines-mount--empty" aria-hidden="true"></div>
+                        {% endif %}
+                        {% if article_tags %}
+                            {{ article_tags|json_script:"article-tags-data" }}
+                            <div
+                                data-shadcn-article-tags
+                                data-tags-json-id="article-tags-data"
+                            >
+                                <nav class="tagged-content__meta-tags" aria-label="Tags">
+                                    {% for tag in article_tags %}
+                                        {% if tag.inactive or not tag.href %}
+                                            <span class="tagged-content__meta-tag scn-badge scn-badge--outline" aria-disabled>{{ tag.name }}</span>
+                                        {% else %}
+                                            <a href="{{ tag.href }}" class="tagged-content__meta-tag-link">
+                                                <span class="tagged-content__meta-tag scn-badge scn-badge--outline">{{ tag.name }}</span>
+                                            </a>
+                                        {% endif %}
+                                    {% endfor %}
+                                </nav>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <aside class="tagged-content__header-rail" aria-label="Article actions">
+                {% if page.section_term %}
+                    {% if article_section_href %}
+                        <a href="{{ article_section_href }}" class="tagged-content__category-chip" data-turbo-frame="main">{{ page.section_term.name }}</a>
+                    {% else %}
+                        <span class="tagged-content__category-chip">{{ page.section_term.name }}</span>
+                    {% endif %}
+                {% endif %}
+                {{ article_share_payload|json_script:"article-share-data" }}
+                <div
+                    class="tagged-content__share-mount"
+                    data-shadcn-article-share
+                    data-share-json-id="article-share-data"
+                >
+                    <button
+                        type="button"
+                        class="tagged-content__share"
+                        aria-label="Copy article link for sharing"
+                        title="Copy link"
+                    >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="18" cy="5" r="3"></circle>
+                            <circle cx="6" cy="12" r="3"></circle>
+                            <circle cx="18" cy="19" r="3"></circle>
+                            <path d="m8.59 13.51 6.83 3.98"></path>
+                            <path d="M15.41 6.51l-6.82 3.98"></path>
+                        </svg>
+                        <span class="tagged-content__share-label">Share</span>
+                    </button>
+                </div>
+            </aside>
         </div>
 
         <div class="tagged-content__header-sep" role="separator" aria-hidden="true"></div>
