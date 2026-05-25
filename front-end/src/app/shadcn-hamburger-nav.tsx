@@ -317,7 +317,13 @@ function patchTermInTree(
 
 const SITEMAP_CAROUSEL_FRAME_COUNT = 5;
 
-function SitemapArticlePreview({ termId }: { termId: string }) {
+function SitemapArticlePreview({
+  termId,
+  onNavigate,
+}: {
+  termId: string;
+  onNavigate: () => void;
+}) {
   const { frames, loading } = useSitemapCarouselFrames(termId, SITEMAP_CAROUSEL_FRAME_COUNT);
 
   return (
@@ -331,6 +337,8 @@ function SitemapArticlePreview({ termId }: { termId: string }) {
           frames={frames}
           frameCount={SITEMAP_CAROUSEL_FRAME_COUNT}
           autoScroll={false}
+          slideTurboFrame="main"
+          onSlideClick={onNavigate}
         />
       )}
     </div>
@@ -488,7 +496,7 @@ function SitemapColumns({
       </div>
       <div className="scn-hamburger-nav__sitemap-preview">
         {activeTermId ? (
-          <SitemapArticlePreview termId={activeTermId} />
+          <SitemapArticlePreview termId={activeTermId} onNavigate={onNavigate} />
         ) : (
           <div className="scn-hamburger-nav__sitemap-preview-empty" aria-live="polite">
             Select a category to preview articles.

@@ -32,6 +32,10 @@ export interface BentoArticleCarouselTileProps {
   frames: BentoArticleCarouselFrame[];
   frameCount: number;
   autoScroll?: boolean;
+  /** Turbo frame target for slide links (e.g. "main" in site chrome). */
+  slideTurboFrame?: string;
+  /** Called when a slide link is clicked (e.g. close site map dialog). */
+  onSlideClick?: () => void;
 }
 
 export function formatRelativePublished(iso: string | undefined): string {
@@ -94,7 +98,15 @@ function BentoArticleCarouselFrameDots({
   );
 }
 
-function CarouselSlide({ frame }: { frame: BentoArticleCarouselFrame }) {
+function CarouselSlide({
+  frame,
+  slideTurboFrame,
+  onSlideClick,
+}: {
+  frame: BentoArticleCarouselFrame;
+  slideTurboFrame?: string;
+  onSlideClick?: () => void;
+}) {
   const metaParts: string[] = [];
   const source = (frame.sourceLabel || '').trim();
   if (source) metaParts.push(source);
@@ -133,7 +145,12 @@ function CarouselSlide({ frame }: { frame: BentoArticleCarouselFrame }) {
 
   if (href) {
     return (
-      <a href={href} className="bento-article-carousel__slide-link">
+      <a
+        href={href}
+        className="bento-article-carousel__slide-link"
+        {...(slideTurboFrame ? { 'data-turbo-frame': slideTurboFrame } : {})}
+        onClick={onSlideClick}
+      >
         {inner}
       </a>
     );
@@ -145,6 +162,8 @@ export function BentoArticleCarouselTile({
   frames,
   frameCount,
   autoScroll = false,
+  slideTurboFrame,
+  onSlideClick,
 }: BentoArticleCarouselTileProps) {
   const count = Math.max(2, Math.min(12, frameCount || 5));
   const [api, setApi] = React.useState<CarouselApi>();
@@ -199,7 +218,11 @@ export function BentoArticleCarouselTile({
               key={`${frame.href ?? ''}-${index}`}
               className="bento-article-carousel__item"
             >
-              <CarouselSlide frame={frame} />
+              <CarouselSlide
+                frame={frame}
+                slideTurboFrame={slideTurboFrame}
+                onSlideClick={onSlideClick}
+              />
             </CarouselItem>
           ))}
         </CarouselContent>
