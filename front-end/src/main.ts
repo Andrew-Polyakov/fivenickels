@@ -8,6 +8,9 @@ import { TaxonomyChipWidgetComponent } from './app/taxonomy-chip-widget.componen
 import { appMaterialDialogDefaults } from './app/dialog-defaults';
 import { mountShadcnAuthDialogBridge, type AuthTab } from './app/auth-dialog-shadcn';
 import { mountShadcnBreadcrumbs } from './app/shadcn-breadcrumb';
+import { mountShadcnArticleDatelines } from './app/shadcn-article-datelines';
+import { mountShadcnArticleTags } from './app/shadcn-article-tags';
+import { mountShadcnArticleShare } from './app/shadcn-article-share';
 import { mountShadcnArticleCards, mountSimilarArticleCarousels, mountRecentArticlesBlocks } from './app/shadcn-card-layout';
 import { mountShadcnBento2 } from './app/shadcn-bento2';
 import { mountShadcnBentoGrid01 } from './app/shadcn-bentogrid01';
@@ -38,6 +41,9 @@ declare global {
     mountSimilarArticleCarousels?: () => void;
     mountRecentArticlesBlocks?: () => void;
     mountShadcnBreadcrumbs?: () => void;
+    mountShadcnArticleDatelines?: () => void;
+    mountShadcnArticleTags?: () => void;
+    mountShadcnArticleShare?: () => void;
     mountShadcnTaxonomySiteNav?: () => void;
     mountShadcnBrokerTable?: () => void;
     mountShadcnBrokerCarousel?: () => void;
@@ -109,6 +115,7 @@ createApplication({
     window.mountSimilarArticleCarousels = mountSimilarArticleCarousels;
     window.mountRecentArticlesBlocks = mountRecentArticlesBlocks;
     window.mountShadcnBreadcrumbs = mountShadcnBreadcrumbs;
+    window.mountShadcnArticleDatelines = mountShadcnArticleDatelines;
     window.mountShadcnTaxonomySiteNav = mountShadcnTaxonomySiteNav;
     window.mountShadcnBrokerTable = mountShadcnBrokerTable;
     window.mountShadcnBrokerCarousel = mountShadcnBrokerCarousel;
@@ -163,6 +170,9 @@ createApplication({
     mountShadcnArticleCards();
     mountRecentArticlesBlocks();
     mountShadcnBreadcrumbs();
+    mountShadcnArticleDatelines();
+    mountShadcnArticleTags();
+    mountShadcnArticleShare();
     mountShadcnBrokerTable();
     mountShadcnProfileArticlesTable();
     mountShadcnArticleEditor();

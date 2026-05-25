@@ -231,7 +231,7 @@ def submit_article_payload(payload: dict[str, Any]) -> AutoSubmitItemResult:
         )
 
     title = truncate_title((payload.get("title") or payload.get("headline") or "").strip())
-    tile_preview = (payload.get("tile_preview") or payload.get("summary") or "").strip()
+    lede = (payload.get("lede") or payload.get("tile_preview") or payload.get("summary") or "").strip()
     body_blocks = build_paragraph_stream_body(
         content=payload.get("content"),
         summary=payload.get("summary"),
@@ -269,7 +269,7 @@ def submit_article_payload(payload: dict[str, Any]) -> AutoSubmitItemResult:
         title=title,
         slug=slug,
         section_term=section_term,
-        tile_preview=tile_preview,
+        lede=lede,
         body=body_blocks,
         canonical_url=source_url,
         author_name=author_name,

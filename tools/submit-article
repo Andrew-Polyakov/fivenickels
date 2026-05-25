@@ -64,7 +64,7 @@ def _iter_payloads(
                 "content": news.get("content") or "",
                 "source": news.get("source") or "",
                 "canonical_url": url,
-                "tile_preview": _preview_from_news(news),
+                "lede": _preview_from_news(news),
                 "tags": tags,
                 "symbols": symbols,
             }

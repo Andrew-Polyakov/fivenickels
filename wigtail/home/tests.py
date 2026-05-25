@@ -178,7 +178,7 @@ class TaxonomyTagsTests(WagtailPageTestCase):
             title="Energy one",
             slug="energy-one",
             section_term=self.energy,
-            tile_preview="Preview **one**",
+            lede="Preview **one**",
         )
         self.homepage.add_child(instance=self.page_e1)
         self.page_e1.save()
@@ -189,7 +189,7 @@ class TaxonomyTagsTests(WagtailPageTestCase):
             title="Energy two",
             slug="energy-two",
             section_term=self.energy,
-            tile_preview="Preview two",
+            lede="Preview two",
         )
         self.homepage.add_child(instance=self.page_e2)
         self.page_e2.save()
@@ -200,7 +200,7 @@ class TaxonomyTagsTests(WagtailPageTestCase):
             title="Materials one",
             slug="materials-one",
             section_term=self.materials,
-            tile_preview="Mat preview",
+            lede="Mat preview",
         )
         self.homepage.add_child(instance=self.page_m1)
         self.page_m1.save()
@@ -258,7 +258,7 @@ class TaxonomyTagsTests(WagtailPageTestCase):
             title="NVDA headline story",
             slug="nvda-headline",
             section_term=self.energy,
-            tile_preview="p",
+            lede="p",
         )
         self.homepage.add_child(instance=page_nv)
         page_nv.tags.add(tag_nvda)
@@ -279,7 +279,7 @@ class TaxonomyTagsTests(WagtailPageTestCase):
             title="Chip sector update",
             slug="chip-sector-update",
             section_term=self.energy,
-            tile_preview="prev",
+            lede="prev",
         )
         self.homepage.add_child(instance=page_nv)
         page_nv.tags.add(tag_nvda)
@@ -528,6 +528,63 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         self.assertContains(r, "Beta")
         self.assertContains(r, "tag-cloud__link--inactive")
         self.assertContains(r, "tags/alpha/")
+        self.assertContains(r, '"inactive": true')
+        self.assertContains(r, "data-shadcn-article-tags")
+
+    def test_tagged_article_page_renders_lede_separator_then_body(self):
+        r = self.client.get(self.page_e1.url)
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "tagged-content__intro")
+        self.assertContains(r, "tagged-content__lede")
+        self.assertContains(r, "tagged-content__lede-sep")
+        content = r.content.decode()
+        meta_pos = content.find("tagged-content__meta-row")
+        header_sep_pos = content.find("tagged-content__header-sep")
+        intro_pos = content.find("tagged-content__intro")
+        lede_pos = content.find("tagged-content__lede")
+        sep_pos = content.find("tagged-content__lede-sep")
+        body_pos = content.find("tagged-content__body")
+        self.assertLess(meta_pos, header_sep_pos)
+        self.assertLess(header_sep_pos, lede_pos)
+        self.assertLess(intro_pos, body_pos)
+        self.assertLess(lede_pos, sep_pos)
+        self.assertLess(sep_pos, body_pos)
+
+    def test_tagged_article_page_taxonomy_in_title_row_with_datelines(self):
+        r = self.client.get(self.page_e1.url)
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "tagged-content__meta-row")
+        self.assertContains(r, "tagged-content__meta-start")
+        self.assertContains(r, "data-shadcn-article-datelines")
+        self.assertContains(r, 'id="article-datelines-data"')
+        self.assertContains(r, '"headerLabel"')
+        self.assertContains(r, '"published"')
+        self.assertContains(r, '"updated"')
+        self.assertContains(r, "data-shadcn-article-tags")
+        self.assertContains(r, 'id="article-tags-data"')
+        self.assertContains(r, '"name": "Alpha"')
+        content = r.content.decode()
+        title_row_start = content.find("tagged-content__title-row")
+        meta_row_start = content.find("tagged-content__meta-row")
+        title_chunk = content[title_row_start:meta_row_start]
+        self.assertIn("markdown-tile__taxonomy", title_chunk)
+        self.assertIn("Energy", title_chunk)
+
+    def test_tagged_article_page_share_button_uses_stable_permalink(self):
+        self.page_e1.canonical_url = "https://fivenickels.com/articles/energy-one/"
+        self.page_e1.save_revision().publish()
+        r = self.client.get(self.page_e1.url)
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "data-shadcn-article-share")
+        self.assertContains(r, 'id="article-share-data"')
+        self.assertContains(r, "https://fivenickels.com/articles/energy-one/")
+        self.assertNotContains(r, "data-share-permalink")
+        content = r.content.decode()
+        title_row_start = content.find("tagged-content__title-row")
+        meta_row_start = content.find("tagged-content__meta-row")
+        intro_start = content.find("tagged-content__intro")
+        self.assertNotIn("tagged-content__share", content[title_row_start:meta_row_start])
+        self.assertIn("tagged-content__share", content[meta_row_start:intro_start])
 
     def test_home_sector_nav_includes_subsection_url(self):
         from home.taxonomy import taxonomy_prefix_path
@@ -612,7 +669,7 @@ class TaxonomyTagsTests(WagtailPageTestCase):
                 title=f"Fin preview {i}",
                 slug=f"fin-preview-{i}",
                 section_term=financials,
-                tile_preview=f"Preview **fin-{i}**",
+                lede=f"Preview **fin-{i}**",
                 tile_priority=10 - i,
             )
             self.homepage.add_child(instance=p)
@@ -1110,7 +1167,7 @@ class InlineEditingApiTests(WagtailPageTestCase):
             title="Inline Delete Guard",
             slug="inline-delete-guard",
             section_term=self.energy,
-            tile_preview="guard",
+            lede="guard",
         )
         self.homepage.add_child(instance=page)
         page.save_revision().publish()
@@ -1129,7 +1186,7 @@ class InlineEditingApiTests(WagtailPageTestCase):
             title="Alpha Story",
             slug="alpha-story",
             section_term=self.energy,
-            tile_preview="a",
+            lede="a",
         )
         self.homepage.add_child(instance=page_a)
         page_a.save_revision().publish()
@@ -1138,7 +1195,7 @@ class InlineEditingApiTests(WagtailPageTestCase):
             title="Beta Story",
             slug="beta-story",
             section_term=self.energy,
-            tile_preview="b",
+            lede="b",
         )
         self.homepage.add_child(instance=page_b)
         page_b.save_revision().publish()
@@ -1159,7 +1216,7 @@ class InlineEditingApiTests(WagtailPageTestCase):
             title="Editable Title",
             slug="editable-title",
             section_term=self.energy,
-            tile_preview="preview",
+            lede="preview",
         )
         self.homepage.add_child(instance=page)
         page.save_revision().publish()
@@ -1178,7 +1235,7 @@ class InlineEditingApiTests(WagtailPageTestCase):
             title="Read Only Title",
             slug="read-only-title",
             section_term=self.energy,
-            tile_preview="preview",
+            lede="preview",
         )
         self.homepage.add_child(instance=page)
         page.save_revision().publish()
@@ -1186,6 +1243,35 @@ class InlineEditingApiTests(WagtailPageTestCase):
         response = self.client.get(page.url)
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "scn-profile-article-edit")
+
+    def test_tagged_article_page_renders_hero_caption(self):
+        from wagtail.images import get_image_model
+        from wagtail.images.tests.utils import get_test_image_file
+
+        hero = get_image_model().objects.create(
+            title="Test hero",
+            file=get_test_image_file(),
+        )
+        page = TaggedContentPage(
+            title="Hero caption story",
+            slug="hero-caption-story",
+            section_term=self.energy,
+            lede="**Lede** for caption test.",
+            hero_image=hero,
+            hero_image_description="Photo credit: Test Agency",
+        )
+        self.homepage.add_child(instance=page)
+        page.save_revision().publish()
+        response = self.client.get(page.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "tagged-content__hero-caption")
+        self.assertContains(response, "Photo credit: Test Agency")
+        self.assertContains(response, "tagged-content__hero-sep")
+        content = response.content.decode()
+        self.assertLess(
+            content.find("tagged-content__hero-caption"),
+            content.find("tagged-content__hero-sep"),
+        )
 
     def test_profile_staff_exposes_article_create_url(self):
         self.client.force_login(self.admin_user)
@@ -1207,7 +1293,7 @@ class InlineEditingApiTests(WagtailPageTestCase):
             title="Moderation Queue Story",
             slug="moderation-queue-story",
             section_term=self.energy,
-            tile_preview="Needs review",
+            lede="Needs review",
             awaiting_moderation=True,
             live=False,
         )
@@ -1228,7 +1314,7 @@ class InlineEditingApiTests(WagtailPageTestCase):
             title="Approve Me",
             slug="approve-me",
             section_term=self.energy,
-            tile_preview="preview",
+            lede="preview",
             awaiting_moderation=True,
             live=False,
         )
@@ -1262,7 +1348,7 @@ class InlineEditingApiTests(WagtailPageTestCase):
             title="Preview Gate Story",
             slug="preview-gate-story",
             section_term=self.energy,
-            tile_preview="preview",
+            lede="preview",
         )
         self.homepage.add_child(instance=page)
         page.save_revision()
@@ -1280,7 +1366,7 @@ class InlineEditingApiTests(WagtailPageTestCase):
             title="Staff Preview Story",
             slug="staff-preview-story",
             section_term=self.energy,
-            tile_preview="preview",
+            lede="preview",
         )
         self.homepage.add_child(instance=page)
         page.save_revision()
@@ -1304,7 +1390,7 @@ class InlineEditingApiTests(WagtailPageTestCase):
             title="API Preview Body Story",
             slug="api-preview-body-story",
             section_term=self.energy,
-            tile_preview="preview",
+            lede="preview",
         )
         self.homepage.add_child(instance=page)
         page.save_revision()
@@ -1393,7 +1479,7 @@ class InlineEditingApiTests(WagtailPageTestCase):
             title="Taxonomy card fixture",
             slug=f"taxonomy-card-fixture-{u}",
             section_term=self.energy,
-            tile_preview="pv",
+            lede="pv",
         )
         self.homepage.add_child(instance=article)
         article.save_revision().publish()
@@ -1564,7 +1650,7 @@ class CardSourcePropertiesTests(WagtailPageTestCase):
             title="Market News direct fixture",
             slug=f"market-news-direct-{get_random_string(5)}",
             section_term=mnews,
-            tile_preview="Direct hub story",
+            lede="Direct hub story",
         )
         self.homepage.add_child(instance=direct)
         direct.save_revision().publish()
@@ -1594,7 +1680,7 @@ class CardSourcePropertiesTests(WagtailPageTestCase):
             title="Market News random fixture",
             slug=f"market-news-random-{get_random_string(5)}",
             section_term=mnews,
-            tile_preview="Random hydrate story",
+            lede="Random hydrate story",
         )
         self.homepage.add_child(instance=direct)
         direct.save_revision().publish()

@@ -419,6 +419,15 @@
         if (window.mountShadcnBreadcrumbs && typeof window.mountShadcnBreadcrumbs === "function") {
             window.mountShadcnBreadcrumbs();
         }
+        if (window.mountShadcnArticleDatelines && typeof window.mountShadcnArticleDatelines === "function") {
+            window.mountShadcnArticleDatelines();
+        }
+        if (window.mountShadcnArticleTags && typeof window.mountShadcnArticleTags === "function") {
+            window.mountShadcnArticleTags();
+        }
+        if (window.mountShadcnArticleShare && typeof window.mountShadcnArticleShare === "function") {
+            window.mountShadcnArticleShare();
+        }
     }
 
     function remountShadcnWidgets() {
@@ -609,35 +618,6 @@
         });
     }
 
-    function initTileShareButtons() {
-        var buttons = document.querySelectorAll("[data-share-permalink]");
-        buttons.forEach(function (btn) {
-            if (btn.getAttribute("data-share-bound") === "1") {
-                return;
-            }
-            btn.setAttribute("data-share-bound", "1");
-            btn.addEventListener("click", function (evt) {
-                evt.preventDefault();
-                evt.stopPropagation();
-                var sharePath = btn.getAttribute("data-share-path") || "";
-                var permalink = sharePath
-                    ? new URL(sharePath, window.location.origin).toString()
-                    : window.location.href;
-                var writePromise =
-                    navigator.clipboard && navigator.clipboard.writeText
-                        ? navigator.clipboard.writeText(permalink)
-                        : Promise.reject(new Error("Clipboard API unavailable"));
-                writePromise
-                    .then(function () {
-                        showMaterialAlert("Permalink copied to clipboard.", "Share");
-                    })
-                    .catch(function () {
-                        showMaterialAlert("Could not copy automatically. Link: " + permalink, "Share");
-                    });
-            });
-        });
-    }
-
     function clearSiteLayoutInlineStyles() {
         var selectors = [".site-page", ".site-header", ".site-content"];
         selectors.forEach(function (sel) {
@@ -681,7 +661,6 @@
         initInlineChipsAdmin();
         initTaxonomySiteNavAndChips();
         initInlineTileTitleAdmin();
-        initTileShareButtons();
         initShadcnCardLayouts();
         remountShadcnWidgets();
         initMarketMoversFilter();
@@ -977,7 +956,6 @@
         initInlineChipsAdmin();
         initTaxonomySiteNavAndChips();
         initInlineTileTitleAdmin();
-        initTileShareButtons();
         initShadcnCardLayouts();
         remountShadcnWidgets();
         initMarketMoversFilter();
@@ -998,7 +976,6 @@
         initInlineChipsAdmin();
         initTaxonomySiteNavAndChips();
         initInlineTileTitleAdmin();
-        initTileShareButtons();
         initShadcnCardLayouts();
         remountShadcnWidgets();
         initMarketMoversFilter();

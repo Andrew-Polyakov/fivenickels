@@ -39,7 +39,7 @@ class SearchSuggestApiTests(WagtailPageTestCase):
             title="Energy unique xyzzy headline",
             slug="energy-xyzzy-search-test",
             section_term=self.energy,
-            tile_preview="Preview xyzzy unique token for search snippet.",
+            lede="Preview xyzzy unique token for search snippet.",
         )
         self.homepage.add_child(instance=self.article)
         self.article.save_revision().publish()

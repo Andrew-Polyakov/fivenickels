@@ -580,7 +580,8 @@ class ArticleEditor {
         try {
             const updateData = {
                 title: this.article.title,
-                tile_preview: this.article.tile_preview,
+                lede: this.article.lede,
+                hero_image_description: this.article.hero_image_description,
                 tile_priority: this.article.tile_priority,
                 article_priority: this.article.article_priority,
                 priority_expires_at: this.article.priority_expires_at,

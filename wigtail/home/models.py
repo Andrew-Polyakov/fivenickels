@@ -426,7 +426,7 @@ class TaggedContentPage(SeoMetaFields, Page):
     )
 
     search_fields = Page.search_fields + [
-        index.SearchField("tile_preview"),
+        index.SearchField("lede"),
         index.SearchField("body"),
     ]
 
@@ -443,7 +443,17 @@ class TaggedContentPage(SeoMetaFields, Page):
         on_delete=models.SET_NULL,
         related_name="+",
     )
-    tile_preview = MarkdownField(blank=True)
+    lede = MarkdownField(
+        blank=True,
+        verbose_name="Lede",
+        help_text="Opening paragraph under the headline on the article page and on listing tiles.",
+    )
+    hero_image_description = models.TextField(
+        blank=True,
+        default="",
+        max_length=500,
+        help_text="Caption shown under the hero image on the article page.",
+    )
     author_name = models.CharField(
         max_length=200,
         blank=True,
@@ -513,7 +523,8 @@ class TaggedContentPage(SeoMetaFields, Page):
                 FieldPanel("catalyst"),
                 FieldPanel("tags"),
                 FieldPanel("hero_image"),
-                FieldPanel("tile_preview"),
+                FieldPanel("hero_image_description"),
+                FieldPanel("lede"),
                 FieldPanel("author_name"),
                 FieldPanel("author_user"),
                 FieldPanel("tile_priority"),
@@ -541,8 +552,8 @@ class TaggedContentPage(SeoMetaFields, Page):
                 )
 
     def listing_preview_markdown(self) -> str:
-        """Excerpt for tile cards: ``tile_preview`` or the first paragraph / markdown in ``body``."""
-        primary = (self.tile_preview or "").strip()
+        """Excerpt for tile cards: ``lede`` or the first paragraph / markdown in ``body``."""
+        primary = (self.lede or "").strip()
         if primary:
             return primary
         from django.utils.html import strip_tags
@@ -581,12 +592,48 @@ class TaggedContentPage(SeoMetaFields, Page):
                 return username
         return "Fivenickels Editorial"
 
+    def share_permalink(self, request) -> str:
+        """Stable public URL for sharing (canonical when set, else site-root page URL)."""
+        from urllib.parse import urlparse
+
+        from wagtail.models import Site
+
+        explicit = (self.canonical_url or "").strip()
+        if explicit:
+            return explicit
+
+        def _preferred_host(url: str) -> bool:
+            host = (urlparse(url).hostname or "").lower()
+            return bool(host) and (host == "localhost" or "." in host)
+
+        parts = self.get_url_parts()
+        if parts:
+            _, root_url, page_path = parts
+            candidate = f"{root_url.rstrip('/')}{page_path}"
+            if _preferred_host(candidate):
+                return candidate
+        site = Site.objects.filter(is_default_site=True).first()
+        if site:
+            candidate = f"{site.root_url.rstrip('/')}/{self.slug}/"
+            if _preferred_host(candidate):
+                return candidate
+        page_url = self.get_url(request=request) if request else self.url
+        return request.build_absolute_uri(page_url)
+
     def get_context(self, request, *args, **kwargs):
+        from home.article_dates import article_dateline_context
+        from home.article_tags import article_tags_context
         from home.query import get_similar_pages
 
         context = super().get_context(request, *args, **kwargs)
         context["similar_pages"] = get_similar_pages(self, limit=24)
-        context["routable_home"] = HomePage.objects.live().public().first()
+        routable_home = HomePage.objects.live().public().first()
+        context["routable_home"] = routable_home
+        share_url = self.share_permalink(request)
+        context["article_share_url"] = share_url
+        context["article_share_payload"] = {"shareUrl": share_url or ""}
+        context["article_tags"] = article_tags_context(self, routable_home)
+        context.update(article_dateline_context(self))
         return context
 
 

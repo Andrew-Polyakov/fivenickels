@@ -32,7 +32,7 @@ from home.alpaca_news_client import (
     fetch_news,
 )
 from home.alpaca_to_streamfield import (
-    build_tile_preview,
+    build_lede,
     content_tags_for_article,
     markdown_stream_for_article,
     truncate_title,
@@ -237,7 +237,7 @@ class Command(BaseCommand):
                 home_page=home,
                 include_body_images=not no_body_images,
             )
-            preview = build_tile_preview(art)
+            preview = build_lede(art)
             title = truncate_title(art.headline)
 
             existing = (
@@ -272,7 +272,7 @@ class Command(BaseCommand):
 
             if existing is not None:
                 existing.title = title
-                existing.tile_preview = preview
+                existing.lede = preview
                 existing.body = body
                 existing.section_term = term
                 if not no_images:
@@ -311,7 +311,7 @@ class Command(BaseCommand):
                 title=title,
                 slug=slug,
                 section_term=term,
-                tile_preview=preview,
+                lede=preview,
                 body=body,
                 hero_image=hero_img,
             )

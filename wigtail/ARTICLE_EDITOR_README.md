@@ -184,6 +184,8 @@ Response:
     "taxonomy_category": {...},
     "tags": [{id: 1, name: "Tag"}],
     "hero_image_url": "...",
+    "lede": "Opening paragraph (markdown) shown under the headline.",
+    "hero_image_description": "Caption under the hero image.",
     "tile_priority": 5,
     "article_priority": 8,
     "priority_expires_at": "2026-05-09T12:00:00Z",
@@ -198,6 +200,8 @@ PATCH /api/articles/42/
 Request:
 {
     "title": "New Title",
+    "lede": "Updated lede text.",
+    "hero_image_description": "Updated hero caption.",
     "tile_priority": 7,
     "tag_ids": [1, 2, 3],
     "body_json": [...]

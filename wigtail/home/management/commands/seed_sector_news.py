@@ -122,7 +122,7 @@ class Command(BaseCommand):
                     title=seed["title"],
                     slug=art_slug,
                     section_term=term,
-                    tile_preview=seed["tile_preview"],
+                    lede=seed["lede"],
                     body=_stream_body(seed["title"], seed["body_paragraphs"]),
                 )
                 home.add_child(instance=page)

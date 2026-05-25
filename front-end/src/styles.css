@@ -2991,6 +2991,89 @@ html[data-reading-theme="day"] .scn-bentogrid01--theme-inverted .carousel-articl
   cursor: default;
 }
 
+/* shadcn-style Accordion */
+.scn-accordion {
+  width: 100%;
+}
+
+.scn-accordion__item {
+  border: none;
+}
+
+.scn-accordion__header {
+  margin: 0;
+}
+
+.scn-accordion__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+}
+
+.scn-accordion__trigger:hover {
+  color: var(--color-text, rgba(248, 250, 252, 0.92));
+}
+
+.scn-accordion__trigger:focus-visible {
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.95), 0 0 0 4px rgba(var(--sc-rgb-glow), 0.45);
+}
+
+.scn-accordion__chevron {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+  opacity: 0.75;
+  transition: transform 0.2s ease;
+}
+
+.scn-accordion__trigger[data-state='open'] .scn-accordion__chevron {
+  transform: rotate(180deg);
+}
+
+.scn-accordion__content {
+  overflow: hidden;
+}
+
+.scn-accordion__content[data-state='open'] {
+  animation: scn-accordion-down 0.2s ease-out;
+}
+
+.scn-accordion__content[data-state='closed'] {
+  animation: scn-accordion-up 0.2s ease-out;
+}
+
+@keyframes scn-accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes scn-accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+.scn-accordion__content-inner {
+  padding-top: 0.35rem;
+}
+
 /* Radix NavigationMenu + taxonomy site header */
 .site-nav__menu-host {
   width: 100%;

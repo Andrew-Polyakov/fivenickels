@@ -418,7 +418,7 @@ html[data-reading-theme='day'] .bento2-sep {
 
 html[data-reading-theme='day'] .scn-stream-separator--masthead-strip,
 html[data-reading-theme='day'] .scn-taxonomy-content__sep--horizontal {
-  border-bottom-color: var(--neon-line, rgba(0, 0, 0, 0.14));
+  border-bottom: 3px solid #000000;
 }
 
 html[data-reading-theme='day'] .site-nav__row.scn-taxonomy-site-nav__unified .scn-navigation-menu__trigger,

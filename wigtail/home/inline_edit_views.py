@@ -581,7 +581,7 @@ def search_taxonomy_articles(request: HttpRequest) -> JsonResponse:
                 break
             except Exception:
                 continue
-        raw_preview = (row.tile_preview or "").strip()
+        raw_preview = (row.lede or "").strip()
         excerpt = re.sub(r"[*#`_~\[\]()]+", "", raw_preview)[:200].strip() or None
         results.append({
             "id": row.pk,

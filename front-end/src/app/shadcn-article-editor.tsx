@@ -26,6 +26,7 @@ import { RteToolbar, TABLE_EXTENSIONS } from '../components/ui/rte-editor';
 import { ARTICLE_QUOTE_EXTENSION } from './tiptap-article-quote';
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from '../components/ui/empty';
 import { cn } from '../lib/utils';
+import { ScnToast } from '../components/scn-toast';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -63,7 +64,8 @@ type ArticleApiData = {
   tags: Tag[];
   hero_image_url: string | null;
   hero_image: number | null;
-  tile_preview: string | null;
+  lede: string | null;
+  hero_image_description: string | null;
   author_name: string | null;
   author_user: number | null;
   author_user_display: string | null;
@@ -398,12 +400,19 @@ function TaxonomyCombobox({
 // ─── Hero Image Upload ────────────────────────────────────────────────────────
 
 function HeroImageUpload({
-  imageUrl, articleId, apiBase, onUploaded,
+  imageUrl,
+  description,
+  articleId,
+  apiBase,
+  onUploaded,
+  onDescriptionChange,
 }: {
   imageUrl: string | null;
+  description: string;
   articleId: number;
   apiBase: string;
   onUploaded: (url: string, id: number) => void;
+  onDescriptionChange: (value: string) => void;
 }) {
   const [dragging, setDragging] = React.useState(false);
   const [uploading, setUploading] = React.useState(false);
@@ -454,6 +463,16 @@ function HeroImageUpload({
       {error && <p className="scn-editor-error">{error}</p>}
       <input ref={inputRef} type="file" accept="image/*" className="scn-sr-only"
         onChange={e => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ''; }} />
+      <div className="scn-editor-hero__description">
+        <Label className="scn-editor-field-label">Hero image description</Label>
+        <textarea
+          className="scn-editor-tile-preview scn-editor-tile-preview--fill"
+          placeholder="Caption shown under the hero on the article page…"
+          rows={2}
+          value={description}
+          onChange={e => onDescriptionChange(e.target.value)}
+        />
+      </div>
     </div>
   );
 }
@@ -1185,23 +1204,6 @@ function ActionsPopover({ status, onAction, disabled }: {
   );
 }
 
-// ─── Toast ────────────────────────────────────────────────────────────────────
-
-function Toast({ message, type, onDismiss }: {
-  message: string; type: 'success' | 'error'; onDismiss: () => void;
-}) {
-  React.useEffect(() => {
-    const t = setTimeout(onDismiss, 4000);
-    return () => clearTimeout(t);
-  }, [message, onDismiss]);
-
-  return (
-    <div className={`scn-editor-toast scn-editor-toast--${type}`} onClick={onDismiss}>
-      {message}
-    </div>
-  );
-}
-
 // ─── Root Component ───────────────────────────────────────────────────────────
 
 function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: string }) {
@@ -1217,7 +1219,8 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
   const [tilePrio, setTilePrio]       = React.useState<number | null>(null);
   const [artPrio, setArtPrio]         = React.useState<number | null>(null);
   const [expiresAt, setExpiresAt]     = React.useState('');
-  const [tilePreview, setTilePreview]  = React.useState('');
+  const [lede, setLede]                  = React.useState('');
+  const [heroImageDescription, setHeroImageDescription] = React.useState('');
   const [seoTitle, setSeoTitle]        = React.useState('');
   const [metaDesc, setMetaDesc]        = React.useState('');
   const [canonicalUrl, setCanonical]   = React.useState('');
@@ -1243,7 +1246,8 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
       section_term_id: sectionTermId,
       taxonomy_category_id: categoryId,
       catalyst: catalystToApi(catalyst),
-      tile_preview: tilePreview,
+      lede,
+      hero_image_description: heroImageDescription,
       author_name: authorName,
       author_user_lookup: authorUser,
       tile_priority: tilePrio,
@@ -1296,7 +1300,8 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
         setTilePrio(article.tile_priority);
         setArtPrio(article.article_priority);
         setExpiresAt(article.priority_expires_at ? article.priority_expires_at.slice(0, 16) : '');
-        setTilePreview(article.tile_preview ?? '');
+        setLede(article.lede ?? '');
+        setHeroImageDescription(article.hero_image_description ?? '');
         setSeoTitle(article.seo_title ?? '');
         setMetaDesc(article.search_description ?? '');
         setCanonical(article.canonical_url ?? '');
@@ -1486,9 +1491,11 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
 
           <HeroImageUpload
             imageUrl={heroUrl}
+            description={heroImageDescription}
             articleId={articleId}
             apiBase={apiBase}
             onUploaded={(url, id) => { setHeroUrl(url); setHeroId(id); }}
+            onDescriptionChange={setHeroImageDescription}
           />
 
           <div className="scn-editor-card">
@@ -1529,13 +1536,13 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
           </div>
 
           <div className="scn-editor-card scn-editor-card--tile-preview">
-            <h3 className="scn-editor-card__title">Tile preview</h3>
+            <h3 className="scn-editor-card__title">Lede</h3>
             <textarea
               className="scn-editor-tile-preview scn-editor-tile-preview--fill"
-              placeholder="Short description shown on the article tile…"
+              placeholder="Opening paragraph under the headline (markdown supported)…"
               rows={3}
-              value={tilePreview}
-              onChange={e => setTilePreview(e.target.value)}
+              value={lede}
+              onChange={e => setLede(e.target.value)}
             />
           </div>
 
@@ -1555,7 +1562,7 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
       </div>
 
       {toast && (
-        <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />
+        <ScnToast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />
       )}
     </div>
   );

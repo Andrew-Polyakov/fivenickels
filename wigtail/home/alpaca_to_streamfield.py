@@ -97,7 +97,7 @@ def _paragraph_texts_from_html(html: str) -> list[str]:
     return [one] if one else []
 
 
-def build_tile_preview(article: AlpacaNewsArticle) -> str:
+def build_lede(article: AlpacaNewsArticle) -> str:
     """Plain-ish markdown-safe excerpt for listing tiles."""
     src = (article.summary or "").strip()
     if not src:

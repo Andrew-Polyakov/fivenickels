@@ -126,7 +126,7 @@ class ArticleEditorSerializer(serializers.ModelSerializer):
             'id', 'title', 'slug', 'status', 'preview_url',
             'section_term', 'taxonomy_category',
             'catalyst', 'tags', 'hero_image', 'hero_image_url',
-            'tile_preview', 'author_name', 'author_user', 'author_user_display',
+            'lede', 'hero_image_description', 'author_name', 'author_user', 'author_user_display',
             'tile_priority', 'article_priority',
             'priority_expires_at', 'body',
             'seo_title', 'search_description', 'canonical_url',
@@ -192,7 +192,7 @@ class ArticleUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = TaggedContentPage
         fields = [
-            'title', 'tile_preview', 'tile_priority', 'article_priority',
+            'title', 'lede', 'hero_image_description', 'tile_priority', 'article_priority',
             'author_name', 'author_user_lookup',
             'priority_expires_at', 'section_term_id', 'taxonomy_category_id',
             'catalyst', 'tag_ids', 'hero_image_id', 'body_json',
@@ -293,7 +293,7 @@ class ArticleStatusActionSerializer(serializers.Serializer):
 class AutoSubmitArticleSerializer(serializers.Serializer):
     title = serializers.CharField(required=False, allow_blank=True)
     headline = serializers.CharField(required=False, allow_blank=True)
-    tile_preview = serializers.CharField(required=False, allow_blank=True)
+    lede = serializers.CharField(required=False, allow_blank=True)
     summary = serializers.CharField(required=False, allow_blank=True)
     content = serializers.CharField(required=False, allow_blank=True)
     body_markdown = serializers.CharField(required=False, allow_blank=True)

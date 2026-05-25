@@ -11,7 +11,7 @@ from wagtail.test.utils import WagtailPageTestCase
 
 from home.alpaca_news_client import AlpacaNewsArticle, best_image_url
 from home.alpaca_to_streamfield import (
-    build_tile_preview,
+    build_lede,
     content_tags_for_article,
     markdown_stream_for_article,
     streamfield_body_for_article,
@@ -90,7 +90,7 @@ class AlpacaStreamfieldTests(WagtailPageTestCase):
         self.assertEqual(body[0][0], "heading")
         kinds = [b[0] for b in body]
         self.assertIn("paragraph", kinds)
-        prev = build_tile_preview(art)
+        prev = build_lede(art)
         self.assertIn("Short summary", prev)
 
     def test_markdown_stream_includes_ticker_and_attribution(self):
