@@ -16,6 +16,10 @@ from home import api_urls
 from search import views as search_views
 
 from home.ticker_serve import render_ticker_page
+from home.seo_views import robots_txt
+from home.sitemaps import SITEMAPS
+
+from wagtail.contrib.sitemaps import views as wagtail_sitemap_views
 
 
 def favicon_view(request):
@@ -138,6 +142,19 @@ urlpatterns = [
         "ticker/<str:ticker_slug>/",
         render_ticker_page,
         name="ticker_page",
+    ),
+    path("robots.txt", robots_txt, name="robots_txt"),
+    path(
+        "sitemap.xml",
+        wagtail_sitemap_views.index,
+        {"sitemaps": SITEMAPS, "sitemap_url_name": "sitemap_section"},
+        name="sitemap_index",
+    ),
+    path(
+        "sitemap-<section>.xml",
+        wagtail_sitemap_views.sitemap,
+        {"sitemaps": SITEMAPS},
+        name="sitemap_section",
     ),
 ]
 

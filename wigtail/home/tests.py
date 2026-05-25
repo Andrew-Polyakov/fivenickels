@@ -2022,3 +2022,51 @@ class AlpacaBarsClientTests(SimpleTestCase):
         self.assertEqual(bars[0]["c"], 1.0)
         self.assertEqual(bars[2]["c"], 3.0)
 
+
+class SitemapAndRobotsTests(WagtailPageTestCase):
+    """XML sitemap index/sections and robots.txt for search engines."""
+
+    def setUp(self):
+        root_page = Page.get_first_root_node()
+        Site.objects.update_or_create(
+            hostname="testserver",
+            defaults={"root_page": root_page, "is_default_site": True},
+        )
+        self.homepage = HomePage.objects.filter(slug="home").first()
+        if self.homepage is None:
+            self.homepage = HomePage(title="Home", slug="home")
+            root_page.add_child(instance=self.homepage)
+        if not self.homepage.live:
+            self.homepage.save_revision().publish()
+
+    def test_sitemap_index_lists_sections(self):
+        response = self.client.get("/sitemap.xml")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/xml")
+        content = response.content.decode()
+        self.assertIn("sitemap-pages.xml", content)
+        self.assertIn("sitemap-static.xml", content)
+
+    def test_sitemap_pages_includes_home(self):
+        response = self.client.get("/sitemap-pages.xml")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/xml")
+        content = response.content.decode()
+        self.assertIn(f"/{self.homepage.slug}/", content)
+
+    def test_sitemap_static_includes_forex_ratings(self):
+        response = self.client.get("/sitemap-static.xml")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/xml")
+        self.assertIn("/rating/forex/", response.content.decode())
+
+    def test_robots_txt_points_at_sitemap(self):
+        response = self.client.get("/robots.txt")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/plain; charset=utf-8")
+        content = response.content.decode()
+        self.assertIn("User-agent: *", content)
+        self.assertIn("Allow: /", content)
+        self.assertIn("Sitemap:", content)
+        self.assertIn("sitemap.xml", content)
+
