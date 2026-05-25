@@ -1972,12 +1972,23 @@ body.template-taxonomy-drilldown .scn-bentogrid01__inner,
   --bento-heading: var(--color-text);
   --bento-body: var(--color-text-muted);
   --bento-footer-divider: var(--color-border-subtle);
+  --bento-block-bg: var(--bento-strip-gradient);
   color: var(--color-text);
 }
 
 html[data-reading-theme="day"] .scn-bentogrid01--theme-default {
-  --bento-strip-bg-dark: #f3f4f6;
   --bento-strip-bg-bright: #ffffff;
+  --bento-strip-bg-dark: #eef0f3;
+  --bento-strip-gradient: linear-gradient(
+    90deg,
+    var(--bento-strip-bg-bright) 0%,
+    #fafbfc 16%,
+    #f5f6f8 32%,
+    var(--bento-strip-bg-dark) 50%,
+    #f5f6f8 68%,
+    #fafbfc 84%,
+    var(--bento-strip-bg-bright) 100%
+  );
 }
 
 .scn-bentogrid01--theme-default .scn-bentogrid01__heading {
@@ -2045,29 +2056,10 @@ html:not([data-reading-theme="day"]) .scn-bentogrid01--theme-inverted {
   --bento-tile-surface: var(--bento-bg);
   --bento-footer-divider: rgba(0, 0, 0, 0.1);
   --carousel-card-surface-rgb: 228, 228, 231;
+  --bento-block-bg: var(--bento-strip-gradient);
 }
 
-/* Day CSS */
-html[data-reading-theme="day"] .scn-bentogrid01--theme-inverted {
-  --bento-strip-bg-dark: #3f3f46;
-  --bento-strip-bg-bright: #71717a;
-  --bento-strip-gradient: linear-gradient(
-    90deg,
-    var(--bento-strip-bg-bright) 0%,
-    var(--bento-strip-bg-dark) 18%,
-    var(--bento-strip-bg-dark) 50%,
-    var(--bento-strip-bg-dark) 82%,
-    var(--bento-strip-bg-bright) 100%
-  );
-  --bento-bg: #3f3f46;
-  --bento-text: #fafafa;
-  --bento-muted: #d4d4d8;
-  --bento-border: rgba(255, 255, 255, 0.14);
-  --bento-tile-header-bg: var(--bento-bg);
-  --bento-tile-surface: var(--bento-bg);
-  --bento-footer-divider: rgba(255, 255, 255, 0.12);
-  --carousel-card-surface-rgb: 63, 63, 70;
-}
+/* Day inverted stripe: see styles-day.css (white / light gray). */
 
 .scn-bentogrid01--theme-inverted .scn-bentogrid01__heading,
 .scn-bentogrid01--theme-inverted .scn-bentogrid01__tile-title {
@@ -2195,6 +2187,7 @@ html[data-reading-theme="day"] .scn-bentogrid01--theme-inverted .carousel-articl
   --bento-tile-surface: #152f52;
   --bento-footer-divider: rgba(255, 255, 255, 0.28);
   --carousel-card-surface-rgb: 21, 47, 82;
+  --bento-block-bg: var(--bento-strip-gradient);
   color: var(--bento-text);
 }
 

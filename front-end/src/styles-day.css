@@ -873,6 +873,106 @@ html[data-reading-theme='day'] .scn-bento-editor__panel-content {
   background: transparent;
 }
 
+/* Bento block — soft sideways vignette (white edges, gentle gray center; no hard 33% bands). */
+html[data-reading-theme='day'] .scn-bentogrid01--theme-default,
+html[data-reading-theme='day'] .scn-bentogrid01--theme-inverted,
+html[data-reading-theme='day'] .scn-bentogrid01--theme-accent {
+  --bento-strip-bg-bright: #ffffff;
+  --bento-strip-bg-dark: #eef0f3;
+  --bento-strip-gradient: linear-gradient(
+    90deg,
+    var(--bento-strip-bg-bright) 0%,
+    #fafbfc 16%,
+    #f5f6f8 32%,
+    var(--bento-strip-bg-dark) 50%,
+    #f5f6f8 68%,
+    #fafbfc 84%,
+    var(--bento-strip-bg-bright) 100%
+  );
+  --bento-block-bg: var(--bento-strip-gradient);
+}
+
+html[data-reading-theme='day'] .scn-bentogrid01--theme-inverted {
+  --bento-bg: #ffffff;
+  --bento-text: #18181b;
+  --bento-muted: #52525b;
+  --bento-border: rgba(0, 0, 0, 0.12);
+  --bento-tile-header-bg: var(--bento-bg);
+  --bento-tile-surface: var(--bento-bg);
+  --bento-footer-divider: rgba(0, 0, 0, 0.1);
+  --carousel-card-surface-rgb: 243, 244, 246;
+}
+
+html[data-reading-theme='day'] .scn-bentogrid01--theme-inverted .scn-bentogrid01__badge {
+  border-color: var(--bento-border);
+  color: #404040;
+  background: transparent;
+}
+
+html[data-reading-theme='day'] .scn-bentogrid01--theme-inverted .scn-bentogrid01__feat-img--light {
+  display: block !important;
+}
+
+html[data-reading-theme='day'] .scn-bentogrid01--theme-inverted .scn-bentogrid01__feat-img--dark {
+  display: none !important;
+}
+
+html[data-reading-theme='day'] .scn-bentogrid01--theme-accent {
+  --bento-strip-bg-dark: #e8edf3;
+  --bento-strip-gradient: linear-gradient(
+    90deg,
+    #ffffff 0%,
+    #f8fafc 16%,
+    #f1f5f9 32%,
+    #e8edf3 50%,
+    #f1f5f9 68%,
+    #f8fafc 84%,
+    #ffffff 100%
+  );
+  --bento-bg: #f8fafc;
+  --bento-tile-header-bg: #eef2f7;
+  --bento-tile-surface: #f1f5f9;
+  --bento-text: #0f172a;
+  --bento-muted: #475569;
+  --bento-border: rgba(15, 23, 42, 0.14);
+  --bento-footer-divider: rgba(15, 23, 42, 0.12);
+  --carousel-card-surface-rgb: 241, 245, 249;
+}
+
+html[data-reading-theme='day'] .scn-bentogrid01--theme-accent .scn-bentogrid01__heading,
+html[data-reading-theme='day'] .scn-bentogrid01--theme-accent .scn-bentogrid01__tile-title,
+html[data-reading-theme='day'] .scn-bentogrid01--theme-accent .carousel-article-card__title {
+  color: #0f172a !important;
+}
+
+html[data-reading-theme='day'] .scn-bentogrid01--theme-accent .carousel-article-card {
+  color: #0f172a !important;
+}
+
+html[data-reading-theme='day'] .scn-bentogrid01--theme-accent .carousel-article-card__excerpt,
+html[data-reading-theme='day'] .scn-bentogrid01--theme-accent .carousel-article-card__footer,
+html[data-reading-theme='day'] .scn-bentogrid01--theme-accent .carousel-article-card__published,
+html[data-reading-theme='day'] .scn-bentogrid01--theme-accent .carousel-article-card__author {
+  color: #475569 !important;
+}
+
+html[data-reading-theme='day'] .scn-bentogrid01--theme-accent .carousel-article-card__tag {
+  color: #334155 !important;
+  background: rgba(15, 23, 42, 0.06) !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+}
+
+html[data-reading-theme='day'] .scn-bentogrid01--theme-inverted .carousel-article-card__published,
+html[data-reading-theme='day'] .scn-bentogrid01--theme-inverted .carousel-article-card__author {
+  color: #3f3f46 !important;
+}
+
+html[data-reading-theme='day'] .scn-bentogrid01--theme-inverted .carousel-article-card__tag {
+  color: #27272a !important;
+  background: rgba(0, 0, 0, 0.055) !important;
+  border-color: rgba(0, 0, 0, 0.14) !important;
+}
+
 html[data-reading-theme='day'] .scn-bentogrid01 .forex-strip__grid {
   margin-left: 0;
   margin-right: auto;
