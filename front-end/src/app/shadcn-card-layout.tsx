@@ -4,6 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Separator as UiSeparator } from '../components/ui/separator';
 import { cn } from '../lib/utils';
+import { ScnTag } from '../components/scn-tag';
 import {
   packCarouselSlides,
   type CarouselCardViewModel,
@@ -267,9 +268,9 @@ export function ArticleCardView({
               />
             ) : null}
             {tags.map((tag) => (
-              <span key={tag} className="scn-article-card__tag">
+              <ScnTag key={tag} inactive>
                 {tag}
-              </span>
+              </ScnTag>
             ))}
           </div>
         ) : null}

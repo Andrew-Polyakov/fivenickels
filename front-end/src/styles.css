@@ -1,14 +1,19 @@
 /* Global widget styles (Material theme from angular.json). Site overrides live in mysite.css when Wagtail loads it last. */
 
 :root {
-  --sc-rgb-accent: 92, 255, 138;
-  --sc-rgb-glow: 74, 222, 128;
-  --sc-accent-hex: #4ade80;
-  --sc-accent-bright: #5cff8a;
-  --sc-accent-light-end: #8fffb0;
+  --sc-rgb-accent: 56, 189, 248;
+  --sc-rgb-glow: 56, 189, 248;
+  --sc-rgb-neon-blue: 56, 189, 248;
+  --neon-blue: #38bdf8;
+  --neon-blue-deep: #0ea5e9;
+  --neon-blue-glow: rgba(56, 189, 248, 0.42);
+  --neon-green: var(--neon-blue);
+  --sc-accent-hex: #38bdf8;
+  --sc-accent-bright: #0ea5e9;
+  --sc-accent-light-end: #7dd3fc;
   --sc-on-accent-fg: #0a0f14;
   --carousel-card-surface-rgb: 0, 0, 0;
-  --ticker-pct-up: var(--neon-green);
+  --ticker-pct-up: var(--neon-blue);
   --ticker-pct-down: var(--ticker-down);
   --masthead-title-metallic: linear-gradient(
     180deg,
@@ -1910,8 +1915,8 @@ body.template-taxonomy-drilldown .scn-bentogrid01__inner,
 
 .bento-article-carousel__dot--active {
   opacity: 1;
-  background: var(--sc-accent-hex, #00994d);
-  box-shadow: 0 0 10px rgba(0, 153, 77, 0.55);
+  background: var(--sc-accent-hex, #38bdf8);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.55);
 }
 
 .bento-article-carousel__dot:not(:disabled):not(.bento-article-carousel__dot--active):hover {
@@ -1919,8 +1924,8 @@ body.template-taxonomy-drilldown .scn-bentogrid01__inner,
 }
 
 .bento-article-carousel__dot--active:not(:disabled):hover {
-  background: var(--sc-accent-hex, #00994d);
-  box-shadow: 0 0 14px rgba(0, 153, 77, 0.7);
+  background: var(--sc-accent-hex, #38bdf8);
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.7);
 }
 
 .scn-bentogrid01__tile-footer {
@@ -2145,15 +2150,21 @@ html[data-reading-theme="day"] .scn-bentogrid01--theme-inverted .carousel-articl
   color: #d4d4d8 !important;
 }
 
-html:not([data-reading-theme="day"]) .scn-bentogrid01--theme-inverted .carousel-article-card__tag {
+html:not([data-reading-theme="day"])
+  .scn-bentogrid01--theme-inverted
+  .carousel-article-card__tags
+  .scn-badge--tag {
   color: #27272a !important;
-  background: rgba(0, 0, 0, 0.055) !important;
+  background: transparent !important;
   border-color: rgba(0, 0, 0, 0.14) !important;
 }
 
-html[data-reading-theme="day"] .scn-bentogrid01--theme-inverted .carousel-article-card__tag {
+html[data-reading-theme="day"]
+  .scn-bentogrid01--theme-inverted
+  .carousel-article-card__tags
+  .scn-badge--tag {
   color: #e4e4e7 !important;
-  background: rgba(255, 255, 255, 0.08) !important;
+  background: transparent !important;
   border-color: rgba(255, 255, 255, 0.22) !important;
 }
 
@@ -2309,9 +2320,9 @@ html[data-reading-theme="day"] .scn-bentogrid01--theme-inverted .carousel-articl
   color: var(--bento-muted) !important;
 }
 
-.scn-bentogrid01--theme-accent .carousel-article-card__tag {
+.scn-bentogrid01--theme-accent .carousel-article-card__tags .scn-badge--tag {
   color: rgba(255, 255, 255, 0.88) !important;
-  background: rgba(255, 255, 255, 0.1) !important;
+  background: transparent !important;
   border-color: var(--bento-border) !important;
 }
 
@@ -3180,8 +3191,9 @@ turbo-frame#site-nav:has(.site-nav__menu-host[data-shadcn-taxonomy-site-nav-boun
 .site-nav__row.scn-taxonomy-site-nav__depth-row .scn-navigation-menu__trigger--active,
 .site-nav__row.scn-taxonomy-site-nav__depth-row a.scn-navigation-menu__trigger--link.scn-navigation-menu__trigger--active {
   background: transparent;
-  color: #d1fae5;
-  box-shadow: inset 0 3px 0 0 var(--sc-accent-bright, #5cff8a);
+  color: var(--neon-blue, #38bdf8);
+  box-shadow: inset 0 -3px 0 0 var(--neon-blue, #38bdf8);
+  text-shadow: 0 0 12px var(--neon-blue-glow, rgba(56, 189, 248, 0.42));
 }
 
 .site-nav__row.scn-taxonomy-site-nav__unified
@@ -3203,8 +3215,11 @@ turbo-frame#site-nav:has(.site-nav__menu-host[data-shadcn-taxonomy-site-nav-boun
 .site-nav__row.scn-taxonomy-site-nav__depth-row
   a.scn-navigation-menu__trigger--link.scn-navigation-menu__trigger--active:focus-visible {
   background-color: transparent;
-  color: #d1fae5;
-  box-shadow: inset 0 3px 0 0 var(--sc-accent-bright, #5cff8a);
+  color: var(--neon-blue-deep, #0ea5e9);
+  box-shadow:
+    inset 0 -3px 0 0 var(--neon-blue, #38bdf8),
+    0 0 14px var(--neon-blue-glow, rgba(56, 189, 248, 0.42));
+  text-shadow: 0 0 14px var(--neon-blue-glow, rgba(56, 189, 248, 0.48));
 }
 
 /* Level-3+ subsection row: centered square triggers (matches root band styling). */
@@ -3445,8 +3460,9 @@ turbo-frame#site-nav:has(.site-nav__menu-host[data-shadcn-taxonomy-site-nav-boun
 }
 
 .scn-navigation-menu__list-item-link--active {
-  border-color: rgba(var(--sc-rgb-glow), 0.55);
-  background: rgba(var(--sc-rgb-glow), 0.14);
+  border-color: rgba(var(--sc-rgb-neon-blue), 0.55);
+  background: rgba(var(--sc-rgb-neon-blue), 0.14);
+  box-shadow: 0 0 12px var(--neon-blue-glow);
 }
 
 .scn-navigation-menu__list-item-title {
@@ -4306,17 +4322,6 @@ img[src*='bear.png'].scn-catalyst-toggle__icon {
   margin: 0 0 0.5rem;
 }
 
-.scn-article-card__tag {
-  border: 1px solid rgba(125, 211, 252, 0.45);
-  background: rgba(14, 116, 144, 0.18);
-  color: rgba(186, 230, 253, 0.95);
-  border-radius: 999px;
-  padding: 0.16rem 0.5rem;
-  font-size: 0.68rem;
-  line-height: 1.2;
-  letter-spacing: 0.01em;
-}
-
 .scn-article-card__shell {
   display: flex;
   flex-direction: column;
@@ -4710,16 +4715,6 @@ img[src*='bear.png'].scn-catalyst-toggle__icon {
   flex-wrap: wrap;
   gap: 0.35rem;
   margin-bottom: 0.5rem;
-}
-
-.carousel-article-card__tag {
-  border: 1px solid rgba(125, 211, 252, 0.45);
-  background: rgba(14, 116, 144, 0.18);
-  color: rgba(186, 230, 253, 0.95);
-  border-radius: 999px;
-  padding: 0.16rem 0.5rem;
-  font-size: 0.68rem;
-  line-height: 1.2;
 }
 
 /* Match ticker page `.ticker-related__title` */
@@ -5403,6 +5398,35 @@ img[src*='bear.png'].scn-catalyst-toggle__icon {
   background: transparent;
   color: rgba(248, 250, 252, 0.88);
   border: 1px solid rgba(148, 163, 184, 0.45);
+}
+
+/* Editorial tags (article meta, tag cloud, cards) — outline pill, no fill. */
+.scn-badge--tag {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: transparent;
+  color: var(--color-link, #7dd3fc);
+  border: 1px solid var(--color-border-subtle, rgba(148, 163, 184, 0.18));
+  box-shadow: none;
+}
+
+.scn-tag-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.scn-tag-link:hover .scn-badge--tag,
+.scn-tag-link:focus-visible .scn-badge--tag {
+  color: var(--color-link-hover, #a5f3fc);
+  border-color: rgba(var(--sc-rgb-neon-blue, 56, 189, 248), 0.55);
+  box-shadow: 0 0 12px var(--neon-blue-glow, rgba(56, 189, 248, 0.42));
+}
+
+.scn-badge--tag[aria-disabled] {
+  cursor: default;
+  opacity: 0.75;
+  pointer-events: none;
 }
 
 /* Bento: `Badge variant="outline"` loads late generic outline colors; re-apply per theme. */

@@ -1,36 +1,9 @@
 import * as React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
-import { Badge } from '../components/ui/badge';
+import { EditorialTagList, type EditorialTagPayload } from '../components/editorial-tag-list';
 
-export type ArticleTagPayload = {
-  name: string;
-  href: string | null;
-  inactive: boolean;
-};
-
-function ArticleTagsView({ tags }: { tags: ArticleTagPayload[] }): React.JSX.Element | null {
-  if (!tags.length) {
-    return null;
-  }
-  return (
-    <nav className="tagged-content__meta-tags" aria-label="Tags">
-      {tags.map((tag) =>
-        tag.inactive || !tag.href ? (
-          <Badge key={tag.name} variant="outline" className="tagged-content__meta-tag" aria-disabled>
-            {tag.name}
-          </Badge>
-        ) : (
-          <a key={tag.name} href={tag.href} className="tagged-content__meta-tag-link">
-            <Badge variant="outline" className="tagged-content__meta-tag">
-              {tag.name}
-            </Badge>
-          </a>
-        )
-      )}
-    </nav>
-  );
-}
+export type ArticleTagPayload = EditorialTagPayload;
 
 function readTagsPayload(jsonId: string): ArticleTagPayload[] | null {
   const el = document.getElementById(jsonId);
@@ -92,6 +65,6 @@ export function mountShadcnArticleTags(): void {
       root = createRoot(host);
       tagRoots.set(host, root);
     }
-    root.render(<ArticleTagsView tags={tags} />);
+    root.render(<EditorialTagList tags={tags} />);
   });
 }

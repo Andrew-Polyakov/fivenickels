@@ -121,10 +121,10 @@ type TaxonomyChip = {
       gap: 0.25rem;
     }
     .taxonomy-chip-widget__chip--active {
-      background: var(--neon-green, #4ade80);
+      background: var(--neon-blue, #38bdf8);
       color: #0a0f14;
       border-color: transparent;
-      box-shadow: 0 0 28px rgba(74, 222, 128, 0.9);
+      box-shadow: 0 0 28px var(--neon-blue-glow, rgba(56, 189, 248, 0.55));
     }
     .taxonomy-chip-widget__chip--active .taxonomy-chip-widget__link-btn,
     .taxonomy-chip-widget__chip--active .taxonomy-chip-widget__label,
@@ -163,7 +163,7 @@ type TaxonomyChip = {
       border-radius: 999px;
     }
     .taxonomy-chip-widget__edit-btn:focus-visible {
-      outline: 2px solid var(--neon-green, #4ade80);
+      outline: 2px solid var(--neon-blue, #38bdf8);
       outline-offset: 2px;
     }
     .taxonomy-chip-widget__edit-glyph {

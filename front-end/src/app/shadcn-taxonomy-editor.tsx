@@ -19,6 +19,7 @@ import {
   Type,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { ScnTag } from '../components/scn-tag';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -879,7 +880,7 @@ function carouselCardResolveFontColor(key: CarouselCardFontColorKey | undefined)
     case 'black':
       return '#0a0a0a';
     case 'slime':
-      return 'var(--color-slime)';
+      return 'var(--neon-blue)';
     case 'gray':
       return 'rgba(226, 232, 240, 0.7)';
     default:
@@ -927,9 +928,9 @@ export function CarouselCard(props: CarouselCardViewModel) {
             />
           ) : null}
           {tagList.map((tag) => (
-            <span key={tag} className="carousel-article-card__tag">
+            <ScnTag key={tag} inactive>
               {tag}
-            </span>
+            </ScnTag>
           ))}
         </div>
       ) : null}

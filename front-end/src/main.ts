@@ -14,6 +14,10 @@ import {
   unmountShadcnArticleTags,
 } from './app/shadcn-article-tags';
 import {
+  mountShadcnTagCloud,
+  unmountShadcnTagCloud,
+} from './app/shadcn-tag-cloud';
+import {
   mountShadcnArticleShare,
   unmountShadcnArticleShare,
 } from './app/shadcn-article-share';
@@ -50,6 +54,8 @@ declare global {
     mountShadcnArticleDatelines?: () => void;
     mountShadcnArticleTags?: () => void;
     unmountShadcnArticleTags?: (root?: ParentNode) => void;
+    mountShadcnTagCloud?: () => void;
+    unmountShadcnTagCloud?: (root?: ParentNode) => void;
     mountShadcnArticleShare?: () => void;
     unmountShadcnArticleShare?: (root?: ParentNode) => void;
     mountShadcnTaxonomySiteNav?: () => void;
@@ -126,6 +132,8 @@ createApplication({
     window.mountShadcnArticleDatelines = mountShadcnArticleDatelines;
     window.mountShadcnArticleTags = mountShadcnArticleTags;
     window.unmountShadcnArticleTags = unmountShadcnArticleTags;
+    window.mountShadcnTagCloud = mountShadcnTagCloud;
+    window.unmountShadcnTagCloud = unmountShadcnTagCloud;
     window.mountShadcnArticleShare = mountShadcnArticleShare;
     window.unmountShadcnArticleShare = unmountShadcnArticleShare;
     window.mountShadcnTaxonomySiteNav = mountShadcnTaxonomySiteNav;
@@ -184,6 +192,7 @@ createApplication({
     mountShadcnBreadcrumbs();
     mountShadcnArticleDatelines();
     mountShadcnArticleTags();
+    mountShadcnTagCloud();
     mountShadcnArticleShare();
     mountShadcnBrokerTable();
     mountShadcnProfileArticlesTable();

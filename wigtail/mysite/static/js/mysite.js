@@ -413,6 +413,9 @@
         if (window.mountShadcnArticleTags && typeof window.mountShadcnArticleTags === "function") {
             window.mountShadcnArticleTags();
         }
+        if (window.mountShadcnTagCloud && typeof window.mountShadcnTagCloud === "function") {
+            window.mountShadcnTagCloud();
+        }
         if (window.mountShadcnArticleShare && typeof window.mountShadcnArticleShare === "function") {
             window.mountShadcnArticleShare();
         }
@@ -430,6 +433,9 @@
         var scope = root || document;
         if (window.unmountShadcnArticleTags && typeof window.unmountShadcnArticleTags === "function") {
             window.unmountShadcnArticleTags(scope);
+        }
+        if (window.unmountShadcnTagCloud && typeof window.unmountShadcnTagCloud === "function") {
+            window.unmountShadcnTagCloud(scope);
         }
         if (window.unmountShadcnArticleShare && typeof window.unmountShadcnArticleShare === "function") {
             window.unmountShadcnArticleShare(scope);

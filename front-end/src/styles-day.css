@@ -1,11 +1,11 @@
 /* Day reading theme — FT-inspired editorial surfaces + shadcn/Radix mounts (after styles.css). */
 
 html[data-reading-theme='day'] {
-  --sc-rgb-accent: 0, 153, 77;
-  --sc-rgb-glow: 0, 153, 77;
-  --sc-accent-hex: #00994d;
-  --sc-accent-bright: #00b359;
-  --sc-accent-light-end: #6fcf97;
+  --sc-rgb-accent: 0, 96, 94;
+  --sc-rgb-glow: 0, 96, 94;
+  --sc-accent-hex: #00605e;
+  --sc-accent-bright: #00807d;
+  --sc-accent-light-end: #4db8b5;
   --sc-on-accent-fg: #ffffff;
   --color-link: #00605e;
   --color-link-hover: #004442;
@@ -147,7 +147,7 @@ html[data-reading-theme='day'] .scn-input {
 
 html[data-reading-theme='day'] .scn-input:focus {
   border-color: rgba(0, 96, 94, 0.55);
-  box-shadow: 0 0 0 2px rgba(0, 153, 77, 0.22);
+  box-shadow: 0 0 0 2px rgba(0, 96, 94, 0.22);
 }
 
 html[data-reading-theme='day'] .scn-button--default {
@@ -333,13 +333,26 @@ html[data-reading-theme='day'] .scn-badge--outline {
   border-color: rgba(0, 0, 0, 0.18);
 }
 
+html[data-reading-theme='day'] .scn-badge--tag {
+  color: var(--neon-blue-deep, #004442);
+  border-color: rgba(0, 0, 0, 0.14);
+  background: transparent;
+}
+
+html[data-reading-theme='day'] .scn-tag-link:hover .scn-badge--tag,
+html[data-reading-theme='day'] .scn-tag-link:focus-visible .scn-badge--tag {
+  color: var(--neon-blue, #00605e);
+  border-color: rgba(0, 96, 94, 0.45);
+  box-shadow: 0 0 12px var(--neon-blue-glow, rgba(0, 96, 94, 0.28));
+}
+
 html[data-reading-theme='day'] .scn-resize-handle__sep.scn-separator--vertical {
   background: rgba(0, 0, 0, 0.12);
 }
 
 html[data-reading-theme='day'] .scn-resize-handle__sep--emphasis.scn-separator--vertical {
   background: rgba(0, 96, 94, 0.35);
-  box-shadow: 0 0 8px rgba(0, 153, 77, 0.22);
+  box-shadow: 0 0 8px rgba(0, 96, 94, 0.22);
 }
 
 html[data-reading-theme='day'] .scn-navigation-menu__trigger {
@@ -468,8 +481,9 @@ html[data-reading-theme='day']
   background-color: transparent;
   border: none;
   border-radius: 0;
-  color: #000000;
-  box-shadow: inset 0 3px 0 0 var(--sc-accent-hex, #00994d);
+  color: var(--neon-blue-deep, #004442);
+  box-shadow: inset 0 -3px 0 0 var(--neon-blue, #00605e);
+  text-shadow: none;
 }
 
 html[data-reading-theme='day']
@@ -493,8 +507,10 @@ html[data-reading-theme='day']
   .site-nav__row.scn-taxonomy-site-nav__unified
   a.scn-navigation-menu__trigger--link.scn-navigation-menu__trigger--active:focus-visible {
   background-color: transparent;
-  color: #000000;
-  box-shadow: inset 0 3px 0 0 var(--sc-accent-hex, #00994d);
+  color: var(--neon-blue-deep, #004442);
+  box-shadow:
+    inset 0 -3px 0 0 var(--neon-blue, #00605e),
+    0 0 10px var(--neon-blue-glow, rgba(0, 96, 94, 0.28));
 }
 
 html[data-reading-theme='day']
@@ -542,10 +558,10 @@ html[data-reading-theme='day']
   .site-nav__row.scn-taxonomy-site-nav__depth-row
   a.scn-navigation-menu__trigger--link.scn-navigation-menu__trigger--active {
   background: transparent;
-  color: #000000;
+  color: var(--neon-blue-deep, #004442);
   border: none;
   border-radius: 0;
-  box-shadow: inset 0 3px 0 0 var(--sc-accent-hex, #00994d);
+  box-shadow: inset 0 -3px 0 0 var(--neon-blue, #00605e);
 }
 
 html[data-reading-theme='day']
@@ -565,8 +581,10 @@ html[data-reading-theme='day']
   .site-nav__row.scn-taxonomy-site-nav__depth-row
   a.scn-navigation-menu__trigger--link.scn-navigation-menu__trigger--active:focus-visible {
   background-color: transparent;
-  color: #000000;
-  box-shadow: inset 0 3px 0 0 var(--sc-accent-hex, #00994d);
+  color: var(--neon-blue-deep, #004442);
+  box-shadow:
+    inset 0 -3px 0 0 var(--neon-blue, #00605e),
+    0 0 10px var(--neon-blue-glow, rgba(0, 96, 94, 0.28));
 }
 
 html[data-reading-theme='day'] #site-nav[data-can-edit='1'] .scn-taxonomy-site-nav__depth-item .scn-navigation-menu__trigger,
@@ -645,13 +663,14 @@ html[data-reading-theme='day'] .scn-taxonomy-site-nav__edit-popover.scn-popover-
 html[data-reading-theme='day'] .scn-taxonomy-site-nav .scn-navigation-menu__list-item-link--active,
 html[data-reading-theme='day'] .scn-taxonomy-site-nav .scn-navigation-menu__list-item-link--active:hover,
 html[data-reading-theme='day'] .scn-taxonomy-site-nav .scn-navigation-menu__list-item-link--active:focus-visible {
-  border-color: rgba(var(--sc-rgb-accent), 0.45);
+  border-color: rgba(0, 96, 94, 0.45);
   background: #ffffff;
-  color: #000000;
+  color: var(--neon-blue-deep, #004442);
   border-radius: 0.375rem;
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.06),
-    inset 0 -3px 0 0 var(--sc-accent-hex, #00994d);
+    0 0 10px var(--neon-blue-glow, rgba(0, 96, 94, 0.28)),
+    inset 0 -3px 0 0 var(--neon-blue, #00605e);
 }
 
 html[data-reading-theme='day']
@@ -732,7 +751,7 @@ html[data-reading-theme='day'] .scn-bento-editor__add-col:focus-visible {
 }
 
 html[data-reading-theme='day'] .bento2-context-menu__item--save {
-  color: #00994d;
+  color: #00605e;
 }
 
 html[data-reading-theme='day'] .carousel-article-card.scn-card {
@@ -781,8 +800,8 @@ html[data-reading-theme='day'] .bento-article-carousel__dot:not(:disabled) {
 }
 
 html[data-reading-theme='day'] .bento-article-carousel__dot--active {
-  background: #00994d;
-  box-shadow: 0 0 10px rgba(0, 153, 77, 0.45);
+  background: #00605e;
+  box-shadow: 0 0 10px rgba(0, 96, 94, 0.45);
 }
 
 html[data-reading-theme='day'] .bento-article-carousel__dot:not(:disabled):not(.bento-article-carousel__dot--active):hover {
@@ -790,8 +809,8 @@ html[data-reading-theme='day'] .bento-article-carousel__dot:not(:disabled):not(.
 }
 
 html[data-reading-theme='day'] .bento-article-carousel__dot--active:not(:disabled):hover {
-  background: #00994d;
-  box-shadow: 0 0 14px rgba(0, 153, 77, 0.6);
+  background: #00605e;
+  box-shadow: 0 0 14px rgba(0, 96, 94, 0.6);
 }
 
 html[data-reading-theme='day'] .bento-article-carousel__empty-msg {
@@ -825,18 +844,18 @@ html[data-reading-theme='day'] .carousel-article-card__published {
   opacity: 1;
 }
 
-html[data-reading-theme='day'] .carousel-article-card__tag,
-html[data-reading-theme='day'] .scn-article-card__tag {
-  border: 1px solid rgba(25, 118, 210, 0.42);
-  background: rgba(25, 118, 210, 0.08);
-  color: #1565c0;
+html[data-reading-theme='day'] .carousel-article-card__tags .scn-badge--tag,
+html[data-reading-theme='day'] .scn-article-card__tags .scn-badge--tag {
+  border: 1px solid rgba(0, 96, 94, 0.45);
+  background: transparent;
+  color: var(--neon-blue-deep, #004442);
   box-shadow: none;
 }
 
 html[data-reading-theme='day'] .carousel-article-card .scn-article-card__catalyst-icon:not(.scn-catalyst-icon--bear),
 html[data-reading-theme='day'] .carousel-article-card .scn-catalyst-icon:not(.scn-catalyst-icon--bear) {
   filter: none;
-  box-shadow: 0 0 10px rgba(0, 153, 77, 0.25);
+  box-shadow: 0 0 10px rgba(0, 96, 94, 0.25);
   border-radius: 4px;
 }
 
@@ -847,9 +866,9 @@ html[data-reading-theme='day'] .carousel-article-card .scn-catalyst-icon--bear {
 }
 
 html[data-reading-theme='day'] .scn-article-card--bullish {
-  border-color: rgba(0, 153, 77, 0.45) !important;
-  background: rgba(0, 153, 77, 0.06) !important;
-  box-shadow: 0 0 14px rgba(0, 153, 77, 0.12);
+  border-color: rgba(0, 96, 94, 0.45) !important;
+  background: rgba(0, 96, 94, 0.06) !important;
+  box-shadow: 0 0 14px rgba(0, 96, 94, 0.12);
 }
 
 html[data-reading-theme='day'] .scn-article-card--bearish {
@@ -960,9 +979,9 @@ html[data-reading-theme='day'] .scn-bentogrid01--theme-accent .carousel-article-
   color: #475569 !important;
 }
 
-html[data-reading-theme='day'] .scn-bentogrid01--theme-accent .carousel-article-card__tag {
+html[data-reading-theme='day'] .scn-bentogrid01--theme-accent .carousel-article-card__tags .scn-badge--tag {
   color: #334155 !important;
-  background: rgba(15, 23, 42, 0.06) !important;
+  background: transparent !important;
   border-color: rgba(15, 23, 42, 0.14) !important;
 }
 
@@ -971,9 +990,9 @@ html[data-reading-theme='day'] .scn-bentogrid01--theme-inverted .carousel-articl
   color: #3f3f46 !important;
 }
 
-html[data-reading-theme='day'] .scn-bentogrid01--theme-inverted .carousel-article-card__tag {
+html[data-reading-theme='day'] .scn-bentogrid01--theme-inverted .carousel-article-card__tags .scn-badge--tag {
   color: #27272a !important;
-  background: rgba(0, 0, 0, 0.055) !important;
+  background: transparent !important;
   border-color: rgba(0, 0, 0, 0.14) !important;
 }
 
@@ -1006,8 +1025,8 @@ html[data-reading-theme='day'] .scn-broker-edit-trigger:hover {
 
 html[data-reading-theme='day'] .scn-broker-edit-trigger:focus-visible,
 html[data-reading-theme='day'] .scn-broker-edit-trigger[data-state='open'] {
-  border-color: rgba(0, 153, 77, 0.75);
-  box-shadow: 0 0 0 2px rgba(0, 153, 77, 0.28), 0 0 12px rgba(0, 153, 77, 0.22);
+  border-color: rgba(0, 96, 94, 0.75);
+  box-shadow: 0 0 0 2px rgba(0, 96, 94, 0.28), 0 0 12px rgba(0, 96, 94, 0.22);
 }
 
 html[data-reading-theme='day'] .scn-profile-action-edit,
@@ -1053,8 +1072,8 @@ html[data-reading-theme='day'] .scn-carousel-editor__stack-combobox-popover.scn-
 
 html[data-reading-theme='day'] .scn-command-item[data-selected='true'],
 html[data-reading-theme='day'] .scn-command-item:hover:not([aria-disabled='true']) {
-  background: rgba(0, 153, 77, 0.12);
-  border-color: rgba(0, 153, 77, 0.35);
+  background: rgba(0, 96, 94, 0.12);
+  border-color: rgba(0, 96, 94, 0.35);
 }
 
 html[data-reading-theme='day'] .scn-editor-block__ctrl-btn {
@@ -1090,22 +1109,22 @@ html[data-reading-theme='day'] .scn-carousel-editor__settings-btn.scn-button--gh
 }
 
 html[data-reading-theme='day'] .scn-popover-content .scn-command-list {
-  scrollbar-color: rgba(0, 153, 77, 0.75) rgba(0, 0, 0, 0.08);
+  scrollbar-color: rgba(0, 96, 94, 0.75) rgba(0, 0, 0, 0.08);
 }
 
 html[data-reading-theme='day'] .scn-popover-content .scn-command-list::-webkit-scrollbar-track {
   background: rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba(0, 153, 77, 0.2);
+  border: 1px solid rgba(0, 96, 94, 0.2);
 }
 
 html[data-reading-theme='day'] .scn-popover-content .scn-command-list::-webkit-scrollbar-thumb {
-  background: rgba(0, 153, 77, 0.55);
-  box-shadow: 0 0 10px rgba(0, 153, 77, 0.35);
+  background: rgba(0, 96, 94, 0.55);
+  box-shadow: 0 0 10px rgba(0, 96, 94, 0.35);
 }
 
 html[data-reading-theme='day'] .scn-popover-content .scn-scroll-area__thumb {
-  background: rgba(0, 153, 77, 0.58);
-  box-shadow: 0 0 12px rgba(0, 153, 77, 0.38);
+  background: rgba(0, 96, 94, 0.58);
+  box-shadow: 0 0 12px rgba(0, 96, 94, 0.38);
 }
 
 /* ── FxBroker Card — day theme ── */

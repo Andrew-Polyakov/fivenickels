@@ -60,10 +60,10 @@
                                 <nav class="tagged-content__meta-tags" aria-label="Tags">
                                     {% for tag in article_tags %}
                                         {% if tag.inactive or not tag.href %}
-                                            <span class="tagged-content__meta-tag scn-badge scn-badge--outline" aria-disabled>{{ tag.name }}</span>
+                                            <span class="tagged-content__meta-tag scn-badge scn-badge--tag" aria-disabled>{{ tag.name }}</span>
                                         {% else %}
-                                            <a href="{{ tag.href }}" class="tagged-content__meta-tag-link">
-                                                <span class="tagged-content__meta-tag scn-badge scn-badge--outline">{{ tag.name }}</span>
+                                            <a href="{{ tag.href }}" class="tagged-content__meta-tag-link scn-tag-link">
+                                                <span class="tagged-content__meta-tag scn-badge scn-badge--tag">{{ tag.name }}</span>
                                             </a>
                                         {% endif %}
                                     {% endfor %}
@@ -138,22 +138,23 @@
 
     {% if page.tags.count %}
         <footer class="tagged-content__footer">
-            <nav class="tag-cloud" aria-label="Tags">
-                {% for tag in page.tags.all %}
-                    {% if routable_home %}
-                        {% if tag.slug %}
-                        <a
-                            class="tag-cloud__link"
-                            href="{% routablepageurl routable_home "tag_archive" tag_slug=tag.slug %}?section={{ page.section_term.slug }}"
-                        >{{ tag.name }}</a>
+            {{ article_tags|json_script:"tag-cloud-data" }}
+            <div
+                data-shadcn-tag-cloud
+                data-tags-json-id="tag-cloud-data"
+            >
+                <nav class="tag-cloud tagged-content__meta-tags" aria-label="Tags">
+                    {% for tag in article_tags %}
+                        {% if tag.inactive or not tag.href %}
+                            <span class="tagged-content__meta-tag scn-badge scn-badge--tag" aria-disabled>{{ tag.name }}</span>
                         {% else %}
-                        <span class="tag-cloud__link tag-cloud__link--inactive">{{ tag.name }}</span>
+                            <a href="{{ tag.href }}" class="tagged-content__meta-tag-link scn-tag-link">
+                                <span class="tagged-content__meta-tag scn-badge scn-badge--tag">{{ tag.name }}</span>
+                            </a>
                         {% endif %}
-                    {% else %}
-                        <span class="tag-cloud__link tag-cloud__link--inactive">{{ tag.name }}</span>
-                    {% endif %}
-                {% endfor %}
-            </nav>
+                    {% endfor %}
+                </nav>
+            </div>
 
             {% if similar_pages %}
                 <section class="tagged-content__related" aria-label="Similar articles">

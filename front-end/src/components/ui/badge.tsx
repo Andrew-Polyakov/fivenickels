@@ -10,6 +10,7 @@ const badgeVariants = cva('scn-badge', {
       secondary: 'scn-badge--secondary',
       destructive: 'scn-badge--destructive',
       outline: 'scn-badge--outline',
+      tag: 'scn-badge--tag',
     },
   },
   defaultVariants: {

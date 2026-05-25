@@ -526,10 +526,15 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         r = self.client.get(self.page_e1.url)
         self.assertEqual(r.status_code, 200)
         self.assertContains(r, "Beta")
-        self.assertContains(r, "tag-cloud__link--inactive")
+        self.assertContains(r, "scn-badge--tag")
+        self.assertContains(r, 'aria-disabled')
         self.assertContains(r, "tags/alpha/")
         self.assertContains(r, '"inactive": true')
+        self.assertContains(r, "tagged-content__meta-tag-link")
         self.assertContains(r, "data-shadcn-article-tags")
+        self.assertContains(r, "data-shadcn-tag-cloud")
+        self.assertContains(r, 'id="tag-cloud-data"')
+        self.assertNotContains(r, "tag-cloud__link")
 
     def test_tagged_article_page_renders_lede_separator_then_body(self):
         r = self.client.get(self.page_e1.url)
