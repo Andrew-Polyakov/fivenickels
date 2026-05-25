@@ -1,8 +1,12 @@
 {
   "mcpServers": {
     "alpaca-feed": {
-      "command": "python3",
+      "command": "uv",
       "args": [
+        "--project",
+        "/Users/andewpolyakov/fivenickels/tools/AlpacaFeed",
+        "run",
+        "python",
         "/Users/andewpolyakov/fivenickels/tools/AlpacaFeed/mcp_server.py"
       ],
       "env": {}
