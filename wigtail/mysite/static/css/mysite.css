@@ -411,53 +411,46 @@ html[data-reading-theme="day"] .featured-category-chips taxonomy-chip-widget .ma
 
 }
 
-html[data-reading-theme="day"] .site-nav__row taxonomy-chip-widget .mat-mdc-standard-chip.mat-mdc-chip-highlighted .taxonomy-chip-widget__edit-glyph,
-html[data-reading-theme="day"] .featured-category-chips taxonomy-chip-widget .mat-mdc-standard-chip.mat-mdc-chip-highlighted .taxonomy-chip-widget__edit-glyph {
-
-    color: #fafafa;
-
-}
-
 html[data-reading-theme="day"] .site-nav__row taxonomy-chip-widget .mat-mdc-standard-chip.mat-mdc-chip-highlighted,
 html[data-reading-theme="day"] .featured-category-chips taxonomy-chip-widget .mat-mdc-standard-chip.mat-mdc-chip-highlighted {
 
-    --mdc-chip-elevated-container-color: #0a0a0a;
+    --mdc-chip-elevated-container-color: #ffffff;
 
-    --mdc-chip-label-text-color: #fafafa;
+    --mdc-chip-label-text-color: #000000;
 
     --mdc-chip-outline-color: rgba(var(--sc-rgb-accent), 0.45);
 
     border-color: rgba(var(--sc-rgb-accent), 0.45);
 
     box-shadow:
-        0 0 0 1px rgba(0, 0, 0, 0.65),
-        0 0 22px rgba(var(--sc-rgb-glow), 0.42),
-        0 6px 16px rgba(0, 0, 0, 0.25);
+        0 1px 2px rgba(0, 0, 0, 0.06),
+        inset 0 -3px 0 0 var(--sc-accent-hex, #00994d);
 
 }
 
 html[data-reading-theme="day"] .site-nav__row taxonomy-chip-widget .mat-mdc-standard-chip.mat-mdc-chip-highlighted .taxonomy-chip-widget__link,
 html[data-reading-theme="day"] .featured-category-chips taxonomy-chip-widget .mat-mdc-standard-chip.mat-mdc-chip-highlighted .taxonomy-chip-widget__link,
+html[data-reading-theme="day"] .site-nav__row taxonomy-chip-widget .mat-mdc-standard-chip.mat-mdc-chip-highlighted .taxonomy-chip-widget__edit-glyph,
+html[data-reading-theme="day"] .featured-category-chips taxonomy-chip-widget .mat-mdc-standard-chip.mat-mdc-chip-highlighted .taxonomy-chip-widget__edit-glyph,
 html[data-reading-theme="day"] .site-nav__row taxonomy-chip-widget .mat-mdc-standard-chip.mat-mdc-chip-highlighted .mat-icon,
 html[data-reading-theme="day"] .featured-category-chips taxonomy-chip-widget .mat-mdc-standard-chip.mat-mdc-chip-highlighted .mat-icon {
 
-    color: #fafafa;
+    color: #000000;
 
 }
 
 html[data-reading-theme="day"] .site-nav__row taxonomy-chip-widget .taxonomy-chip-widget__chip.mat-mdc-chip-highlighted,
 html[data-reading-theme="day"] .featured-category-chips taxonomy-chip-widget .taxonomy-chip-widget__chip.mat-mdc-chip-highlighted {
 
-    background: #0a0a0a;
+    background: #ffffff;
 
-    color: #fafafa;
+    color: #000000;
 
     border-color: rgba(var(--sc-rgb-accent), 0.45);
 
     box-shadow:
-        0 0 0 1px rgba(0, 0, 0, 0.65),
-        0 0 22px rgba(var(--sc-rgb-glow), 0.42),
-        0 6px 16px rgba(0, 0, 0, 0.25);
+        0 1px 2px rgba(0, 0, 0, 0.06),
+        inset 0 -3px 0 0 var(--sc-accent-hex, #00994d);
 
 }
 
@@ -466,23 +459,22 @@ html[data-reading-theme="day"] .featured-category-chips taxonomy-chip-widget .ta
 html[data-reading-theme="day"] .site-nav__row taxonomy-chip-widget .taxonomy-chip-widget__chip.mat-mdc-chip-highlighted .mat-icon,
 html[data-reading-theme="day"] .featured-category-chips taxonomy-chip-widget .taxonomy-chip-widget__chip.mat-mdc-chip-highlighted .mat-icon {
 
-    color: #fafafa;
+    color: #000000;
 
 }
 
 html[data-reading-theme="day"] .site-nav__row taxonomy-chip-widget .taxonomy-chip-widget__chip--active,
 html[data-reading-theme="day"] .featured-category-chips taxonomy-chip-widget .taxonomy-chip-widget__chip--active {
 
-    background: #0a0a0a;
+    background: #ffffff;
 
-    color: #fafafa;
+    color: #000000;
 
     border-color: rgba(var(--sc-rgb-accent), 0.45);
 
     box-shadow:
-        0 0 0 1px rgba(0, 0, 0, 0.65),
-        0 0 22px rgba(var(--sc-rgb-glow), 0.42),
-        0 6px 16px rgba(0, 0, 0, 0.25);
+        0 1px 2px rgba(0, 0, 0, 0.06),
+        inset 0 -3px 0 0 var(--sc-accent-hex, #00994d);
 
 }
 
@@ -493,7 +485,7 @@ html[data-reading-theme="day"] .featured-category-chips taxonomy-chip-widget .ta
 html[data-reading-theme="day"] .site-nav__row taxonomy-chip-widget .taxonomy-chip-widget__chip--active .mat-icon,
 html[data-reading-theme="day"] .featured-category-chips taxonomy-chip-widget .taxonomy-chip-widget__chip--active .mat-icon {
 
-    color: #fafafa;
+    color: #000000;
 
 }
 
