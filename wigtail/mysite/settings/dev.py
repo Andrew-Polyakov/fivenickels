@@ -15,6 +15,8 @@ WAGTAILADMIN_BASE_URL = "http://127.0.0.1:8000"
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
+# Allow public signup during local development only.
+PUBLIC_SIGNUP_ENABLED = True
 
 try:
     from .local import *

@@ -545,13 +545,23 @@ function ProfileWorkspace({
   createArticleUrl,
   csrfToken,
   pageSize,
+  isStaff,
 }: {
   articles: ArticleRow[];
   moderationItems: ModerationRow[];
   createArticleUrl: string;
   csrfToken: string;
   pageSize: number;
+  isStaff: boolean;
 }) {
+  if (!isStaff) {
+    return (
+      <p className="scn-profile-workspace__staff-only">
+        Article editing is available to staff accounts only.
+      </p>
+    );
+  }
+
   return (
     <div className="scn-profile-workspace">
       <Tabs defaultValue="articles">
@@ -605,6 +615,8 @@ export function mountShadcnProfileArticlesTable(): void {
     const articles = parseJsonScript<ArticleRow>(articlesJsonId);
     const moderationItems = moderationJsonId ? parseJsonScript<ModerationRow>(moderationJsonId) : [];
 
+    const isStaff = host.dataset['isStaff'] === 'true';
+
     host.dataset['shadcnProfileArticlesBound'] = '1';
     let root = profileArticleRoots.get(host);
     if (!root) {
@@ -618,6 +630,7 @@ export function mountShadcnProfileArticlesTable(): void {
         createArticleUrl={createArticleUrl}
         csrfToken={csrfToken}
         pageSize={resolvedPageSize}
+        isStaff={isStaff}
       />,
     );
   });

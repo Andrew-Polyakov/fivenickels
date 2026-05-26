@@ -104,3 +104,4 @@ __pycache__/
 wigtail/env/
 wigtail/static/
 wigtail/media
+wigtail/mysite/settings/local.py

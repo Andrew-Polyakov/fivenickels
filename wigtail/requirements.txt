@@ -1,5 +1,5 @@
 Django>=6,<6.1
-wagtail==7.3rc1
+wagtail>=7.3.2,<7.5
 whitenoise>=6.9,<7
 wagtail-markdown>=0.13,<0.14
 opensearch-py>=2,<3

@@ -33,5 +33,6 @@
     data-create-article-url="{{ create_article_url }}"
     data-csrf-token="{{ csrf_token }}"
     data-page-size="{{ profile_page_size }}"
+    data-is-staff="{% if is_staff %}true{% else %}false{% endif %}"
 ></div>
 {% endblock %}

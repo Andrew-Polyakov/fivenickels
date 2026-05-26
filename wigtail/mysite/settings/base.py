@@ -260,3 +260,23 @@ ARTICLE_SUBMIT_DEFAULT_AUTHOR_NAME = os.environ.get(
     "Fivenickels Editorial",
 ).strip()
 ARTICLE_SUBMIT_USER = os.environ.get("ARTICLE_SUBMIT_USER", "").strip()
+
+# Public self-registration (disabled by default; enable in dev.py for local testing).
+PUBLIC_SIGNUP_ENABLED = _env_truthy("PUBLIC_SIGNUP_ENABLED")
+
+REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "60/min",
+        "user": "120/min",
+        "auto_submit": "10/min",
+        "article_write": "60/min",
+        "search_suggest": "30/min",
+    },
+}

@@ -15,17 +15,15 @@ from django.db import transaction
 
 from home.article_auto_submit import submit_articles_batch
 from home.models import TaggedContentPage, ContentTag, TaxonomyTerm
+from home.permissions import IsStaffUser
+from home.throttling import ArticleWriteRateThrottle, AutoSubmitRateThrottle
+from home.upload_validation import validate_image_upload
 from home.serializers import (
     ArticleEditorSerializer,
     ArticleUpdateSerializer,
     ArticleStatusActionSerializer,
     AutoSubmitBatchSerializer,
 )
-
-
-class IsAuthenticatedUser(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return bool(request.user and request.user.is_authenticated)
 
 
 class HasArticleSubmitBearerToken(permissions.BasePermission):
@@ -46,6 +44,7 @@ class HasArticleSubmitBearerToken(permissions.BasePermission):
 
 class ArticleAutoSubmitView(APIView):
     permission_classes = [HasArticleSubmitBearerToken]
+    throttle_classes = [AutoSubmitRateThrottle]
     parser_classes = (JSONParser,)
 
     def post(self, request):
@@ -67,9 +66,10 @@ class ArticleAutoSubmitView(APIView):
 class ArticleEditorViewSet(viewsets.ModelViewSet):
     queryset = TaggedContentPage.objects.all()
     serializer_class = ArticleEditorSerializer
-    permission_classes = [IsAuthenticatedUser]
+    permission_classes = [IsStaffUser]
+    throttle_classes = [ArticleWriteRateThrottle]
     parser_classes = (JSONParser, MultiPartParser, FormParser)
-    http_method_names = ['get', 'post', 'patch', 'delete', 'options']
+    http_method_names = ['get', 'post', 'patch', 'options']
 
     def get_object(self):
         article_id = self.kwargs.get('pk')
@@ -110,7 +110,7 @@ class ArticleEditorViewSet(viewsets.ModelViewSet):
 
         if action_name == 'publish':
             revision = instance.save_revision(user=request.user)
-            revision.publish()
+            revision.publish(skip_permission_checks=True)
             instance.refresh_from_db()
             if instance.awaiting_moderation:
                 instance.awaiting_moderation = False
@@ -135,7 +135,7 @@ class ArticleEditorViewSet(viewsets.ModelViewSet):
             revision = instance.get_latest_revision()
             if revision is None:
                 revision = instance.save_revision(user=request.user)
-            revision.publish(user=request.user)
+            revision.publish(user=request.user, skip_permission_checks=True)
             instance.refresh_from_db()
             if instance.awaiting_moderation:
                 instance.awaiting_moderation = False
@@ -210,6 +210,9 @@ class ArticleEditorViewSet(viewsets.ModelViewSet):
         from wagtail.images import get_image_model
         Image = get_image_model()
         image_file = request.FILES['image']
+        upload_error = validate_image_upload(image_file)
+        if upload_error:
+            return Response({'error': upload_error}, status=status.HTTP_400_BAD_REQUEST)
         image = Image.objects.create(title=image_file.name, file=image_file)
         instance.hero_image = image
         instance.save()
@@ -230,6 +233,9 @@ class ArticleEditorViewSet(viewsets.ModelViewSet):
         from wagtail.images import get_image_model
         Image = get_image_model()
         image_file = request.FILES['image']
+        upload_error = validate_image_upload(image_file)
+        if upload_error:
+            return Response({'error': upload_error}, status=status.HTTP_400_BAD_REQUEST)
         image = Image.objects.create(title=image_file.name, file=image_file)
 
         try:

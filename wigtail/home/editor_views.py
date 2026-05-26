@@ -10,14 +10,11 @@ from django.views.decorators.http import require_GET, require_POST
 from wagtail.models import Site
 
 from home.models import HomePage, TaggedContentPage, TaxonomyTerm
-
-
-def _staff_article_access(user) -> bool:
-    return bool(user.is_authenticated and (user.is_staff or user.is_superuser))
+from home.permissions import staff_article_access
 
 
 @login_required
-@user_passes_test(_staff_article_access)
+@user_passes_test(staff_article_access)
 @require_GET
 def article_preview(request, article_id):
     """Staff-only render of the article using its latest saved revision."""
@@ -29,11 +26,10 @@ def article_preview(request, article_id):
 
 
 @login_required
+@user_passes_test(staff_article_access)
 @require_GET
 def article_editor(request, article_id):
-    """
-    Display article editor page for staff users.
-    """
+    """Display article editor page for staff users."""
     try:
         article = get_object_or_404(TaggedContentPage, id=article_id)
     except Http404:
@@ -66,11 +62,10 @@ def _get_default_article_section():
 
 
 @login_required
+@user_passes_test(staff_article_access)
 @require_POST
 def create_article(request):
-    """
-    Create a blank draft article and open it in the profile editor.
-    """
+    """Create a blank draft article and open it in the profile editor."""
     parent = _get_profile_article_parent(request)
     if parent is None:
         raise Http404("Home page not found")
@@ -87,6 +82,9 @@ def create_article(request):
         section_term=section,
     )
     parent.add_child(instance=page)
+    page.refresh_from_db()
+    if page.live:
+        page.unpublish(set_expired=False)
     page.save_revision(user=request.user)
 
     return redirect("article_editor", article_id=page.id)

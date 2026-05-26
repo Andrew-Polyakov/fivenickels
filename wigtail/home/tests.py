@@ -1395,6 +1395,102 @@ class InlineEditingApiTests(WagtailPageTestCase):
         self.assertEqual(created.get_parent().pk, self.homepage.pk)
         self.assertFalse(created.live)
 
+    def _make_draft_article(self, **kwargs):
+        page = TaggedContentPage(
+            title=kwargs.pop("title", "Authz Test Story"),
+            slug=kwargs.pop("slug", "authz-test-story"),
+            section_term=kwargs.pop("section_term", self.energy),
+            lede=kwargs.pop("lede", "preview"),
+            **kwargs,
+        )
+        self.homepage.add_child(instance=page)
+        page.save_revision(user=self.admin_user)
+        return page
+
+    def test_non_staff_cannot_access_article_editor(self):
+        page = self._make_draft_article(slug="authz-editor-gate")
+        self.client.force_login(self.non_admin)
+        response = self.client.get(reverse("article_editor", kwargs={"article_id": page.pk}))
+        self.assertEqual(response.status_code, 302)
+
+    def test_non_staff_cannot_create_article(self):
+        self.client.force_login(self.non_admin)
+        before = TaggedContentPage.objects.count()
+        response = self.client.post(reverse("article_create"))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(TaggedContentPage.objects.count(), before)
+
+    def test_non_staff_profile_hides_editor_data(self):
+        page = self._make_draft_article(
+            title="Hidden Moderation Story",
+            slug="hidden-moderation-story",
+            awaiting_moderation=True,
+            live=False,
+        )
+        self.client.force_login(self.non_admin)
+        response = self.client.get(reverse("profile"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-is-staff="false"')
+        self.assertContains(response, 'data-create-article-url=""')
+        self.assertNotContains(response, "Hidden Moderation Story")
+        self.assertNotContains(response, reverse("article-article-action", args=[page.pk]))
+
+    def test_non_staff_cannot_patch_article_api(self):
+        page = self._make_draft_article(slug="authz-patch-gate")
+        self.client.force_login(self.non_admin)
+        response = self.client.patch(
+            reverse("article-detail", args=[page.pk]),
+            data='{"title": "Hacked title"}',
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 403)
+        page.refresh_from_db()
+        self.assertEqual(page.title, "Authz Test Story")
+
+    def test_non_staff_cannot_approve_moderation_via_api(self):
+        page = self._make_draft_article(
+            slug="authz-approve-gate",
+            awaiting_moderation=True,
+            live=False,
+        )
+        self.client.force_login(self.non_admin)
+        response = self.client.post(
+            reverse("article-article-action", args=[page.pk]),
+            data='{"action": "approve_moderation"}',
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 403)
+        page.refresh_from_db()
+        self.assertFalse(page.live)
+        self.assertTrue(page.awaiting_moderation)
+
+    def test_non_staff_cannot_delete_article_via_api(self):
+        page = self._make_draft_article(slug="authz-delete-gate")
+        self.client.force_login(self.non_admin)
+        response = self.client.post(
+            reverse("article-article-action", args=[page.pk]),
+            data='{"action": "delete"}',
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(TaggedContentPage.objects.filter(pk=page.pk).exists())
+
+    @override_settings(PUBLIC_SIGNUP_ENABLED=False)
+    def test_public_signup_disabled_when_setting_off(self):
+        response = self.client.post(
+            reverse("popup_signup"),
+            data={
+                "username": "blocked-user",
+                "email": "blocked@example.com",
+                "password1": "ComplexPass123!",
+                "password2": "ComplexPass123!",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(
+            get_user_model().objects.filter(username="blocked-user").exists()
+        )
+
     def test_article_preview_requires_staff(self):
         page = TaggedContentPage(
             title="Preview Gate Story",

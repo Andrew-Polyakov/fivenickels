@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from urllib.parse import urlencode, urlparse
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.contrib.auth.decorators import login_required
@@ -10,6 +11,8 @@ from django.shortcuts import redirect, render
 from django.views.decorators.http import require_GET, require_POST
 
 from home.auth_forms import PopupLoginForm, PopupSignupForm
+from home.permissions import staff_article_access
+from home.rate_limit import is_rate_limited, rate_limit_response
 
 
 def _is_safe_next(request: HttpRequest, candidate: str) -> bool:
@@ -50,6 +53,8 @@ def _redirect_target(request: HttpRequest) -> str:
 
 @require_POST
 def popup_login(request: HttpRequest) -> HttpResponse:
+    if is_rate_limited(request, scope="auth_login", limit=5, window=60):
+        return rate_limit_response()
     form = PopupLoginForm(request.POST)
     redirect_to = _redirect_target(request)
     if not form.is_valid():
@@ -87,6 +92,15 @@ def popup_login(request: HttpRequest) -> HttpResponse:
 
 @require_POST
 def popup_signup(request: HttpRequest) -> HttpResponse:
+    if not getattr(settings, "PUBLIC_SIGNUP_ENABLED", False):
+        messages.error(
+            request,
+            "Public registration is disabled. Contact an administrator for access.",
+            extra_tags="auth-signup",
+        )
+        return redirect(_with_auth_tab(_redirect_target(request), "signup"))
+    if is_rate_limited(request, scope="auth_signup", limit=5, window=60):
+        return rate_limit_response()
     form = PopupSignupForm(request.POST)
     redirect_to = _redirect_target(request)
     if not form.is_valid():
@@ -118,57 +132,66 @@ def profile(request: HttpRequest) -> HttpResponse:
     from django.urls import reverse
     from home.models import TaggedContentPage
 
-    articles_qs = (
-        TaggedContentPage.objects.live()
-        .public()
-        .select_related("section_term", "taxonomy_category")
-        .order_by("-first_published_at")
-    )
-    articles_data = [
-        {
-            "id": p.id,
-            "title": p.title,
-            "url": p.get_url(request) or "",
-            "published": p.first_published_at.strftime("%Y-%m-%d") if p.first_published_at else "",
-            "section_slug": p.section_term.slug,
-            "section_name": p.section_term.name,
-            "category_name": p.taxonomy_category.name if p.taxonomy_category_id else "",
-            "catalyst": p.catalyst or "",
-            "edit_url": reverse("article_editor", kwargs={"article_id": p.id}),
-        }
-        for p in articles_qs
-    ]
-    moderation_qs = (
-        TaggedContentPage.objects.filter(awaiting_moderation=True)
-        .select_related("section_term", "taxonomy_category", "author_user")
-        .order_by("-latest_revision_created_at", "-id")
-    )
-    moderation_data = [
-        {
-            "id": p.id,
-            "title": p.title,
-            "section_name": p.section_term.name,
-            "category_name": p.taxonomy_category.name if p.taxonomy_category_id else "",
-            "submitted": (
-                p.latest_revision_created_at.strftime("%Y-%m-%d")
-                if p.latest_revision_created_at
-                else ""
-            ),
-            "author_name": p.card_author_name(),
-            "preview": p.listing_preview_markdown()[:200],
-            "catalyst": p.catalyst or "",
-            "edit_url": reverse("article_editor", kwargs={"article_id": p.id}),
-            "approve_url": reverse("article-article-action", args=[p.id]),
-        }
-        for p in moderation_qs
-    ]
+    is_staff = staff_article_access(request.user)
+    articles_data = []
+    moderation_data = []
+    create_article_url = ""
+
+    if is_staff:
+        articles_qs = (
+            TaggedContentPage.objects.live()
+            .public()
+            .select_related("section_term", "taxonomy_category")
+            .order_by("-first_published_at")
+        )
+        articles_data = [
+            {
+                "id": p.id,
+                "title": p.title,
+                "url": p.get_url(request) or "",
+                "published": p.first_published_at.strftime("%Y-%m-%d") if p.first_published_at else "",
+                "section_slug": p.section_term.slug,
+                "section_name": p.section_term.name,
+                "category_name": p.taxonomy_category.name if p.taxonomy_category_id else "",
+                "catalyst": p.catalyst or "",
+                "edit_url": reverse("article_editor", kwargs={"article_id": p.id}),
+            }
+            for p in articles_qs
+        ]
+        moderation_qs = (
+            TaggedContentPage.objects.filter(awaiting_moderation=True)
+            .select_related("section_term", "taxonomy_category", "author_user")
+            .order_by("-latest_revision_created_at", "-id")
+        )
+        moderation_data = [
+            {
+                "id": p.id,
+                "title": p.title,
+                "section_name": p.section_term.name,
+                "category_name": p.taxonomy_category.name if p.taxonomy_category_id else "",
+                "submitted": (
+                    p.latest_revision_created_at.strftime("%Y-%m-%d")
+                    if p.latest_revision_created_at
+                    else ""
+                ),
+                "author_name": p.card_author_name(),
+                "preview": p.listing_preview_markdown()[:200],
+                "catalyst": p.catalyst or "",
+                "edit_url": reverse("article_editor", kwargs={"article_id": p.id}),
+                "approve_url": reverse("article-article-action", args=[p.id]),
+            }
+            for p in moderation_qs
+        ]
+        create_article_url = reverse("article_create")
+
     return render(
         request,
         "profile.html",
         {
             "articles_data": articles_data,
             "moderation_data": moderation_data,
-            "create_article_url": reverse("article_create"),
+            "create_article_url": create_article_url,
             "profile_page_size": PROFILE_PAGE_SIZE,
+            "is_staff": is_staff,
         },
     )

@@ -4,6 +4,7 @@ from django.template.response import TemplateResponse
 
 from wagtail.models import Page
 
+from home.rate_limit import is_rate_limited, rate_limit_response
 from search.utils import (
     highlighted_preview_html,
     highlighted_title_html,
@@ -29,6 +30,9 @@ def search_suggest(request):
     """
     if request.method != "GET":
         return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    if is_rate_limited(request, scope="search_suggest", limit=30, window=60):
+        return rate_limit_response()
 
     raw = request.GET.get("q") or request.GET.get("query") or ""
     q = normalize_query_string(raw)

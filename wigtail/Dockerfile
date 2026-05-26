@@ -11,8 +11,10 @@ EXPOSE 8000
 # 1. Force Python stdout and stderr streams to be unbuffered.
 # 2. Set PORT variable that is used by Gunicorn. This should match "EXPOSE"
 #    command.
+# 3. Production Django settings (override only for local experiments).
 ENV PYTHONUNBUFFERED=1 \
-    PORT=8000
+    PORT=8000 \
+    DJANGO_SETTINGS_MODULE=mysite.settings.production
 
 # Install system packages required by Wagtail and Django.
 RUN apt-get update --yes --quiet && apt-get install --yes --quiet --no-install-recommends \
@@ -25,7 +27,7 @@ RUN apt-get update --yes --quiet && apt-get install --yes --quiet --no-install-r
  && rm -rf /var/lib/apt/lists/*
 
 # Install the application server.
-RUN pip install "gunicorn==20.0.4"
+RUN pip install "gunicorn>=23,<24"
 
 # Install the project requirements.
 COPY requirements.txt /
@@ -58,4 +60,9 @@ RUN python manage.py collectstatic --noinput --clear
 #   PRACTICE. The database should be migrated manually or using the release
 #   phase facilities of your hosting platform. This is used only so the
 #   Wagtail instance can be started with a simple "docker run" command.
+#
+# Production deployment checklist:
+#   - Inject DJANGO_SECRET_KEY, DJANGO_ALLOWED_HOSTS, POSTGRES_*, etc. at runtime.
+#   - Serve /media/ user uploads via nginx, S3, or another object store (Django
+#     does not serve MEDIA_URL when DEBUG=False).
 CMD set -xe; python manage.py migrate --noinput; gunicorn mysite.wsgi:application
