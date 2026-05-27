@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}{{ broker.broker_name }} Broker Details{% endblock %}
+
+{% block body_class %}template-forex-broker-detail{% endblock %}
+
+{% block breadcrumbs_top %}
+    {{ breadcrumb_payload|json_script:"forex-broker-breadcrumb-payload" }}
+    <div
+        class="forex-broker-detail__breadcrumb forex-broker-detail__breadcrumb--top"
+        data-shadcn-breadcrumb
+        data-breadcrumb-json-id="forex-broker-breadcrumb-payload"
+    ></div>
+{% endblock %}
+
+{% block content %}
+<article class="forex-broker-detail">
+    <header class="forex-broker-detail__hero">
+        <div class="forex-broker-detail__hero-logo-wrap">
+            {% if broker.display_logo_url %}
+                <img
+                    src="{{ broker.display_logo_url }}"
+                    alt=""
+                    width="200"
+                    height="80"
+                    loading="eager"
+                    decoding="async"
+                    class="forex-broker-detail__hero-logo"
+                />
+            {% else %}
+                <div class="forex-broker-detail__hero-logo-placeholder" aria-hidden="true"></div>
+            {% endif %}
+        </div>
+        <div class="forex-broker-detail__hero-copy">
+            <h3 class="forex-broker-detail__name">{{ broker.broker_name }}</h3>
+            {% if broker.summary %}
+                <p class="forex-broker-detail__summary">{{ broker.summary }}</p>
+            {% endif %}
+            <p class="forex-broker-detail__meta">
+                Rank #{{ broker.rank }}
+                {% if current_country %}in {{ current_country }}{% endif %}
+                · {{ broker.overall_rating }} / 5
+                · {{ broker.reviews }} reviews
+            </p>
+        </div>
+    </header>
+
+    <section class="forex-broker-detail__section">
+        <h2>Broker profile</h2>
+        <dl class="forex-broker-detail__grid">
+            <div>
+                <dt>Type</dt>
+                <dd>{{ broker.broker_type }}</dd>
+            </div>
+            <div>
+                <dt>Regulation</dt>
+                <dd>{{ broker.regulation }}</dd>
+            </div>
+            <div>
+                <dt>Minimum deposit</dt>
+                <dd>{% if broker.min_deposit == 0 %}None{% else %}${{ broker.min_deposit }}{% endif %}</dd>
+            </div>
+            <div>
+                <dt>Leverage</dt>
+                <dd>{{ broker.leverage }}</dd>
+            </div>
+            {% if broker.website %}
+            <div>
+                <dt>Website</dt>
+                <dd>
+                    <a href="{{ broker.website }}" target="_blank" rel="noopener noreferrer" class="forex-broker-detail__website-link">
+                        {{ broker.website }}
+                    </a>
+                </dd>
+            </div>
+            {% endif %}
+        </dl>
+    </section>
+
+    {% if article_carousel %}
+    <section class="forex-broker-detail__section forex-broker-detail__articles" aria-label="Articles about {{ broker.broker_name }}">
+        <h2>Related articles</h2>
+        {% include "home/includes/article_carousel_mount.html" with carousel_payload=article_carousel mount_uid="forex-broker-articles-carousel" %}
+    </section>
+    {% endif %}
+
+    {% if broker.best_for %}
+    <section class="forex-broker-detail__section">
+        <h2>Best for</h2>
+        <div class="forex-broker-detail__best-for">
+            {{ broker.best_for|safe }}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if broker.website %}
+    <section class="forex-broker-detail__section">
+        <a href="{{ broker.website }}" target="_blank" rel="noopener noreferrer" class="scn-broker-review-btn">
+            Visit website
+        </a>
+    </section>
+    {% endif %}
+</article>
+{% endblock %}
+
+{% block breadcrumbs_bottom %}
+    <div
+        class="forex-broker-detail__breadcrumb forex-broker-detail__breadcrumb--bottom"
+        data-shadcn-breadcrumb
+        data-breadcrumb-json-id="forex-broker-breadcrumb-payload"
+    ></div>
+{% endblock %}
+

@@ -4,6 +4,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+from django.utils.text import slugify
 from modelcluster.fields import ParentalManyToManyField
 from treebeard.mp_tree import MP_Node
 from wagtail.admin.panels import FieldPanel, MultiFieldPanel, PageChooserPanel
@@ -142,6 +143,7 @@ class Country(models.Model):
 class BrokerRating(models.Model):
     rank = models.PositiveIntegerField()
     broker_name = models.CharField(max_length=200)
+    slug = models.SlugField(max_length=220, unique=True, null=True, blank=True)
     overall_rating = models.DecimalField(max_digits=3, decimal_places=1)
     reviews = models.PositiveIntegerField(default=0)
     broker_type = models.CharField(max_length=100)
@@ -149,21 +151,46 @@ class BrokerRating(models.Model):
     min_deposit = models.PositiveIntegerField(help_text="Minimum deposit in USD")
     leverage = models.CharField(max_length=20, help_text='e.g. "1:500"')
     favicon_url = models.URLField(max_length=500, blank=True, help_text="Favicon image URL")
-    page_url = models.URLField(max_length=500, blank=True, help_text="Review page URL")
+    logo_rect_url = models.URLField(
+        max_length=500,
+        blank=True,
+        help_text="Rectangular logo URL (preferred on big trader cards)",
+    )
+    logo_square_url = models.URLField(max_length=500, blank=True, help_text="Square logo URL")
+    website = models.URLField(max_length=500, blank=True, help_text="Official broker website URL")
+    overview = models.TextField(
+        blank=True,
+        help_text="Plain-text overview for big trader cards",
+    )
     best_for = models.TextField(blank=True, help_text="HTML rich text describing who this broker is best for")
+    category_ratings = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='List of {"label": "Cost", "score": 4.5} for category score rows',
+    )
 
     panels = [
         FieldPanel("rank"),
         FieldPanel("broker_name"),
-        FieldPanel("favicon_url"),
+        FieldPanel("slug"),
+        MultiFieldPanel(
+            [
+                FieldPanel("favicon_url"),
+                FieldPanel("logo_rect_url"),
+                FieldPanel("logo_square_url"),
+            ],
+            heading="Logos",
+        ),
         FieldPanel("overall_rating"),
         FieldPanel("reviews"),
         FieldPanel("broker_type"),
         FieldPanel("regulation"),
         FieldPanel("min_deposit"),
         FieldPanel("leverage"),
-        FieldPanel("page_url"),
+        FieldPanel("website"),
+        FieldPanel("overview"),
         FieldPanel("best_for"),
+        FieldPanel("category_ratings"),
     ]
 
     class Meta:
@@ -173,6 +200,17 @@ class BrokerRating(models.Model):
 
     def __str__(self) -> str:
         return f"{self.rank}. {self.broker_name}"
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.broker_name)[:200] or f"broker-{self.rank}"
+            candidate = base_slug
+            suffix = 2
+            while BrokerRating.objects.exclude(pk=self.pk).filter(slug=candidate).exists():
+                candidate = f"{base_slug}-{suffix}"
+                suffix += 1
+            self.slug = candidate
+        super().save(*args, **kwargs)
 
 
 @register_snippet
@@ -244,6 +282,20 @@ class ContentTag(models.Model):
     def __str__(self) -> str:
         return self.name
 
+    def save(self, *args, **kwargs):
+        if not (self.slug or "").strip():
+            self.slug = self._allocate_unique_slug()
+        super().save(*args, **kwargs)
+
+    def _allocate_unique_slug(self) -> str:
+        base = slugify(self.name)[:200] or "tag"
+        candidate = base
+        suffix = 2
+        while ContentTag.objects.exclude(pk=self.pk).filter(slug=candidate).exists():
+            candidate = f"{base}-{suffix}"
+            suffix += 1
+        return candidate
+
 
 @register_snippet
 class MarketTickerRow(models.Model):
@@ -278,6 +330,20 @@ class MarketTickerRow(models.Model):
     )
     sort_order = models.PositiveSmallIntegerField(default=0)
     enabled = models.BooleanField(default=True)
+    carousel_pinned = models.BooleanField(
+        default=False,
+        help_text="Always include in header carousel (staff pin).",
+    )
+    exchange = models.CharField(
+        max_length=32,
+        blank=True,
+        db_index=True,
+        help_text="Alpaca listing exchange (NASDAQ, NYSE, …).",
+    )
+    tradable = models.BooleanField(
+        default=True,
+        help_text="False when Alpaca marks asset non-tradable.",
+    )
 
     last_price = models.DecimalField(
         max_digits=20, decimal_places=6, null=True, blank=True
@@ -305,6 +371,9 @@ class MarketTickerRow(models.Model):
         FieldPanel("tradingview_symbol"),
         FieldPanel("sort_order"),
         FieldPanel("enabled"),
+        FieldPanel("carousel_pinned"),
+        FieldPanel("exchange"),
+        FieldPanel("tradable"),
         MultiFieldPanel(
             [
                 FieldPanel("last_price"),
@@ -626,7 +695,14 @@ class TaggedContentPage(SeoMetaFields, Page):
         from home.query import get_similar_pages
 
         context = super().get_context(request, *args, **kwargs)
-        context["similar_pages"] = get_similar_pages(self, limit=24)
+        similar_pages = get_similar_pages(self, limit=24)
+        context["similar_pages"] = similar_pages
+        from home.card_layout import serialize_article_carousel_payload
+
+        context["similar_article_carousel"] = serialize_article_carousel_payload(
+            similar_pages,
+            request,
+        )
         routable_home = HomePage.objects.live().public().first()
         context["routable_home"] = routable_home
         share_url = self.share_permalink(request)

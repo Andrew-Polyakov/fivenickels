@@ -4,15 +4,12 @@ HTTP client for Alpaca Trading API market calendar (GET /v3/calendar/{market}).
 
 from __future__ import annotations
 
-import os
 from datetime import date, datetime
 from typing import Any
 
 import requests
 
-from home.alpaca_news_client import load_alpaca_credentials
-
-DEFAULT_TRADING_API_BASE = "https://api.alpaca.markets"
+from home.alpaca_news_client import get_alpaca_trading_base_url, load_alpaca_credentials
 
 # Editor-facing market keys → Alpaca API path segment
 CALENDAR_MARKET_API: dict[str, str] = {
@@ -20,13 +17,6 @@ CALENDAR_MARKET_API: dict[str, str] = {
     "NYSE": "XNYS",
     "XNYS": "XNYS",
 }
-
-
-def get_alpaca_trading_base_url() -> str:
-    override = (os.environ.get("ALPACA_TRADING_BASE_URL") or "").strip()
-    if override:
-        return override.rstrip("/")
-    return DEFAULT_TRADING_API_BASE.rstrip("/")
 
 
 def calendar_api_market(market: str) -> str:

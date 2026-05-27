@@ -1,4 +1,6 @@
 from django.core.management.base import BaseCommand
+from django.utils.text import slugify
+
 from home.models import BrokerRating
 
 BROKERS = [
@@ -21,5 +23,30 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         deleted, _ = BrokerRating.objects.all().delete()
         self.stdout.write(f"Deleted {deleted} existing rows.")
-        BrokerRating.objects.bulk_create([BrokerRating(**b) for b in BROKERS])
+        slug_counts: dict[str, int] = {}
+        records = []
+        for broker in BROKERS:
+            broker_data = {
+                key: value
+                for key, value in broker.items()
+                if key in {
+                    "rank",
+                    "broker_name",
+                    "overall_rating",
+                    "reviews",
+                    "broker_type",
+                    "regulation",
+                    "min_deposit",
+                    "leverage",
+                    "favicon_url",
+                    "website",
+                    "best_for",
+                }
+            }
+            base_slug = slugify(broker_data.get("broker_name", ""))[:200] or f"broker-{broker_data.get('rank', 0)}"
+            count = slug_counts.get(base_slug, 0) + 1
+            slug_counts[base_slug] = count
+            broker_data["slug"] = base_slug if count == 1 else f"{base_slug}-{count}"
+            records.append(BrokerRating(**broker_data))
+        BrokerRating.objects.bulk_create(records)
         self.stdout.write(self.style.SUCCESS(f"Inserted {len(BROKERS)} brokers."))

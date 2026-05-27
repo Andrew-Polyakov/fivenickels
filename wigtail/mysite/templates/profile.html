@@ -31,6 +31,7 @@
     data-articles-json-id="profile-articles-data"
     data-moderation-json-id="profile-moderation-data"
     data-create-article-url="{{ create_article_url }}"
+    data-tickers-list-url="{% if is_staff %}{{ tickers_list_url }}{% endif %}"
     data-csrf-token="{{ csrf_token }}"
     data-page-size="{{ profile_page_size }}"
     data-is-staff="{% if is_staff %}true{% else %}false{% endif %}"

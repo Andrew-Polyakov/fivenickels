@@ -39,7 +39,7 @@ def ensure_market_ticker_rows_for_symbols(symbols: list[str]) -> tuple[int, int]
             symbol=sym,
             defaults={
                 "sort_order": next_order,
-                "enabled": True,
+                "enabled": False,
             },
         )
         if was_created:

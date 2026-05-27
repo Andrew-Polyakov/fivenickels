@@ -6,6 +6,7 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogDescription,
   DialogTitle,
 } from '../components/ui/dialog';
 import { Input } from '../components/ui/input';
@@ -550,6 +551,9 @@ function HamburgerNav({
         <DialogContent className="scn-hamburger-nav__dialog">
           <div className="scn-hamburger-nav__dialog-header">
             <DialogTitle className="scn-hamburger-nav__dialog-title">Site map</DialogTitle>
+            <DialogDescription className="scn-sr-only">
+              Browse and edit site map categories.
+            </DialogDescription>
             <DialogClose asChild>
               <button type="button" className="scn-hamburger-nav__close-btn" aria-label="Close site map">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"

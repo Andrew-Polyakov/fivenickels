@@ -1147,3 +1147,81 @@ html[data-reading-theme='day'] .scn-fx-broker-card__star--empty {
 html[data-reading-theme='day'] .scn-fx-broker-card__footer {
   border-top-color: rgba(0, 0, 0, 0.08);
 }
+
+/* Broker edit dialog — day theme */
+html[data-reading-theme='day'] .scn-broker-edit-dialog .scn-broker-edit__label,
+html[data-reading-theme='day'] .scn-broker-edit-dialog .scn-label {
+  color: rgba(0, 0, 0, 0.55);
+}
+
+html[data-reading-theme='day'] .scn-broker-edit-dialog .scn-input {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.18);
+  color: #000000;
+}
+
+html[data-reading-theme='day'] .scn-broker-edit-dialog .scn-input:focus-visible {
+  border-color: rgba(0, 96, 94, 0.65);
+}
+
+html[data-reading-theme='day'] .scn-broker-edit-dialog {
+  color-scheme: light;
+}
+
+html[data-reading-theme='day'] .scn-broker-edit-dialog input[type='number'].scn-input {
+  accent-color: rgba(0, 96, 94, 0.85);
+}
+
+html[data-reading-theme='day'] .scn-broker-edit-dialog input[type='number'].scn-input::-webkit-inner-spin-button,
+html[data-reading-theme='day'] .scn-broker-edit-dialog input[type='number'].scn-input::-webkit-outer-spin-button {
+  background: rgba(0, 0, 0, 0.05);
+  border-left-color: rgba(0, 0, 0, 0.18);
+}
+
+html[data-reading-theme='day'] .scn-broker-edit-dialog input[type='number'].scn-input:hover::-webkit-inner-spin-button,
+html[data-reading-theme='day'] .scn-broker-edit-dialog input[type='number'].scn-input:hover::-webkit-outer-spin-button {
+  background: rgba(0, 0, 0, 0.08);
+  border-left-color: rgba(0, 96, 94, 0.45);
+}
+
+html[data-reading-theme='day'] .scn-broker-edit__error {
+  color: #b91c1c;
+}
+
+html[data-reading-theme='day'] .scn-broker-edit__scope-hint {
+  color: rgba(0, 0, 0, 0.55);
+}
+
+html[data-reading-theme='day'] .scn-broker-edit-dialog .scn-toggle-group__item {
+  border-color: rgba(0, 0, 0, 0.18);
+  background: #ffffff;
+  color: #000000;
+}
+
+html[data-reading-theme='day'] .scn-broker-edit-dialog .scn-toggle-group__item--on {
+  background: rgba(0, 96, 94, 0.12);
+  border-color: rgba(0, 96, 94, 0.55);
+  color: #000000;
+}
+
+html[data-reading-theme='day'] .scn-broker-edit-dialog .scn-rte-wrap {
+  border-color: rgba(0, 0, 0, 0.12);
+  background: #ffffff;
+}
+
+html[data-reading-theme='day'] .scn-broker-edit-dialog .scn-rte-toolbar {
+  background: rgba(0, 0, 0, 0.04);
+  border-bottom-color: rgba(0, 0, 0, 0.1);
+}
+
+html[data-reading-theme='day'] .scn-broker-edit-dialog .scn-rte-btn {
+  color: #000000;
+}
+
+html[data-reading-theme='day'] .scn-broker-edit-dialog .scn-rte-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+html[data-reading-theme='day'] .scn-broker-edit-dialog .scn-rte-content .ProseMirror {
+  color: #000000;
+}

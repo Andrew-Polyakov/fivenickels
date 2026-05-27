@@ -1,5 +1,6 @@
 import uuid
 
+from django.http import HttpRequest
 from wagtail import blocks
 from wagtail.embeds.blocks import EmbedBlock
 from wagtail.images.blocks import ImageChooserBlock
@@ -502,6 +503,37 @@ class BentoGrid01Block(blocks.StructBlock):
         label = "Bento block"
 
 
+class BigTraderCardBlock(blocks.StructBlock):
+    broker = SnippetChooserBlock(
+        "home.BrokerRating",
+        required=True,
+        label="Broker",
+    )
+
+    def get_context(self, value, parent_context=None):
+        from home.broker_card import serialize_big_trader_card
+
+        context = super().get_context(value, parent_context=parent_context)
+        broker = value.get("broker")
+        request = (parent_context or {}).get("request")
+        if not isinstance(request, HttpRequest):
+            request = None
+        mount_uid = f"btc-{uuid.uuid4().hex[:12]}"
+        context["mount_uid"] = mount_uid
+        context["broker_payload"] = serialize_big_trader_card(broker, request)
+        context["can_edit"] = bool(
+            request
+            and request.user.is_authenticated
+            and (request.user.is_staff or request.user.is_superuser)
+        )
+        return context
+
+    class Meta:
+        icon = "snippet"
+        label = "Big trader card"
+        template = "home/blocks/big_trader_card.html"
+
+
 class LayoutSeparatorBlock(blocks.StaticBlock):
     """Full-width horizontal rule between sections (or between card rows)."""
 
@@ -538,6 +570,7 @@ MAIN_SITE_STREAMBLOCK = blocks.StreamBlock(
         ("image", ImageChooserBlock()),
         ("embed", EmbedBlock()),
         ("card", SiteCardBlock()),
+        ("big_trader_card", BigTraderCardBlock()),
         ("separator", LayoutSeparatorBlock()),
         ("perforation_separator", PerforationSeparatorBlock()),
         ("bento_grid_01", BentoGrid01Block()),

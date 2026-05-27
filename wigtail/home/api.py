@@ -190,7 +190,12 @@ class ArticleEditorViewSet(viewsets.ModelViewSet):
                 return Response({'id': existing.id, 'name': existing.name, 'created': False})
             created = ContentTag.objects.create(name=name)
             return Response(
-                {'id': created.id, 'name': created.name, 'created': True},
+                {
+                    'id': created.id,
+                    'name': created.name,
+                    'slug': created.slug,
+                    'created': True,
+                },
                 status=status.HTTP_201_CREATED,
             )
 

@@ -106,20 +106,45 @@ def _load_dotenv_at_repo_paths() -> None:
             load_dotenv(w, override=True)
 
 
-def _merge_env_from_repo_walk() -> None:
-    """Load KEY=value from `.env` / `.apca` / `alpacacredentials` along candidate dirs."""
-    seen_files: set[str] = set()
+_CREDENTIAL_FILE_NAMES = (".apca", "alpacacredentials", ".env")
+
+
+def _find_first_credentials_file() -> Path | None:
+    """Same precedence as StockCrawler: first `.apca`, then `alpacacredentials`, then `.env`."""
     for d in _candidate_directories_for_env():
-        for name in (".env", ".apca", "alpacacredentials"):
+        for name in _CREDENTIAL_FILE_NAMES:
             p = d / name
-            if not p.is_file():
-                continue
-            key = str(p.resolve())
-            if key in seen_files:
-                continue
-            seen_files.add(key)
-            for k, v in _parse_env_file(p).items():
-                os.environ.setdefault(k, v)
+            if p.is_file():
+                return p
+    return None
+
+
+def _apply_credentials_file(path: Path) -> None:
+    """Apply all keys from one credentials file (overrides unset env; fills ALPACA_ENV)."""
+    for k, v in _parse_env_file(path).items():
+        if k in (
+            "APCA_API_KEY_ID",
+            "ALPACA_API_KEY_ID",
+            "APCA_API_SECRET_KEY",
+            "ALPACA_API_SECRET_KEY",
+            "ALPACA_ENV",
+            "APCA_ALPACA_ENV",
+            "ALPACA_TRADING_BASE_URL",
+            "APCA_TRADING_LIVE",
+            "ALPACA_LIVE",
+            "ALPACA_DATA_BASE_URL",
+            "ALPACA_DATA_SANDBOX",
+        ):
+            os.environ[k] = v
+        else:
+            os.environ.setdefault(k, v)
+
+
+def _merge_env_from_repo_walk() -> None:
+    """Load from the first credentials file found (StockCrawler-compatible)."""
+    cred = _find_first_credentials_file()
+    if cred is not None:
+        _apply_credentials_file(cred)
 
 
 def load_alpaca_credentials() -> tuple[str, str]:
@@ -140,6 +165,47 @@ def load_alpaca_credentials() -> tuple[str, str]:
 
 DEFAULT_DATA_BASE_LIVE = "https://data.alpaca.markets"
 DEFAULT_DATA_BASE_SANDBOX = "https://data.sandbox.alpaca.markets"
+DEFAULT_TRADING_BASE_LIVE = "https://api.alpaca.markets"
+DEFAULT_TRADING_BASE_PAPER = "https://paper-api.alpaca.markets"
+
+
+def resolve_alpaca_trading_live() -> bool | None:
+    """
+    True = live trading API, False = paper, None = unset (caller defaults to paper).
+
+    Matches StockCrawler Credentials.resolveUseLiveFromEnvironment().
+    """
+    for name in ("APCA_TRADING_LIVE", "ALPACA_LIVE"):
+        raw = (os.environ.get(name) or "").strip().lower()
+        if raw in ("1", "true", "yes", "on"):
+            return True
+        if raw in ("0", "false", "no", "off"):
+            return False
+    for name in ("ALPACA_ENV", "APCA_ALPACA_ENV"):
+        raw = (os.environ.get(name) or "").strip().lower()
+        if raw in ("live", "production", "prod"):
+            return True
+        if raw in ("paper", "sandbox"):
+            return False
+    return None
+
+
+def get_alpaca_trading_base_url() -> str:
+    """
+    Trading API host for /v2/assets, /v3/calendar, etc.
+
+    Paper keys require https://paper-api.alpaca.markets; live keys require
+    https://api.alpaca.markets (401 if mismatched).
+    """
+    load_alpaca_credentials()
+    override = (os.environ.get("ALPACA_TRADING_BASE_URL") or "").strip()
+    if override:
+        return override.rstrip("/")
+    live = resolve_alpaca_trading_live()
+    if live is True:
+        return DEFAULT_TRADING_BASE_LIVE.rstrip("/")
+    # StockCrawler defaults to paper when env/file does not specify live.
+    return DEFAULT_TRADING_BASE_PAPER.rstrip("/")
 
 
 def _is_http_url(url: str) -> bool:

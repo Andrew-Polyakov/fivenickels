@@ -1,0 +1,13 @@
+{# Relative volume gauge: timeframe label + track marker + ratio. Optional ``compact`` for chips. #}
+{% if gauge %}
+<span
+    class="vol-gauge{% if compact %} vol-gauge--compact{% endif %}"
+    title="{{ gauge.timeframe_label }} relative volume {{ gauge.ratio_formatted }} average"
+>
+    <span class="vol-gauge__tf">{{ gauge.timeframe_label }}</span>
+    <span class="vol-gauge__track" aria-hidden="true">
+        <span class="vol-gauge__marker" style="left: {{ gauge.position_pct }}%"></span>
+    </span>
+    <span class="vol-gauge__ratio">{{ gauge.ratio_formatted }}</span>
+</span>
+{% endif %}

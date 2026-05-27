@@ -21,11 +21,24 @@ import {
   mountShadcnArticleShare,
   unmountShadcnArticleShare,
 } from './app/shadcn-article-share';
-import { mountShadcnArticleCards, mountSimilarArticleCarousels, mountRecentArticlesBlocks } from './app/shadcn-card-layout';
+import { mountShadcnArticleCards, mountRecentArticlesBlocks } from './app/shadcn-card-layout';
+import {
+  mountShadcnArticleCarousel,
+  unmountShadcnArticleCarousel,
+} from './app/shadcn-article-carousel';
 import { mountShadcnBento2 } from './app/shadcn-bento2';
 import { mountShadcnBentoGrid01 } from './app/shadcn-bentogrid01';
 import { mountShadcnTaxonomySiteNav } from './app/shadcn-taxonomy-site-nav';
-import { mountShadcnBrokerTable, mountShadcnBrokerCarousel } from './app/shadcn-broker-data-table';
+import {
+  mountShadcnBrokerTable,
+  mountShadcnBrokerCarousel,
+  unmountShadcnBrokerTable,
+  unmountShadcnBrokerCarousel,
+  scheduleShadcnBrokerMounts,
+} from './app/shadcn-broker-data-table';
+import { mountShadcnBigTraderCard } from './app/shadcn-big-trader-card';
+import { mountShadcnSwingSetups } from './app/shadcn-swing-setups';
+import { mountShadcnTickerTabs, unmountShadcnTickerTabs } from './app/shadcn-ticker-tabs';
 import { mountShadcnProfileArticlesTable } from './app/shadcn-profile-articles-table';
 import { mountShadcnArticleEditor } from './app/shadcn-article-editor';
 import { mountShadcnProfileHeaderButton } from './app/shadcn-profile-header-button';
@@ -39,8 +52,15 @@ import {
   type PromptDialogData,
 } from './app/material-dialogs.component';
 
+/** Sticky flag + event so classic scripts/Turbo hooks mount after async bootstrap. */
+function signalAppReady(): void {
+  window.__appReady = true;
+  document.dispatchEvent(new CustomEvent('app:ready'));
+}
+
 declare global {
   interface Window {
+    __appReady?: boolean;
     mountTaxonomyChipWidgets?: () => void;
     showMaterialConfirm?: (message: string, title?: string) => Promise<boolean>;
     showMaterialAlert?: (message: string, title?: string) => Promise<void>;
@@ -48,7 +68,8 @@ declare global {
     showMaterialAuthDialog?: (initialTab: 'login' | 'signup') => void;
     mountShadcnBento2?: () => void;
     mountShadcnArticleCards?: () => void;
-    mountSimilarArticleCarousels?: () => void;
+    mountShadcnArticleCarousel?: () => void;
+    unmountShadcnArticleCarousel?: (root?: ParentNode) => void;
     mountRecentArticlesBlocks?: () => void;
     mountShadcnBreadcrumbs?: () => void;
     mountShadcnArticleDatelines?: () => void;
@@ -61,6 +82,10 @@ declare global {
     mountShadcnTaxonomySiteNav?: () => void;
     mountShadcnBrokerTable?: () => void;
     mountShadcnBrokerCarousel?: () => void;
+    unmountShadcnBrokerTable?: (root?: ParentNode) => void;
+    unmountShadcnBrokerCarousel?: (root?: ParentNode) => void;
+    scheduleShadcnBrokerMounts?: () => void;
+    mountShadcnBigTraderCard?: (root?: ParentNode) => void;
     mountShadcnProfileArticlesTable?: () => void;
     mountShadcnArticleEditor?: () => void;
     mountTaxonomyEditor?: () => void;
@@ -69,6 +94,9 @@ declare global {
     mountShadcnReadingThemeToggle?: () => void;
     mountShadcnProfileHeaderButton?: () => void;
     mountShadcnHamburgerNav?: () => void;
+    mountShadcnSwingSetups?: () => void;
+    mountShadcnTickerTabs?: () => void;
+    unmountShadcnTickerTabs?: (root?: ParentNode) => void;
   }
 }
 
@@ -126,7 +154,8 @@ createApplication({
     window.mountTaxonomyChipWidgets = mountTaxonomyChipWidgets;
     window.mountShadcnBento2 = mountShadcnBento2;
     window.mountShadcnArticleCards = mountShadcnArticleCards;
-    window.mountSimilarArticleCarousels = mountSimilarArticleCarousels;
+    window.mountShadcnArticleCarousel = mountShadcnArticleCarousel;
+    window.unmountShadcnArticleCarousel = unmountShadcnArticleCarousel;
     window.mountRecentArticlesBlocks = mountRecentArticlesBlocks;
     window.mountShadcnBreadcrumbs = mountShadcnBreadcrumbs;
     window.mountShadcnArticleDatelines = mountShadcnArticleDatelines;
@@ -139,6 +168,10 @@ createApplication({
     window.mountShadcnTaxonomySiteNav = mountShadcnTaxonomySiteNav;
     window.mountShadcnBrokerTable = mountShadcnBrokerTable;
     window.mountShadcnBrokerCarousel = mountShadcnBrokerCarousel;
+    window.unmountShadcnBrokerTable = unmountShadcnBrokerTable;
+    window.unmountShadcnBrokerCarousel = unmountShadcnBrokerCarousel;
+    window.scheduleShadcnBrokerMounts = scheduleShadcnBrokerMounts;
+    window.mountShadcnBigTraderCard = mountShadcnBigTraderCard;
     window.mountShadcnProfileArticlesTable = mountShadcnProfileArticlesTable;
     window.mountShadcnArticleEditor = mountShadcnArticleEditor;
     window.mountTaxonomyEditor = mountTaxonomyEditor;
@@ -147,6 +180,9 @@ createApplication({
     window.mountShadcnReadingThemeToggle = mountShadcnReadingThemeToggle;
     window.mountShadcnProfileHeaderButton = mountShadcnProfileHeaderButton;
     window.mountShadcnHamburgerNav = mountShadcnHamburgerNav;
+    window.mountShadcnSwingSetups = mountShadcnSwingSetups;
+    window.mountShadcnTickerTabs = mountShadcnTickerTabs;
+    window.unmountShadcnTickerTabs = unmountShadcnTickerTabs;
     window.showMaterialConfirm = (message: string, title?: string) =>
       new Promise<boolean>((resolve) => {
         dialog
@@ -181,12 +217,13 @@ createApplication({
     window.showMaterialAuthDialog = (initialTab: AuthTab) => {
       authDialogBridge.openAuthDialog(initialTab);
     };
+    signalAppReady();
     mountTaxonomyChipWidgets();
     mountShadcnReadingThemeToggle();
     mountShadcnProfileHeaderButton();
     mountShadcnTaxonomySiteNav();
     mountShadcnBento2();
-    mountSimilarArticleCarousels();
+    mountShadcnArticleCarousel();
     mountShadcnArticleCards();
     mountRecentArticlesBlocks();
     mountShadcnBreadcrumbs();
@@ -194,7 +231,10 @@ createApplication({
     mountShadcnArticleTags();
     mountShadcnTagCloud();
     mountShadcnArticleShare();
-    mountShadcnBrokerTable();
+    scheduleShadcnBrokerMounts();
+    mountShadcnBigTraderCard();
+    mountShadcnSwingSetups();
+    mountShadcnTickerTabs();
     mountShadcnProfileArticlesTable();
     mountShadcnArticleEditor();
     mountTaxonomyEditor();

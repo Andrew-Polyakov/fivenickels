@@ -27,6 +27,15 @@ export interface MarketMoverTabPayload {
 export interface MarketMoversTileProps {
   marketMovers: MarketMoversGroupPayload;
   tabs: MarketMoverTabPayload[];
+  sessionLabel?: string | null;
+  priceBasis?: string | null;
+}
+
+function sessionBadgeTitle(label: string, priceBasis?: string | null): string {
+  if (priceBasis === 'extended') {
+    return `${label} (vs prior close)`;
+  }
+  return label;
 }
 
 function MoverChip({ chip }: { chip: MarketMoverChipPayload }) {
@@ -70,7 +79,12 @@ function MarketMoversBody({ marketMovers }: { marketMovers: MarketMoversGroupPay
   );
 }
 
-export default function MarketMoversTile({ marketMovers, tabs }: MarketMoversTileProps) {
+export default function MarketMoversTile({
+  marketMovers,
+  tabs,
+  sessionLabel,
+  priceBasis,
+}: MarketMoversTileProps) {
   return (
     <section
       className="market-movers market-movers--tile"
@@ -79,7 +93,17 @@ export default function MarketMoversTile({ marketMovers, tabs }: MarketMoversTil
     >
       <div className="market-movers__card">
         <header className="market-movers__header">
-          <h2 className="market-movers__title">MARKET MOVERS</h2>
+          <div className="market-movers__title-row">
+            <h2 className="market-movers__title">MARKET MOVERS</h2>
+            {sessionLabel ? (
+              <span
+                className="market-movers__session"
+                title={sessionBadgeTitle(sessionLabel, priceBasis)}
+              >
+                {sessionLabel}
+              </span>
+            ) : null}
+          </div>
           <div className="market-movers__toggle-group" role="tablist" aria-label="Market movers region">
             {tabs.map((tab) => (
               <a

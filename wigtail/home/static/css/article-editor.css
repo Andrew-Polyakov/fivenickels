@@ -541,6 +541,71 @@
     height: 1.2rem;
 }
 
+.scn-editor-big-trader-card__hint {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--muted-foreground);
+}
+
+.scn-editor-big-trader-card__preview {
+    margin-top: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.75rem;
+    overflow: auto;
+}
+
+.scn-editor-broker-picker__scroll {
+    max-height: 16rem;
+}
+
+.scn-editor-broker-picker__empty {
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--muted-foreground);
+}
+
+.scn-editor-broker-picker__item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: none;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+}
+
+.scn-editor-broker-picker__item:hover,
+.scn-editor-broker-picker__item--active {
+    background: var(--accent);
+}
+
+.scn-editor-broker-picker__favicon {
+    width: 1.25rem;
+    height: 1.25rem;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.scn-editor-broker-picker__name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.scn-editor-broker-picker__rating {
+    flex-shrink: 0;
+    font-size: 0.8125rem;
+    color: var(--muted-foreground);
+}
+
 /* Popover */
 .popover {
     position: fixed;

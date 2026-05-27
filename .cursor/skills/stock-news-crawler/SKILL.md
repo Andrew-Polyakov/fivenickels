@@ -45,7 +45,7 @@ Let **C** = tickers from the **current** `dotnet run ...` / user request (normal
    dotnet run --project tools/StockCrawler -- TICKER1 TICKER2
    ```
 
-   Parse JSON: `asOfUtc`, per-ticker `lastPrice`, `previousClose`, `dayVolume`, `percentChange`, `alpacNews[]`. Each news line includes `headline`, `createdAtUtc`, `summary`, `content` (plain text, truncated for stdout), `source`, `url`, `symbols`, `tags`. Field `webHints` starts empty; you fill it.
+   Parse JSON: `asOfUtc`, `marketSession`, `marketSessionLabel`, `priceBasis`, `dataFeed`, per-ticker `lastPrice`, `previousClose`, `dayVolume`, `percentChange`, `priceBasis`, `alpacNews[]`. During pre/post/overnight, last price prefers latest trade vs prior daily close. Each news line includes `headline`, `createdAtUtc`, `summary`, `content` (plain text, truncated for stdout), `source`, `url`, `symbols`, `tags`. Field `webHints` starts empty; you fill it.
 3. **Web search (mandatory for every ticker):** at least one query per symbol, e.g. `"{TICKER}" stock news` plus the run date. Add 1–2 `webHints` (title/snippet + source) into your working notes; stagger requests if there are many tickers.
 4. **Aggregate** Alpaca + web into one **Catalyst** cell; dedupe near-duplicates; keep the table one line, optional bullets under “Aggregated news.”
 5. **Setup potential:** from price/volume + catalyst + (optional) sector/peer or index context from the same research; output one label as in the table. If nothing stands out, `—` or **unclear**.

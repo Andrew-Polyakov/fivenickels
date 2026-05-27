@@ -19,9 +19,15 @@ internal static class NewsCommand
         var secret = new SecretKey(keyId, keySecret);
         IEnvironment alpca = useLive ? Environments.Live : Environments.Paper;
         var client = alpca.GetAlpacaDataClient(secret);
+        var session = UsMarketSession.Classify(DateTime.UtcNow);
+        var feed = MarketDataSettings.BarsFeedFromEnvironment();
         var dto = new RootDto {
             AsOfUtc = DateTime.UtcNow,
             Mode = "news",
+            MarketSession = session.Id,
+            MarketSessionLabel = session.Label,
+            PriceBasis = session.PriceBasis,
+            DataFeed = MarketDataSettings.FeedIdFromEnvironment(),
             Tickers = new List<TickerBlockDto>()
         };
         try {
@@ -47,7 +53,9 @@ internal static class NewsCommand
             stockDb.initialize();
             new NewsWriter().upsert(stockDb, newsPage, tickers, crawlUtc);
 
-            var snapRequest = new LatestMarketDataListRequest(tickers);
+            var snapRequest = new LatestMarketDataListRequest(tickers) {
+                Feed = feed
+            };
             IReadOnlyDictionary<string, ISnapshot> snaps;
             try {
                 snaps = await client.ListSnapshotsAsync(snapRequest);
@@ -62,7 +70,7 @@ internal static class NewsCommand
             foreach (var sym in tickers) {
                 snaps.TryGetValue(sym, out var snap);
                 bySymbolHeadlines.TryGetValue(sym, out var headlines);
-                var block = buildTickerBlock(sym, snap, headlines);
+                var block = buildTickerBlock(sym, snap, headlines, session);
                 dto.Tickers.Add(block);
                 var meta = await AssetMetaLookup.tryFetchAsync(trading, sym);
                 stockWriter.upsert(sym, crawlUtc, meta);
@@ -159,34 +167,18 @@ internal static class NewsCommand
     private static TickerBlockDto buildTickerBlock(
         string symbol,
         ISnapshot? snap,
-        IReadOnlyList<NewsLineDto>? headlines)
+        IReadOnlyList<NewsLineDto>? headlines,
+        UsMarketSession.SessionInfo session)
     {
-        decimal? last = null;
-        decimal? prevClose = null;
-        decimal? pct = null;
-        decimal? vol = null;
-        if (snap != null) {
-            if (snap.CurrentDailyBar is { } cdb) {
-                last = cdb.Close;
-                vol = cdb.Volume;
-            }
-            if (snap.Trade is { } tr) {
-                last ??= tr.Price;
-            }
-            if (snap.PreviousDailyBar is { } pdb) {
-                prevClose = pdb.Close;
-            }
-            if (last is { } lp && prevClose is { } pc && pc != 0) {
-                pct = 100m * (lp - pc) / pc;
-            }
-        }
+        var q = SnapshotMetrics.FromSnapshot(snap, session.IsExtended);
 
         return new TickerBlockDto {
             Symbol = symbol,
-            LastPrice = last,
-            PreviousClose = prevClose,
-            DayVolume = vol,
-            PercentChange = pct,
+            LastPrice = q.LastPrice,
+            PreviousClose = q.PreviousClose,
+            DayVolume = q.DayVolume,
+            PercentChange = q.PercentChange,
+            PriceBasis = session.PriceBasis,
             AlpacNews = headlines?.Take(MaxJsonNewsLines).ToList() ?? new List<NewsLineDto>(),
             WebHints = new List<WebHintDto>()
         };

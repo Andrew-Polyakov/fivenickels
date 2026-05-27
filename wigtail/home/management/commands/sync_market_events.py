@@ -17,9 +17,8 @@ from home.models import CorporateActionEvent, MarketCalendarDay, MarketTickerRow
 
 class Command(BaseCommand):
     help = (
-        "Fetch Alpaca corporate actions (cash/stock dividends) and market calendar, "
-        "upsert upcoming rows, and purge past ex_date/session_date. Run daily via cron "
-        "alongside sync_market_tickers."
+        "Fetch Alpaca corporate actions (cash/stock dividends) and market calendar. "
+        "Prefer `sync_alpaca_market` for the unified daily sync."
     )
 
     def add_arguments(self, parser):

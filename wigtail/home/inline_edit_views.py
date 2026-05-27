@@ -502,7 +502,7 @@ def preview_stock_bars_tile(request: HttpRequest) -> JsonResponse:
     parts = [p.strip().upper() for p in re.split(r"[\s,]+", raw) if p.strip()]
     syms = _dedupe_symbols(parts)
     cadence = str(request.GET.get("cadence") or "day").strip().lower()
-    if cadence not in ("day", "week", "month"):
+    if cadence not in ("day", "week", "month", "2h", "2hour", "hour2"):
         cadence = "day"
     timeframe = stock_bars_timeframe_from_cadence(cadence)
     limit_raw = request.GET.get("bars_limit")

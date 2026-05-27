@@ -110,6 +110,8 @@ export interface BentoGrid01FeaturePayload {
   forex_quotes?: ForexQuotePayload[];
   market_movers?: MarketMoversGroupPayload;
   market_mover_tabs?: MarketMoverTabPayload[];
+  market_session_label?: string | null;
+  price_basis?: string | null;
   dividend_rows?: DividendRowPayload[];
   calendar_rows?: CalendarRowPayload[];
   fxbroker?: FxBrokerPayload | { kind: 'empty' };
@@ -224,6 +226,8 @@ function FeatureHeader({ feature }: { feature: BentoGrid01FeaturePayload }) {
         <MarketMoversTile
           marketMovers={feature.market_movers}
           tabs={feature.market_mover_tabs ?? []}
+          sessionLabel={feature.market_session_label}
+          priceBasis={feature.price_basis}
         />
       </BentoWidgetTileFrame>
     );

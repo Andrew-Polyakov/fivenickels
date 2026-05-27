@@ -183,6 +183,9 @@ def profile(request: HttpRequest) -> HttpResponse:
             for p in moderation_qs
         ]
         create_article_url = reverse("article_create")
+        tickers_list_url = reverse("profile_tickers_list")
+    else:
+        tickers_list_url = ""
 
     return render(
         request,
@@ -193,5 +196,6 @@ def profile(request: HttpRequest) -> HttpResponse:
             "create_article_url": create_article_url,
             "profile_page_size": PROFILE_PAGE_SIZE,
             "is_staff": is_staff,
+            "tickers_list_url": tickers_list_url,
         },
     )

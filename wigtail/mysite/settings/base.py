@@ -124,7 +124,16 @@ DATABASES = {
         "USER": os.environ.get("POSTGRES_USER", "trades"),
         "PASSWORD": os.environ.get("POSTGRES_PASSWORD", ""),
         "CONN_MAX_AGE": 60,
-    }
+    },
+    "crawler": {
+        "ENGINE": "django.db.backends.postgresql",
+        "HOST": POSTGRES_HOST,
+        "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+        "NAME": os.environ.get("CRAWLER_POSTGRES_DB", "crawler"),
+        "USER": os.environ.get("POSTGRES_USER", "trades"),
+        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", ""),
+        "CONN_MAX_AGE": 60,
+    },
 }
 
 CACHES = {

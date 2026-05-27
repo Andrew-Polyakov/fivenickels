@@ -156,21 +156,9 @@
                 </nav>
             </div>
 
-            {% if similar_pages %}
+            {% if similar_article_carousel %}
                 <section class="tagged-content__related" aria-label="Similar articles">
-                <div class="tile-carousel" data-carousel>
-                    <button type="button" class="tile-carousel__btn tile-carousel__btn--prev" data-carousel-prev aria-label="Scroll similar pages left">‹</button>
-                    <div class="tile-carousel__viewport" data-carousel-viewport>
-                        <div class="tile-carousel__track" data-carousel-track>
-                            {% for sp in similar_pages %}
-                                <div class="tile-carousel__cell">
-                                    {% similar_article_card_mount sp %}
-                                </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    <button type="button" class="tile-carousel__btn tile-carousel__btn--next" data-carousel-next aria-label="Scroll similar pages right">›</button>
-                </div>
+                    {% include "home/includes/article_carousel_mount.html" with carousel_payload=similar_article_carousel mount_uid="tagged-content-similar-carousel" %}
                 </section>
             {% endif %}
         </footer>

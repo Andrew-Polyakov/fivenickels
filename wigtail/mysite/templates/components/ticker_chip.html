@@ -1,7 +1,7 @@
-{# Single market ticker: symbol/label + change % inside one bordered chip (reusable in carousel or elsewhere). Expects `chip` dict (row, label, pct_formatted, pct_class, optional price_display). Optional `dup`: duplicate track sets tabindex=-1. Optional `show_price_row`: rail layout — label left / pct right, price on second row. #}
+{# Single market ticker: symbol/label + change % inside one bordered chip (reusable in carousel or elsewhere). Expects `chip` dict (row or symbol/href, label, pct_formatted, pct_class, optional price_display). Optional `dup`: duplicate track sets tabindex=-1. Optional `show_price_row`: rail layout — label left / pct right, price on second row. #}
 <a
     class="ticker-chip{% if show_price_row %} ticker-chip--rail-stack{% endif %}"
-    href="{% url 'ticker_page' chip.row.symbol|lower %}"
+    href="{% if chip.href %}{{ chip.href }}{% else %}{% url 'ticker_page' chip.row.symbol|lower %}{% endif %}"
     {% if dup %}tabindex="-1"{% endif %}
 >
     {% if show_price_row %}

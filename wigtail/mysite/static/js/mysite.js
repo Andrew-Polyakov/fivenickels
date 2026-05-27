@@ -1,6 +1,41 @@
 (function () {
     "use strict";
 
+    var APP_READY_EVENT = "app:ready";
+    var appReadyQueue = [];
+
+    function isAppReady() {
+        return window.__appReady === true;
+    }
+
+    function whenAppReady(fn) {
+        if (typeof fn !== "function") {
+            return;
+        }
+        if (isAppReady()) {
+            fn();
+            return;
+        }
+        appReadyQueue.push(fn);
+    }
+
+    function flushAppReadyQueue() {
+        var pending = appReadyQueue.slice();
+        appReadyQueue.length = 0;
+        pending.forEach(function (fn) {
+            try {
+                fn();
+            } catch (err) {
+                console.error(err);
+            }
+        });
+    }
+
+    document.addEventListener(APP_READY_EVENT, flushAppReadyQueue);
+    if (isAppReady()) {
+        flushAppReadyQueue();
+    }
+
     function isTurboPreview() {
         return document.body && document.body.getAttribute("data-turbo-preview") === "1";
     }
@@ -442,35 +477,22 @@
         }
     }
 
-    function initShadcnCardLayouts() {
-        if (window.mountShadcnCardLayouts && typeof window.mountShadcnCardLayouts === "function") {
-            window.mountShadcnCardLayouts();
-        }
-        if (window.mountSimilarArticleCarousels && typeof window.mountSimilarArticleCarousels === "function") {
-            window.mountSimilarArticleCarousels();
-        }
-        if (window.mountShadcnArticleCards && typeof window.mountShadcnArticleCards === "function") {
-            window.mountShadcnArticleCards();
-        }
+    /** Broker, breadcrumbs, taxonomy nav/editor — gated on app:ready (no timeout retries). */
+    function initCriticalShadcnMounts() {
         if (window.mountShadcnBreadcrumbs && typeof window.mountShadcnBreadcrumbs === "function") {
             window.mountShadcnBreadcrumbs();
         }
-        initArticleMetaMounts();
-    }
-
-    function remountShadcnWidgets() {
-        if (window.mountShadcnBrokerCarousel && typeof window.mountShadcnBrokerCarousel === "function") {
-            window.mountShadcnBrokerCarousel();
+        if (window.scheduleShadcnBrokerMounts && typeof window.scheduleShadcnBrokerMounts === "function") {
+            window.scheduleShadcnBrokerMounts();
+        } else {
+            if (window.mountShadcnBrokerCarousel && typeof window.mountShadcnBrokerCarousel === "function") {
+                window.mountShadcnBrokerCarousel();
+            }
+            if (window.mountShadcnBrokerTable && typeof window.mountShadcnBrokerTable === "function") {
+                window.mountShadcnBrokerTable();
+            }
         }
-        if (window.mountShadcnBrokerTable && typeof window.mountShadcnBrokerTable === "function") {
-            window.mountShadcnBrokerTable();
-        }
-        if (window.mountShadcnProfileArticlesTable && typeof window.mountShadcnProfileArticlesTable === "function") {
-            window.mountShadcnProfileArticlesTable();
-        }
-        if (window.mountShadcnArticleEditor && typeof window.mountShadcnArticleEditor === "function") {
-            window.mountShadcnArticleEditor();
-        }
+        initTaxonomySiteNavAndChips();
         if (window.unmountTaxonomyEditors && typeof window.unmountTaxonomyEditors === "function") {
             var taxonomyHosts = document.querySelectorAll("[data-shadcn-taxonomy-editor]");
             if (taxonomyHosts.length) {
@@ -479,6 +501,55 @@
         }
         if (window.mountTaxonomyEditor && typeof window.mountTaxonomyEditor === "function") {
             window.mountTaxonomyEditor();
+        }
+    }
+
+    function initNonCriticalShadcnMounts() {
+        if (window.mountShadcnArticleCarousel && typeof window.mountShadcnArticleCarousel === "function") {
+            window.mountShadcnArticleCarousel();
+        }
+        if (window.mountShadcnArticleCards && typeof window.mountShadcnArticleCards === "function") {
+            window.mountShadcnArticleCards();
+        }
+        if (window.mountShadcnProfileArticlesTable && typeof window.mountShadcnProfileArticlesTable === "function") {
+            window.mountShadcnProfileArticlesTable();
+        }
+        if (window.mountShadcnArticleEditor && typeof window.mountShadcnArticleEditor === "function") {
+            window.mountShadcnArticleEditor();
+        }
+        if (window.mountShadcnBigTraderCard && typeof window.mountShadcnBigTraderCard === "function") {
+            window.mountShadcnBigTraderCard();
+        }
+    }
+
+    function runShadcnPageOrchestration() {
+        whenAppReady(initCriticalShadcnMounts);
+        whenAppReady(initNonCriticalShadcnMounts);
+        scheduleArticleMetaMounts();
+        scheduleTickerPageMounts();
+    }
+
+    function initTickerPageMounts() {
+        if (window.mountShadcnTickerTabs && typeof window.mountShadcnTickerTabs === "function") {
+            window.mountShadcnTickerTabs();
+        }
+        if (window.mountShadcnSwingSetups && typeof window.mountShadcnSwingSetups === "function") {
+            window.mountShadcnSwingSetups();
+        }
+    }
+
+    /** Ticker tabs / swing setups mount with the ES module bundle; retry after Turbo swaps #main. */
+    function scheduleTickerPageMounts() {
+        var delays = [0, 50, 150, 400, 800];
+        delays.forEach(function (ms) {
+            window.setTimeout(initTickerPageMounts, ms);
+        });
+    }
+
+    function unmountTickerPageMounts(root) {
+        var scope = root || document;
+        if (window.unmountShadcnTickerTabs && typeof window.unmountShadcnTickerTabs === "function") {
+            window.unmountShadcnTickerTabs(scope);
         }
     }
 
@@ -687,14 +758,11 @@
         initSectorScroll();
         initCarousels();
         initInlineChipsAdmin();
-        initTaxonomySiteNavAndChips();
         initInlineTileTitleAdmin();
-        initShadcnCardLayouts();
-        remountShadcnWidgets();
+        runShadcnPageOrchestration();
         initMarketMoversFilter();
         initReadingThemeToggle();
         scheduleReadingThemeToggleMount();
-        scheduleArticleMetaMounts();
     }
 
     function handleTurboBeforeFetchResponse(e) {
@@ -721,6 +789,13 @@
         var mainFrame = document.querySelector("turbo-frame#main");
         if (mainFrame) {
             unmountArticleMetaMounts(mainFrame);
+            unmountTickerPageMounts(mainFrame);
+            if (window.unmountShadcnBrokerTable && typeof window.unmountShadcnBrokerTable === "function") {
+                window.unmountShadcnBrokerTable(mainFrame);
+            }
+            if (window.unmountShadcnBrokerCarousel && typeof window.unmountShadcnBrokerCarousel === "function") {
+                window.unmountShadcnBrokerCarousel(mainFrame);
+            }
         }
     }
 
@@ -730,7 +805,7 @@
         }
         if (e.target.id === "site-nav") {
             initInlineChipsAdmin();
-            initTaxonomySiteNavAndChips();
+            whenAppReady(initTaxonomySiteNavAndChips);
             return;
         }
         if (e.target.id !== "main") {
@@ -952,10 +1027,6 @@
             return;
         }
 
-        var hasMaterialDialog =
-            window.showMaterialAuthDialog &&
-            typeof window.showMaterialAuthDialog === "function";
-
         openTargets.forEach(function (target) {
             if (target.getAttribute("data-auth-modal-bound") === "1") {
                 return;
@@ -963,17 +1034,26 @@
             target.setAttribute("data-auth-modal-bound", "1");
             target.addEventListener("click", function () {
                 var tab = target.getAttribute("data-auth-tab") === "signup" ? "signup" : "login";
-                if (hasMaterialDialog) {
+                if (
+                    window.showMaterialAuthDialog &&
+                    typeof window.showMaterialAuthDialog === "function"
+                ) {
                     window.showMaterialAuthDialog(tab);
-                    return;
                 }
             });
         });
 
         var params = new URLSearchParams(window.location.search);
         var openFromUrl = params.get("auth");
-        if (hasMaterialDialog && (openFromUrl === "login" || openFromUrl === "signup")) {
-            window.showMaterialAuthDialog(openFromUrl);
+        if (openFromUrl === "login" || openFromUrl === "signup") {
+            whenAppReady(function () {
+                if (
+                    window.showMaterialAuthDialog &&
+                    typeof window.showMaterialAuthDialog === "function"
+                ) {
+                    window.showMaterialAuthDialog(openFromUrl);
+                }
+            });
         }
     }
 
@@ -987,15 +1067,12 @@
         initSiteSearchLive();
         initAuthModal();
         initInlineChipsAdmin();
-        initTaxonomySiteNavAndChips();
         initInlineTileTitleAdmin();
-        initShadcnCardLayouts();
-        remountShadcnWidgets();
+        runShadcnPageOrchestration();
         initMarketMoversFilter();
         initReadingThemeToggle();
         initProfileHeaderButton();
         scheduleReadingThemeToggleMount();
-        scheduleArticleMetaMounts();
     });
 
     document.addEventListener("turbo:load", function () {
@@ -1008,15 +1085,12 @@
         initSiteSearchLive();
         initAuthModal();
         initInlineChipsAdmin();
-        initTaxonomySiteNavAndChips();
         initInlineTileTitleAdmin();
-        initShadcnCardLayouts();
-        remountShadcnWidgets();
+        runShadcnPageOrchestration();
         initMarketMoversFilter();
         initReadingThemeToggle();
         initProfileHeaderButton();
         scheduleReadingThemeToggleMount();
-        scheduleArticleMetaMounts();
     });
 
     document.addEventListener("turbo:before-fetch-response", handleTurboBeforeFetchResponse);

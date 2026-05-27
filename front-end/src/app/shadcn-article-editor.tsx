@@ -3,7 +3,6 @@ import { createRoot, type Root } from 'react-dom/client';
 
 import { useEditor, EditorContent, ReactNodeViewRenderer, NodeViewWrapper, type Editor, type ReactNodeViewProps } from '@tiptap/react';
 import { Node, mergeAttributes } from '@tiptap/core';
-import StarterKit from '@tiptap/starter-kit';
 import TiptapLink from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 
@@ -22,12 +21,13 @@ import { Select } from '../components/ui/select';
 import { ScrollArea } from '../components/ui/scroll-area';
 import { ToggleGroup, ToggleGroupItem } from '../components/ui/toggle-group';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
-import { ARTICLE_RTE_EDITOR_PROPS, RteToolbar, TABLE_EXTENSIONS } from '../components/ui/rte-editor';
+import { ARTICLE_RTE_EDITOR_PROPS, RTE_STARTER_KIT, RteToolbar, TABLE_EXTENSIONS } from '../components/ui/rte-editor';
 import { SCN_PROSE } from '../components/ui/typography';
 import { cn } from '../lib/utils';
 import { ARTICLE_QUOTE_EXTENSION } from './tiptap-article-quote';
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from '../components/ui/empty';
 import { ScnToast } from '../components/scn-toast';
+import { BigTraderCardView, type BigTraderCardPayload } from './shadcn-big-trader-card';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -41,7 +41,13 @@ type MarkdownBlock  = { id: string; type: 'markdown'; markdown: string };
 type ImageBlock     = { id: string; type: 'image';     imageId: number | null; imageUrl: string | null };
 type EmbedBlock     = { id: string; type: 'embed';     url: string };
 type SeparatorBlock = { id: string; type: 'separator' };
-type PerforationBlock = { id: string; type: 'perforation_separator' };
+type BigTraderCardBlock = {
+  id: string;
+  type: 'big_trader_card';
+  brokerId: number | null;
+  brokerName: string | null;
+  previewPayload: BigTraderCardPayload | null;
+};
 type BodyBlock =
   | HeadingBlock
   | ParagraphBlock
@@ -49,7 +55,15 @@ type BodyBlock =
   | ImageBlock
   | EmbedBlock
   | SeparatorBlock
-  | PerforationBlock;
+  | BigTraderCardBlock;
+
+type BrokerListItem = {
+  id: number;
+  broker_name: string;
+  favicon_url: string;
+  overall_rating: number;
+  page_url: string;
+};
 
 type CatalystUi = 'bear' | 'neutral' | 'bull';
 type CatalystValue = '' | 'Bearish' | 'Bullish';
@@ -124,10 +138,21 @@ function apiToEditor(apiBlocks: ArticleApiData['body']): BodyBlock[] {
       out.push({ id, type: 'embed', url: v?.url || '' });
     } else if (b.type === 'separator') {
       out.push({ id, type: 'separator' });
-    } else if (b.type === 'perforation_separator') {
-      out.push({ id, type: 'perforation_separator' });
+    } else if (b.type === 'big_trader_card') {
+      const v = b.value as {
+        broker_id?: number;
+        broker_name?: string;
+        preview?: BigTraderCardPayload | null;
+      } | null;
+      out.push({
+        id,
+        type: 'big_trader_card',
+        brokerId: v?.broker_id ?? null,
+        brokerName: v?.broker_name ?? null,
+        previewPayload: v?.preview ?? null,
+      });
     }
-    // skip card, bento, unknown
+    // skip card, bento, perforation, unknown
   }
   return out;
 }
@@ -151,7 +176,13 @@ function editorToApi(blocks: BodyBlock[]): unknown[] {
     if (b.type === 'markdown')  return { id: b.id, type: 'markdown',  value: b.markdown || '' };
     if (b.type === 'image')     return { id: b.id, type: 'image',     value: b.imageId };
     if (b.type === 'embed')     return { id: b.id, type: 'embed',     value: { url: b.url } };
-    if (b.type === 'perforation_separator') return { id: b.id, type: 'perforation_separator', value: null };
+    if (b.type === 'big_trader_card') {
+      return {
+        id: b.id,
+        type: 'big_trader_card',
+        value: b.brokerId != null ? { broker: b.brokerId } : { broker: null },
+      };
+    }
     return { id: b.id, type: 'separator', value: null };
   });
 }
@@ -818,7 +849,7 @@ function ParagraphEditor({ block, apiBase, onChange }: {
   const editor = useEditor({
     ...ARTICLE_RTE_EDITOR_PROPS,
     extensions: [
-      StarterKit.configure({ heading: { levels: [2, 3] }, blockquote: false }),
+      RTE_STARTER_KIT,
       ARTICLE_QUOTE_EXTENSION,
       TiptapLink.configure({ openOnClick: false }),
       Placeholder.configure({ placeholder: 'Write paragraph content…' }),
@@ -935,31 +966,137 @@ function SeparatorEditor() {
   );
 }
 
-function PerforationSeparatorEditor() {
-  const patternId = React.useMemo(() => `perf-ed-${uid()}`, []);
-  const fill = 'var(--muted-foreground, #71717a)';
+function ArticleBrokerPicker({
+  brokerId,
+  brokerName,
+  brokerListUrl,
+  onChange,
+}: {
+  brokerId: number | null;
+  brokerName: string | null;
+  brokerListUrl: string;
+  onChange: (broker: BrokerListItem) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [brokers, setBrokers] = React.useState<BrokerListItem[]>([]);
+
+  React.useEffect(() => {
+    if (!brokerListUrl) return;
+    void fetch(brokerListUrl, { credentials: 'same-origin' })
+      .then(r => (r.ok ? r.json() : Promise.reject()))
+      .then((data: { brokers: BrokerListItem[] }) => setBrokers(data.brokers ?? []))
+      .catch(() => {});
+  }, [brokerListUrl]);
+
   return (
-    <div className="scn-editor-block__fields scn-editor-perforation-preview" aria-hidden>
-      <p className="scn-editor-perforation-preview__hint">Dotted tear line (matches public article layout).</p>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 100 19"
-        width="100%"
-        preserveAspectRatio="none"
-        focusable="false"
-        className="scn-editor-perforation-preview__svg"
-      >
-        <defs>
-          <pattern id={patternId} width="14" height="19" patternUnits="userSpaceOnUse">
-            <rect x="6" y="0" width="2" height="2" fill={fill} />
-            <rect x="5.5" y="3" width="3" height="3" fill={fill} />
-            <rect x="4.5" y="7" width="5" height="5" fill={fill} />
-            <rect x="5.5" y="13" width="3" height="3" fill={fill} />
-            <rect x="6" y="17" width="2" height="2" fill={fill} />
-          </pattern>
-        </defs>
-        <rect width="100" height="19" fill={`url(#${patternId})`} />
-      </svg>
+    <Popover modal={false} open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="outline" className="w-full justify-between">
+          <span className="truncate text-left">{brokerName ?? 'Select broker…'}</span>
+          <span aria-hidden className="opacity-60">▾</span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="scn-popover-content scn-editor-broker-picker" align="start">
+        <ScrollArea className="scn-editor-broker-picker__scroll">
+          {brokers.length === 0 && (
+            <p className="scn-editor-broker-picker__empty">Loading brokers…</p>
+          )}
+          {brokers.map(b => (
+            <button
+              key={b.id}
+              type="button"
+              className={cn(
+                'scn-editor-broker-picker__item',
+                brokerId === b.id && 'scn-editor-broker-picker__item--active',
+              )}
+              onClick={() => {
+                onChange(b);
+                setOpen(false);
+              }}
+            >
+              {b.favicon_url ? (
+                <img src={b.favicon_url} alt="" className="scn-editor-broker-picker__favicon" />
+              ) : null}
+              <span className="scn-editor-broker-picker__name">{b.broker_name}</span>
+              <span className="scn-editor-broker-picker__rating">{b.overall_rating.toFixed(1)} ★</span>
+            </button>
+          ))}
+        </ScrollArea>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function BigTraderCardEditor({
+  block,
+  brokerListUrl,
+  onChange,
+}: {
+  block: BigTraderCardBlock;
+  brokerListUrl: string;
+  onChange: (b: BigTraderCardBlock) => void;
+}) {
+  const [loadingPreview, setLoadingPreview] = React.useState(false);
+  const [previewError, setPreviewError] = React.useState('');
+
+  async function loadPreview(brokerId: number, base: BigTraderCardBlock) {
+    setLoadingPreview(true);
+    setPreviewError('');
+    try {
+      const res = await api(`/inline/brokers/${brokerId}/big-card/`);
+      const json = await res.json() as BigTraderCardPayload & { error?: string };
+      if (!res.ok || json.kind !== 'big_trader_card') {
+        setPreviewError(json.error ?? 'Could not load broker card');
+        return;
+      }
+      onChange({
+        ...base,
+        brokerId,
+        brokerName: json.brokerName,
+        previewPayload: json,
+      });
+    } catch {
+      setPreviewError('Could not load broker card');
+    } finally {
+      setLoadingPreview(false);
+    }
+  }
+
+  function handleBrokerPick(broker: BrokerListItem) {
+    const next: BigTraderCardBlock = {
+      id: block.id,
+      type: 'big_trader_card',
+      brokerId: broker.id,
+      brokerName: broker.broker_name,
+      previewPayload: null,
+    };
+    onChange(next);
+    void loadPreview(broker.id, next);
+  }
+
+  return (
+    <div className="scn-editor-block__fields scn-editor-big-trader-card">
+      <label className="flex flex-col gap-1.5">
+        <span className="text-muted-foreground text-sm">Broker</span>
+        <ArticleBrokerPicker
+          brokerId={block.brokerId}
+          brokerName={block.brokerName}
+          brokerListUrl={brokerListUrl}
+          onChange={handleBrokerPick}
+        />
+      </label>
+      {!block.brokerId && (
+        <p className="scn-editor-big-trader-card__hint">Choose a broker to embed the big trader card.</p>
+      )}
+      {previewError && <p className="scn-editor-error">{previewError}</p>}
+      {loadingPreview && (
+        <p className="scn-editor-big-trader-card__hint">Loading preview…</p>
+      )}
+      {block.previewPayload && !loadingPreview && (
+        <div className="scn-editor-big-trader-card__preview">
+          <BigTraderCardView initial={block.previewPayload} />
+        </div>
+      )}
     </div>
   );
 }
@@ -986,11 +1123,12 @@ const BLOCK_LABEL: Record<string, string> = {
   image: 'Image',
   embed: 'Embed',
   separator: 'Separator',
-  perforation_separator: 'Perforated divider',
+  big_trader_card: 'Big trader card',
 };
 
-function BlockEditor({ block, index, total, articleId, apiBase, onChange, onRemove, onMove }: {
+function BlockEditor({ block, index, total, articleId, apiBase, brokerListUrl, onChange, onRemove, onMove }: {
   block: BodyBlock; index: number; total: number; articleId: number; apiBase: string;
+  brokerListUrl: string;
   onChange: (b: BodyBlock) => void; onRemove: () => void; onMove: (dir: -1 | 1) => void;
 }) {
   return (
@@ -1013,7 +1151,13 @@ function BlockEditor({ block, index, total, articleId, apiBase, onChange, onRemo
         {block.type === 'image'     && <ImageEditor     block={block} articleId={articleId} apiBase={apiBase} onChange={onChange as (b: ImageBlock) => void} />}
         {block.type === 'embed'     && <EmbedEditor     block={block} onChange={onChange as (b: EmbedBlock) => void} />}
         {block.type === 'separator' && <SeparatorEditor />}
-        {block.type === 'perforation_separator' && <PerforationSeparatorEditor />}
+        {block.type === 'big_trader_card' && (
+          <BigTraderCardEditor
+            block={block}
+            brokerListUrl={brokerListUrl}
+            onChange={onChange as (b: BigTraderCardBlock) => void}
+          />
+        )}
       </div>
     </div>
   );
@@ -1028,7 +1172,7 @@ function AddBlockMenu({ onAdd }: { onAdd: (type: BodyBlock['type']) => void }) {
     { type: 'image',     desc: 'Uploaded image' },
     { type: 'embed',     desc: 'YouTube, Twitter…' },
     { type: 'separator', desc: 'Horizontal rule' },
-    { type: 'perforation_separator', desc: 'Dotted perforation (decorative)' },
+    { type: 'big_trader_card', desc: 'Broker rating card with logos and category scores' },
   ];
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -1208,7 +1352,15 @@ function ActionsPopover({ status, onAction, disabled }: {
 
 // ─── Root Component ───────────────────────────────────────────────────────────
 
-function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: string }) {
+function ArticleEditor({
+  articleId,
+  apiBase,
+  brokerListUrl,
+}: {
+  articleId: number;
+  apiBase: string;
+  brokerListUrl: string;
+}) {
   const [title, setTitle]             = React.useState('');
   const [sectionTermId, setSection]   = React.useState<number | null>(null);
   const [categoryId, setCategory]     = React.useState<number | null>(null);
@@ -1389,7 +1541,14 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
         case 'image':     return { id, type: 'image',     imageId: null, imageUrl: null };
         case 'embed':     return { id, type: 'embed',     url: '' };
         case 'separator': return { id, type: 'separator' };
-        case 'perforation_separator': return { id, type: 'perforation_separator' };
+        case 'big_trader_card':
+          return {
+            id,
+            type: 'big_trader_card',
+            brokerId: null,
+            brokerName: null,
+            previewPayload: null,
+          };
       }
     })();
     setBlocks(prev => [...prev, newBlock]);
@@ -1469,6 +1628,7 @@ function ArticleEditor({ articleId, apiBase }: { articleId: number; apiBase: str
                   total={blocks.length}
                   articleId={articleId}
                   apiBase={apiBase}
+                  brokerListUrl={brokerListUrl}
                   onChange={updated => setBlocks(prev => prev.map((b, j) => j === i ? updated : b))}
                   onRemove={() => setBlocks(prev => prev.filter((_, j) => j !== i))}
                   onMove={dir => moveBlock(i, dir)}
@@ -1583,6 +1743,9 @@ export function mountShadcnArticleEditor(): void {
     host.dataset['shadcnArticleEditorBound'] = '1';
     let root = editorRoots.get(host);
     if (!root) { root = createRoot(host); editorRoots.set(host, root); }
-    root.render(<ArticleEditor articleId={articleId} apiBase={apiBase} />);
+    const brokerListUrl = host.dataset['brokerListUrl'] ?? '/inline/brokers/list/';
+    root.render(
+      <ArticleEditor articleId={articleId} apiBase={apiBase} brokerListUrl={brokerListUrl} />,
+    );
   });
 }

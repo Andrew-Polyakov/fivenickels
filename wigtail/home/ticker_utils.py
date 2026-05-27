@@ -85,6 +85,14 @@ def default_tradingview_symbol_for_row(row: MarketTickerRow) -> str:
     if isinstance(cached, str) and cached:
         return cached
 
+    row_exchange = (getattr(row, "exchange", None) or "").strip()
+    if row_exchange:
+        prefix = _tradingview_prefix_from_alpaca_exchange(row_exchange)
+        if prefix:
+            result = f"{prefix}:{sym}"
+            cache.set(cache_key, result, _TV_SYM_TTL)
+            return result
+
     meta = fetch_asset_meta(sym)
     prefix: str | None = None
     if meta:
@@ -128,7 +136,7 @@ def chip_json_payload(
     upper = (sym or "").strip().upper()
     href = href_for_ticker_subpage(ticker_slug=slug or "_")
     if row is not None:
-        label = row.display_label()
+        label = row.symbol
         pct = row.percent_change
     elif metrics is not None:
         label = upper
@@ -149,7 +157,7 @@ def chip_context_for_row(row: MarketTickerRow) -> dict:
     """Same ``chip`` dict shape as ``header_tickers`` entries (carousel / article chips)."""
     return {
         "row": row,
-        "label": row.display_label(),
+        "label": row.symbol,
         "pct_formatted": format_percent_change(row.percent_change),
         "pct_class": percent_change_css_class(row.percent_change),
         "volume_display": format_day_volume(row.day_volume),

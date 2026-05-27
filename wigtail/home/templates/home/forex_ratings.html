@@ -22,8 +22,10 @@
         data-broker-json-id="broker-ratings-data"
         data-countries-json-id="broker-countries-data"
         data-current-country="{{ current_country }}"
-        {% if is_admin %}data-broker-is-admin="1"{% endif %}
+        {% if is_admin %}
+        data-broker-is-admin="1"
         data-broker-update-url="{% url 'broker_rating_update' pk=0 %}"
+        {% endif %}
         data-cta-label="{{ cta_label }}"
         data-cta-button-text="{{ cta_button_text }}"
         data-cta-url="{{ cta_url }}"

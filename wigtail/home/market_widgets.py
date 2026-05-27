@@ -9,6 +9,7 @@ from django.http import HttpRequest, QueryDict
 
 from home.alpaca_forex_client import get_cached_forex_quote_rows, placeholder_forex_rows
 from home.ticker_utils import chip_context_for_row, href_for_ticker_subpage
+from home.us_market_session import classify_us_market_session
 
 MARKET_REGION_KEYS = frozenset({"US", "ASIA", "EUROPE"})
 
@@ -120,8 +121,18 @@ def build_market_movers_payload(
     block_region: str | None = None,
 ) -> dict[str, Any]:
     region_key = resolve_market_region_key(request, block_region=block_region)
-    return {
+    payload: dict[str, Any] = {
         "market_movers": build_market_movers_groups(rows, region_key),
         "market_mover_tabs": build_market_mover_tabs(request, region_key),
         "selected_region": region_key,
     }
+    if region_key == "US":
+        mkt = classify_us_market_session()
+        payload["market_session_label"] = mkt.label
+        payload["market_session_id"] = mkt.id
+        payload["price_basis"] = mkt.price_basis
+    else:
+        payload["market_session_label"] = None
+        payload["market_session_id"] = None
+        payload["price_basis"] = None
+    return payload

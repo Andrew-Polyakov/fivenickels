@@ -2,7 +2,15 @@
 <section class="market-movers" data-market-movers-root aria-label="Market movers">
     <div class="market-movers__card">
         <header class="market-movers__header">
-            <h2 class="market-movers__title">MARKET MOVERS</h2>
+            <div class="market-movers__title-row">
+                <h2 class="market-movers__title">MARKET MOVERS</h2>
+                {% if market_session_label %}
+                    <span
+                        class="market-movers__session"
+                        title="{% if price_basis == 'extended' %}{{ market_session_label }} (vs prior close){% else %}{{ market_session_label }}{% endif %}"
+                    >{{ market_session_label }}</span>
+                {% endif %}
+            </div>
             <div class="market-movers__toggle-group" role="tablist" aria-label="Market movers region">
                 {% for tab in market_mover_tabs %}
                     <a

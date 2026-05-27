@@ -2,7 +2,6 @@ import * as React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { useEditor, EditorContent, ReactNodeViewRenderer, NodeViewWrapper, type Editor, type ReactNodeViewProps } from '@tiptap/react';
 import { Node, mergeAttributes } from '@tiptap/core';
-import StarterKit from '@tiptap/starter-kit';
 import TiptapLink from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 
@@ -27,7 +26,7 @@ import { Select } from '../components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '../components/ui/toggle-group';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { Command, CommandGroup, CommandItem, CommandList } from '../components/ui/command';
-import { ARTICLE_RTE_EDITOR_PROPS, RteToolbar, TABLE_EXTENSIONS } from '../components/ui/rte-editor';
+import { ARTICLE_RTE_EDITOR_PROPS, RTE_STARTER_KIT, RteToolbar, TABLE_EXTENSIONS } from '../components/ui/rte-editor';
 import { SCN_PROSE } from '../components/ui/typography';
 import { ARTICLE_QUOTE_EXTENSION } from './tiptap-article-quote';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '../components/ui/carousel';
@@ -158,7 +157,7 @@ export type BentoGrid01Feature = {
   /** FX Broker card tile fields (stored inline for public rendering). */
   brokerId?: number | null;
   brokerName?: string | null;
-  brokerFaviconUrl?: string | null;
+  brokerLogoUrl?: string | null;
   brokerOverallRating?: number | null;
   brokerPageUrl?: string | null;
   frame_count?: number;
@@ -1349,7 +1348,7 @@ function ParagraphEditor({ block, uploadUrl, onChange }: {
   const editor = useEditor({
     ...ARTICLE_RTE_EDITOR_PROPS,
     extensions: [
-      StarterKit.configure({ heading: { levels: [2, 3] }, blockquote: false }),
+      RTE_STARTER_KIT,
       ARTICLE_QUOTE_EXTENSION,
       TiptapLink.configure({ openOnClick: false }),
       Placeholder.configure({ placeholder: 'Write paragraph content…' }),
@@ -1626,8 +1625,9 @@ type BrokerListItem = {
   id: number;
   broker_name: string;
   favicon_url: string;
+  logo_square_url?: string;
   overall_rating: number;
-  page_url: string;
+  website: string;
 };
 
 function BrokerPickerCombobox({
@@ -1737,7 +1737,7 @@ function createBentoFeatureOfType(
     };
   }
   if (headerType === 'fxbroker') {
-    return { ...base, header_type: 'fxbroker', brokerId: null, brokerName: null, brokerFaviconUrl: null, brokerOverallRating: null, brokerPageUrl: null };
+    return { ...base, header_type: 'fxbroker', brokerId: null, brokerName: null, brokerLogoUrl: null, brokerOverallRating: null, brokerPageUrl: null };
   }
   if (headerType === 'article_carousel') {
     const tid = tileCtx.termId;
@@ -1906,6 +1906,8 @@ function BentoForexStripPreview({ forexPreviewUrl }: { forexPreviewUrl: string }
 type MarketMoversPreviewJson = {
   market_movers: MarketMoversGroupPayload;
   market_mover_tabs: MarketMoverTabPayload[];
+  market_session_label?: string | null;
+  price_basis?: string | null;
 };
 
 function BentoMarketMoversPreview({
@@ -1991,6 +1993,8 @@ function BentoMarketMoversPreview({
       <MarketMoversTile
         marketMovers={data.market_movers}
         tabs={data.market_mover_tabs}
+        sessionLabel={data.market_session_label}
+        priceBasis={data.price_basis}
       />
     </div>
   );
@@ -2144,7 +2148,7 @@ function BentoTileRichTextEditor({ feat, onChange }: {
   const editor = useEditor({
     ...ARTICLE_RTE_EDITOR_PROPS,
     extensions: [
-      StarterKit.configure({ heading: { levels: [2, 3] }, blockquote: false }),
+      RTE_STARTER_KIT,
       ARTICLE_QUOTE_EXTENSION,
       TiptapLink.configure({ openOnClick: false }),
       Placeholder.configure({ placeholder: 'Write tile content…' }),
@@ -2335,9 +2339,10 @@ function BentoFeaturePreview({ feat, resolved, carouselFrames, linkable, stockPr
       const brokerPayload: FxBrokerPayload = {
         kind: 'fxbroker',
         brokerName: feat.brokerName,
-        faviconUrl: feat.brokerFaviconUrl ?? undefined,
+        logoUrl: feat.brokerLogoUrl ?? undefined,
+        faviconUrl: feat.brokerLogoUrl ?? undefined,
         overallRating: feat.brokerOverallRating,
-        pageUrl: feat.brokerPageUrl ?? undefined,
+        website: feat.brokerPageUrl ?? undefined,
       };
       return <FxBrokerCardView data={brokerPayload} />;
     }
@@ -2702,9 +2707,9 @@ function BentoFeaturePanel({ feat, resolved, carouselFrames, termId, categoryCho
                 onChange={(b) => onPatch({
                   brokerId: b.id,
                   brokerName: b.broker_name,
-                  brokerFaviconUrl: b.favicon_url || null,
+                  brokerLogoUrl: b.logo_square_url || b.favicon_url || null,
                   brokerOverallRating: b.overall_rating,
-                  brokerPageUrl: b.page_url || null,
+                  brokerPageUrl: b.website || null,
                 })}
               />
             </label>

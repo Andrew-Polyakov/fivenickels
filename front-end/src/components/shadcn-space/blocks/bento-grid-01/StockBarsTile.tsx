@@ -48,9 +48,35 @@ function formatBarsCadence(timeframe: string | undefined): string {
     '1Year': 'Yearly',
     '1Hour': 'Hourly',
     '1H': 'Hourly',
+    '2Hour': '2-hour',
+    '2H': '2-hour',
     '1Min': '1-minute',
   };
   return labels[u] ?? u;
+}
+
+/** Map price to SVG y (higher price → smaller y). Log scale when all prices are positive. */
+function buildLogPriceToY(hi: number, lo: number, chartHeight: number): (price: number) => number {
+  const plotH = chartHeight - PAD_Y * 2;
+  if (hi <= 0 || lo <= 0) {
+    const span = hi - lo || 1;
+    const pad = span * 0.04;
+    const top = hi + pad;
+    const bottom = lo - pad;
+    const range = top - bottom || 1;
+    return (p: number) => PAD_Y + ((top - p) / range) * plotH;
+  }
+  const padFactor = 1.04;
+  const top = hi * padFactor;
+  const bottom = lo / padFactor;
+  const logTop = Math.log(top);
+  const logBottom = Math.log(bottom);
+  const logRange = logTop - logBottom || 1;
+  const floor = bottom * 1e-6;
+  return (p: number) => {
+    const clamped = Math.max(p, floor);
+    return PAD_Y + ((logTop - Math.log(clamped)) / logRange) * plotH;
+  };
 }
 
 function StockBarsSvg({ bars }: { bars: StockBarPoint[] }) {
@@ -65,13 +91,8 @@ function StockBarsSvg({ bars }: { bars: StockBarPoint[] }) {
     hi = Math.max(hi, b.h);
     lo = Math.min(lo, b.l);
   }
-  const span = hi - lo || 1;
-  const pad = span * 0.04;
-  const top = hi + pad;
-  const bottom = lo - pad;
-  const range = top - bottom || 1;
 
-  const yPrice = (p: number) => PAD_Y + ((top - p) / range) * (h - PAD_Y * 2);
+  const yPrice = buildLogPriceToY(hi, lo, h);
 
   return (
     <svg
@@ -132,8 +153,10 @@ export default function StockBarsTile({
     formatBarsCadence(barsTimeframe) || (bars.length > 0 ? 'Daily' : '');
   const showMeta = Boolean(cadenceLabel);
 
+  const padTop = chips.length > 0 ? 'pt-10' : 'pt-1';
+
   return (
-    <div className="relative w-full min-h-[200px] flex flex-col items-stretch justify-center pt-10 px-1">
+    <div className={`relative w-full min-h-[200px] flex flex-col items-stretch justify-center px-1 ${padTop}`}>
       <div className="absolute left-2 top-2 z-20 flex flex-row flex-wrap gap-2 max-w-[calc(100%-0.5rem)]">
         {chips.map((chip, i) => (
           <a key={`${chip.symbol}-${i}`} href={chip.href} className="ticker-chip">

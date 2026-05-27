@@ -98,6 +98,21 @@ class StreamBlockSerializer(serializers.Serializer):
                 return None
             if block_type == 'perforation_separator':
                 return None
+            if block_type == 'big_trader_card':
+                if not isinstance(value, dict):
+                    return {'broker_id': None, 'broker_name': None}
+                broker = value.get('broker')
+                if broker is None:
+                    return {'broker_id': None, 'broker_name': None}
+                from home.broker_card import serialize_big_trader_card
+
+                request = self.context.get('request') if self.context else None
+                preview = serialize_big_trader_card(broker, request)
+                return {
+                    'broker_id': broker.pk,
+                    'broker_name': broker.broker_name,
+                    'preview': preview,
+                }
             # fallback for unknown block types
             if value is None:
                 return None

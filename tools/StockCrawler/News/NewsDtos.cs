@@ -10,6 +10,18 @@ internal sealed class RootDto
     [JsonPropertyName("mode")]
     public string? Mode { get; set; } = "news";
 
+    [JsonPropertyName("marketSession")]
+    public string? MarketSession { get; set; }
+
+    [JsonPropertyName("marketSessionLabel")]
+    public string? MarketSessionLabel { get; set; }
+
+    [JsonPropertyName("priceBasis")]
+    public string? PriceBasis { get; set; }
+
+    [JsonPropertyName("dataFeed")]
+    public string? DataFeed { get; set; }
+
     [JsonPropertyName("tickers")]
     public List<TickerBlockDto> Tickers { get; set; } = new();
 }
@@ -30,6 +42,9 @@ internal sealed class TickerBlockDto
 
     [JsonPropertyName("percentChange")]
     public decimal? PercentChange { get; set; }
+
+    [JsonPropertyName("priceBasis")]
+    public string? PriceBasis { get; set; }
 
     [JsonPropertyName("alpacNews")]
     public List<NewsLineDto> AlpacNews { get; set; } = new();

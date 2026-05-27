@@ -24,6 +24,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { cn } from '../lib/utils';
+import { ProfileTickersTab } from './shadcn-profile-tickers';
 
 type ArticleRow = {
   id: number;
@@ -543,6 +544,7 @@ function ProfileWorkspace({
   articles,
   moderationItems,
   createArticleUrl,
+  tickersListUrl,
   csrfToken,
   pageSize,
   isStaff,
@@ -550,6 +552,7 @@ function ProfileWorkspace({
   articles: ArticleRow[];
   moderationItems: ModerationRow[];
   createArticleUrl: string;
+  tickersListUrl: string;
   csrfToken: string;
   pageSize: number;
   isStaff: boolean;
@@ -568,6 +571,7 @@ function ProfileWorkspace({
         <TabsList className="scn-profile-tabs__list">
           <TabsTrigger value="articles">Articles</TabsTrigger>
           <TabsTrigger value="moderation">Moderation</TabsTrigger>
+          {tickersListUrl ? <TabsTrigger value="tickers">Carousel tickers</TabsTrigger> : null}
         </TabsList>
         <TabsContent value="articles">
           <ProfileArticlesTable
@@ -580,6 +584,11 @@ function ProfileWorkspace({
         <TabsContent value="moderation">
           <ProfileModerationGrid items={moderationItems} csrfToken={csrfToken} pageSize={pageSize} />
         </TabsContent>
+        {tickersListUrl ? (
+          <TabsContent value="tickers">
+            <ProfileTickersTab listUrl={tickersListUrl} csrfToken={csrfToken} />
+          </TabsContent>
+        ) : null}
       </Tabs>
     </div>
   );
@@ -608,6 +617,7 @@ export function mountShadcnProfileArticlesTable(): void {
     if (!articlesJsonId) return;
 
     const createArticleUrl = host.dataset['createArticleUrl'] ?? '';
+    const tickersListUrl = host.dataset['tickersListUrl'] ?? '';
     const csrfToken = host.dataset['csrfToken'] ?? '';
     const pageSize = Number.parseInt(host.dataset['pageSize'] ?? '', 10);
     const resolvedPageSize = Number.isFinite(pageSize) && pageSize > 0 ? pageSize : DEFAULT_PAGE_SIZE;
@@ -628,6 +638,7 @@ export function mountShadcnProfileArticlesTable(): void {
         articles={articles}
         moderationItems={moderationItems}
         createArticleUrl={createArticleUrl}
+        tickersListUrl={tickersListUrl}
         csrfToken={csrfToken}
         pageSize={resolvedPageSize}
         isStaff={isStaff}

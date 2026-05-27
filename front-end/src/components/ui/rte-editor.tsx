@@ -29,6 +29,13 @@ export const TABLE_EXTENSIONS = [
   TableCell,
 ];
 
+/** StarterKit includes Link; we register TiptapLink separately. */
+export const RTE_STARTER_KIT = StarterKit.configure({
+  heading: { levels: [2, 3] },
+  blockquote: false,
+  link: false,
+});
+
 // ─── Toolbar Button ───────────────────────────────────────────────────────────
 
 export function ToolbarBtn({
@@ -257,7 +264,7 @@ export function RteEditor({ initialValue, onChange, placeholder }: {
   const editor = useEditor({
     ...ARTICLE_RTE_EDITOR_PROPS,
     extensions: [
-      StarterKit.configure({ heading: { levels: [2, 3] }, blockquote: false }),
+      RTE_STARTER_KIT,
       ARTICLE_QUOTE_EXTENSION,
       TiptapLink.configure({ openOnClick: false }),
       Placeholder.configure({ placeholder: placeholder ?? '' }),
@@ -269,7 +276,11 @@ export function RteEditor({ initialValue, onChange, placeholder }: {
     onBlur:  () => setFocused(false),
   });
 
-  React.useEffect(() => { return () => { editor?.destroy(); }; /* eslint-disable-line react-hooks/exhaustive-deps */ }, []);
+  React.useEffect(() => {
+    return () => {
+      editor?.destroy();
+    };
+  }, [editor]);
 
   return (
     <div className={`scn-rte-wrap${focused ? ' scn-rte-wrap--active' : ''}`}>

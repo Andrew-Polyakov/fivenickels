@@ -4,9 +4,10 @@ import { Card } from '../components/ui/card';
 export type FxBrokerPayload = {
   kind: 'fxbroker';
   brokerName: string;
+  logoUrl?: string;
   faviconUrl?: string;
   overallRating: number;
-  pageUrl?: string;
+  website?: string;
   visitUrl?: string;
 };
 
@@ -50,14 +51,15 @@ function StarRating({ score }: { score: number }) {
 
 export function FxBrokerCardView({ data }: { data: FxBrokerPayload }): React.JSX.Element {
   const score = Math.max(0, Math.min(5, data.overallRating));
+  const logoUrl = data.logoUrl || data.faviconUrl;
 
   return (
     <Card className="scn-fx-broker-card">
       <div className="scn-fx-broker-card__header">
         <div className="scn-fx-broker-card__identity">
-          {data.faviconUrl && (
+          {logoUrl && (
             <img
-              src={data.faviconUrl}
+              src={logoUrl}
               alt=""
               width={40}
               height={40}
@@ -74,9 +76,9 @@ export function FxBrokerCardView({ data }: { data: FxBrokerPayload }): React.JSX
           <span className="scn-fx-broker-card__score">{score.toFixed(1)}</span>
           <StarRating score={score} />
         </div>
-        {data.pageUrl && (
-          <a href={data.pageUrl} className="scn-fx-broker-card__review-link">
-            Read Review
+        {data.website && (
+          <a href={data.website} className="scn-fx-broker-card__review-link" target="_blank" rel="noopener noreferrer">
+            Visit website
           </a>
         )}
       </div>

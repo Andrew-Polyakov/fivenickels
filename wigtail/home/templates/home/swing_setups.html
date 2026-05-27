@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Swing Setups{% endblock %}
+
+{% block body_class %}template-swing-setups{% endblock %}
+
+{% block content %}
+<div class="swing-setups">
+    <header class="swing-setups__header">
+        <h1 class="swing-setups__title">Swing Setups</h1>
+        <p class="swing-setups__lede">
+            Latest multi-timeframe pattern scan from your crawler database. Filter by score or direction and review triggers, invalidation, and targets.
+        </p>
+    </header>
+
+    {{ setups|json_script:"swing-setups-rows-data" }}
+
+    <div
+        class="swing-setups__table-host"
+        data-shadcn-swing-setups
+        data-setups-json-id="swing-setups-rows-data"
+        data-stock-bars-preview-url="{{ stock_bars_preview_url }}"
+    ></div>
+
+    <p class="swing-setups__disclaimer">
+        Indicators and setups use Alpaca historical bars (<code>{{ data_feed|default:"iex" }}</code> feed) via StockCrawler <code>patterns</code> mode.
+        Live prices and % change use Alpaca snapshots when available
+        {% if market_session_label %}({{ market_session_label }}{% if price_basis == "extended" %}, vs prior close{% endif %}){% endif %}.
+        Not investment advice.
+    </p>
+</div>
+{% endblock %}

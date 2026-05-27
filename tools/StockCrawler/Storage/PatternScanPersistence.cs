@@ -31,18 +31,12 @@ internal static class PatternScanPersistence
         return Convert.ToInt64(rid, System.Globalization.CultureInfo.InvariantCulture);
     }
 
-    public static void insertSetupFromPattern(NpgsqlConnection conn, long runId, PatternTickerDto t) {
-        var m = t.Timeframes?.Month1?.Trend ?? "range";
-        var w = t.Timeframes?.Week1?.Trend ?? "range";
-        var d = t.Timeframes?.Day1?.Trend ?? "range";
-        var direction = d switch {
-            "up" => "long",
-            "down" => "short",
-            _ => null
-        };
-        var confluence = $"M:{m} W:{w} D:{d}";
-        var score = (m == w && w == d && d != "range") ? "high"
-            : (d != "range" ? "medium" : "low");
+    public static void insertSetupFromPattern(
+        NpgsqlConnection conn,
+        long runId,
+        PatternTickerDto t,
+        SetupClassificationResult c)
+    {
         using var cmd = conn.CreateCommand();
         cmd.CommandText =
             """
@@ -51,15 +45,21 @@ internal static class PatternScanPersistence
                 trigger_text, invalidation, t1, t2, rr, notes
             ) VALUES (
                 @rid, @sym, @stype, @dir, @conf, @score,
-                NULL, NULL, NULL, NULL, NULL, NULL
+                @trig, @inv, @t1, @t2, @rr, @notes
             );
             """;
         cmd.Parameters.AddWithValue("@rid", runId);
         cmd.Parameters.AddWithValue("@sym", t.Symbol.Trim().ToUpperInvariant());
-        cmd.Parameters.AddWithValue("@stype", "pattern_scan");
-        cmd.Parameters.AddWithValue("@dir", (object?)direction ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("@conf", confluence);
-        cmd.Parameters.AddWithValue("@score", score);
+        cmd.Parameters.AddWithValue("@stype", c.SetupType);
+        cmd.Parameters.AddWithValue("@dir", (object?)c.Direction ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@conf", c.Confluence);
+        cmd.Parameters.AddWithValue("@score", c.Score);
+        cmd.Parameters.AddWithValue("@trig", (object?)c.TriggerText ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@inv", (object?)c.Invalidation ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@t1", (object?)c.T1 ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@t2", (object?)c.T2 ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@rr", (object?)c.Rr ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@notes", (object?)c.Notes ?? DBNull.Value);
         cmd.ExecuteNonQuery();
     }
 }

@@ -10,6 +10,8 @@ from wagtail.documents import urls as wagtaildocs_urls
 
 from home import auth_views
 from home import broker_views
+from home import market_ticker_views
+from home import setup_views
 from home import inline_edit_views
 from home import editor_views
 from home import api_urls
@@ -36,6 +38,16 @@ urlpatterns = [
     path("auth/signup/", auth_views.popup_signup, name="popup_signup"),
     path("auth/logout/", auth_views.popup_logout, name="popup_logout"),
     path("profile/", auth_views.profile, name="profile"),
+    path(
+        "profile/api/tickers/",
+        market_ticker_views.profile_tickers_list,
+        name="profile_tickers_list",
+    ),
+    path(
+        "profile/api/tickers/<int:pk>/",
+        market_ticker_views.profile_ticker_update,
+        name="profile_ticker_update",
+    ),
     path("profile/article/create/", editor_views.create_article, name="article_create"),
     path("profile/article/<int:article_id>/edit/", editor_views.article_editor, name="article_editor"),
     path(
@@ -134,8 +146,16 @@ urlpatterns = [
         name="market_calendar_preview",
     ),
     path("inline/brokers/list/", broker_views.broker_list_json, name="broker_list_json"),
+    path(
+        "inline/brokers/<int:pk>/big-card/",
+        broker_views.broker_big_card_json,
+        name="broker_big_card_json",
+    ),
+    path("trading/setups/", setup_views.swing_setups, name="swing_setups"),
     path("rating/forex/", broker_views.forex_ratings, name="forex_ratings"),
+    path("rating/forex/broker/<slug:slug>/", broker_views.forex_broker_detail, name="forex_broker_detail"),
     path("rating/forex/<int:pk>/update/", broker_views.broker_rating_update, name="broker_rating_update"),
+    path("inline/brokers/<int:pk>/upload-logo/", broker_views.broker_upload_logo, name="broker_upload_logo"),
     path("search/suggest/", search_views.search_suggest, name="search_suggest"),
     path("search/", search_views.search, name="search"),
     path(

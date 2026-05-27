@@ -15,7 +15,7 @@ from home.models import MarketTickerRow
 class Command(BaseCommand):
     help = (
         "Fetch Alpaca snapshots for enabled MarketTickerRow records and update cached "
-        "prices (same logic as StockCrawler news snapshots)."
+        "prices. Prefer `sync_alpaca_market` for full universe + carousel + events."
     )
 
     def add_arguments(self, parser):

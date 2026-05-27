@@ -433,6 +433,8 @@ STOCK_BARS_LIMIT_MAX = 360
 def stock_bars_timeframe_from_cadence(cadence: object) -> str:
     """Map CMS cadence choice to Alpaca bars timeframe string."""
     c = str(cadence or "day").strip().lower()
+    if c in ("2h", "2hour", "hour2"):
+        return "2Hour"
     if c == "week":
         return "1Week"
     if c == "month":
@@ -694,8 +696,9 @@ def _serialize_bentogrid01(block_value: dict, parent_context: dict | None = None
                     "kind": "fxbroker",
                     "brokerName": broker.broker_name,
                     "overallRating": float(broker.overall_rating),
+                    "logoUrl": broker.logo_square_url or broker.favicon_url or "",
                     "faviconUrl": broker.favicon_url or "",
-                    "pageUrl": broker.page_url or "",
+                    "website": broker.website or "",
                 }
             else:
                 entry["fxbroker"] = {"kind": "empty"}
@@ -735,6 +738,9 @@ def _serialize_bentogrid01(block_value: dict, parent_context: dict | None = None
             entry["market_movers"] = movers_payload["market_movers"]
             entry["market_mover_tabs"] = movers_payload["market_mover_tabs"]
             entry["selected_region"] = movers_payload["selected_region"]
+            entry["market_session_label"] = movers_payload.get("market_session_label")
+            entry["market_session_id"] = movers_payload.get("market_session_id")
+            entry["price_basis"] = movers_payload.get("price_basis")
         if header_type == "upcoming_dividends":
             syms = resolve_dividend_symbols_from_bento(val.get("dividend_symbols"))
             lim = dividend_max_rows_clamped(val.get("dividend_max_rows"))
@@ -778,3 +784,28 @@ def _serialize_bentogrid01(block_value: dict, parent_context: dict | None = None
 def serialize_article_card_for_related(page: Page | None, request) -> dict[str, Any]:
     """Single-card payload for tag page carousel etc."""
     return _article_card_dict(page, request)
+
+
+def serialize_article_carousel_payload(
+    pages: list[TaggedContentPage] | list[Page],
+    request: HttpRequest | None,
+    *,
+    auto_scroll: bool = False,
+    max_frames: int = 12,
+) -> dict[str, Any] | None:
+    """Bento article_carousel block payload for standalone mounts (broker detail, similar articles)."""
+    frames: list[dict[str, Any]] = []
+    for page in pages:
+        card = _article_card_dict(page, request)
+        if card.get("kind") == "article":
+            frames.append(card)
+        if len(frames) >= max_frames:
+            break
+    if not frames:
+        return None
+    frame_count = _clamp_bento_frame_count(len(frames))
+    return {
+        "frames": frames,
+        "frameCount": frame_count,
+        "autoScroll": auto_scroll,
+    }

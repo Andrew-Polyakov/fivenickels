@@ -1,0 +1,11 @@
+{% if broker_payload %}
+<div class="stream-block stream-block--big-trader-card">
+    {{ broker_payload|json_script:mount_uid }}
+    <div
+        class="scn-big-trader-card-host"
+        data-shadcn-big-trader-card
+        data-layout-json-id="{{ mount_uid }}"
+        {% if can_edit %}data-can-edit="1"{% endif %}
+    ></div>
+</div>
+{% endif %}

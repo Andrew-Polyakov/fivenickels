@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% load wagtailcore_tags %}
 
 {% block title %}{{ ticker_row.display_label }} ({{ ticker_row.symbol }}){% endblock %}
 
@@ -32,9 +31,12 @@
                     </span>
                 </dd>
             </div>
-            <div class="ticker-summary__metric">
+            <div class="ticker-summary__metric ticker-summary__metric--volume">
                 <dt class="ticker-summary__dt">Volume</dt>
-                <dd class="ticker-summary__dd">{{ ticker_info.volume_display }}</dd>
+                <dd class="ticker-summary__dd">
+                    <span class="ticker-summary__vol-raw">{{ ticker_info.volume_display }}</span>
+                    {% include "components/volume_gauge.html" with gauge=ticker_info.volume_gauge %}
+                </dd>
             </div>
         </dl>
         <p class="ticker-summary__foot">
@@ -53,30 +55,23 @@
         </div>
     </section>
 
-    {% if dividend_rows %}
-    <section class="ticker-dividends" aria-labelledby="ticker-dividends-heading">
-        <h2 id="ticker-dividends-heading" class="ticker-dividends__heading">Upcoming dividends</h2>
-        {% include "home/includes/ticker_dividends_table.html" %}
+    <section class="ticker-page__tabs" aria-label="News and setups">
+        {{ related_pages_json|json_script:"ticker-related-data" }}
+        {{ ticker_setup|json_script:"ticker-setup-data" }}
+        {{ dividend_rows|json_script:"ticker-dividends-data" }}
+        {{ event_rows|json_script:"ticker-events-data" }}
+        <div
+            class="ticker-page__tabs-host"
+            data-shadcn-ticker-tabs
+            data-related-json-id="ticker-related-data"
+            data-setup-json-id="ticker-setup-data"
+            data-dividends-json-id="ticker-dividends-data"
+            data-events-json-id="ticker-events-data"
+            data-symbol="{{ ticker_info.symbol }}"
+            data-swing-setups-url="{{ swing_setups_page_url }}"
+            data-stock-bars-preview-url="{{ stock_bars_preview_url }}"
+        ></div>
     </section>
-    {% endif %}
-
-    {% if related_pages %}
-    <section class="ticker-related" aria-labelledby="ticker-related-heading">
-        <h2 id="ticker-related-heading" class="ticker-related__heading">Related news</h2>
-        <div class="ticker-related__grid">
-            {% for page in related_pages %}
-            <article class="ticker-related__tile{% if page.catalyst == 'Bullish' %} ticker-related__tile--bullish{% elif page.catalyst == 'Bearish' %} ticker-related__tile--bearish{% endif %}">
-                <a href="{% pageurl page %}" class="ticker-related__link">
-                    <h3 class="ticker-related__title">{{ page.title }}</h3>
-                    {% if page.first_published_at %}
-                    <p class="ticker-related__date">{{ page.first_published_at|date:"M d Y"|upper }}</p>
-                    {% endif %}
-                </a>
-            </article>
-            {% endfor %}
-        </div>
-    </section>
-    {% endif %}
 </main>
 <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 <script type="text/javascript">
@@ -95,7 +90,10 @@
     "allow_symbol_change": true,
     "hide_top_toolbar": false,
     "save_image": false,
-    "container_id": container
+    "container_id": container,
+    "overrides": {
+      "mainSeriesProperties.priceAxisProperties.log": true
+    }
   });
 })();
 </script>

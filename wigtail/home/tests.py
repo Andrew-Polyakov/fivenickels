@@ -1,7 +1,11 @@
+import json
+
 from home.models import (
+    BrokerRating,
     CareersPage,
     ContentTag,
     CookiesPolicyPage,
+    Country,
     HomePage,
     MarketTickerRow,
     SubsectionIndexPage,
@@ -267,12 +271,18 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         self.assertEqual(len(rel), 1)
         self.assertEqual(rel[0].slug, "nvda-headline")
 
-    def test_ticker_detail_404_without_carousel_row(self):
-        url = reverse("ticker_page", kwargs={"ticker_slug": "nvda"})
+    @patch("home.ticker_serve.fetch_snapshots", return_value={})
+    @patch("home.ticker_serve.fetch_asset_meta", return_value=None)
+    def test_ticker_detail_without_carousel_row_uses_snapshot_fallback(
+        self, _mock_asset, _mock_snaps
+    ):
+        url = reverse("ticker_page", kwargs={"ticker_slug": "xyz"})
         r = self.client.get(url)
-        self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "XYZ")
 
-    def test_ticker_detail_renders_related_news(self):
+    @patch("home.ticker_serve.fetch_latest_setup_for_symbol", return_value=None)
+    def test_ticker_detail_renders_related_news(self, _mock_setup):
         MarketTickerRow.objects.create(symbol="NVDA", enabled=True, sort_order=0)
         tag_nvda = ContentTag.objects.create(name="NVDA", slug="nvda")
         page_nv = TaggedContentPage(
@@ -288,8 +298,49 @@ class TaxonomyTagsTests(WagtailPageTestCase):
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)
         self.assertTemplateUsed(r, "home/ticker_page.html")
-        self.assertContains(r, "Chip sector update")
+        self.assertContains(r, "data-shadcn-ticker-tabs")
+        self.assertContains(r, "ticker-related-data")
+        self.assertContains(r, "ticker-setup-data")
+        self.assertContains(r, '"title": "Chip sector update"')
         self.assertContains(r, "NASDAQ:NVDA")
+
+    @patch("home.ticker_serve.fetch_latest_setup_for_symbol")
+    def test_ticker_page_includes_swing_setup_json(self, mock_fetch_setup):
+        MarketTickerRow.objects.create(symbol="BE", enabled=True, sort_order=0)
+        mock_fetch_setup.return_value = {
+            "id": 1,
+            "run_id": 9,
+            "symbol": "BE",
+            "setup_type": "continuation",
+            "direction": "long",
+            "confluence": "M:up W:up D:up",
+            "score": "high",
+            "trigger_text": "Pullback near EMA20",
+            "invalidation": "Below swing low",
+            "t1": 305.9,
+            "t2": 351.2,
+            "rr": 1.3,
+            "notes": "Test notes",
+            "scan_started_utc": "2026-05-26T08:00:00Z",
+            "last_price_formatted": "302.59",
+            "percent_change_formatted": "+1.2%",
+            "percent_change_class": "is-up",
+            "day_volume_formatted": "1.2M",
+        }
+        url = reverse("ticker_page", kwargs={"ticker_slug": "be"})
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, '"setup_type": "continuation"')
+        self.assertContains(r, "trading/setups/?run=9")
+
+    @patch("home.ticker_serve.fetch_latest_setup_for_symbol", return_value=None)
+    def test_ticker_page_tabs_without_news_or_setup(self, _mock_setup):
+        MarketTickerRow.objects.create(symbol="ZZZ", enabled=True, sort_order=0)
+        url = reverse("ticker_page", kwargs={"ticker_slug": "zzz"})
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "data-shadcn-ticker-tabs")
+        self.assertContains(r, "ticker-related-data")
 
     @patch("home.ticker_serve.fetch_asset_meta", return_value=None)
     def test_ticker_page_shows_summary_metrics(self, _mock_asset):
@@ -1984,6 +2035,41 @@ class CardSourcePropertiesTests(WagtailPageTestCase):
         self.assertNotIn("layoutVersion", term.master_layout_json)
 
 
+class BuildMarketMoversPayloadSessionTests(SimpleTestCase):
+    @patch("home.market_widgets.classify_us_market_session")
+    def test_us_region_includes_session_fields(self, mock_classify):
+        from home.market_widgets import build_market_movers_payload
+        from home.us_market_session import UsMarketSessionInfo
+
+        mock_classify.return_value = UsMarketSessionInfo(
+            "pre", "Pre-market", "extended"
+        )
+        request = Mock()
+        request.path = "/"
+        request.GET = {}
+        payload = build_market_movers_payload([], request, block_region="US")
+        self.assertEqual(payload["market_session_label"], "Pre-market")
+        self.assertEqual(payload["market_session_id"], "pre")
+        self.assertEqual(payload["price_basis"], "extended")
+
+    @patch("home.market_widgets.classify_us_market_session")
+    def test_non_us_region_omits_session_fields(self, mock_classify):
+        from home.market_widgets import build_market_movers_payload
+        from home.us_market_session import UsMarketSessionInfo
+
+        mock_classify.return_value = UsMarketSessionInfo(
+            "pre", "Pre-market", "extended"
+        )
+        request = Mock()
+        request.path = "/"
+        request.GET = {"market_region": "ASIA"}
+        payload = build_market_movers_payload([], request)
+        self.assertIsNone(payload["market_session_label"])
+        self.assertIsNone(payload["market_session_id"])
+        self.assertIsNone(payload["price_basis"])
+        mock_classify.assert_not_called()
+
+
 class BentoForexMarketMoversSerializationTests(WagtailPageTestCase):
     @patch("home.card_layout.build_forex_quotes_payload")
     def test_serialize_bentogrid01_forex_strip(self, mock_forex):
@@ -2051,7 +2137,13 @@ class BentoForexMarketMoversSerializationTests(WagtailPageTestCase):
         self.assertEqual(feat["row"], 1)
         self.assertEqual(feat["col"], 2)
 
-    def test_serialize_bentogrid01_market_movers(self):
+    @patch("home.market_widgets.classify_us_market_session")
+    def test_serialize_bentogrid01_market_movers(self, mock_classify):
+        from home.us_market_session import UsMarketSessionInfo
+
+        mock_classify.return_value = UsMarketSessionInfo(
+            "regular", "Regular", "regular"
+        )
         MarketTickerRow.objects.create(
             symbol="WIN",
             enabled=True,
@@ -2095,6 +2187,9 @@ class BentoForexMarketMoversSerializationTests(WagtailPageTestCase):
         self.assertEqual(len(feat["market_movers"]["winners"]), 1)
         self.assertEqual(feat["market_movers"]["winners"][0]["symbol"], "WIN")
         self.assertEqual(len(feat["market_mover_tabs"]), 3)
+        self.assertEqual(feat["market_session_label"], "Regular")
+        self.assertEqual(feat["market_session_id"], "regular")
+        self.assertEqual(feat["price_basis"], "regular")
 
     def test_market_header_omits_forex_and_movers(self):
         request = Mock()
@@ -2139,6 +2234,19 @@ class StockBarsPreviewViewTests(WagtailPageTestCase):
         self.assertEqual(data.get("bars_timeframe"), "1Day")
         self.assertEqual(data.get("bars_as_of_utc"), "2026-01-15T00:00:00Z")
         mock_serialize.assert_called_once_with(["AAPL"], timeframe="1Day", limit=180)
+
+    @patch("home.inline_edit_views.serialize_stock_bars_tile_payload")
+    def test_stock_bars_preview_2h_cadence(self, mock_serialize):
+        mock_serialize.return_value = {
+            "chart_symbol": "MU",
+            "bars": [],
+            "bars_timeframe": "2Hour",
+            "chips": [],
+        }
+        url = reverse("stock_bars_preview")
+        response = self.client.get(url, {"symbols": "MU", "cadence": "2h", "bars_limit": "120"})
+        self.assertEqual(response.status_code, 200)
+        mock_serialize.assert_called_once_with(["MU"], timeframe="2Hour", limit=120)
 
 
 class ForexStripPreviewViewTests(WagtailPageTestCase):
@@ -2303,4 +2411,377 @@ class SitemapAndRobotsTests(WagtailPageTestCase):
         self.assertIn("Allow: /", content)
         self.assertIn("Sitemap:", content)
         self.assertIn("sitemap.xml", content)
+
+
+class BrokerRatingUpdateTests(WagtailPageTestCase):
+    def setUp(self):
+        root_page = Page.get_first_root_node()
+        self.homepage = (
+            HomePage.objects.child_of(root_page).filter(slug="home").first()
+            or HomePage.objects.filter(slug="home").first()
+        )
+        if self.homepage is None:
+            self.homepage = HomePage(title="Home")
+            root_page.add_child(instance=self.homepage)
+        self.homepage.save_revision().publish()
+        site = Site.objects.filter(is_default_site=True).first()
+        if site:
+            Site.objects.filter(pk=site.pk).update(
+                hostname="testserver",
+                port=80,
+                root_page_id=self.homepage.pk,
+            )
+        else:
+            Site.objects.create(
+                hostname="testserver",
+                port=80,
+                root_page=self.homepage,
+                is_default_site=True,
+            )
+        User = get_user_model()
+        self.staff_user = User.objects.create_user(
+            username="broker-staff",
+            password="pass12345",
+            is_staff=True,
+        )
+        self.non_staff = User.objects.create_user(
+            username="broker-user",
+            password="pass12345",
+        )
+        self.broker = BrokerRating.objects.create(
+            rank=1,
+            broker_name="Test Broker",
+            overall_rating=Decimal("4.0"),
+            reviews=10,
+            broker_type="Broker",
+            regulation="FCA",
+            min_deposit=100,
+            leverage="1:500",
+        )
+
+    def _broker_payload(self, **overrides):
+        base = {
+            "rank": self.broker.rank,
+            "broker_name": self.broker.broker_name,
+            "favicon_url": "",
+            "overall_rating": 4.5,
+            "reviews": self.broker.reviews,
+            "broker_type": self.broker.broker_type,
+            "regulation": self.broker.regulation,
+            "min_deposit": self.broker.min_deposit,
+            "leverage": self.broker.leverage,
+            "website": "",
+            "best_for": "",
+        }
+        base.update(overrides)
+        return base
+
+    def test_broker_rating_update_requires_staff(self):
+        self.client.force_login(self.non_staff)
+        response = self.client.post(
+            reverse("broker_rating_update", kwargs={"pk": self.broker.pk}),
+            data=json.dumps(self._broker_payload()),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 302)
+
+    def test_broker_rating_update_anonymous_redirects(self):
+        response = self.client.post(
+            reverse("broker_rating_update", kwargs={"pk": self.broker.pk}),
+            data=json.dumps(self._broker_payload()),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 302)
+
+    def test_broker_rating_update_staff_succeeds(self):
+        self.client.force_login(self.staff_user)
+        response = self.client.post(
+            reverse("broker_rating_update", kwargs={"pk": self.broker.pk}),
+            data=json.dumps(self._broker_payload(overall_rating=4.5)),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"ok": True})
+        self.broker.refresh_from_db()
+        self.assertEqual(float(self.broker.overall_rating), 4.5)
+
+    def test_broker_rating_update_coerces_float_precision(self):
+        """JSON floats like 4.900000000000001 must not fail decimal_places=1 validation."""
+        self.client.force_login(self.staff_user)
+        response = self.client.post(
+            reverse("broker_rating_update", kwargs={"pk": self.broker.pk}),
+            data=json.dumps(self._broker_payload(overall_rating=4.900000000000001)),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.broker.refresh_from_db()
+        self.assertEqual(float(self.broker.overall_rating), 4.9)
+
+    def test_broker_country_rating_update_staff_succeeds(self):
+        country, _ = Country.objects.get_or_create(code="US", defaults={"name": "United States"})
+        self.client.force_login(self.staff_user)
+        response = self.client.post(
+            reverse("broker_rating_update", kwargs={"pk": self.broker.pk}) + "?country=US",
+            data=json.dumps({"overall_rating": 3.5, "rank": 2}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"ok": True})
+        self.broker.refresh_from_db()
+        self.assertEqual(float(self.broker.overall_rating), 4.0)
+        override = self.broker.country_ratings.get(country=country)
+        self.assertEqual(float(override.overall_rating), 3.5)
+        self.assertEqual(override.rank, 2)
+
+    def test_forex_ratings_hides_staff_edit_attrs_for_anonymous(self):
+        response = self.client.get(reverse("forex_ratings"))
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertNotIn("data-broker-is-admin", html)
+        self.assertNotIn("data-broker-update-url", html)
+
+    def test_forex_ratings_shows_staff_edit_attrs_for_staff(self):
+        self.client.force_login(self.staff_user)
+        response = self.client.get(reverse("forex_ratings"))
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertIn('data-broker-is-admin="1"', html)
+        self.assertIn("data-broker-update-url", html)
+
+
+class SwingSetupsViewTests(WagtailPageTestCase):
+    """Swing setups page reads crawler DB via home.crawler_setups (mocked)."""
+
+    def setUp(self):
+        super().setUp()
+        self.setups = [
+            {
+                "id": 10,
+                "symbol": "BE",
+                "setup_type": "continuation",
+                "direction": "long",
+                "confluence": "M:up W:up D:up",
+                "score": "high",
+                "trigger_text": "Pullback near EMA20",
+                "invalidation": "Below swing low",
+                "t1": 305.9,
+                "t2": 351.2,
+                "rr": 1.3,
+                "notes": "Test notes",
+                "stock_name": "Bloom Energy",
+                "sector": "Industrials",
+                "industry": None,
+                "last_price_formatted": "302.59",
+                "percent_change_formatted": "+1.2%",
+                "percent_change_class": "is-up",
+                "day_volume_formatted": "1.2M",
+                "news_headline": "Oracle deal",
+                "news_url": "https://example.com/news",
+                "ticker_href": "",
+            }
+        ]
+
+    @patch("home.setup_views.fetch_setups_for_run")
+    @patch("home.setup_views.latest_scan_run_id", return_value=2)
+    def test_swing_setups_renders_mount_and_json(
+        self, _mock_latest_run, mock_fetch_setups
+    ):
+        mock_fetch_setups.return_value = [
+            {
+                "id": 10,
+                "symbol": "BE",
+                "setup_type": "continuation",
+                "direction": "long",
+                "confluence": "M:up W:up D:up",
+                "score": "high",
+                "trigger_text": "Pullback",
+                "invalidation": None,
+                "t1": 300.0,
+                "t2": 350.0,
+                "rr": 1.2,
+                "notes": "Notes",
+                "stock_name": None,
+                "sector": "Industrials",
+                "industry": None,
+                "last_price_formatted": "100.00",
+                "percent_change_formatted": "—",
+                "percent_change_class": "is-neutral",
+                "day_volume_formatted": "",
+                "news_headline": None,
+                "news_url": None,
+            }
+        ]
+        response = self.client.get(reverse("swing_setups"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "home/swing_setups.html")
+        html = response.content.decode()
+        self.assertIn("data-shadcn-swing-setups", html)
+        self.assertIn("data-stock-bars-preview-url", html)
+        self.assertNotIn("swing-setups-runs-data", html)
+        self.assertIn("swing-setups-rows-data", html)
+        self.assertIn('"symbol": "BE"', html)
+        mock_fetch_setups.assert_called_once_with(2)
+
+    @patch("home.setup_views.fetch_setups_for_run")
+    @patch("home.setup_views.latest_scan_run_id", return_value=1)
+    def test_swing_setups_uses_latest_scan_run(
+        self, _mock_latest_run, mock_fetch_setups
+    ):
+        mock_fetch_setups.return_value = self.setups
+        response = self.client.get(reverse("swing_setups"))
+        self.assertEqual(response.status_code, 200)
+        mock_fetch_setups.assert_called_once_with(1)
+
+
+class ContentTagCreateApiTests(WagtailPageTestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.staff = User.objects.create_user(
+            username="tag-api-staff",
+            password="pass12345",
+            is_staff=True,
+        )
+        self.client.force_login(self.staff)
+        ContentTag.objects.create(name="Legacy empty slug")
+        ContentTag.objects.filter(name="Legacy empty slug").update(slug="")
+
+    def test_post_tags_assigns_unique_slug(self):
+        response = self.client.post(
+            "/api/articles/tags/",
+            data=json.dumps({"name": "Saxo Bank"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 201)
+        body = response.json()
+        self.assertTrue(body.get("created"))
+        self.assertEqual(body.get("slug"), "saxo-bank")
+        tag = ContentTag.objects.get(pk=body["id"])
+        self.assertEqual(tag.slug, "saxo-bank")
+
+    def test_post_tags_after_legacy_empty_slug_row(self):
+        response = self.client.post(
+            "/api/articles/tags/",
+            data=json.dumps({"name": "Another Tag"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 201)
+        tag = ContentTag.objects.get(name="Another Tag")
+        self.assertTrue(tag.slug)
+
+
+class BrokerTaggedArticlesTests(WagtailPageTestCase):
+    def setUp(self):
+        from home.broker_card import tagged_articles_for_broker
+
+        self.tagged_articles_for_broker = tagged_articles_for_broker
+
+        root_page = Page.get_first_root_node()
+        self.homepage = (
+            HomePage.objects.child_of(root_page).filter(slug="home").first()
+            or HomePage.objects.filter(slug="home").first()
+        )
+        if self.homepage is None:
+            self.homepage = HomePage(title="Home")
+            root_page.add_child(instance=self.homepage)
+        self.homepage.save_revision().publish()
+        site = Site.objects.filter(is_default_site=True).first()
+        if site:
+            Site.objects.filter(pk=site.pk).update(
+                hostname="testserver",
+                port=80,
+                root_page_id=self.homepage.pk,
+            )
+        else:
+            Site.objects.create(
+                hostname="testserver",
+                port=80,
+                root_page=self.homepage,
+                is_default_site=True,
+            )
+
+        self.energy = TaxonomyTerm.objects.get(slug="energy")
+        self.broker = BrokerRating.objects.create(
+            rank=1,
+            broker_name="SAXO",
+            overall_rating=Decimal("4.5"),
+            reviews=100,
+            broker_type="Broker",
+            regulation="FCA",
+            min_deposit=0,
+            leverage="1:30",
+        )
+        self.broker_tag = ContentTag.objects.create(name="SAXO", slug="saxo")
+        self.broker_article = TaggedContentPage(
+            title="Saxo outlook",
+            slug="saxo-outlook",
+            section_term=self.energy,
+            lede="Broker tagged piece",
+        )
+        self.homepage.add_child(instance=self.broker_article)
+        self.broker_article.save()
+        self.broker_article.tags.add(self.broker_tag)
+        self.broker_article.save_revision().publish()
+
+    def test_tagged_articles_for_broker_matches_tag_name(self):
+        articles = self.tagged_articles_for_broker(self.broker)
+        self.assertEqual(len(articles), 1)
+        self.assertEqual(articles[0].pk, self.broker_article.pk)
+
+    def test_tagged_articles_for_saxo_bank_matches_saxo_slug_tag(self):
+        bank = BrokerRating.objects.create(
+            rank=3,
+            broker_name="Saxo Bank",
+            slug="saxo-bank-carousel-test",
+            overall_rating=Decimal("4.5"),
+            reviews=10,
+            broker_type="Broker",
+            regulation="FCA",
+            min_deposit=0,
+            leverage="1:30",
+        )
+        article = TaggedContentPage(
+            title="Saxo Bank piece",
+            slug="saxo-bank-piece",
+            section_term=self.energy,
+            lede="Tagged Saxo",
+        )
+        self.homepage.add_child(instance=article)
+        article.save()
+        article.tags.add(self.broker_tag)
+        article.save_revision().publish()
+        articles = self.tagged_articles_for_broker(bank)
+        article_ids = {a.pk for a in articles}
+        self.assertIn(article.pk, article_ids)
+        self.assertGreaterEqual(len(articles), 1)
+
+    def test_forex_broker_detail_renders_article_carousel(self):
+        self.broker.website = "https://www.saxo.com"
+        self.broker.save(update_fields=["website"])
+        response = self.client.get(
+            reverse("forex_broker_detail", kwargs={"slug": self.broker.slug})
+        )
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertIn("data-shadcn-article-carousel", html)
+        self.assertIn("forex-broker-articles-carousel", html)
+        self.assertIn("Saxo outlook", html)
+        self.assertIn("https://www.saxo.com", html)
+        self.assertLess(html.index("Broker profile"), html.index("Related articles"))
+
+    def test_forex_broker_detail_omits_carousel_without_tagged_articles(self):
+        other = BrokerRating.objects.create(
+            rank=2,
+            broker_name="No Articles Broker",
+            overall_rating=Decimal("3.0"),
+            reviews=1,
+            broker_type="Broker",
+            regulation="—",
+            min_deposit=0,
+            leverage="1:10",
+        )
+        response = self.client.get(
+            reverse("forex_broker_detail", kwargs={"slug": other.slug})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("data-shadcn-article-carousel", response.content.decode())
 

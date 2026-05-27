@@ -71,7 +71,9 @@ internal static class PatternsCommand
             }
             var runId = PatternScanPersistence.insertScanRun(db, runStart, DateTime.UtcNow, tickers);
             foreach (var t in root.Tickers) {
-                PatternScanPersistence.insertSetupFromPattern(db.getConnection(), runId, t);
+                var classified = SetupClassifier.classify(t);
+                PatternScanPersistence.insertSetupFromPattern(
+                    db.getConnection(), runId, t, classified);
             }
         } catch (Exception ex) {
             Console.Error.WriteLine(ex.ToString());
@@ -117,8 +119,7 @@ internal static class PatternsCommand
     {
         var all = new List<IBar>();
         var first = new HistoricalBarsRequest(symbol, timeFrame, new Interval<DateTime>(from, to)) {
-            // IEX is available on the free data plan; SIP needs a paid subscription.
-            Feed = MarketDataFeed.Iex
+            Feed = MarketDataSettings.BarsFeedFromEnvironment()
         };
         string? next = null;
         for (;;) {
