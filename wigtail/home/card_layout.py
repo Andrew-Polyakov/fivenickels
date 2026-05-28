@@ -302,7 +302,7 @@ def _build_recent_articles_payload(
             continue
         entry = _card_entry_from_block_value(block.value, parent_context, used_page_ids)
         card = entry.get("card")
-        if card:
+        if card and card.get("kind") == "article":
             cards.append(card)
     return {"cards": cards}
 
@@ -337,9 +337,9 @@ def iter_main_site_stream_segments(
     - {"type": "card_layout", "payload": {...}}
     - {"type": "recent_articles", "payload": {...}}
 
-    When ``cluster_bare_cards_to_recent`` is False (e.g. home page), consecutive
-    article cards are always rendered as ``card_layout`` so each CMS block stays
-    a normal stream segment instead of one adaptive Recent Articles mount.
+    When ``cluster_bare_cards_to_recent`` is False, consecutive article cards
+    are always rendered as ``card_layout`` so each CMS block stays a normal
+    stream segment instead of one adaptive Recent Articles mount.
     """
     buffer: list = []
     for block in stream:
@@ -359,9 +359,14 @@ def iter_main_site_stream_segments(
                 )
                 if use_recent:
                     payload = _build_recent_articles_payload(buffer, parent_context)
-                    buffer = []
-                    if payload["cards"]:
+                    if len(payload["cards"]) >= 2:
+                        buffer = []
                         yield {"type": "recent_articles", "payload": payload}
+                    else:
+                        payload = build_layout_payload(buffer, parent_context)
+                        buffer = []
+                        if payload["rows"]:
+                            yield {"type": "card_layout", "payload": payload}
                 else:
                     payload = build_layout_payload(buffer, parent_context)
                     buffer = []
@@ -376,9 +381,14 @@ def iter_main_site_stream_segments(
             )
             if use_recent:
                 payload = _build_recent_articles_payload(buffer, parent_context)
-                buffer = []
-                if payload["cards"]:
+                if len(payload["cards"]) >= 2:
+                    buffer = []
                     yield {"type": "recent_articles", "payload": payload}
+                else:
+                    payload = build_layout_payload(buffer, parent_context)
+                    buffer = []
+                    if payload["rows"]:
+                        yield {"type": "card_layout", "payload": payload}
             else:
                 payload = build_layout_payload(buffer, parent_context)
                 buffer = []
@@ -393,8 +403,12 @@ def iter_main_site_stream_segments(
         )
         if use_recent:
             payload = _build_recent_articles_payload(buffer, parent_context)
-            if payload["cards"]:
+            if len(payload["cards"]) >= 2:
                 yield {"type": "recent_articles", "payload": payload}
+            else:
+                payload = build_layout_payload(buffer, parent_context)
+                if payload["rows"]:
+                    yield {"type": "card_layout", "payload": payload}
         else:
             payload = build_layout_payload(buffer, parent_context)
             if payload["rows"]:

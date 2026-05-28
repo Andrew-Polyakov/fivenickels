@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% load wagtailcore_tags stream_layout_tags %}
+{% load wagtailcore_tags %}
 
 {% block body_class %}template-homepage{% endblock %}
 
@@ -9,13 +9,30 @@
 {% endblock extra_css %}
 
 {% block content %}
-
-{% with stream_cluster_bare_cards_to_recent=False %}
-<div class="home-stream">
-
-    {% render_main_site_stream page.body %}
-
+<div class="taxonomy-drilldown">
+    {% if taxonomy_active_node and taxonomy_active_node.has_content_constructor %}
+        {{ taxonomy_active_node.content_constructor_json|json_script:"taxonomy-content-constructor-json" }}
+    {% endif %}
+    {% if taxonomy_active_node %}
+        <div
+            class="taxonomy-drilldown__master-pane taxonomy-drilldown__widgets"
+            data-shadcn-taxonomy-editor
+            data-term-id="{{ taxonomy_active_node.pk }}"
+            {% if taxonomy_active_node.has_content_constructor %}data-json-id="taxonomy-content-constructor-json"{% endif %}
+            data-can-edit="{% if can_save_taxonomy_master_layout %}1{% else %}0{% endif %}"
+            data-save-url="{% url 'save_taxonomy_content' %}"
+            data-upload-url="{% url 'upload_taxonomy_image' %}"
+            data-article-search-url="{% url 'search_taxonomy_articles' %}"
+            data-stock-preview-url="{% url 'stock_bars_preview' %}"
+            data-forex-preview-url="{% url 'forex_strip_preview' %}"
+            data-market-movers-preview-url="{% url 'market_movers_preview' %}"
+            data-dividends-preview-url="{% url 'upcoming_dividends_preview' %}"
+            data-calendar-preview-url="{% url 'market_calendar_preview' %}"
+            data-broker-list-url="{% url 'broker_list_json' %}"
+            data-category-choices-url="{% url 'taxonomy_category_choices' %}"
+            data-active-term-name="{{ taxonomy_active_node.name }}"
+        ></div>
+    {% endif %}
 </div>
-{% endwith %}
 
 {% endblock content %}

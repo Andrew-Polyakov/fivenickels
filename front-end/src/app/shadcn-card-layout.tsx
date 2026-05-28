@@ -86,31 +86,29 @@ function stubRowWithColumns(panelCount: number, startLabel: number): LayoutRow {
   return { kind: 'row', items };
 }
 
+function emptyArticleSlot(mode: ContentSourceMode): RowItem {
+  return { type: 'card', card: { kind: 'empty', sourceConfig: { mode } } };
+}
+
 function recentArticlesPresetRows(): LayoutRow[] {
-  const heroItem: RowItem = {
-    type: 'card',
-    card: { kind: 'stub', message: 'Hero article', sourceConfig: { mode: 'priority_articles' } },
-  };
-  const smallItem = (idx: number): RowItem => ({
-    type: 'card',
-    card: { kind: 'stub', message: `Recent ${idx}`, sourceConfig: { mode: 'random' } },
-  });
+  const heroItem = emptyArticleSlot('priority_articles');
+  const smallItem = () => emptyArticleSlot('random');
   return [
     {
       kind: 'row',
       items: [
         heroItem,
         { type: 'separator', orientation: 'vertical' },
-        smallItem(1),
+        smallItem(),
         { type: 'separator', orientation: 'vertical' },
-        smallItem(2),
+        smallItem(),
       ],
       columnSizes: [50, 25, 25],
     },
     { kind: 'separator', orientation: 'horizontal' },
     {
       kind: 'row',
-      items: [smallItem(3), { type: 'separator', orientation: 'vertical' }, smallItem(4)],
+      items: [smallItem(), { type: 'separator', orientation: 'vertical' }, smallItem()],
     },
   ];
 }
@@ -188,20 +186,21 @@ export function ArticleCardView({
   if (data.kind === 'layout') {
     const cls = `scn-card-variant scn-card-variant--${data.variant}`;
     if (data.variant === 'carousel') {
-      const subcards = (data.subcards ?? ['Card 1', 'Card 2', 'Card 3', 'Card 4', 'Card 5']).slice(0, 5);
+      const subcards = (data.subcards ?? []).slice(0, 5);
       const infiniteScroll = Boolean(data.infiniteScroll);
       const loopSubcards = infiniteScroll ? [...subcards, ...subcards] : subcards;
+      const header = (data.carouselHeader ?? '').trim();
       return (
         <Card className={cn('scn-article-card', cls)}>
           <CardContent>
             {enableMasterPane ? (
               <input
                 className="scn-carousel-header-input"
-                value={data.carouselHeader ?? 'Subsection header'}
+                value={data.carouselHeader ?? ''}
                 onChange={(e) => onCarouselHeaderChange?.(e.currentTarget.value)}
               />
             ) : (
-              <h3 className="scn-carousel-header">{data.carouselHeader ?? 'Subsection header'}</h3>
+              header ? <h3 className="scn-carousel-header">{header}</h3> : null
             )}
             <div className={cn('scn-carousel-subcards', infiniteScroll && 'scn-carousel-subcards--infinite')}>
               <div className="scn-carousel-subcards__track">

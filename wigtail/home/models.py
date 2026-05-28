@@ -889,4 +889,9 @@ class HomePage(RoutablePageMixin, Page):
             if sector
             else None
         )
+        from home.inline_edit_views import _admin_inline_access
+        from home.taxonomy import ensure_homepage_editor_term
+
+        context["taxonomy_active_node"] = ensure_homepage_editor_term()
+        context["can_save_taxonomy_master_layout"] = _admin_inline_access(request.user)
         return context

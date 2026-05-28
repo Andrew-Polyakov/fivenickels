@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 
 # Market News hosts GICS sectors in nav UI only (not as separate top-level tabs).
 MARKET_NEWS_SLUG = "market-news"
+HOMEPAGE_EDITOR_SLUG = "homepage-editor"
 
 # Seed rows for migrations and ``ensure_top_row_taxonomy_terms`` (slug, display name, sort_order).
 TOP_ROW_SEED: tuple[tuple[str, str, int], ...] = (
@@ -190,6 +191,32 @@ def ensure_top_row_taxonomy_terms() -> None:
                 is_visible=True,
             )
     TaxonomyTerm.fix_tree()
+
+
+def ensure_homepage_editor_term():
+    """Return a dedicated hidden root taxonomy term for homepage editor state."""
+    from home.models import TaxonomyTerm
+
+    existing = TaxonomyTerm.objects.filter(slug=HOMEPAGE_EDITOR_SLUG).first()
+    if existing is not None:
+        TaxonomyTerm.objects.filter(pk=existing.pk).update(
+            name="Homepage",
+            is_visible=False,
+            is_nav=False,
+            is_sitemap=False,
+        )
+        return TaxonomyTerm.objects.get(pk=existing.pk)
+
+    term = TaxonomyTerm.add_root(
+        name="Homepage",
+        slug=HOMEPAGE_EDITOR_SLUG,
+        is_visible=False,
+        is_nav=False,
+        is_sitemap=False,
+        sort_order=0,
+    )
+    TaxonomyTerm.fix_tree()
+    return term
 
 
 def wagtail_serve_taxonomy_url(

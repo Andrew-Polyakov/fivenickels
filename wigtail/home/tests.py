@@ -89,6 +89,18 @@ class HomeTests(WagtailPageTestCase):
         response = self.client.get(self.homepage.url)
         self.assertTemplateUsed(response, "home/home_page.html")
 
+    def test_homepage_renders_taxonomy_editor_host(self):
+        from home.taxonomy import HOMEPAGE_EDITOR_SLUG
+
+        response = self.client.get(self.homepage.url)
+        self.assertEqual(response.status_code, 200)
+        editor_term = TaxonomyTerm.objects.get(slug=HOMEPAGE_EDITOR_SLUG)
+        self.assertContains(response, "data-shadcn-taxonomy-editor")
+        self.assertContains(response, f'data-term-id="{editor_term.pk}"')
+        self.assertNotContains(response, "home-stream")
+        self.assertNotContains(response, "data-shadcn-bento2")
+        self.assertNotContains(response, "data-recent-articles-block")
+
 
 class FooterCareersCookiesTests(WagtailPageTestCase):
     def setUp(self):
