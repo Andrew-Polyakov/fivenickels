@@ -587,6 +587,12 @@ html[data-reading-theme='day']
     0 0 10px var(--neon-blue-glow, rgba(0, 96, 94, 0.28));
 }
 
+html[data-reading-theme='day'] #radix-_r_s3_-trigger-radix-_r_sg_ {
+  box-shadow:
+    inset 0 -3px 0 0 #38bdf8,
+    0 0 10px rgba(56, 189, 248, 0.35);
+}
+
 html[data-reading-theme='day'] #site-nav[data-can-edit='1'] .scn-taxonomy-site-nav__depth-item .scn-navigation-menu__trigger,
 html[data-reading-theme='day'] #site-nav[data-can-edit='1'] .scn-taxonomy-site-nav__depth-item .scn-navigation-menu__trigger--link {
   padding-right: 1.85rem;
@@ -784,10 +790,10 @@ html[data-reading-theme='day'] .bento-article-carousel__slide-scrim {
 html[data-reading-theme='day'] .bento-article-carousel__slide-copy {
   margin-inline: 0.75rem;
   padding: 1rem 1.25rem 1rem;
-  background: #ffffff;
-  border: 1px solid #c0c0c0;
+  background: transparent;
+  border: none;
   border-radius: 0.5rem;
-  box-shadow: 0 4px 16px -8px rgba(0, 0, 0, 0.22);
+  box-shadow: none;
 }
 
 html[data-reading-theme='day'] .bento-article-carousel__meta,

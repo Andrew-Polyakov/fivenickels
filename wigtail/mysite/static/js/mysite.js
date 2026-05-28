@@ -505,8 +505,8 @@
     }
 
     function initNonCriticalShadcnMounts() {
-        if (window.mountShadcnArticleCarousel && typeof window.mountShadcnArticleCarousel === "function") {
-            window.mountShadcnArticleCarousel();
+        if (window.mountShadcnBentoCarousel && typeof window.mountShadcnBentoCarousel === "function") {
+            window.mountShadcnBentoCarousel();
         }
         if (window.mountShadcnArticleCards && typeof window.mountShadcnArticleCards === "function") {
             window.mountShadcnArticleCards();

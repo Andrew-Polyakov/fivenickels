@@ -1,8 +1,0 @@
-{% if carousel_payload and carousel_payload.frames %}
-    {{ carousel_payload|json_script:mount_uid }}
-    <div
-        class="article-carousel-host"
-        data-shadcn-article-carousel
-        data-layout-json-id="{{ mount_uid }}"
-    ></div>
-{% endif %}

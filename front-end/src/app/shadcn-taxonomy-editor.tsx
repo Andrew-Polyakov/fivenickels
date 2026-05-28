@@ -1151,7 +1151,7 @@ export function carouselFeaturesAllCards(features: BentoGrid01Feature[]): boolea
   return features.length > 0 && features.every((f) => f.header_type === 'card');
 }
 
-function renderPackedTaxonomyCarouselSlide(
+export function renderPackedTaxonomyCarouselSlide(
   slide: CarouselPackedSlide,
   itemClassName: string,
 ): React.ReactNode {

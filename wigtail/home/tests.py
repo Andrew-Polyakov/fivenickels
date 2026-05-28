@@ -30,6 +30,7 @@ from home.card_layout import (
     _serialize_bentogrid01,
     build_layout_payload,
     serialize_article_card_for_related,
+    serialize_article_carousel_payload,
 )
 from home.context_processors import market_header
 from home.navigation import normalize_sector_query_param
@@ -1957,6 +1958,21 @@ class CardSourcePropertiesTests(WagtailPageTestCase):
         self.assertLessEqual(len(payload.get("tags") or []), 3)
         self.assertTrue(payload.get("publishedAt"))
 
+    def test_serialize_article_carousel_payload(self):
+        payload = serialize_article_carousel_payload(
+            [self.page_high, self.page_expired],
+            None,
+        )
+        self.assertIsNotNone(payload)
+        assert payload is not None
+        self.assertEqual(len(payload["frames"]), 2)
+        self.assertEqual(payload["frames"][0]["kind"], "article")
+        self.assertIn("title", payload["frames"][0])
+        self.assertIn("frameCount", payload)
+        self.assertEqual(payload.get("theme"), "default")
+        self.assertEqual(payload.get("tileStyle"), "bordered")
+        self.assertIsNone(serialize_article_carousel_payload([], None))
+
     def test_card_author_name_fallback_to_editorial(self):
         self.page_tagged.author_name = ""
         self.page_tagged.author_user = None
@@ -2762,7 +2778,8 @@ class BrokerTaggedArticlesTests(WagtailPageTestCase):
         )
         self.assertEqual(response.status_code, 200)
         html = response.content.decode()
-        self.assertIn("data-shadcn-article-carousel", html)
+        self.assertIn("data-shadcn-bento-carousel", html)
+        self.assertIn("scn-bento-editor__column-cell", html)
         self.assertIn("forex-broker-articles-carousel", html)
         self.assertIn("Saxo outlook", html)
         self.assertIn("https://www.saxo.com", html)
@@ -2783,5 +2800,5 @@ class BrokerTaggedArticlesTests(WagtailPageTestCase):
             reverse("forex_broker_detail", kwargs={"slug": other.slug})
         )
         self.assertEqual(response.status_code, 200)
-        self.assertNotIn("data-shadcn-article-carousel", response.content.decode())
+        self.assertNotIn("data-shadcn-bento-carousel", response.content.decode())
 

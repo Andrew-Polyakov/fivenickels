@@ -24,10 +24,8 @@ import UpcomingDividendsTile, {
   type DividendRowPayload,
 } from '../components/shadcn-space/blocks/bento-grid-01/UpcomingDividendsTile';
 import StockBarsTile from '../components/shadcn-space/blocks/bento-grid-01/StockBarsTile';
-import {
-  BentoArticleCarouselTile,
-  type BentoArticleCarouselFrame,
-} from '../components/shadcn-space/blocks/bento-grid-01/BentoArticleCarouselTile';
+import type { BentoArticleCarouselFrame } from '../components/shadcn-space/blocks/bento-grid-01/BentoArticleCarouselTile';
+import { BentoArticleCarouselCard } from './bento-article-carousel-card';
 import { CarouselCard } from './shadcn-taxonomy-editor';
 import type {
   CarouselCardImageLayoutLegacy,
@@ -246,15 +244,6 @@ function FeatureHeader({ feature }: { feature: BentoGrid01FeaturePayload }) {
       </BentoWidgetTileFrame>
     );
   }
-  if (feature.header_type === 'article_carousel') {
-    return (
-      <BentoArticleCarouselTile
-        frames={feature.frames ?? []}
-        frameCount={feature.frame_count ?? 5}
-        autoScroll={Boolean(feature.auto_scroll)}
-      />
-    );
-  }
   return (
     <>
       {feature.image_url_light && (
@@ -304,19 +293,27 @@ function BentoGrid01Root({ payload }: { payload: BentoGrid01Payload }) {
   });
 
   function renderPublicTile(feature: BentoGrid01FeaturePayload) {
+    if (feature.header_type === 'article_carousel') {
+      return (
+        <BentoArticleCarouselCard
+          includeThemeScope={false}
+          frames={feature.frames ?? []}
+          frameCount={feature.frame_count ?? 5}
+          autoScroll={Boolean(feature.auto_scroll)}
+        />
+      );
+    }
+
     const headerClip = (
       feature.header_type === 'card'
       || feature.header_type === 'fxbroker'
-      || feature.header_type === 'article_carousel'
     ) ? '' : ' scn-bentogrid01__tile-header--clip';
     const headerTypeMod =
       feature.header_type === 'card'
         ? ' scn-bentogrid01__tile-header--card'
         : feature.header_type === 'fxbroker'
           ? ' scn-bentogrid01__tile-header--fxbroker'
-          : feature.header_type === 'article_carousel'
-            ? ' scn-bentogrid01__tile-header--article-carousel'
-            : '';
+          : '';
     const isWidgetTile = BENTO_TILES_WITHOUT_FOOTER.has(feature.header_type);
     const widgetHeader = isWidgetTile ? ' scn-bentogrid01__tile-header--widget' : '';
     const showTextFooter = !isWidgetTile;

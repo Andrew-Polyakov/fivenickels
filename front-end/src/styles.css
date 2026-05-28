@@ -2559,6 +2559,81 @@ html[data-reading-theme="day"]
   height: 100%;
 }
 
+/* Embedded bento article_carousel hero (related articles, broker detail) */
+.scn-bento-carousel-embed.scn-bento-editor__layout-host {
+  width: 100%;
+  max-width: none;
+  min-height: 280px;
+}
+
+.scn-bento-carousel-embed .scn-bento-editor__layout {
+  border: none;
+  min-height: 280px;
+  height: 100%;
+}
+
+.scn-bento-carousel-embed .scn-bento-editor__row-stack,
+.scn-bento-carousel-embed .scn-bento-editor__panel,
+.scn-bento-carousel-embed .scn-bento-editor__row-band,
+.scn-bento-carousel-embed .scn-bento-editor__row {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+.scn-bento-carousel-embed .scn-bento-editor__row--single {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.scn-bento-carousel-embed .scn-bento-editor__column-cell {
+  flex: 1 1 auto;
+  min-height: 280px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: none;
+}
+
+.scn-bento-carousel-embed .scn-bento-editor__column-cell > [data-shadcn-bento-carousel] {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.scn-bento-carousel-embed .scn-bentogrid01 {
+  flex: 1 1 auto;
+  min-height: 280px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.scn-bento-carousel-embed .scn-bentogrid01__tile {
+  flex: 1 1 auto;
+  min-height: 280px;
+  height: 100%;
+  width: 100%;
+}
+
+.scn-bento-carousel-embed .scn-bentogrid01__tile-header--article-carousel {
+  flex: 1 1 auto;
+  min-height: 280px;
+}
+
+.tagged-content__related .scn-bento-carousel-host,
+.forex-broker-detail__articles .scn-bento-carousel-host,
+.tagged-content__related .scn-bento-carousel-embed,
+.forex-broker-detail__articles .scn-bento-carousel-embed {
+  width: 100%;
+  max-width: none;
+}
+
 .scn-bento-readonly__right-stack {
   display: flex;
   flex-direction: column;
@@ -4551,6 +4626,27 @@ img[src*='bear.png'].scn-catalyst-toggle__icon {
 
 .carousel-article-card--imageless .carousel-article-card__body {
   padding-top: 0.85rem;
+}
+
+/* Embla carousel — equal edge inset and inter-slide gap (bento/card carousels) */
+.carousel {
+  --carousel-slide-gap: 1rem;
+}
+.carousel__viewport {
+  overflow: hidden;
+}
+.carousel__track {
+  display: flex;
+  align-items: stretch;
+  padding: 5px var(--carousel-slide-gap) 12px;
+  gap: var(--carousel-slide-gap);
+  min-height: 0;
+}
+.carousel__item {
+  flex: 0 0 clamp(220px, 50vw, 360px);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .carousel-slides__stack {

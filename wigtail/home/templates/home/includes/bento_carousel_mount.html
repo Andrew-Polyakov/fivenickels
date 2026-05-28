@@ -1,0 +1,21 @@
+{% if carousel_payload and carousel_payload.frames %}
+    {{ carousel_payload|json_script:mount_uid }}
+    <div class="scn-bento-editor__layout-host scn-bento-carousel-embed scn-bento-carousel-host">
+        <div class="scn-bento-editor__layout scn-bento-editor__layout--stacked scn-bento-editor__layout--readonly">
+            <div class="scn-bento-editor__row-stack">
+                <div class="scn-bento-editor__panel">
+                    <div class="scn-bento-editor__row-band" data-row="1">
+                        <div class="scn-bento-editor__row scn-bento-editor__row--single">
+                            <div class="scn-bento-editor__column-cell">
+                                <div
+                                    data-shadcn-bento-carousel
+                                    data-layout-json-id="{{ mount_uid }}"
+                                ></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}

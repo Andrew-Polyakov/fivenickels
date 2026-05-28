@@ -699,7 +699,7 @@ class TaggedContentPage(SeoMetaFields, Page):
         context["similar_pages"] = similar_pages
         from home.card_layout import serialize_article_carousel_payload
 
-        context["similar_article_carousel"] = serialize_article_carousel_payload(
+        context["bento_carousel"] = serialize_article_carousel_payload(
             similar_pages,
             request,
         )

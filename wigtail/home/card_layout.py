@@ -793,7 +793,7 @@ def serialize_article_carousel_payload(
     auto_scroll: bool = False,
     max_frames: int = 12,
 ) -> dict[str, Any] | None:
-    """Bento article_carousel block payload for standalone mounts (broker detail, similar articles)."""
+    """Bento article_carousel hero payload (full-bleed slides + frame dots)."""
     frames: list[dict[str, Any]] = []
     for page in pages:
         card = _article_card_dict(page, request)
@@ -808,4 +808,7 @@ def serialize_article_carousel_payload(
         "frames": frames,
         "frameCount": frame_count,
         "autoScroll": auto_scroll,
+        "theme": "default",
+        "tileStyle": "bordered",
+        "blockBackground": "default",
     }

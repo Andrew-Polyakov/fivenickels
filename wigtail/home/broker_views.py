@@ -162,7 +162,7 @@ def forex_broker_detail(request: HttpRequest, slug: str) -> HttpResponse:
     countries = list(Country.objects.values("code", "name").order_by("name"))
 
     tagged_articles = tagged_articles_for_broker(broker)
-    article_carousel = serialize_article_carousel_payload(tagged_articles, request)
+    bento_carousel = serialize_article_carousel_payload(tagged_articles, request)
 
     response = render(
         request,
@@ -172,7 +172,7 @@ def forex_broker_detail(request: HttpRequest, slug: str) -> HttpResponse:
             "countries": countries,
             "current_country": country_code,
             "breadcrumb_payload": breadcrumb_payload,
-            "article_carousel": article_carousel,
+            "bento_carousel": bento_carousel,
         },
     )
     if explicit_country:

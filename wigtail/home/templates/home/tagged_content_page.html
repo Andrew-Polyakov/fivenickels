@@ -156,9 +156,9 @@
                 </nav>
             </div>
 
-            {% if similar_article_carousel %}
+            {% if bento_carousel %}
                 <section class="tagged-content__related" aria-label="Similar articles">
-                    {% include "home/includes/article_carousel_mount.html" with carousel_payload=similar_article_carousel mount_uid="tagged-content-similar-carousel" %}
+                    {% include "home/includes/bento_carousel_mount.html" with carousel_payload=bento_carousel mount_uid="tagged-content-similar-carousel" %}
                 </section>
             {% endif %}
         </footer>

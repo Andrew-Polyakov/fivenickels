@@ -41,7 +41,7 @@ def is_brokers_nav_active(request) -> bool:
         match = resolve(request.path_info)
     except Resolver404:
         return False
-    return match.url_name == "forex_ratings"
+    return (match.url_name or "").startswith("forex_")
 
 
 def brokers_nav_menu_item(request) -> dict:

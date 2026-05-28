@@ -23,9 +23,9 @@ import {
 } from './app/shadcn-article-share';
 import { mountShadcnArticleCards, mountRecentArticlesBlocks } from './app/shadcn-card-layout';
 import {
-  mountShadcnArticleCarousel,
-  unmountShadcnArticleCarousel,
-} from './app/shadcn-article-carousel';
+  mountShadcnBentoCarousel,
+  unmountShadcnBentoCarousel,
+} from './app/shadcn-bento-carousel';
 import { mountShadcnBento2 } from './app/shadcn-bento2';
 import { mountShadcnBentoGrid01 } from './app/shadcn-bentogrid01';
 import { mountShadcnTaxonomySiteNav } from './app/shadcn-taxonomy-site-nav';
@@ -68,8 +68,8 @@ declare global {
     showMaterialAuthDialog?: (initialTab: 'login' | 'signup') => void;
     mountShadcnBento2?: () => void;
     mountShadcnArticleCards?: () => void;
-    mountShadcnArticleCarousel?: () => void;
-    unmountShadcnArticleCarousel?: (root?: ParentNode) => void;
+    mountShadcnBentoCarousel?: () => void;
+    unmountShadcnBentoCarousel?: (root?: ParentNode) => void;
     mountRecentArticlesBlocks?: () => void;
     mountShadcnBreadcrumbs?: () => void;
     mountShadcnArticleDatelines?: () => void;
@@ -154,8 +154,8 @@ createApplication({
     window.mountTaxonomyChipWidgets = mountTaxonomyChipWidgets;
     window.mountShadcnBento2 = mountShadcnBento2;
     window.mountShadcnArticleCards = mountShadcnArticleCards;
-    window.mountShadcnArticleCarousel = mountShadcnArticleCarousel;
-    window.unmountShadcnArticleCarousel = unmountShadcnArticleCarousel;
+    window.mountShadcnBentoCarousel = mountShadcnBentoCarousel;
+    window.unmountShadcnBentoCarousel = unmountShadcnBentoCarousel;
     window.mountRecentArticlesBlocks = mountRecentArticlesBlocks;
     window.mountShadcnBreadcrumbs = mountShadcnBreadcrumbs;
     window.mountShadcnArticleDatelines = mountShadcnArticleDatelines;
@@ -223,7 +223,7 @@ createApplication({
     mountShadcnProfileHeaderButton();
     mountShadcnTaxonomySiteNav();
     mountShadcnBento2();
-    mountShadcnArticleCarousel();
+    mountShadcnBentoCarousel();
     mountShadcnArticleCards();
     mountRecentArticlesBlocks();
     mountShadcnBreadcrumbs();

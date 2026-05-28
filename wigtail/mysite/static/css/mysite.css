@@ -5821,11 +5821,11 @@ html[data-reading-theme="day"] .tagged-content__hero-sep {
 
     grid-auto-flow: column;
 
-    grid-auto-columns: calc((100% - var(--tile-carousel-gap)) / 2);
+    grid-auto-columns: calc((100% - 3 * var(--tile-carousel-gap)) / 2);
 
     gap: var(--tile-carousel-gap);
 
-    padding: 0.35rem 0;
+    padding: 0.35rem var(--tile-carousel-gap);
 
     border-left: 1px solid rgba(148, 163, 184, 0.22);
 
@@ -10984,7 +10984,7 @@ body.template-taxonomy-drilldown .scn-taxonomy-editor .scn-editor-body {
     max-height: none;
 }
 
-.scn-carousel-editor__preview-item { flex: 0 0 clamp(200px, 35%, 300px); padding-right: 1rem; display: flex; flex-direction: column; }
+.scn-carousel-editor__preview-item { flex: 0 0 clamp(200px, 35%, 300px); display: flex; flex-direction: column; }
 
 .carousel.scn-carousel-editor__preview .carousel__viewport {
     flex: 1 1 auto;
@@ -11525,13 +11525,25 @@ html[data-reading-theme="day"] .carousel-article-card__published {
 
 /* Carousel (public) */
 .carousel {
+    --carousel-slide-gap: 1rem;
     position: relative;
     max-width: 100%;
     overflow-x: hidden;
 }
 .carousel__viewport { overflow: hidden; }
-.carousel__track { display: flex; align-items: stretch; padding: 5px 0 12px; min-height: 0; }
-.carousel__item { flex: 0 0 clamp(220px, 50vw, 360px); min-width: 0; padding-right: 1rem; display: flex; flex-direction: column; }
+.carousel__track {
+    display: flex;
+    align-items: stretch;
+    padding: 5px var(--carousel-slide-gap) 12px;
+    gap: var(--carousel-slide-gap);
+    min-height: 0;
+}
+.carousel__item {
+    flex: 0 0 clamp(220px, 50vw, 360px);
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
 
 .carousel__nav-btn {
     position: absolute;
@@ -11584,7 +11596,7 @@ html[data-reading-theme="day"] .carousel-article-card__published {
 
 @media (min-width: 900px) {
     .tile-carousel__viewport {
-        grid-auto-columns: calc((100% - 2 * var(--tile-carousel-gap)) / 3);
+        grid-auto-columns: calc((100% - 4 * var(--tile-carousel-gap)) / 3);
     }
 
     .carousel__item {
@@ -11594,7 +11606,7 @@ html[data-reading-theme="day"] .carousel-article-card__published {
 
 @media (min-width: 1280px) {
     .tile-carousel__viewport {
-        grid-auto-columns: calc((100% - 3 * var(--tile-carousel-gap)) / 4);
+        grid-auto-columns: calc((100% - 5 * var(--tile-carousel-gap)) / 4);
     }
 
     .carousel__item {
@@ -11721,7 +11733,7 @@ html[data-reading-theme="day"] .scn-taxonomy-content__sep--horizontal {
     padding-inline: 0;
 }
 
-.scn-taxonomy-content__carousel-item { padding-right: 1rem; display: flex; flex-direction: column; }
+.scn-taxonomy-content__carousel-item { display: flex; flex-direction: column; }
 
 .scn-carousel-readonly__tile {
     flex: 1 1 auto;
@@ -11965,7 +11977,7 @@ html[data-reading-theme="day"] .forex-broker-detail__name {
     max-width: 42rem;
     font-size: 0.9375rem;
     line-height: 1.65;
-    color: var(--color-text);
+    color: var(--color-text-muted);
 }
 
 .forex-broker-detail__meta {
@@ -11976,13 +11988,14 @@ html[data-reading-theme="day"] .forex-broker-detail__name {
 }
 
 .forex-broker-detail__website-link {
-    color: var(--color-slime);
+    color: var(--color-text-muted);
     text-decoration: underline;
     word-break: break-all;
 }
 
 .forex-broker-detail__website-link:hover {
-    opacity: 0.85;
+    color: #ffffff;
+    opacity: 1;
 }
 
 .forex-broker-detail__section {
@@ -12009,13 +12022,38 @@ html[data-reading-theme="day"] .forex-broker-detail__name {
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: var(--color-text-muted);
+    color: #ffffff;
+}
+
+.forex-broker-detail__label-icon {
+    display: inline-block;
+    margin-left: 0.2rem;
+    font-size: 0.8em;
+    line-height: 1;
+    vertical-align: baseline;
 }
 
 .forex-broker-detail__grid dd {
     margin: 0;
     font-size: 0.9375rem;
+    color: var(--color-text-muted);
+}
+
+html[data-reading-theme="day"] .forex-broker-detail__summary,
+html[data-reading-theme="day"] .forex-broker-detail__grid dd {
     color: var(--color-text);
+}
+
+html[data-reading-theme="day"] .forex-broker-detail__grid dt {
+    color: var(--color-text-muted);
+}
+
+html[data-reading-theme="day"] .forex-broker-detail__website-link {
+    color: var(--color-link);
+}
+
+html[data-reading-theme="day"] .forex-broker-detail__website-link:hover {
+    color: var(--color-link-hover);
 }
 
 .forex-broker-detail__best-for {
@@ -12032,23 +12070,16 @@ html[data-reading-theme="day"] .forex-broker-detail__name {
     margin-bottom: 0;
 }
 
-.forex-broker-detail__articles .article-carousel-host {
+.forex-broker-detail__articles .scn-bento-carousel-embed {
     margin-top: 0.25rem;
 }
 
-.forex-broker-detail__articles .bento-article-carousel {
-    border-radius: 0.6rem;
-    overflow: hidden;
-}
-
-.tagged-content__related .article-carousel-host {
+.tagged-content__related .scn-bento-carousel-host,
+.tagged-content__related .scn-bento-carousel-embed,
+.forex-broker-detail__articles .scn-bento-carousel-host,
+.forex-broker-detail__articles .scn-bento-carousel-embed {
     width: 100%;
     max-width: none;
-}
-
-.tagged-content__related .bento-article-carousel {
-    border-radius: 0.6rem;
-    overflow: hidden;
 }
 
 @media (max-width: 640px) {
@@ -13356,13 +13387,8 @@ a.scn-broker-name__text:active {
     position: relative;
 }
 
-.scn-broker-carousel .carousel {
-    padding: 0 2rem;
-}
-
 .scn-broker-carousel__item {
     flex: 0 0 260px;
-    padding-right: 1rem;
 }
 
 .scn-broker-carousel__card-wrap {
