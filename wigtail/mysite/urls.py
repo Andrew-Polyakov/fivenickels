@@ -18,6 +18,7 @@ from home import api_urls
 from search import views as search_views
 
 from home.ticker_serve import render_ticker_page
+from home.health_views import healthz
 from home.seo_views import robots_txt
 from home.sitemaps import SITEMAPS
 
@@ -29,6 +30,7 @@ def favicon_view(request):
 
 
 urlpatterns = [
+    path("healthz/", healthz, name="healthz"),
     path("favicon.ico", favicon_view, name="favicon"),
     path("", include(api_urls)),
     path("django-admin/", admin.site.urls),

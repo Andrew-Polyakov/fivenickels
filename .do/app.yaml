@@ -1,0 +1,99 @@
+# DigitalOcean App Platform spec — import when creating the app.
+# Build context is the repository root (docker build -f wigtail/Dockerfile .).
+#
+# Set these at APP LEVEL in the DO dashboard (encrypted where noted):
+#   DJANGO_SECRET_KEY, DJANGO_ALLOWED_HOSTS, DJANGO_CSRF_TRUSTED_ORIGINS,
+#   WAGTAILADMIN_BASE_URL, AWS_STORAGE_BUCKET_NAME, AWS_S3_REGION_NAME,
+#   AWS_S3_ENDPOINT_URL, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+# Optional app-level: AWS_S3_CUSTOM_DOMAIN, APCA_API_KEY_ID, APCA_API_SECRET_KEY
+#
+# Provision the managed DB default database as "wagtail" and run:
+#   CREATE DATABASE crawler;
+#
+# Optional private DB (same VPC): use ${db.DATABASE_PRIVATE_URL} for DATABASE_URL
+# instead of ${db.DATABASE_URL} on web + migrate components.
+#
+# instance_size_slug: bump to basic-s if Wagtail admin OOMs on basic-xs.
+
+name: trades-wigtail
+region: nyc
+
+databases:
+  - name: db
+    engine: PG
+    version: "16"
+    production: true
+
+services:
+  - name: web
+    dockerfile_path: wigtail/Dockerfile
+    source_dir: /
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: basic-xs
+    health_check:
+      http_path: /healthz/
+      initial_delay_seconds: 30
+      period_seconds: 10
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 3
+    envs:
+      - key: DJANGO_SETTINGS_MODULE
+        value: mysite.settings.production
+      - key: PORT
+        value: "8080"
+      - key: GUNICORN_WORKERS
+        value: "1"
+      - key: POSTGRES_HOST
+        value: ${db.HOSTNAME}
+      - key: POSTGRES_PORT
+        value: ${db.PORT}
+      - key: POSTGRES_USER
+        value: ${db.USERNAME}
+      - key: POSTGRES_PASSWORD
+        value: ${db.PASSWORD}
+        type: SECRET
+      - key: POSTGRES_SSLMODE
+        value: require
+      - key: WAGTAIL_POSTGRES_DB
+        value: wagtail
+      - key: CRAWLER_POSTGRES_DB
+        value: crawler
+      - key: DATABASE_URL
+        value: ${db.DATABASE_URL}
+        type: SECRET
+      - key: DATABASE_CA_CERT
+        value: ${db.CA_CERT}
+        type: SECRET
+
+jobs:
+  - name: migrate
+    kind: PRE_DEPLOY
+    dockerfile_path: wigtail/Dockerfile
+    source_dir: /
+    run_command: python manage.py migrate --noinput
+    envs:
+      - key: DJANGO_SETTINGS_MODULE
+        value: mysite.settings.release
+      - key: POSTGRES_HOST
+        value: ${db.HOSTNAME}
+      - key: POSTGRES_PORT
+        value: ${db.PORT}
+      - key: POSTGRES_USER
+        value: ${db.USERNAME}
+      - key: POSTGRES_PASSWORD
+        value: ${db.PASSWORD}
+        type: SECRET
+      - key: POSTGRES_SSLMODE
+        value: require
+      - key: WAGTAIL_POSTGRES_DB
+        value: wagtail
+      - key: CRAWLER_POSTGRES_DB
+        value: crawler
+      - key: DATABASE_URL
+        value: ${db.DATABASE_URL}
+        type: SECRET
+      - key: DATABASE_CA_CERT
+        value: ${db.CA_CERT}
+        type: SECRET
