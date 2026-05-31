@@ -1060,6 +1060,7 @@ export function CarouselCard(props: CarouselCardViewModel) {
     <Card
       className={cn(
         'carousel-article-card',
+        'scn-simple-story',
         layoutModClass,
         url && 'carousel-article-card--link',
       )}

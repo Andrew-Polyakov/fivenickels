@@ -1,21 +1,21 @@
-# DigitalOcean App Platform spec — import when creating the app.
-# Build context is the repository root (docker build -f wigtail/Dockerfile .).
+# DigitalOcean App Platform — import this spec when creating or updating the app.
+# Build: repository root (source_dir: /), dockerfile_path: wigtail/Dockerfile
 #
-# Set these at APP LEVEL in the DO dashboard (encrypted where noted):
-#   DJANGO_SECRET_KEY, DJANGO_ALLOWED_HOSTS, DJANGO_CSRF_TRUSTED_ORIGINS,
-#   WAGTAILADMIN_BASE_URL, AWS_STORAGE_BUCKET_NAME, AWS_S3_REGION_NAME,
-#   AWS_S3_ENDPOINT_URL, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
-# Optional app-level: AWS_S3_CUSTOM_DOMAIN, APCA_API_KEY_ID, APCA_API_SECRET_KEY
+# AUTO (bindables — DO injects at deploy):
+#   ${APP_URL}, ${APP_DOMAIN}, ${db.HOSTNAME}, ${db.PORT}, ${db.USERNAME},
+#   ${db.PASSWORD}, ${db.DATABASE_URL}, ${db.CA_CERT}
 #
-# Provision the managed DB default database as "wagtail" and run:
-#   CREATE DATABASE crawler;
+# FILL ONCE in App → Settings → App-Level Environment Variables (Encrypt):
+#   DJANGO_SECRET_KEY, AWS_STORAGE_BUCKET_NAME, AWS_S3_ENDPOINT_URL,
+#   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+# Optional: AWS_S3_CUSTOM_DOMAIN, APCA_API_KEY_ID, APCA_API_SECRET_KEY,
+#   DJANGO_EXTRA_ALLOWED_HOSTS, DJANGO_EXTRA_CSRF_ORIGINS (custom domains)
 #
-# Optional private DB (same VPC): use ${db.DATABASE_PRIVATE_URL} for DATABASE_URL
-# instead of ${db.DATABASE_URL} on web + migrate components.
-#
-# instance_size_slug: bump to basic-s if Wagtail admin OOMs on basic-xs.
+# Postgres: default database MUST be named "wagtail" (matches WAGTAIL_POSTGRES_DB).
+# Then: CREATE DATABASE crawler;
+# Optional VPC: DATABASE_URL → ${db.DATABASE_PRIVATE_URL}
 
-name: trades-wigtail
+name: fivenickels-wigtail
 region: nyc
 
 databases:
@@ -24,8 +24,74 @@ databases:
     version: "16"
     production: true
 
+envs:
+  - key: WAGTAILADMIN_BASE_URL
+    value: ${APP_URL}
+    scope: RUN_TIME
+  - key: DJANGO_ALLOWED_HOSTS
+    value: ${APP_DOMAIN}
+    scope: RUN_TIME
+  - key: DJANGO_CSRF_TRUSTED_ORIGINS
+    value: ${APP_URL}
+    scope: RUN_TIME
+  - key: PUBLIC_SIGNUP_ENABLED
+    value: "0"
+    scope: RUN_TIME
+  - key: POSTGRES_HOST
+    value: ${db.HOSTNAME}
+    scope: RUN_TIME
+  - key: POSTGRES_PORT
+    value: ${db.PORT}
+    scope: RUN_TIME
+  - key: POSTGRES_USER
+    value: ${db.USERNAME}
+    scope: RUN_TIME
+  - key: POSTGRES_PASSWORD
+    value: ${db.PASSWORD}
+    scope: RUN_TIME
+    type: SECRET
+  - key: POSTGRES_SSLMODE
+    value: require
+    scope: RUN_TIME
+  - key: WAGTAIL_POSTGRES_DB
+    value: wagtail
+    scope: RUN_TIME
+  - key: CRAWLER_POSTGRES_DB
+    value: crawler
+    scope: RUN_TIME
+  - key: DATABASE_URL
+    value: ${db.DATABASE_URL}
+    scope: RUN_TIME
+    type: SECRET
+  - key: DATABASE_CA_CERT
+    value: ${db.CA_CERT}
+    scope: RUN_TIME
+    type: SECRET
+  - key: DJANGO_SECRET_KEY
+    scope: RUN_TIME
+    type: SECRET
+  - key: AWS_STORAGE_BUCKET_NAME
+    scope: RUN_TIME
+    type: SECRET
+  - key: AWS_S3_REGION_NAME
+    value: nyc3
+    scope: RUN_TIME
+  - key: AWS_S3_ENDPOINT_URL
+    scope: RUN_TIME
+    type: SECRET
+  - key: AWS_ACCESS_KEY_ID
+    scope: RUN_TIME
+    type: SECRET
+  - key: AWS_SECRET_ACCESS_KEY
+    scope: RUN_TIME
+    type: SECRET
+
 services:
   - name: web
+    github:
+      repo: Andrew-Polyakov/fivenickels
+      branch: main
+      deploy_on_push: true
     dockerfile_path: wigtail/Dockerfile
     source_dir: /
     http_port: 8080
@@ -38,62 +104,39 @@ services:
       timeout_seconds: 5
       success_threshold: 1
       failure_threshold: 3
+    alerts:
+      - rule: CPU_UTILIZATION
+        disabled: false
+        operator: GREATER_THAN
+        value: 80
+        window: FIVE_MINUTES
+      - rule: MEM_UTILIZATION
+        disabled: false
+        operator: GREATER_THAN
+        value: 85
+        window: FIVE_MINUTES
     envs:
       - key: DJANGO_SETTINGS_MODULE
         value: mysite.settings.production
+        scope: RUN_TIME
       - key: PORT
         value: "8080"
+        scope: RUN_TIME
       - key: GUNICORN_WORKERS
         value: "1"
-      - key: POSTGRES_HOST
-        value: ${db.HOSTNAME}
-      - key: POSTGRES_PORT
-        value: ${db.PORT}
-      - key: POSTGRES_USER
-        value: ${db.USERNAME}
-      - key: POSTGRES_PASSWORD
-        value: ${db.PASSWORD}
-        type: SECRET
-      - key: POSTGRES_SSLMODE
-        value: require
-      - key: WAGTAIL_POSTGRES_DB
-        value: wagtail
-      - key: CRAWLER_POSTGRES_DB
-        value: crawler
-      - key: DATABASE_URL
-        value: ${db.DATABASE_URL}
-        type: SECRET
-      - key: DATABASE_CA_CERT
-        value: ${db.CA_CERT}
-        type: SECRET
+        scope: RUN_TIME
 
 jobs:
   - name: migrate
     kind: PRE_DEPLOY
+    github:
+      repo: Andrew-Polyakov/fivenickels
+      branch: main
+      deploy_on_push: true
     dockerfile_path: wigtail/Dockerfile
     source_dir: /
-    run_command: python manage.py migrate --noinput
+    run_command: python manage.py migrate --noinput && python manage.py check --deploy
     envs:
       - key: DJANGO_SETTINGS_MODULE
         value: mysite.settings.release
-      - key: POSTGRES_HOST
-        value: ${db.HOSTNAME}
-      - key: POSTGRES_PORT
-        value: ${db.PORT}
-      - key: POSTGRES_USER
-        value: ${db.USERNAME}
-      - key: POSTGRES_PASSWORD
-        value: ${db.PASSWORD}
-        type: SECRET
-      - key: POSTGRES_SSLMODE
-        value: require
-      - key: WAGTAIL_POSTGRES_DB
-        value: wagtail
-      - key: CRAWLER_POSTGRES_DB
-        value: crawler
-      - key: DATABASE_URL
-        value: ${db.DATABASE_URL}
-        type: SECRET
-      - key: DATABASE_CA_CERT
-        value: ${db.CA_CERT}
-        type: SECRET
+        scope: RUN_TIME

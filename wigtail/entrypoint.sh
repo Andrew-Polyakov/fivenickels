@@ -8,5 +8,5 @@ fi
 exec gunicorn mysite.wsgi:application \
   --bind "0.0.0.0:${PORT:-8080}" \
   --worker-tmp-dir /dev/shm \
-  --workers "${GUNICORN_WORKERS:-2}" \
+  --workers "${GUNICORN_WORKERS:-1}" \
   --timeout "${GUNICORN_TIMEOUT:-120}"

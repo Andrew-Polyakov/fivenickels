@@ -41,6 +41,7 @@ jobs:
           home.tests_health
           mysite.settings.tests_database_url
           mysite.settings.tests_spaces_storage
+          mysite.settings.tests_production_hosts
           --verbosity=1
 
   docker-build:

@@ -53,3 +53,18 @@ def _apply_ca_cert(databases: dict) -> None:
 
     for config in databases.values():
         config.setdefault("OPTIONS", {})["sslrootcert"] = str(_CA_CERT_PATH)
+
+
+def _validate_default_database_name(databases: dict) -> None:
+    """Ensure DATABASE_URL (if set) targets the same DB as WAGTAIL_POSTGRES_DB."""
+    if not os.environ.get("DATABASE_URL", "").strip():
+        return
+
+    expected = os.environ.get("WAGTAIL_POSTGRES_DB", "wagtail").strip() or "wagtail"
+    actual = (databases.get("default") or {}).get("NAME")
+    if actual and actual != expected:
+        raise RuntimeError(
+            f"DATABASE_URL points at database {actual!r} but WAGTAIL_POSTGRES_DB is "
+            f"{expected!r}. Provision the managed Postgres default database as "
+            f"'{expected}' so ${'{db.DATABASE_URL}'} matches."
+        )

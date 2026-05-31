@@ -157,21 +157,7 @@
                             </div>
 
                             <div class="site-header__masthead-center">
-                                <a
-                                    class="site-header__masthead-brand"
-                                    href="{% if current_site and current_site.root_page %}{% pageurl current_site.root_page %}{% else %}/{% endif %}"
-                                    data-turbo-frame="main"
-                                >
-                                    <img
-                                        class="site-header__masthead-logo"
-                                        src="{% static 'images/logo.png' %}"
-                                        alt="Five Nickel — Forex and stock market"
-                                        width="2152"
-                                        height="456"
-                                        decoding="async"
-                                        fetchpriority="high"
-                                    >
-                                </a>
+                                {% include "components/site_brand.html" with current_site=current_site %}
                             </div>
 
                             <div class="site-header__masthead-right">

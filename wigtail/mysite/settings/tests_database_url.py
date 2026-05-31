@@ -8,6 +8,7 @@ from mysite.settings.database_url import (
     _apply_ca_cert,
     _apply_database_url,
     _apply_postgres_sslmode,
+    _validate_default_database_name,
 )
 
 
@@ -75,3 +76,32 @@ class DatabaseUrlHelpersTests(SimpleTestCase):
             self.assertEqual(databases["crawler"]["OPTIONS"]["sslrootcert"], str(cert_path))
         finally:
             cert_path.unlink(missing_ok=True)
+
+    def test_validate_default_database_name_rejects_mismatch(self):
+        databases = _sample_databases()
+        with patch.dict(
+            os.environ,
+            {
+                "DATABASE_URL": "postgresql://u:p@host:25060/defaultdb",
+                "WAGTAIL_POSTGRES_DB": "wagtail",
+            },
+            clear=False,
+        ):
+            _apply_database_url(databases)
+            with self.assertRaises(RuntimeError) as ctx:
+                _validate_default_database_name(databases)
+        self.assertIn("defaultdb", str(ctx.exception))
+        self.assertIn("wagtail", str(ctx.exception))
+
+    def test_validate_default_database_name_accepts_match(self):
+        databases = _sample_databases()
+        with patch.dict(
+            os.environ,
+            {
+                "DATABASE_URL": "postgresql://u:p@host:25060/wagtail",
+                "WAGTAIL_POSTGRES_DB": "wagtail",
+            },
+            clear=False,
+        ):
+            _apply_database_url(databases)
+            _validate_default_database_name(databases)

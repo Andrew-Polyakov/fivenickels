@@ -1,0 +1,21 @@
+{% load static wagtailcore_tags %}
+{% if not current_site %}{% wagtail_site as current_site %}{% endif %}
+<div class="site-footer__brand">
+    <div class="site-footer__brand-inner">
+        <a
+            class="site-footer__brand-logo-wrap"
+            href="{% if current_site and current_site.root_page %}{% pageurl current_site.root_page %}{% else %}/{% endif %}"
+            data-turbo-frame="main"
+        >
+            <img
+                class="site-footer__brand-logo"
+                src="{% static 'images/logo.png' %}"
+                alt="Five Nickel"
+                width="2152"
+                height="456"
+                decoding="async"
+            >
+        </a>
+        <p class="site-footer__brand-tagline">Forex and stock market</p>
+    </div>
+</div>

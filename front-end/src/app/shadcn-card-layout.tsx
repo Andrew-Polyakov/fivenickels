@@ -287,7 +287,7 @@ export function ArticleCardView({
   const catalystClass = catalystCardClass(data.catalyst);
   if (data.href) {
     return (
-      <Card className={cn('scn-article-card', 'scn-article-card--linked', catalystClass)}>
+      <Card className={cn('scn-article-card', 'scn-simple-story', 'scn-article-card--linked', catalystClass)}>
         <a className="scn-article-card__shell" href={data.href}>
           {body}
         </a>
@@ -295,7 +295,7 @@ export function ArticleCardView({
     );
   }
   return (
-    <Card className={cn('scn-article-card', catalystClass)}>
+    <Card className={cn('scn-article-card', 'scn-simple-story', catalystClass)}>
       {body}
     </Card>
   );
